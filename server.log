@@ -1,0 +1,12 @@
+
+> flashcard-generator@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.3.5 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://10.0.0.4:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 849ms
+[?25h
