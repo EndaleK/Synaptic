@@ -73,7 +73,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       flashcards,
       documentJSON: documentJSON || null,
-      textLength: textContent.length 
+      textLength: textContent.length,
+      extractedText: textContent // Include extracted text for chat functionality
     })
   } catch (error) {
     console.error("API error:", error)

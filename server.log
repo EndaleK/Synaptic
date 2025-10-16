@@ -1,12 +1,11 @@
-
-> flashcard-generator@0.1.0 dev
-> next dev --turbopack
-
-   ▲ Next.js 15.3.5 (Turbopack)
-   - Local:        http://localhost:3000
-   - Network:      http://10.0.0.4:3000
-   - Environments: .env.local
-
- ✓ Starting...
- ✓ Ready in 849ms
+ ⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::5000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::5000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
 [?25h

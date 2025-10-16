@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { ChevronLeft, ChevronRight, RotateCcw, Download, Home } from "lucide-react"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { ChevronLeft, ChevronRight, RotateCcw, Download, Home, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Flashcard } from "@/lib/types"
 
@@ -14,6 +14,8 @@ export default function FlashcardDisplay({ flashcards, onReset }: FlashcardDispl
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [studiedCards, setStudiedCards] = useState<Set<string>>(new Set())
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const exportMenuRef = useRef<HTMLDivElement>(null)
 
   const currentCard = flashcards[currentIndex]
   const progress = ((studiedCards.size / flashcards.length) * 100).toFixed(0)
@@ -38,16 +40,306 @@ export default function FlashcardDisplay({ flashcards, onReset }: FlashcardDispl
     }
   }, [flipped, currentCard.id, studiedCards])
 
-  const handleExport = () => {
-    const dataStr = JSON.stringify(flashcards, null, 2)
-    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`
-    
-    const exportFileDefaultName = `flashcards-${new Date().toISOString().split('T')[0]}.json`
-    
+  const downloadFile = (content: string, filename: string, mimeType: string) => {
+    const dataUri = `data:${mimeType};charset=utf-8,${encodeURIComponent(content)}`
     const linkElement = document.createElement('a')
     linkElement.setAttribute('href', dataUri)
-    linkElement.setAttribute('download', exportFileDefaultName)
+    linkElement.setAttribute('download', filename)
     linkElement.click()
+  }
+
+  const handleExportJSON = () => {
+    const dataStr = JSON.stringify(flashcards, null, 2)
+    const filename = `flashcards-${new Date().toISOString().split('T')[0]}.json`
+    downloadFile(dataStr, filename, 'application/json')
+    setShowExportMenu(false)
+  }
+
+  const handleExportHTML = () => {
+    const dateStr = new Date().toISOString().split('T')[0]
+    
+    // Helper function to escape HTML special characters
+    const escapeHtml = (text: string) => {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+    }
+    
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Flashcards - ${dateStr}</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .flashcard-app {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+            font-weight: 700;
+        }
+        .metadata {
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+        .flashcard-container {
+            perspective: 1000px;
+            margin: 30px 0;
+        }
+        .flashcard {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+            margin: 0 auto;
+        }
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            border: 2px solid #e2e8f0;
+        }
+        .card-front {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .card-back {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            transform: rotateY(180deg);
+        }
+        .card-content {
+            font-size: 1.3em;
+            line-height: 1.5;
+            text-align: center;
+            word-wrap: break-word;
+        }
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+        }
+        .nav-button {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(66, 153, 225, 0.3);
+        }
+        .nav-button:hover {
+            background: #3182ce;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(66, 153, 225, 0.4);
+        }
+        .nav-button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .card-counter {
+            color: #4a5568;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        .flip-hint {
+            color: #718096;
+            font-size: 0.9em;
+            margin-top: 15px;
+        }
+        .keyboard-hints {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 10px;
+            font-size: 0.85em;
+            color: #4a5568;
+        }
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .flashcard-app { padding: 20px; }
+            .flashcard { height: 250px; }
+            .card-content { font-size: 1.1em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="flashcard-app">
+        <h1>📚 Interactive Flashcards</h1>
+        <div class="metadata">
+            Generated on ${new Date().toLocaleDateString()} • ${flashcards.length} cards
+        </div>
+        
+        <div class="flashcard-container">
+            <div class="flashcard" id="flashcard" onclick="flipCard()">
+                <div class="card-face card-front">
+                    <div class="card-content" id="front-content">
+                        ${escapeHtml(flashcards[0]?.front || 'No cards available')}
+                    </div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="card-content" id="back-content">
+                        ${escapeHtml(flashcards[0]?.back || 'No cards available')}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flip-hint">Click the card to flip it!</div>
+        
+        <div class="navigation">
+            <button class="nav-button" id="prev-btn" onclick="previousCard()">← Previous</button>
+            <div class="card-counter">
+                <span id="current-card">1</span> of ${flashcards.length}
+            </div>
+            <button class="nav-button" id="next-btn" onclick="nextCard()">Next →</button>
+        </div>
+        
+        <div class="keyboard-hints">
+            <strong>Keyboard shortcuts:</strong> Space/Enter = Flip • ← → = Navigate • R = Reset
+        </div>
+    </div>
+
+    <script>
+        const flashcards = ${JSON.stringify(flashcards.map(card => ({ front: escapeHtml(card.front), back: escapeHtml(card.back) })))};
+        let currentIndex = 0;
+        let isFlipped = false;
+
+        function updateCard() {
+            const frontContent = document.getElementById('front-content');
+            const backContent = document.getElementById('back-content');
+            const currentCardSpan = document.getElementById('current-card');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            
+            if (flashcards[currentIndex]) {
+                frontContent.innerHTML = flashcards[currentIndex].front;
+                backContent.innerHTML = flashcards[currentIndex].back;
+            }
+            
+            currentCardSpan.textContent = currentIndex + 1;
+            
+            prevBtn.disabled = currentIndex === 0;
+            nextBtn.disabled = currentIndex === flashcards.length - 1;
+            
+            // Reset flip state when changing cards
+            const flashcard = document.getElementById('flashcard');
+            flashcard.classList.remove('flipped');
+            isFlipped = false;
+        }
+
+        function flipCard() {
+            const flashcard = document.getElementById('flashcard');
+            flashcard.classList.toggle('flipped');
+            isFlipped = !isFlipped;
+        }
+
+        function nextCard() {
+            if (currentIndex < flashcards.length - 1) {
+                currentIndex++;
+                updateCard();
+            }
+        }
+
+        function previousCard() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateCard();
+            }
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', function(e) {
+            switch(e.key) {
+                case ' ':
+                case 'Enter':
+                    e.preventDefault();
+                    flipCard();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    previousCard();
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    nextCard();
+                    break;
+                case 'r':
+                case 'R':
+                    currentIndex = 0;
+                    updateCard();
+                    break;
+            }
+        });
+
+        // Initialize
+        updateCard();
+    </script>
+</body>
+</html>`
+    
+    const filename = `interactive-flashcards-${dateStr}.html`
+    downloadFile(html, filename, 'text/html')
+    setShowExportMenu(false)
+  }
+
+  const handleExportText = () => {
+    const dateStr = new Date().toISOString().split('T')[0]
+    const text = `FLASHCARDS
+Generated on ${new Date().toLocaleDateString()}
+Total cards: ${flashcards.length}
+
+${flashcards.map((card, index) => `
+Card ${index + 1} of ${flashcards.length}
+Q: ${card.front}
+A: ${card.back}
+${'='.repeat(50)}`).join('\n')}`
+    
+    const filename = `flashcards-${dateStr}.txt`
+    downloadFile(text, filename, 'text/plain')
+    setShowExportMenu(false)
   }
 
   useEffect(() => {
@@ -66,6 +358,9 @@ export default function FlashcardDisplay({ flashcards, onReset }: FlashcardDispl
           e.preventDefault()
           handleNext()
           break
+        case 'Escape':
+          setShowExportMenu(false)
+          break
       }
     }
 
@@ -73,108 +368,186 @@ export default function FlashcardDisplay({ flashcards, onReset }: FlashcardDispl
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [handleFlip, handleNext, handlePrevious])
 
+  // Close export menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false)
+      }
+    }
+
+    if (showExportMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showExportMenu])
+
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md card-hover">
+        <div 
+          className="border-b border-gray-200 dark:border-gray-700"
+          style={{ padding: "var(--space-4)" }}
+        >
+          <div className="flex justify-between items-center">
             <button
               onClick={onReset}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100"
+              className="flex items-center text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 transition-colors text-body-sm"
+              style={{ gap: "var(--space-1)" }}
             >
-              <Home className="h-5 w-5" />
-              New Document
+              <Home className="h-4 w-4" />
+              Back to Upload
             </button>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600 dark:text-gray-300">
-              Card {currentIndex + 1} of {flashcards.length}
-            </span>
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
-            >
-              <Download className="h-4 w-4" />
-              Export
-            </button>
+            <div className="flex items-center" style={{ gap: "var(--space-3)" }}>
+              <span className="text-caption text-gray-600 dark:text-gray-400">
+                Card {currentIndex + 1} of {flashcards.length}
+              </span>
+              <div className="relative" ref={exportMenuRef}>
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="btn-secondary flex items-center"
+                  style={{ 
+                    gap: "var(--space-1)",
+                    padding: "var(--space-1) var(--space-2)",
+                    fontSize: "var(--font-size-xs)"
+                  }}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Export
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+                
+                {showExportMenu && (
+                  <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
+                    <button
+                      onClick={handleExportJSON}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded-t-lg text-gray-700 dark:text-gray-300"
+                    >
+                      JSON
+                    </button>
+                    <button
+                      onClick={handleExportHTML}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    >
+                      HTML
+                    </button>
+                    <button
+                      onClick={handleExportText}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded-b-lg text-gray-700 dark:text-gray-300"
+                    >
+                      Text
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="mb-4">
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+        <div style={{ padding: "var(--space-4)" }}>
+          <div style={{ marginBottom: "var(--space-3)" }}>
             <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
+              className="w-full bg-gray-200 dark:bg-gray-700 rounded-full"
+              style={{ height: "8px" }}
+            >
+              <div 
+                className="bg-black dark:bg-white rounded-full transition-all duration-300"
+                style={{ 
+                  width: `${progress}%`,
+                  height: "8px"
+                }}
+              />
+            </div>
+            <p className="text-caption text-gray-600 dark:text-gray-400" style={{ marginTop: "var(--space-1)" }}>
+              Progress: {studiedCards.size}/{flashcards.length} cards studied ({progress}%)
+            </p>
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-            Progress: {progress}% ({studiedCards.size}/{flashcards.length} cards studied)
-          </p>
-        </div>
 
-        <div className="relative h-96 mb-8">
-          <div
-            className={cn(
-              "absolute inset-0 w-full h-full transition-transform duration-500 cursor-pointer",
-              "transform-style-preserve-3d",
-              flipped ? "rotate-y-180" : ""
-            )}
-            onClick={handleFlip}
-            style={{
-              transformStyle: "preserve-3d",
-              transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+          <div 
+            className="relative cursor-pointer"
+            style={{ 
+              height: "24rem",
+              marginBottom: "var(--space-6)"
             }}
           >
-            <div 
-              className="absolute inset-0 w-full h-full bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-xl shadow-lg flex items-center justify-center p-8 backface-hidden"
-              style={{ backfaceVisibility: "hidden" }}
-            >
-              <p className="text-2xl md:text-3xl font-medium text-center text-gray-800 dark:text-gray-100">
-                {currentCard.front}
-              </p>
-            </div>
-            
-            <div 
-              className="absolute inset-0 w-full h-full bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 rounded-xl shadow-lg flex items-center justify-center p-8 backface-hidden rotate-y-180"
-              style={{ 
-                backfaceVisibility: "hidden",
-                transform: "rotateY(180deg)"
+            <div
+              className={cn(
+                "absolute inset-0 w-full h-full transition-transform duration-500 cursor-pointer",
+                "transform-style-preserve-3d",
+                flipped ? "rotate-y-180" : ""
+              )}
+              onClick={handleFlip}
+              style={{
+                transformStyle: "preserve-3d",
+                transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
               }}
             >
-              <p className="text-lg md:text-xl text-center text-gray-800 dark:text-gray-100">
-                {currentCard.back}
-              </p>
+              <div 
+                className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-lg shadow-lg flex items-center justify-center backface-hidden"
+                style={{ 
+                  backfaceVisibility: "hidden",
+                  padding: "var(--space-6)",
+                  borderRadius: "var(--radius-lg)"
+                }}
+              >
+                <p className="text-display-sm text-center text-gray-800 dark:text-gray-100">
+                  {currentCard.front}
+                </p>
+              </div>
+              
+              <div 
+                className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900 dark:to-indigo-800 rounded-lg shadow-lg flex items-center justify-center backface-hidden rotate-y-180"
+                style={{ 
+                  backfaceVisibility: "hidden",
+                  transform: "rotateY(180deg)",
+                  padding: "var(--space-6)",
+                  borderRadius: "var(--radius-lg)"
+                }}
+              >
+                <p className="text-heading-lg text-center text-gray-800 dark:text-gray-100">
+                  {currentCard.back}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex justify-center items-center gap-4">
-          <button
-            onClick={handlePrevious}
-            className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-          
-          <button
-            onClick={handleFlip}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <RotateCcw className="h-5 w-5" />
-            Flip Card
-          </button>
-          
-          <button
-            onClick={handleNext}
-            className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </button>
-        </div>
+          <div className="flex justify-center items-center" style={{ gap: "var(--space-3)" }}>
+            <button
+              onClick={handlePrevious}
+              className="btn-secondary rounded-full"
+              style={{ 
+                padding: "var(--space-2)",
+                borderRadius: "50%"
+              }}
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            
+            <button
+              onClick={handleFlip}
+              className="btn-primary flex items-center"
+              style={{ gap: "var(--space-1)" }}
+            >
+              <RotateCcw className="h-4 w-4" />
+              Flip Card
+            </button>
+            
+            <button
+              onClick={handleNext}
+              className="btn-secondary rounded-full"
+              style={{ 
+                padding: "var(--space-2)",
+                borderRadius: "50%"
+              }}
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
 
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
-          Click the card or press Space to flip
-        </p>
+          <p className="text-center text-caption text-gray-500 dark:text-gray-400" style={{ marginTop: "var(--space-3)" }}>
+            Press Space to flip • Use arrow keys to navigate
+          </p>
+        </div>
       </div>
     </div>
   )

@@ -10,11 +10,25 @@ export async function generateFlashcards(text: string): Promise<Flashcard[]> {
     apiKey: process.env.OPENAI_API_KEY,
   })
 
+  // Safety check: truncate if text is still too long (backup safety net)
+  const maxChars = 45000 // Conservative limit to ensure we stay under token limits
+  let processedText = text
+  
+  if (text.length > maxChars) {
+    // Try to truncate at a sentence boundary
+    processedText = text.substring(0, maxChars)
+    const lastSentence = processedText.lastIndexOf('. ')
+    if (lastSentence > maxChars * 0.8) {
+      processedText = processedText.substring(0, lastSentence + 1)
+    }
+    console.log(`Flashcard generation: Text truncated from ${text.length} to ${processedText.length} characters`)
+  }
+
   const prompt = `You are tasked with extracting flashcard content from a given text chunk. Your goal is to identify key terms and their corresponding definitions or explanations that would be suitable for creating flashcards.
 
 Here's the text chunk you need to analyze:
 <text_chunk>
-${text}
+${processedText}
 </text_chunk>
 
 Guidelines for extracting flashcard content:

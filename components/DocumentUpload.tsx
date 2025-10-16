@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Upload, FileText, Loader2 } from "lucide-react"
+import { Upload, FileText, Loader2, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Flashcard } from "@/lib/types"
 
@@ -14,11 +14,11 @@ interface DocumentUploadProps {
 export default function DocumentUpload({ 
   onFlashcardsGenerated, 
   isLoading, 
-  setIsLoading 
+  setIsLoading
 }: DocumentUploadProps) {
-  const [file, setFile] = useState<File | null>(null)
   const [textContent, setTextContent] = useState("")
   const [activeTab, setActiveTab] = useState<"upload" | "paste">("upload")
+  const [file, setFile] = useState<File | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [documentJSON, setDocumentJSON] = useState<any>(null)
   const [showJSON, setShowJSON] = useState(false)
@@ -27,6 +27,13 @@ export default function DocumentUpload({
     const selectedFile = e.target.files?.[0]
     if (selectedFile) {
       setFile(selectedFile)
+    }
+  }
+
+  const triggerFileInput = () => {
+    const fileInput = document.getElementById('file-input') as HTMLInputElement
+    if (fileInput) {
+      fileInput.click()
     }
   }
 
@@ -40,6 +47,7 @@ export default function DocumentUpload({
 
   const handleGenerate = async () => {
     setIsLoading(true)
+    
     try {
       const formData = new FormData()
       
@@ -79,131 +87,229 @@ export default function DocumentUpload({
     }
   }
 
+  const handleReset = () => {
+    const confirmed = window.confirm("Are you sure you want to remove the uploaded file? This will clear the current document.")
+    if (confirmed) {
+      setFile(null)
+      setDocumentJSON(null)
+      setShowJSON(false)
+      setTextContent("")
+    }
+  }
+
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-        <div className="flex mb-6 border-b border-gray-200 dark:border-gray-700">
-          <button
-            onClick={() => setActiveTab("upload")}
-            className={cn(
-              "px-4 py-2 font-medium transition-colors",
-              activeTab === "upload"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 hover:text-gray-700"
-            )}
-          >
-            Upload Document
-          </button>
-          <button
-            onClick={() => setActiveTab("paste")}
-            className={cn(
-              "px-4 py-2 font-medium transition-colors ml-4",
-              activeTab === "paste"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 hover:text-gray-700"
-            )}
-          >
-            Paste Text
-          </button>
-        </div>
-
-        {activeTab === "upload" ? (
-          <div
-            onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
-            className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-blue-400 transition-colors"
-          >
-            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-600 dark:text-gray-300 mb-2">
-              Drag & drop your document here, or
-            </p>
-            <label className="cursor-pointer">
-              <span className="text-blue-600 hover:text-blue-700 font-medium">
-                browse files
-              </span>
-              <input
-                type="file"
-                className="hidden"
-                onChange={handleFileChange}
-                accept=".pdf,.txt,.doc,.docx,.json"
-              />
-            </label>
-            <p className="text-sm text-gray-500 mt-2">
-              Supports PDF, TXT, DOC, DOCX, JSON
-            </p>
-            {file && (
-              <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center gap-2">
-                <FileText className="h-4 w-4" />
-                <span className="text-sm font-medium">{file.name}</span>
+    <div className="h-full">
+      <div className="h-full bg-white dark:bg-black rounded-2xl border border-gray-300 dark:border-gray-700 shadow-xl card-hover flex flex-col" style={{ 
+        boxShadow: "0 20px 60px rgba(0, 0, 0, 0.15)", 
+        borderRadius: "var(--radius-xl)" 
+      }}>
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="-mb-px flex">
+            <button
+              onClick={() => setActiveTab("upload")}
+              className={cn(
+                "flex-1 text-body-sm font-medium border-b-2 transition-all duration-300 relative",
+                activeTab === "upload"
+                  ? "border-black dark:border-white text-black dark:text-white"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              )}
+              style={{ 
+                padding: "var(--space-3) var(--space-4)"
+              }}
+            >
+              <div className="flex items-center justify-center" style={{ gap: "var(--space-2)" }}>
+                <Upload className="h-4 w-4" />
+                Upload Document
               </div>
-            )}
-          </div>
-        ) : (
-          <div>
-            <textarea
-              value={textContent}
-              onChange={(e) => setTextContent(e.target.value)}
-              placeholder="Paste your text content here..."
-              className="w-full h-64 p-4 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
-            />
-            <p className="text-sm text-gray-500 mt-2">
-              Paste any text content to generate flashcards
-            </p>
-          </div>
-        )}
+            </button>
+            <button
+              onClick={() => setActiveTab("paste")}
+              className={cn(
+                "flex-1 text-body-sm font-medium border-b-2 transition-all duration-300 relative",
+                activeTab === "paste"
+                  ? "border-black dark:border-white text-black dark:text-white"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              )}
+              style={{ 
+                padding: "var(--space-3) var(--space-4)"
+              }}
+            >
+              <div className="flex items-center justify-center" style={{ gap: "var(--space-2)" }}>
+                <FileText className="h-4 w-4" />
+                Paste Text
+              </div>
+            </button>
+          </nav>
+        </div>
+        
+        <div className="flex-1 flex flex-col" style={{ padding: "var(--space-6)" }}>
+          {activeTab === "upload" ? (
+            <div
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+              onClick={triggerFileInput}
+              className="border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-lg text-center hover:border-black dark:hover:border-white hover:bg-gray-50 dark:hover:bg-gray-900 transition-all duration-300 group flex items-center justify-center min-h-[500px] cursor-pointer bg-gray-50/50 dark:bg-gray-900/50"
+              style={{ 
+                padding: "var(--space-8)",
+                borderRadius: "var(--radius-xl)"
+              }}
+            >
+              <div className="text-center">
+                <div className="mx-auto w-20 h-20 bg-black dark:bg-white rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-lg" style={{ marginBottom: "var(--space-4)" }}>
+                  <Upload className="h-10 w-10 text-white dark:text-black" />
+                </div>
+                <h3 className="text-2xl font-bold text-black dark:text-white" style={{ marginBottom: "var(--space-2)" }}>
+                  Upload your document
+                </h3>
+                <p className="text-lg text-gray-600 dark:text-gray-400" style={{ marginBottom: "var(--space-4)" }}>
+                  Drag and drop your file here, or choose an option below
+                </p>
+                
+                {/* Upload Buttons */}
+                <div className="flex gap-4 justify-center" style={{ marginBottom: "var(--space-4)" }}>
+                  <button
+                    onClick={triggerFileInput}
+                    className="flex items-center gap-2 px-6 py-3 bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                  >
+                    <Upload className="h-5 w-5" />
+                    Choose File
+                  </button>
+                  <button
+                    onClick={triggerFileInput}
+                    className="flex items-center gap-2 px-6 py-3 bg-gray-800 dark:bg-gray-200 hover:bg-black dark:hover:bg-white text-white dark:text-black rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                  >
+                    <FileText className="h-5 w-5" />
+                    Browse Documents
+                  </button>
+                </div>
+                
+                <input
+                  id="file-input"
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileChange}
+                  accept=".pdf,.txt,.doc,.docx,.json"
+                />
+                
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                  Supported formats: PDF, TXT, DOC, DOCX, JSON
+                </p>
+              </div>
+              {file && (
+                <div 
+                  className="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg flex items-center justify-between animate-in"
+                  style={{ 
+                    marginTop: "var(--space-4)",
+                    padding: "var(--space-3)",
+                    borderRadius: "var(--radius-lg)"
+                  }}
+                >
+                  <div className="flex items-center" style={{ gap: "var(--space-2)" }}>
+                    <div className="w-8 h-8 bg-black dark:bg-white rounded-md flex items-center justify-center">
+                      <FileText className="h-4 w-4 text-white dark:text-black" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-body-sm font-medium text-black dark:text-white">{file.name}</p>
+                      <p className="text-caption text-gray-600 dark:text-gray-400">Ready to generate flashcards</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleReset}
+                    className="flex items-center gap-1 px-2 py-1 text-caption text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800 rounded transition-colors"
+                    title="Remove uploaded file"
+                  >
+                    <X className="h-3 w-3" />
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col">
+              <div className="relative flex-1">
+                <textarea
+                  value={textContent}
+                  onChange={(e) => setTextContent(e.target.value)}
+                  placeholder="Paste your study material here... 
 
-        <div className="mt-6 space-y-3">
-          <button
-            onClick={handleGenerate}
-            disabled={isLoading || (!file && !textContent)}
-            className={cn(
-              "w-full py-3 px-4 rounded-lg font-medium transition-all",
-              "flex items-center justify-center gap-2",
-              isLoading || (!file && !textContent)
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-            )}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Generating flashcards...
-              </>
-            ) : (
-              "Generate Flashcards"
-            )}
-          </button>
-          
-          {documentJSON && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowJSON(!showJSON)}
-                className="flex-1 py-2 px-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
-              >
-                {showJSON ? "Hide" : "View"} Document JSON
-              </button>
-              <button
-                onClick={() => {
-                  const dataStr = JSON.stringify(documentJSON, null, 2)
-                  const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`
-                  const linkElement = document.createElement('a')
-                  linkElement.setAttribute('href', dataUri)
-                  linkElement.setAttribute('download', `${documentJSON.metadata.title}-structure.json`)
-                  linkElement.click()
-                }}
-                className="px-4 py-2 bg-green-100 hover:bg-green-200 rounded-lg text-sm font-medium transition-colors"
-              >
-                Download JSON
-              </button>
+Examples:
+• Course notes and lecture content
+• Book chapters or articles  
+• Study guides and summaries
+• Any educational text content"
+                  className="w-full h-full border border-gray-300 dark:border-gray-600 resize-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white dark:bg-gray-700 dark:text-gray-100 text-body-md transition-all duration-200"
+                  style={{ 
+                    minHeight: "20rem",
+                    padding: "var(--space-4)",
+                    borderRadius: "var(--radius-lg)"
+                  }}
+                />
+                {textContent && (
+                  <div className="absolute bottom-3 right-3 text-caption text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded">
+                    {textContent.length} characters
+                  </div>
+                )}
+              </div>
+              <p className="text-body-sm text-gray-600 dark:text-gray-400" style={{ marginTop: "var(--space-2)" }}>
+                Paste any educational text content to automatically generate interactive flashcards
+              </p>
             </div>
           )}
+
+          <div className="flex justify-end" style={{ marginTop: "var(--space-4)" }}>
+            <button
+              onClick={handleGenerate}
+              disabled={isLoading || (!file && !textContent)}
+              className={cn(
+                "btn-primary flex items-center gap-2 transition-all duration-200",
+                isLoading || (!file && !textContent)
+                  ? "opacity-50 cursor-not-allowed transform-none shadow-none"
+                  : ""
+              )}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                "Generate Flashcards"
+              )}
+            </button>
+          </div>
           
-          {showJSON && documentJSON && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg max-h-96 overflow-y-auto">
-              <h4 className="font-semibold mb-2">Document Structure:</h4>
-              <pre className="text-xs text-gray-700 whitespace-pre-wrap">
-                {JSON.stringify(documentJSON, null, 2)}
-              </pre>
+          {documentJSON && (
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowJSON(!showJSON)}
+                  className="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  {showJSON ? "Hide" : "View"} Document Structure
+                </button>
+                <span className="text-gray-400">•</span>
+                <button
+                  onClick={() => {
+                    const dataStr = JSON.stringify(documentJSON, null, 2)
+                    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`
+                    const linkElement = document.createElement('a')
+                    linkElement.setAttribute('href', dataUri)
+                    linkElement.setAttribute('download', `${documentJSON.metadata.title}-structure.json`)
+                    linkElement.click()
+                  }}
+                  className="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  Download JSON
+                </button>
+              </div>
+              
+              {showJSON && (
+                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg max-h-64 overflow-y-auto">
+                  <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    {JSON.stringify(documentJSON, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
           )}
         </div>

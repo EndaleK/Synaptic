@@ -1,0 +1,10 @@
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // Minimal configuration to avoid any conflicts
+  experimental: {},
+  webpack: undefined,
+  rewrites: undefined,
+  transpilePackages: []
+}
+
+module.exports = nextConfig
