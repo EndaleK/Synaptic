@@ -120,9 +120,9 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
           onClick={() => setShowModeSelector(true)}
           disabled={document.processing_status !== 'completed'}
           className={cn(
-            "w-full py-2 px-4 bg-black dark:bg-white text-white dark:text-black rounded-lg font-medium transition-all",
+            "w-full py-2 px-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium transition-all shadow-lg shadow-purple-500/30",
             document.processing_status === 'completed'
-              ? "hover:bg-gray-800 dark:hover:bg-gray-200"
+              ? "hover:from-purple-600 hover:to-pink-600 hover:shadow-xl"
               : "opacity-50 cursor-not-allowed"
           )}
         >
@@ -148,7 +148,7 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
                 className={cn(
                   "flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all",
                   mode.available
-                    ? "border-gray-200 dark:border-gray-700 hover:border-black dark:hover:border-white hover:bg-gray-50 dark:hover:bg-gray-800"
+                    ? "border-purple-200 dark:border-purple-800 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20"
                     : "border-gray-100 dark:border-gray-800 opacity-50 cursor-not-allowed"
                 )}
               >

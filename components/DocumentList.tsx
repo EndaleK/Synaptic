@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Search, SlidersHorizontal, FileX } from "lucide-react"
+import { Search, SlidersHorizontal } from "lucide-react"
 import DocumentCard from "./DocumentCard"
+import { NoDocumentsEmptyState, NoSearchResultsEmptyState } from "./EmptyState"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { cn } from "@/lib/utils"
 
@@ -46,7 +47,7 @@ export default function DocumentList({
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-gray-300 border-t-black dark:border-gray-700 dark:border-t-white rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-500 dark:border-purple-800 dark:border-t-purple-400 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading your documents...</p>
         </div>
       </div>
@@ -55,24 +56,8 @@ export default function DocumentList({
 
   if (documents.length === 0) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center max-w-md">
-          <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-            <FileX className="w-12 h-12 text-gray-400" />
-          </div>
-          <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
-            No documents yet
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Upload your first document to get started with AI-powered learning!
-          </p>
-          <button
-            onClick={onRefresh}
-            className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black rounded-lg font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all"
-          >
-            Refresh
-          </button>
-        </div>
+      <div className="py-12">
+        <NoDocumentsEmptyState onUpload={onRefresh} />
       </div>
     )
   }
@@ -89,7 +74,7 @@ export default function DocumentList({
             placeholder="Search documents..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-black dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent transition-all"
+            className="w-full pl-10 pr-4 py-2.5 border border-purple-200 dark:border-purple-800 rounded-lg bg-white dark:bg-gray-900 text-black dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-all"
           />
         </div>
 
@@ -97,10 +82,10 @@ export default function DocumentList({
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={cn(
-            "flex items-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg font-medium transition-all",
+            "flex items-center gap-2 px-4 py-2.5 border rounded-lg font-medium transition-all",
             showFilters
-              ? "bg-black dark:bg-white text-white dark:text-black"
-              : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+              ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white border-transparent shadow-lg"
+              : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-900/20"
           )}
         >
           <SlidersHorizontal className="w-5 h-5" />
@@ -128,8 +113,8 @@ export default function DocumentList({
                     className={cn(
                       "px-4 py-2 rounded-lg text-sm font-medium transition-all",
                       sortBy === option.value
-                        ? "bg-black dark:bg-white text-white dark:text-black"
-                        : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md"
+                        : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 border border-purple-200 dark:border-purple-800"
                     )}
                   >
                     {option.label}
@@ -162,11 +147,10 @@ export default function DocumentList({
 
       {/* Document Grid */}
       {filteredDocuments.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">
-            No documents match your search
-          </p>
-        </div>
+        <NoSearchResultsEmptyState
+          query={searchTerm}
+          onClear={() => setSearchTerm("")}
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredDocuments.map((document) => (

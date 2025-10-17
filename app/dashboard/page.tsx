@@ -34,7 +34,7 @@ export default function DashboardPage() {
   const [showAssessment, setShowAssessment] = useState(false)
   const [isCheckingProfile, setIsCheckingProfile] = useState(true)
   const hasCheckedProfile = useRef(false)
-  const { activeMode } = useUIStore()
+  const { activeMode, setActiveMode } = useUIStore()
   const {
     hasCompletedAssessment,
     setHasCompletedAssessment,

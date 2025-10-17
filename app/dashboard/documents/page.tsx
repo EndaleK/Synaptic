@@ -5,11 +5,14 @@ import { useRouter } from "next/navigation"
 import { Upload, RefreshCw } from "lucide-react"
 import DocumentList from "@/components/DocumentList"
 import DocumentUploadModal from "@/components/DocumentUploadModal"
+import Breadcrumb, { documentsBreadcrumb } from "@/components/Breadcrumb"
+import { useToast } from "@/components/ToastContainer"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { useDocumentStore, useUIStore } from "@/lib/store/useStore"
 
 export default function DocumentsPage() {
   const router = useRouter()
+  const toast = useToast()
   const [documents, setDocuments] = useState<Document[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -52,7 +55,7 @@ export default function DocumentsPage() {
       }
 
       if (document.processing_status !== 'completed') {
-        alert('This document is still processing. Please wait.')
+        toast.warning('This document is still processing. Please wait.')
         return
       }
 
@@ -72,7 +75,7 @@ export default function DocumentsPage() {
       router.push('/dashboard')
     } catch (err) {
       console.error('Error selecting document:', err)
-      alert(err instanceof Error ? err.message : 'Failed to open document')
+      toast.error(err instanceof Error ? err.message : 'Failed to open document')
     }
   }
 
@@ -88,9 +91,10 @@ export default function DocumentsPage() {
 
       // Remove from local state
       setDocuments(prev => prev.filter(doc => doc.id !== documentId))
+      toast.success('Document deleted successfully')
     } catch (err) {
       console.error('Error deleting document:', err)
-      alert(err instanceof Error ? err.message : 'Failed to delete document')
+      toast.error(err instanceof Error ? err.message : 'Failed to delete document')
       throw err
     }
   }
@@ -102,15 +106,19 @@ export default function DocumentsPage() {
   const handleUploadSuccess = () => {
     // Refresh the documents list after successful upload
     fetchDocuments()
+    toast.success('Document uploaded successfully')
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Breadcrumb */}
+        <Breadcrumb items={documentsBreadcrumb} className="mb-6" />
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-black dark:text-white mb-2">
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500 mb-2">
               My Documents
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
@@ -122,7 +130,7 @@ export default function DocumentsPage() {
             <button
               onClick={fetchDocuments}
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg font-medium hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-all disabled:opacity-50 border border-purple-200 dark:border-purple-800"
               title="Refresh documents"
             >
               <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -131,7 +139,7 @@ export default function DocumentsPage() {
 
             <button
               onClick={handleUploadClick}
-              className="flex items-center gap-2 px-6 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-lg font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all shadow-lg hover:shadow-xl"
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:shadow-xl transition-all shadow-lg"
             >
               <Upload className="w-5 h-5" />
               Upload Document

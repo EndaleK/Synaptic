@@ -154,6 +154,15 @@ body {
   }
 }
 
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 /* Typography utilities */
 .text-display-lg {
   font-size: var(--font-size-4xl);

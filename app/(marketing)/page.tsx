@@ -31,7 +31,7 @@ export default function LandingPage() {
             <h1 className="text-5xl md:text-7xl font-bold text-black dark:text-white mb-6 leading-tight">
               Learn Smarter,
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-600 to-black dark:from-gray-400 dark:to-white">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
                 Not Harder
               </span>
             </h1>
@@ -46,14 +46,14 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link
                 href={isSignedIn ? "/dashboard" : "/sign-in"}
-                className="group px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-xl font-semibold hover:scale-105 transition-all shadow-xl flex items-center gap-2"
+                className="group px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2"
               >
                 {isSignedIn ? "Go to Dashboard" : "Get Started Free"}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="#features"
-                className="px-8 py-4 bg-gray-100 dark:bg-gray-800 text-black dark:text-white rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                className="px-8 py-4 bg-white dark:bg-gray-800 text-purple-600 dark:text-white border-2 border-purple-200 dark:border-gray-700 rounded-xl font-semibold hover:bg-purple-50 dark:hover:bg-gray-700 transition-all"
               >
                 Explore Features
               </Link>
@@ -84,8 +84,8 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature 1: Flashcards */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-black dark:bg-white rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <BookOpen className="w-7 h-7 text-white dark:text-black" />
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <BookOpen className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
                 Smart Flashcards
@@ -98,8 +98,8 @@ export default function LandingPage() {
 
             {/* Feature 2: Chat */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-black dark:bg-white rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <MessageSquare className="w-7 h-7 text-white dark:text-black" />
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <MessageSquare className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
                 Socratic Teaching
@@ -112,8 +112,8 @@ export default function LandingPage() {
 
             {/* Feature 3: Podcasts */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-black dark:bg-white rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Mic className="w-7 h-7 text-white dark:text-black" />
+              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Mic className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
                 Audio Learning
@@ -126,8 +126,8 @@ export default function LandingPage() {
 
             {/* Feature 4: Mind Maps */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-black dark:bg-white rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Network className="w-7 h-7 text-white dark:text-black" />
+              <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Network className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
                 Mind Mapping
@@ -140,8 +140,8 @@ export default function LandingPage() {
 
             {/* Feature 5: Learning Style */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-black dark:bg-white rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Brain className="w-7 h-7 text-white dark:text-black" />
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Brain className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
                 Adaptive AI
@@ -154,8 +154,8 @@ export default function LandingPage() {
 
             {/* Feature 6: Multi-format */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-black dark:bg-white rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Sparkles className="w-7 h-7 text-white dark:text-black" />
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Sparkles className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
                 Any Document
@@ -225,26 +225,35 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-black to-gray-800 dark:from-white dark:to-gray-200">
+      <section className="py-20 bg-gradient-to-r from-purple-500 to-pink-500">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white dark:text-black mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
             Ready to Transform Your Learning?
           </h2>
-          <p className="text-xl text-gray-300 dark:text-gray-700 mb-8">
+          <p className="text-xl text-white/90 mb-8">
             Join thousands of learners who study smarter with AI
           </p>
           <Link
             href={isSignedIn ? "/dashboard" : "/sign-in"}
-            className="inline-flex items-center gap-2 px-8 py-4 bg-white dark:bg-black text-black dark:text-white rounded-xl font-semibold hover:scale-105 transition-all shadow-xl"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-white text-purple-600 rounded-xl font-semibold hover:scale-105 hover:shadow-2xl transition-all shadow-xl"
           >
             {isSignedIn ? "Go to Dashboard" : "Get Started Free"}
             <ArrowRight className="w-5 h-5" />
           </Link>
-          <p className="mt-4 text-sm text-gray-400 dark:text-gray-600">
+          <p className="mt-4 text-sm text-white/80">
             No credit card required • Free tier available
           </p>
         </div>
       </section>
+
+      {/* Copyright Footer */}
+      <footer className="py-6 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+            © 2025 ካንእ AI Study Guide
+          </p>
+        </div>
+      </footer>
     </div>
   )
 }

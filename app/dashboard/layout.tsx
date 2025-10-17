@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { UserButton, useUser } from "@clerk/nextjs"
 import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut } from "lucide-react"
 import { useState, useEffect } from "react"
@@ -14,6 +14,7 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { user} = useUser()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -64,6 +65,10 @@ export default function DashboardLayout({
     }
     setActiveMode(modeId as any)
     setSidebarOpen(false)
+    // Navigate to dashboard if not already there
+    if (pathname !== '/dashboard') {
+      router.push('/dashboard')
+    }
   }
 
   return (
@@ -85,17 +90,31 @@ export default function DashboardLayout({
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center gap-2 group">
-              {!sidebarCollapsed && (
-                <span className="text-xl font-bold text-black dark:text-white">
-                  AI Learning
-                </span>
+            <Link href="/dashboard" className="flex items-center gap-3 group">
+              {!sidebarCollapsed ? (
+                <>
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-xl font-bold">AI</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                      AI Learning
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Study Smarter
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                  <span className="text-white text-xl font-bold">AI</span>
+                </div>
               )}
             </Link>
             {/* Collapse button - desktop only */}
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="hidden lg:flex p-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
+              className="hidden lg:flex p-2 text-gray-600 dark:text-gray-400 hover:text-purple-500 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
               title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {sidebarCollapsed ? (
@@ -124,8 +143,8 @@ export default function DashboardLayout({
                     }}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
                       isActive
-                        ? "bg-black dark:bg-white text-white dark:text-black"
-                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800"
+                        ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400"
                     } ${sidebarCollapsed ? "justify-center" : ""}`}
                     title={sidebarCollapsed ? item.name : undefined}
                   >
@@ -139,9 +158,15 @@ export default function DashboardLayout({
             {/* Learning Modes Section */}
             <div>
               {!sidebarCollapsed && (
-                <h3 className="px-4 mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Learning Modes
-                </h3>
+                <div className="px-4 mb-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-px flex-1 bg-gradient-to-r from-purple-500/20 to-transparent"></div>
+                    <h3 className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
+                      Learning Modes
+                    </h3>
+                    <div className="h-px flex-1 bg-gradient-to-l from-purple-500/20 to-transparent"></div>
+                  </div>
+                </div>
               )}
               <div className="space-y-1">
                 {learningModes.map((mode) => {
@@ -152,9 +177,11 @@ export default function DashboardLayout({
                       onClick={() => handleModeClick(mode.id, mode.comingSoon)}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all text-left ${
                         isActive
-                          ? "bg-black dark:bg-white text-white dark:text-black"
-                          : "text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800"
-                      } ${mode.comingSoon ? "opacity-60" : ""} ${sidebarCollapsed ? "justify-center" : ""}`}
+                          ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30"
+                          : mode.comingSoon
+                          ? "text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                          : "text-gray-600 dark:text-gray-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400"
+                      } ${sidebarCollapsed ? "justify-center" : ""}`}
                       title={sidebarCollapsed ? mode.name : undefined}
                     >
                       <mode.icon className="w-5 h-5" />
@@ -183,8 +210,8 @@ export default function DashboardLayout({
               onClick={() => setSidebarOpen(false)}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
                 pathname === "/dashboard/settings"
-                  ? "bg-black dark:bg-white text-white dark:text-black"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800"
+                  ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400"
               } ${sidebarCollapsed ? "justify-center" : ""}`}
               title={sidebarCollapsed ? "Settings" : undefined}
             >
@@ -197,40 +224,43 @@ export default function DashboardLayout({
               {/* Theme Toggle Button */}
               <button
                 onClick={toggleTheme}
-                className={`flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl transition-all font-medium ${
+                className={`flex items-center justify-center gap-2 px-4 py-3 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl transition-all font-medium border border-purple-200 dark:border-purple-800 ${
                   sidebarCollapsed ? "w-full" : "flex-1"
                 }`}
                 title={sidebarCollapsed ? (isDarkMode ? "Light mode" : "Dark mode") : undefined}
               >
                 {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                {!sidebarCollapsed && <span className="text-sm">{isDarkMode ? "Light" : "Dark"}</span>}
+                {!sidebarCollapsed && <span className="text-sm font-medium">{isDarkMode ? "Light" : "Dark"}</span>}
               </button>
 
               {/* Sign Out Button */}
               <SignOutButton>
                 <button
-                  className={`flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all font-medium ${
+                  className={`flex items-center justify-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl transition-all font-medium border border-red-200 dark:border-red-800 ${
                     sidebarCollapsed ? "w-full" : "flex-1"
                   }`}
                   title={sidebarCollapsed ? "Sign out" : undefined}
                 >
                   <LogOut className="w-5 h-5" />
-                  {!sidebarCollapsed && <span className="text-sm">Sign Out</span>}
+                  {!sidebarCollapsed && <span className="text-sm font-medium">Sign Out</span>}
                 </button>
               </SignOutButton>
             </div>
 
             {/* User Info */}
-            <div className={`flex items-center gap-3 px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl ${
+            <div className={`flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-100 dark:border-purple-800/50 ${
               sidebarCollapsed ? "justify-center" : ""
             }`}>
-              <UserButton afterSignOutUrl="/" />
+              <div className="relative">
+                <UserButton afterSignOutUrl="/" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
+              </div>
               {!sidebarCollapsed && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-black dark:text-white truncate">
+                  <p className="text-sm font-semibold text-black dark:text-white truncate">
                     {user?.fullName || user?.username || "User"}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
                     {user?.primaryEmailAddress?.emailAddress}
                   </p>
                 </div>

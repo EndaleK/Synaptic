@@ -386,7 +386,7 @@ ${'='.repeat(50)}`).join('\n')}`
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md card-hover">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md card-hover border border-purple-100 dark:border-purple-900/30">
         <div 
           className="border-b border-gray-200 dark:border-gray-700"
           style={{ padding: "var(--space-4)" }}
@@ -405,7 +405,7 @@ ${'='.repeat(50)}`).join('\n')}`
                 <button
                   onClick={onRegenerate}
                   disabled={isRegenerating}
-                  className="flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors text-body-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors text-body-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ gap: "var(--space-1)" }}
                   title="Generate different flashcards from the same content"
                 >
@@ -462,13 +462,13 @@ ${'='.repeat(50)}`).join('\n')}`
 
         <div style={{ padding: "var(--space-4)" }}>
           <div style={{ marginBottom: "var(--space-3)" }}>
-            <div 
-              className="w-full bg-gray-200 dark:bg-gray-700 rounded-full"
+            <div
+              className="w-full bg-purple-100 dark:bg-purple-900/30 rounded-full"
               style={{ height: "8px" }}
             >
-              <div 
-                className="bg-black dark:bg-white rounded-full transition-all duration-300"
-                style={{ 
+              <div
+                className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300"
+                style={{
                   width: `${progress}%`,
                   height: "8px"
                 }}
@@ -498,8 +498,8 @@ ${'='.repeat(50)}`).join('\n')}`
                 transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
               }}
             >
-              <div 
-                className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-lg shadow-lg flex items-center justify-center backface-hidden"
+              <div
+                className="absolute inset-0 w-full h-full bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/40 dark:to-pink-900/40 rounded-lg shadow-lg flex items-center justify-center backface-hidden border-2 border-purple-200 dark:border-purple-700"
                 style={{ 
                   backfaceVisibility: "hidden",
                   padding: "var(--space-6)",
@@ -511,8 +511,8 @@ ${'='.repeat(50)}`).join('\n')}`
                 </p>
               </div>
               
-              <div 
-                className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900 dark:to-indigo-800 rounded-lg shadow-lg flex items-center justify-center backface-hidden rotate-y-180"
+              <div
+                className="absolute inset-0 w-full h-full bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/50 dark:to-purple-900/50 rounded-lg shadow-lg flex items-center justify-center backface-hidden rotate-y-180 border-2 border-pink-200 dark:border-pink-700"
                 style={{ 
                   backfaceVisibility: "hidden",
                   transform: "rotateY(180deg)",
