@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Upload, FileText, Loader2, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Flashcard } from "@/lib/types"
+import { useDocumentStore } from "@/lib/store/useStore"
 
 interface DocumentUploadProps {
   onFlashcardsGenerated: (flashcards: Flashcard[]) => void
@@ -11,9 +12,9 @@ interface DocumentUploadProps {
   setIsLoading: (loading: boolean) => void
 }
 
-export default function DocumentUpload({ 
-  onFlashcardsGenerated, 
-  isLoading, 
+export default function DocumentUpload({
+  onFlashcardsGenerated,
+  isLoading,
   setIsLoading
 }: DocumentUploadProps) {
   const [textContent, setTextContent] = useState("")
@@ -22,6 +23,50 @@ export default function DocumentUpload({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [documentJSON, setDocumentJSON] = useState<any>(null)
   const [showJSON, setShowJSON] = useState(false)
+  const { currentDocument, setCurrentDocument } = useDocumentStore()
+  const hasGeneratedFlashcards = useRef(false)
+
+  // Auto-generate flashcards from pre-loaded document
+  useEffect(() => {
+    const generateFromDocument = async () => {
+      if (currentDocument && !hasGeneratedFlashcards.current && !file) {
+        hasGeneratedFlashcards.current = true
+        setIsLoading(true)
+
+        try {
+          const formData = new FormData()
+          formData.append("text", currentDocument.content)
+          formData.append("mode", "text")
+
+          const response = await fetch("/api/generate-flashcards", {
+            method: "POST",
+            body: formData,
+          })
+
+          if (!response.ok) {
+            throw new Error("Failed to generate flashcards")
+          }
+
+          const data = await response.json()
+
+          // Store the JSON structure if available
+          if (data.documentJSON) {
+            setDocumentJSON(data.documentJSON)
+            console.log("Document JSON structure:", data.documentJSON)
+          }
+
+          onFlashcardsGenerated(data.flashcards)
+        } catch (error) {
+          console.error("Error generating flashcards:", error)
+          alert(error instanceof Error ? error.message : "Failed to generate flashcards")
+        } finally {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    generateFromDocument()
+  }, [currentDocument, file, setIsLoading, onFlashcardsGenerated])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -47,14 +92,35 @@ export default function DocumentUpload({
 
   const handleGenerate = async () => {
     setIsLoading(true)
-    
+
     try {
       const formData = new FormData()
-      
+
+      // Upload new file
       if (activeTab === "upload" && file) {
-        formData.append("file", file)
-        formData.append("mode", "file")
-      } else if (activeTab === "paste" && textContent) {
+        // Save document to Supabase
+        const docFormData = new FormData()
+        docFormData.append("file", file)
+
+        const docResponse = await fetch("/api/documents", {
+          method: "POST",
+          body: docFormData,
+        })
+
+        if (!docResponse.ok) {
+          const errorData = await docResponse.json()
+          throw new Error(errorData.error || "Failed to save document")
+        }
+
+        const docData = await docResponse.json()
+        console.log("Document saved:", docData.document)
+
+        // Use extracted text for flashcard generation
+        formData.append("text", docData.document.extracted_text || "")
+        formData.append("mode", "text")
+      }
+      // Paste text
+      else if (activeTab === "paste" && textContent) {
         formData.append("text", textContent)
         formData.append("mode", "text")
       } else {
@@ -71,13 +137,13 @@ export default function DocumentUpload({
       }
 
       const data = await response.json()
-      
+
       // Store the JSON structure if available
       if (data.documentJSON) {
         setDocumentJSON(data.documentJSON)
         console.log("Document JSON structure:", data.documentJSON)
       }
-      
+
       onFlashcardsGenerated(data.flashcards)
     } catch (error) {
       console.error("Error generating flashcards:", error)
@@ -94,6 +160,8 @@ export default function DocumentUpload({
       setDocumentJSON(null)
       setShowJSON(false)
       setTextContent("")
+      setCurrentDocument(null)
+      hasGeneratedFlashcards.current = false
     }
   }
 
@@ -144,61 +212,64 @@ export default function DocumentUpload({
         
         <div className="flex-1 flex flex-col" style={{ padding: "var(--space-6)" }}>
           {activeTab === "upload" ? (
-            <div
-              onDrop={handleDrop}
-              onDragOver={(e) => e.preventDefault()}
-              onClick={triggerFileInput}
-              className="border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-lg text-center hover:border-black dark:hover:border-white hover:bg-gray-50 dark:hover:bg-gray-900 transition-all duration-300 group flex items-center justify-center min-h-[500px] cursor-pointer bg-gray-50/50 dark:bg-gray-900/50"
-              style={{ 
-                padding: "var(--space-8)",
-                borderRadius: "var(--radius-xl)"
-              }}
-            >
-              <div className="text-center">
-                <div className="mx-auto w-20 h-20 bg-black dark:bg-white rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-lg" style={{ marginBottom: "var(--space-4)" }}>
-                  <Upload className="h-10 w-10 text-white dark:text-black" />
-                </div>
-                <h3 className="text-2xl font-bold text-black dark:text-white" style={{ marginBottom: "var(--space-2)" }}>
-                  Upload your document
-                </h3>
-                <p className="text-lg text-gray-600 dark:text-gray-400" style={{ marginBottom: "var(--space-4)" }}>
-                  Drag and drop your file here, or choose an option below
-                </p>
-                
-                {/* Upload Buttons */}
-                <div className="flex gap-4 justify-center" style={{ marginBottom: "var(--space-4)" }}>
-                  <button
+            <div className="flex-1 flex flex-col">
+              {/* Upload Area */}
+              <div
+                    onDrop={handleDrop}
+                    onDragOver={(e) => e.preventDefault()}
                     onClick={triggerFileInput}
-                    className="flex items-center gap-2 px-6 py-3 bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                    className="border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-lg text-center hover:border-black dark:hover:border-white hover:bg-gray-50 dark:hover:bg-gray-900 transition-all duration-300 group flex items-center justify-center min-h-[400px] cursor-pointer bg-gray-50/50 dark:bg-gray-900/50"
+                    style={{
+                      padding: "var(--space-8)",
+                      borderRadius: "var(--radius-xl)"
+                    }}
                   >
-                    <Upload className="h-5 w-5" />
-                    Choose File
-                  </button>
-                  <button
-                    onClick={triggerFileInput}
-                    className="flex items-center gap-2 px-6 py-3 bg-gray-800 dark:bg-gray-200 hover:bg-black dark:hover:bg-white text-white dark:text-black rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
-                  >
-                    <FileText className="h-5 w-5" />
-                    Browse Documents
-                  </button>
-                </div>
-                
-                <input
-                  id="file-input"
-                  type="file"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  accept=".pdf,.txt,.doc,.docx,.json"
-                />
-                
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                  Supported formats: PDF, TXT, DOC, DOCX, JSON
-                </p>
-              </div>
+                    <div className="text-center">
+                      <div className="mx-auto w-20 h-20 bg-black dark:bg-white rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-lg" style={{ marginBottom: "var(--space-4)" }}>
+                        <Upload className="h-10 w-10 text-white dark:text-black" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-black dark:text-white" style={{ marginBottom: "var(--space-2)" }}>
+                        Upload your document
+                      </h3>
+                      <p className="text-lg text-gray-600 dark:text-gray-400" style={{ marginBottom: "var(--space-4)" }}>
+                        Drag and drop your file here, or choose an option below
+                      </p>
+
+                      {/* Upload Buttons */}
+                      <div className="flex gap-4 justify-center" style={{ marginBottom: "var(--space-4)" }}>
+                        <button
+                          onClick={triggerFileInput}
+                          className="flex items-center gap-2 px-6 py-3 bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                        >
+                          <Upload className="h-5 w-5" />
+                          Choose File
+                        </button>
+                        <button
+                          onClick={triggerFileInput}
+                          className="flex items-center gap-2 px-6 py-3 bg-gray-800 dark:bg-gray-200 hover:bg-black dark:hover:bg-white text-white dark:text-black rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                        >
+                          <FileText className="h-5 w-5" />
+                          Browse Documents
+                        </button>
+                      </div>
+
+                      <input
+                        id="file-input"
+                        type="file"
+                        className="hidden"
+                        onChange={handleFileChange}
+                        accept=".pdf,.txt,.doc,.docx,.json"
+                      />
+
+                      <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                        Supported formats: PDF, TXT, DOC, DOCX, JSON
+                      </p>
+                    </div>
+                  </div>
               {file && (
-                <div 
+                <div
                   className="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg flex items-center justify-between animate-in"
-                  style={{ 
+                  style={{
                     marginTop: "var(--space-4)",
                     padding: "var(--space-3)",
                     borderRadius: "var(--radius-lg)"

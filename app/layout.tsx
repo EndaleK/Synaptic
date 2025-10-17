@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ClerkProvider } from '@clerk/nextjs';
 import ClientWrapper from "@/components/ClientWrapper";
 import "./globals.css";
 
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Flashcard Generator",
-  description: "Generate educational flashcards from documents using AI",
+  title: "AI Learning Platform - Study Smarter with AI",
+  description: "Transform your documents into flashcards, podcasts, and mind maps. AI-powered personalized learning tailored to your style.",
 };
 
 export default function RootLayout({
@@ -24,14 +25,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ClientWrapper>
-          {children}
-        </ClientWrapper>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
+          <ClientWrapper>
+            {children}
+          </ClientWrapper>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

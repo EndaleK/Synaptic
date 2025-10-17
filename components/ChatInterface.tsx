@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, FileText, Bot, User, Loader2, Upload, X, Eye, MessageCircle, SplitSquareHorizontal, ArrowDown, ArrowUp } from "lucide-react"
+import { Send, FileText, Bot, User, Loader2, Upload, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
+import { useDocumentStore } from "@/lib/store/useStore"
 
 const PDFViewer = dynamic(() => import("./PDFViewer"), {
   ssr: false,
@@ -11,7 +12,7 @@ const PDFViewer = dynamic(() => import("./PDFViewer"), {
     <div className="flex items-center justify-center h-96">
       <div className="text-center">
         <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-        <p className="text-body-sm text-gray-600 dark:text-gray-400">Loading PDF Viewer...</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Loading PDF Viewer...</p>
       </div>
     </div>
   )
@@ -30,15 +31,10 @@ interface ChatDocument {
   isProcessing: boolean
 }
 
-type ViewMode = "chat" | "pdf" | "split"
-
-interface ChatInterfaceProps {}
-
-export default function ChatInterface({}: ChatInterfaceProps = {}) {
+export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [viewMode, setViewMode] = useState<ViewMode>("chat")
   const [chatDocument, setChatDocument] = useState<ChatDocument>({
     file: null,
     content: "",
@@ -47,23 +43,92 @@ export default function ChatInterface({}: ChatInterfaceProps = {}) {
   const [isClient, setIsClient] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
-  const splitMessagesContainerRef = useRef<HTMLDivElement>(null)
-  const [showScrollToBottom, setShowScrollToBottom] = useState(false)
-  const [isAtTop, setIsAtTop] = useState(true)
+  const { currentDocument, setCurrentDocument } = useDocumentStore()
+  const hasLoadedDocument = useRef(false)
 
-  // Track if we're on the client to avoid hydration mismatches
   useEffect(() => {
     setIsClient(true)
   }, [])
 
-  // Generate client-safe IDs to avoid hydration mismatches
+  // Load document from store if available
+  useEffect(() => {
+    const loadDocument = async () => {
+      if (currentDocument && !hasLoadedDocument.current && !chatDocument.file) {
+        hasLoadedDocument.current = true
+
+        try {
+          let file: File
+
+          // For PDFs, fetch the original file from storage
+          if (currentDocument.fileType === 'application/pdf' && currentDocument.storagePath) {
+            setChatDocument({
+              file: null,
+              content: currentDocument.content,
+              isProcessing: true
+            })
+
+            const response = await fetch(`/api/documents/storage/${encodeURIComponent(currentDocument.storagePath)}`)
+
+            if (!response.ok) {
+              throw new Error('Failed to fetch PDF from storage')
+            }
+
+            const blob = await response.blob()
+            file = new File([blob], currentDocument.name, { type: 'application/pdf' })
+          } else {
+            // For other file types, create a file from the content
+            const blob = new Blob([currentDocument.content], { type: currentDocument.fileType || 'text/plain' })
+            file = new File([blob], currentDocument.name, { type: currentDocument.fileType || 'text/plain' })
+          }
+
+          setChatDocument({
+            file,
+            content: currentDocument.content,
+            isProcessing: false
+          })
+
+          // Set initial welcome message
+          const welcomeMessage: Message = {
+            id: Date.now().toString(),
+            content: `📄 Document loaded: ${currentDocument.name}. Ask me anything about this document!`,
+            type: "assistant",
+            timestamp: new Date()
+          }
+          setMessages([welcomeMessage])
+        } catch (error) {
+          console.error('Error loading document:', error)
+
+          // Fallback to text-only display
+          const textBlob = new Blob([currentDocument.content], { type: 'text/plain' })
+          const textFile = new File([textBlob], currentDocument.name, { type: 'text/plain' })
+
+          setChatDocument({
+            file: textFile,
+            content: currentDocument.content,
+            isProcessing: false
+          })
+
+          const errorMessage: Message = {
+            id: Date.now().toString(),
+            content: `⚠️ Could not load original ${currentDocument.fileType === 'application/pdf' ? 'PDF' : 'document'}. Showing text content instead. Ask me anything about this document!`,
+            type: "assistant",
+            timestamp: new Date()
+          }
+          setMessages([errorMessage])
+        }
+      }
+    }
+
+    loadDocument()
+  }, [currentDocument, chatDocument.file])
+
   const generateId = useCallback(() => {
     if (!isClient) return 'temp-id'
     return Date.now().toString()
   }, [isClient])
 
   const generateTimestamp = useCallback(() => {
-    if (!isClient) return new Date(0) // Use epoch time for SSR
+    if (!isClient) return new Date(0)
     return new Date()
   }, [isClient])
 
@@ -71,53 +136,21 @@ export default function ChatInterface({}: ChatInterfaceProps = {}) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
-  const scrollToTop = () => {
-    const container = messagesContainerRef.current || splitMessagesContainerRef.current
-    container?.scrollTo({ top: 0, behavior: "smooth" })
-  }
-
-  const handleScroll = useCallback(() => {
-    // Check both containers (split view and regular view)
-    const container = messagesContainerRef.current || splitMessagesContainerRef.current
-    if (!container) return
-
-    const { scrollTop, scrollHeight, clientHeight } = container
-    const isAtBottom = scrollHeight - scrollTop - clientHeight < 10
-    const isAtTopPosition = scrollTop < 10
-
-    setShowScrollToBottom(!isAtBottom && messages.length > 3)
-    setIsAtTop(isAtTopPosition)
-  }, [messages.length])
-
   useEffect(() => {
     scrollToBottom()
   }, [messages])
 
-  // Add scroll event listener
-  useEffect(() => {
-    const container = messagesContainerRef.current || splitMessagesContainerRef.current
-    if (!container) return
-
-    container.addEventListener('scroll', handleScroll)
-    handleScroll() // Initial check
-
-    return () => {
-      container.removeEventListener('scroll', handleScroll)
-    }
-  }, [handleScroll, viewMode])
-
-  // Watch for document changes and add system message
   useEffect(() => {
     if (chatDocument.file && messages.length === 0) {
       const fileMessage: Message = {
         id: generateId(),
-        content: `📄 Document loaded: ${chatDocument.file.name}. I can now answer questions about this document.`,
+        content: `📄 Document loaded: ${chatDocument.file.name}. Ask me anything about this document!`,
         type: "assistant",
         timestamp: generateTimestamp()
       }
       setMessages([fileMessage])
     }
-  }, [chatDocument.file, messages.length])
+  }, [chatDocument.file, messages.length, generateId, generateTimestamp])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -127,8 +160,6 @@ export default function ChatInterface({}: ChatInterfaceProps = {}) {
         content: "",
         isProcessing: true
       })
-      
-      // Extract text content for chat functionality
       extractDocumentContent(selectedFile)
     }
   }
@@ -149,85 +180,60 @@ export default function ChatInterface({}: ChatInterfaceProps = {}) {
         content: "",
         isProcessing: true
       })
-      
       extractDocumentContent(droppedFile)
     }
   }
 
   const extractDocumentContent = async (file: File) => {
     try {
+      // Save document to Supabase
       const formData = new FormData()
       formData.append("file", file)
-      formData.append("mode", "file")
 
-      const response = await fetch("/api/generate-flashcards", {
+      const response = await fetch("/api/documents", {
         method: "POST",
         body: formData,
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || "Failed to extract document content")
+        throw new Error(errorData.error || "Failed to save document")
       }
 
       const data = await response.json()
-      
-      console.log("Document extraction response:", data)
-      console.log("Extracted text length:", data.extractedText?.length || 0)
-      
+      const extractedText = data.document.extracted_text || ""
+
+      console.log("Document saved to Supabase:", data.document)
+
       setChatDocument(prev => ({
         ...prev,
-        content: data.extractedText || "",
+        content: extractedText,
         isProcessing: false
       }))
 
-      // Clear any previous messages and add welcome message
+      // Update global document store with the saved document ID
+      setCurrentDocument({
+        id: data.document.id,
+        name: file.name,
+        content: extractedText,
+        fileType: file.type,
+        storagePath: data.document.storage_path
+      })
+
       setMessages([])
-      
     } catch (error) {
       console.error("Error extracting document content:", error)
       const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
-      
-      // Check if this is a large file error
-      const isLargeFileError = errorMsg.includes('too large') || errorMsg.includes('100MB')
-      
+
       setChatDocument(prev => ({
         ...prev,
-        content: "", // No text content available
+        content: "",
         isProcessing: false
       }))
-      
-      let content = `I encountered an issue processing "${file.name}": ${errorMsg}`
-      
-      if (isLargeFileError) {
-        content += `
 
-📄 **Good news:** You can still view and read your PDF using the "View PDF" mode above!
-
-**Options for large files:**
-• Use the PDF viewer to read the document
-• Try the "Split" mode to view the PDF while asking questions  
-• Break the document into smaller sections (under 100MB each)
-• Convert to DOCX or TXT format if possible
-
-The PDF viewer works regardless of file size.`
-      } else {
-        content += `
-
-**Alternative options:**
-• Use the PDF viewer mode to read the document
-• Try uploading a DOCX or TXT version  
-• Ensure the PDF contains selectable (not scanned) text
-
-For best results with chat functionality:
-• DOCX files (most reliable)
-• TXT files
-• PDFs under 100MB with selectable text`
-      }
-      
       const errorMessage: Message = {
         id: generateId(),
-        content,
+        content: `I encountered an issue processing "${file.name}": ${errorMsg}\n\nPlease try uploading a different file or format.`,
         type: "assistant",
         timestamp: generateTimestamp()
       }
@@ -237,7 +243,7 @@ For best results with chat functionality:
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return
-    
+
     if (!chatDocument.file) {
       alert("Please upload a document first to start chatting.")
       return
@@ -255,12 +261,6 @@ For best results with chat functionality:
     setIsLoading(true)
 
     try {
-      console.log("Sending chat request with:")
-      console.log("- Message:", inputMessage)
-      console.log("- File name:", chatDocument.file?.name)
-      console.log("- Document content length:", chatDocument.content?.length || 0)
-      console.log("- Document content preview:", chatDocument.content?.substring(0, 200) + "...")
-      
       const response = await fetch("/api/chat-with-document", {
         method: "POST",
         headers: {
@@ -273,31 +273,22 @@ For best results with chat functionality:
         }),
       })
 
-      console.log("Chat API response status:", response.status)
-      console.log("Chat API response ok:", response.ok)
-      
       if (!response.ok) {
-        const errorText = await response.text()
-        console.log("Chat API error response:", errorText)
-        throw new Error(`Failed to get response: ${response.status} ${errorText}`)
+        throw new Error(`Failed to get response`)
       }
 
       const data = await response.json()
-      console.log("Chat API response data:", data)
-      
+
       const assistantMessage: Message = {
         id: generateId() + '-response',
-        content: data.response || "I apologize, but I'm having trouble processing your request at the moment.",
+        content: data.response || "I apologize, but I'm having trouble processing your request.",
         type: "assistant",
         timestamp: generateTimestamp()
       }
 
       setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
-      console.error("Chat error details:", error)
-      console.error("Error type:", typeof error)
-      console.error("Error message:", error instanceof Error ? error.message : 'Unknown error')
-      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace')
+      console.error("Chat error:", error)
       const errorMessage: Message = {
         id: generateId() + '-error',
         content: "I apologize, but I'm having trouble accessing the document right now. Please try again.",
@@ -318,141 +309,50 @@ For best results with chat functionality:
   }
 
   const handleReset = () => {
-    const confirmed = window.confirm("Are you sure you want to clear the chat and remove the document? This action cannot be undone.")
+    const confirmed = window.confirm("Clear the chat and remove the document?")
     if (confirmed) {
-      setChatDocument({
-        file: null,
-        content: "",
-        isProcessing: false
-      })
+      setChatDocument({ file: null, content: "", isProcessing: false })
       setMessages([])
       setInputMessage("")
       setIsLoading(false)
+      setCurrentDocument(null)
+      hasLoadedDocument.current = false
     }
   }
 
-  // Check if uploaded file is a PDF
   const isPDFFile = chatDocument.file?.type === "application/pdf"
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-black rounded-2xl border border-gray-300 dark:border-gray-700 shadow-xl" style={{ 
-      boxShadow: "0 20px 60px rgba(0, 0, 0, 0.15)", 
-      borderRadius: "var(--radius-xl)" 
-    }}>
-      {/* File Status & View Mode Controls */}
-      {chatDocument.file && (
-        <div 
-          className="bg-gray-100 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700 rounded-t-2xl"
-          style={{ padding: "var(--space-3)" }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center" style={{ gap: "var(--space-2)" }}>
-              <div className="w-8 h-8 bg-black dark:bg-white rounded-md flex items-center justify-center">
-                <FileText className="h-4 w-4 text-white dark:text-black" />
-              </div>
-              <div>
-                <p className="text-body-sm font-medium text-black dark:text-white">
-                  {chatDocument.file.name}
-                </p>
-                <p className="text-caption text-gray-600 dark:text-gray-400">
-                  {chatDocument.isProcessing ? "Processing document..." : "Ready for questions"}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={handleReset}
-              className="flex items-center gap-1 px-2 py-1 text-caption text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800 rounded transition-colors"
-              title="Clear chat and remove document"
-            >
-              <X className="h-3 w-3" />
-              Clear
-            </button>
-          </div>
-          
-          {/* View Mode Toggle (only for PDFs) */}
-          {isPDFFile && (
-            <div className="flex items-center gap-1 bg-white dark:bg-gray-700 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode("chat")}
-                className={cn(
-                  "flex items-center gap-1 px-2 py-1 rounded text-caption font-medium transition-colors",
-                  viewMode === "chat"
-                    ? "bg-black dark:bg-white text-white dark:text-black"
-                    : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
-                )}
-              >
-                <MessageCircle className="h-3 w-3" />
-                Chat
-              </button>
-              <button
-                onClick={() => setViewMode("pdf")}
-                className={cn(
-                  "flex items-center gap-1 px-2 py-1 rounded text-caption font-medium transition-colors",
-                  viewMode === "pdf"
-                    ? "bg-black dark:bg-white text-white dark:text-black"
-                    : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
-                )}
-              >
-                <Eye className="h-3 w-3" />
-                View PDF
-              </button>
-              <button
-                onClick={() => setViewMode("split")}
-                className={cn(
-                  "flex items-center gap-1 px-2 py-1 rounded text-caption font-medium transition-colors",
-                  viewMode === "split"
-                    ? "bg-black dark:bg-white text-white dark:text-black"
-                    : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
-                )}
-              >
-                <SplitSquareHorizontal className="h-3 w-3" />
-                Split
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden">
+    <div className="h-full flex bg-white dark:bg-black rounded-2xl border border-gray-300 dark:border-gray-700 shadow-xl overflow-hidden">
+      {/* Two Column Layout: PDF Viewer | Chat (50/50 split) */}
         {!chatDocument.file ? (
-          /* Upload Area */
-          <div className="h-full" style={{ padding: "var(--space-4)" }}>
+          /* Upload Area - Full Width */
+          <div className="flex-1 flex items-center justify-center p-8">
             <div
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
               onClick={triggerChatFileInput}
-              className="h-full flex items-center justify-center border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-xl hover:border-black dark:hover:border-white hover:bg-gray-50 dark:hover:bg-gray-900 transition-all duration-300 group cursor-pointer min-h-[500px] bg-gray-50/50 dark:bg-gray-900/50"
+              className="w-full max-w-2xl flex items-center justify-center border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-xl hover:border-black dark:hover:border-white hover:bg-gray-50 dark:hover:bg-gray-900 transition-all duration-300 group cursor-pointer bg-gray-50/50 dark:bg-gray-900/50 p-12"
             >
               <div className="text-center max-w-md">
-                <div className="mx-auto w-20 h-20 bg-black dark:bg-white rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-lg" style={{ marginBottom: "var(--space-4)" }}>
-                  <Upload className="h-10 w-10 text-white dark:text-black" />
+                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-lg mb-6">
+                  <Upload className="h-10 w-10 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-black dark:text-white" style={{ marginBottom: "var(--space-2)" }}>
+                <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
                   Upload a document to start chatting
                 </h3>
-                <p className="text-lg text-gray-600 dark:text-gray-400" style={{ marginBottom: "var(--space-4)" }}>
-                  Drag and drop your file here, or choose an option below
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+                  Drag and drop your file here, or click to browse
                 </p>
-                
-                {/* Upload Buttons */}
-                <div className="flex gap-4 justify-center" style={{ marginBottom: "var(--space-4)" }}>
-                  <button
-                    onClick={triggerChatFileInput}
-                    className="flex items-center gap-2 px-6 py-3 bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
-                  >
-                    <Upload className="h-5 w-5" />
-                    Choose File
-                  </button>
-                  <button
-                    onClick={triggerChatFileInput}
-                    className="flex items-center gap-2 px-6 py-3 bg-gray-800 dark:bg-gray-200 hover:bg-black dark:hover:bg-white text-white dark:text-black rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
-                  >
-                    <FileText className="h-5 w-5" />
-                    Browse Documents
-                  </button>
-                </div>
-                
+
+                <button
+                  onClick={triggerChatFileInput}
+                  className="flex items-center gap-2 px-6 py-3 bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 mx-auto mb-4"
+                >
+                  <Upload className="h-5 w-5" />
+                  Choose File
+                </button>
+
                 <input
                   id="chat-file-input"
                   type="file"
@@ -460,7 +360,7 @@ For best results with chat functionality:
                   onChange={handleFileChange}
                   accept=".pdf,.txt,.doc,.docx,.json"
                 />
-                
+
                 <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                   Supported formats: PDF, TXT, DOC, DOCX, JSON
                 </p>
@@ -469,49 +369,88 @@ For best results with chat functionality:
           </div>
         ) : chatDocument.isProcessing ? (
           /* Loading State */
-          <div className="h-full flex items-center justify-center" style={{ padding: "var(--space-4)" }}>
+          <div className="flex-1 flex items-center justify-center p-4">
             <div className="text-center max-w-md">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto" style={{ marginBottom: "var(--space-4)" }}>
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Loader2 className="h-8 w-8 text-gray-400 animate-spin" />
               </div>
-              <h3 className="text-heading-md text-gray-900 dark:text-gray-100" style={{ marginBottom: "var(--space-2)" }}>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Processing document...
               </h3>
-              <p className="text-body-md text-gray-600 dark:text-gray-400">
-                I'm analyzing your document. This may take a moment...
+              <p className="text-gray-600 dark:text-gray-400">
+                Analyzing your document. This may take a moment...
               </p>
             </div>
           </div>
-        ) : viewMode === "pdf" && isPDFFile ? (
-          /* PDF Viewer Mode */
-          <PDFViewer file={chatDocument.file} className="h-full" />
-        ) : viewMode === "split" && isPDFFile ? (
-          /* Split View Mode */
-          <div className="h-full flex">
-            <div className="w-1/2 border-r border-gray-200 dark:border-gray-700">
-              <PDFViewer file={chatDocument.file} />
+        ) : (
+          /* Two Column Layout: Document Viewer | Chat (50/50) */
+          <>
+            {/* Document Viewer Column - 50% width */}
+            <div className="w-1/2 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+              {isPDFFile ? (
+                <PDFViewer file={chatDocument.file} className="h-full" />
+              ) : (
+                <div className="h-full overflow-auto p-6">
+                  <div className="max-w-3xl mx-auto">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+                      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                        <FileText className="w-6 h-6 text-gray-500 flex-shrink-0" />
+                        <h2 className="text-lg font-semibold text-black dark:text-white truncate">
+                          {chatDocument.file?.name}
+                        </h2>
+                      </div>
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-sans">
+                          {chatDocument.content}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Chat Column - 50% width */}
             <div className="w-1/2 flex flex-col">
+              {/* Document Header */}
+              <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                      {chatDocument.file?.name}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleReset}
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Change
+                  </button>
+                </div>
+              </div>
+
               {/* Chat Messages */}
-              <div className="flex-1 flex flex-col min-h-0" style={{ padding: "var(--space-4)" }}>
+              <div className="flex-1 flex flex-col min-h-0 p-4">
                 {messages.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center max-w-md">
-                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto" style={{ marginBottom: "var(--space-4)" }}>
+                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Bot className="h-8 w-8 text-gray-400" />
                       </div>
-                      <h3 className="text-heading-md text-gray-900 dark:text-gray-100" style={{ marginBottom: "var(--space-2)" }}>
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                         Ready to chat!
                       </h3>
-                      <p className="text-body-md text-gray-600 dark:text-gray-400">
+                      <p className="text-gray-600 dark:text-gray-400">
                         Ask me anything about your document below.
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <div 
-                    ref={splitMessagesContainerRef}
-                    className="chat-scrollbar space-y-6 flex-1 overflow-y-auto pr-2 scroll-smooth pt-4 pb-4 max-h-full relative"
+                  <div
+                    ref={messagesContainerRef}
+                    className="chat-scrollbar space-y-4 flex-1 overflow-y-auto pr-2"
                   >
                     {messages.map((message) => (
                       <div
@@ -523,28 +462,17 @@ For best results with chat functionality:
                       >
                         <div
                           className={cn(
-                            "flex max-w-[80%]",
+                            "flex max-w-[85%] gap-2",
                             message.type === "user" ? "flex-row-reverse" : "flex-row"
                           )}
-                          style={{ gap: "var(--space-2)" }}
                         >
                           <div
                             className={cn(
                               "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
                               message.type === "user"
                                 ? "bg-black dark:bg-white"
-                                : "bg-gray-100 dark:bg-gray-700 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                : "bg-gray-200 dark:bg-gray-700"
                             )}
-                            onClick={message.type === "assistant" ? () => {
-                              const helpMessage: Message = {
-                                id: generateId() + '-help',
-                                content: "💡 **Quick Help:**\n\n• Upload a document to start chatting\n• Use the PDF viewer for large files\n• Try different file formats (PDF, DOCX, TXT)\n• Clear chat anytime with the 'Clear' button\n\nI'm here to help you understand your documents!",
-                                type: "assistant",
-                                timestamp: generateTimestamp()
-                              }
-                              setMessages(prev => [...prev, helpMessage])
-                            } : undefined}
-                            title={message.type === "assistant" ? "Click for help" : undefined}
                           >
                             {message.type === "user" ? (
                               <User className="h-4 w-4 text-white dark:text-black" />
@@ -554,294 +482,67 @@ For best results with chat functionality:
                           </div>
                           <div
                             className={cn(
-                              "rounded-lg",
+                              "rounded-lg px-4 py-2",
                               message.type === "user"
                                 ? "bg-black dark:bg-white text-white dark:text-black"
-                                : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                             )}
-                            style={{ padding: "var(--space-3)" }}
                           >
-                            <p className="text-body-md whitespace-pre-wrap">{message.content}</p>
+                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                           </div>
                         </div>
                       </div>
                     ))}
-                    
+
                     {isLoading && (
                       <div className="flex justify-start">
-                        <div className="flex" style={{ gap: "var(--space-2)" }}>
-                          <div 
-                            className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            onClick={() => {
-                              const helpMessage: Message = {
-                                id: generateId() + '-help',
-                                content: "💡 **Quick Help:**\n\n• Upload a document to start chatting\n• Use the PDF viewer for large files\n• Try different file formats (PDF, DOCX, TXT)\n• Clear chat anytime with the 'Clear' button\n\nI'm here to help you understand your documents!",
-                                type: "assistant",
-                                timestamp: generateTimestamp()
-                              }
-                              setMessages(prev => [...prev, helpMessage])
-                            }}
-                            title="Click for help"
-                          >
+                        <div className="flex gap-2">
+                          <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
                             <Bot className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                           </div>
-                          <div 
-                            className="bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center"
-                            style={{ padding: "var(--space-3)" }}
-                          >
+                          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2 flex items-center gap-2">
                             <Loader2 className="h-4 w-4 animate-spin text-gray-600 dark:text-gray-400" />
-                            <span className="ml-2 text-body-md text-gray-600 dark:text-gray-400">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
                               Thinking...
                             </span>
                           </div>
                         </div>
                       </div>
                     )}
-                    
-                    {/* Scroll Controls */}
-                    {!isAtTop && messages.length > 3 && (
-                      <button
-                        onClick={scrollToTop}
-                        className="absolute top-2 right-2 z-10 w-8 h-8 bg-black dark:bg-white text-white dark:text-black rounded-full shadow-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-200 flex items-center justify-center"
-                        title="Scroll to top"
-                      >
-                        <ArrowUp className="h-3 w-3" />
-                      </button>
-                    )}
-                    
-                    {showScrollToBottom && (
-                      <button
-                        onClick={scrollToBottom}
-                        className="absolute bottom-2 right-2 z-10 w-8 h-8 bg-black dark:bg-white text-white dark:text-black rounded-full shadow-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-200 flex items-center justify-center animate-bounce"
-                        title="Scroll to bottom"
-                      >
-                        <ArrowDown className="h-3 w-3" />
-                      </button>
-                    )}
-                    
+
                     <div ref={messagesEndRef} />
                   </div>
                 )}
               </div>
-              
-              {/* Input Area for Split View */}
-              <div 
-                className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700"
-                style={{ padding: "var(--space-3)" }}
-              >
-                <div className="flex" style={{ gap: "var(--space-2)" }}>
+
+              {/* Input Area */}
+              <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+                <div className="flex gap-2">
                   <textarea
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Ask a question about the document..."
                     disabled={chatDocument.isProcessing}
-                    className="flex-1 resize-none border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent dark:bg-gray-700 dark:text-gray-100 text-body-sm"
-                    style={{ 
-                      padding: "var(--space-2)",
-                      borderRadius: "var(--radius-md)",
-                      minHeight: "2.5rem",
-                      maxHeight: "6rem"
-                    }}
+                    className="flex-1 resize-none border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent dark:bg-gray-700 dark:text-gray-100 text-sm min-h-[44px] max-h-[120px]"
                     rows={1}
                   />
                   <button
                     onClick={handleSendMessage}
                     disabled={!inputMessage.trim() || isLoading || chatDocument.isProcessing}
                     className={cn(
-                      "btn-primary flex items-center justify-center",
-                      (!inputMessage.trim() || isLoading || chatDocument.isProcessing) && 
+                      "px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors flex items-center justify-center min-w-[44px]",
+                      (!inputMessage.trim() || isLoading || chatDocument.isProcessing) &&
                       "opacity-50 cursor-not-allowed"
                     )}
-                    style={{ 
-                      width: "2.5rem",
-                      height: "2.5rem",
-                      borderRadius: "var(--radius-md)"
-                    }}
                   >
-                    <Send className="h-3 w-3" />
+                    <Send className="h-4 w-4" />
                   </button>
                 </div>
               </div>
             </div>
-          </div>
-        ) : (
-          /* Chat Mode */
-          <div className="h-full flex flex-col">
-            <div className="flex-1 flex flex-col min-h-0" style={{ padding: "var(--space-4)" }}>
-              {messages.length === 0 ? (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center max-w-md">
-                    <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto" style={{ marginBottom: "var(--space-4)" }}>
-                      <Bot className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <h3 className="text-heading-md text-gray-900 dark:text-gray-100" style={{ marginBottom: "var(--space-2)" }}>
-                      Ready to chat!
-                    </h3>
-                    <p className="text-body-md text-gray-600 dark:text-gray-400">
-                      Ask me anything about your document below.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div 
-                  ref={messagesContainerRef}
-                  className="chat-scrollbar space-y-6 flex-1 overflow-y-auto pr-2 scroll-smooth pt-4 pb-4 max-h-full relative"
-                >
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={cn(
-                        "flex",
-                        message.type === "user" ? "justify-end" : "justify-start"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "flex max-w-[80%]",
-                          message.type === "user" ? "flex-row-reverse" : "flex-row"
-                        )}
-                        style={{ gap: "var(--space-2)" }}
-                      >
-                        <div
-                          className={cn(
-                            "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-                            message.type === "user"
-                              ? "bg-black dark:bg-white"
-                              : "bg-gray-100 dark:bg-gray-700 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                          )}
-                          onClick={message.type === "assistant" ? () => {
-                            const helpMessage: Message = {
-                              id: generateId() + '-help',
-                              content: "💡 **Quick Help:**\n\n• Upload a document to start chatting\n• Use the PDF viewer for large files\n• Try different file formats (PDF, DOCX, TXT)\n• Clear chat anytime with the 'Clear' button\n\nI'm here to help you understand your documents!",
-                              type: "assistant",
-                              timestamp: generateTimestamp()
-                            }
-                            setMessages(prev => [...prev, helpMessage])
-                          } : undefined}
-                          title={message.type === "assistant" ? "Click for help" : undefined}
-                        >
-                          {message.type === "user" ? (
-                            <User className="h-4 w-4 text-white dark:text-black" />
-                          ) : (
-                            <Bot className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                          )}
-                        </div>
-                        <div
-                          className={cn(
-                            "rounded-lg",
-                            message.type === "user"
-                              ? "bg-black dark:bg-white text-white dark:text-black"
-                              : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                          )}
-                          style={{ padding: "var(--space-3)" }}
-                        >
-                          <p className="text-body-md whitespace-pre-wrap">{message.content}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {isLoading && (
-                    <div className="flex justify-start">
-                      <div className="flex" style={{ gap: "var(--space-2)" }}>
-                        <div 
-                          className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                          onClick={() => {
-                            const helpMessage: Message = {
-                              id: generateId() + '-help',
-                              content: "💡 **Quick Help:**\n\n• Upload a document to start chatting\n• Use the PDF viewer for large files\n• Try different file formats (PDF, DOCX, TXT)\n• Clear chat anytime with the 'Clear' button\n\nI'm here to help you understand your documents!",
-                              type: "assistant",
-                              timestamp: generateTimestamp()
-                            }
-                            setMessages(prev => [...prev, helpMessage])
-                          }}
-                          title="Click for help"
-                        >
-                          <Bot className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                        </div>
-                        <div 
-                          className="bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center"
-                          style={{ padding: "var(--space-3)" }}
-                        >
-                          <Loader2 className="h-4 w-4 animate-spin text-gray-600 dark:text-gray-400" />
-                          <span className="ml-2 text-body-md text-gray-600 dark:text-gray-400">
-                            Thinking...
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Scroll Controls */}
-                  {!isAtTop && messages.length > 3 && (
-                    <button
-                      onClick={scrollToTop}
-                      className="absolute top-2 right-2 z-10 w-8 h-8 bg-black dark:bg-white text-white dark:text-black rounded-full shadow-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-200 flex items-center justify-center"
-                      title="Scroll to top"
-                    >
-                      <ArrowUp className="h-3 w-3" />
-                    </button>
-                  )}
-                  
-                  {showScrollToBottom && (
-                    <button
-                      onClick={scrollToBottom}
-                      className="absolute bottom-2 right-2 z-10 w-8 h-8 bg-black dark:bg-white text-white dark:text-black rounded-full shadow-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-200 flex items-center justify-center animate-bounce"
-                      title="Scroll to bottom"
-                    >
-                      <ArrowDown className="h-3 w-3" />
-                    </button>
-                  )}
-                  
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
-            </div>
-          </div>
+          </>
         )}
-      </div>
-
-      {/* Input Area (only show for chat mode and when not PDF-only view) */}
-      {(!isPDFFile || viewMode === "chat") && chatDocument.file && !chatDocument.isProcessing && (
-        <div 
-          className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 rounded-b-2xl"
-          style={{ padding: "var(--space-4)" }}
-        >
-          <div className="flex" style={{ gap: "var(--space-2)" }}>
-            <textarea
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ask a question about the document..."
-              className="flex-1 resize-none border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent dark:bg-gray-700 dark:text-gray-100 text-body-md"
-              style={{ 
-                padding: "var(--space-3)",
-                borderRadius: "var(--radius-lg)",
-                minHeight: "3rem",
-                maxHeight: "8rem"
-              }}
-              rows={1}
-            />
-            <button
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isLoading}
-              className={cn(
-                "btn-primary flex items-center justify-center",
-                (!inputMessage.trim() || isLoading) && 
-                "opacity-50 cursor-not-allowed"
-              )}
-              style={{ 
-                width: "3rem",
-                height: "3rem",
-                borderRadius: "var(--radius-lg)"
-              }}
-            >
-              <Send className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
