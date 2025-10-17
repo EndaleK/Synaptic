@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "../styles/react-pdf.css";
 
+/* Enable class-based dark mode for Tailwind CSS v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #fafbfc;
   --foreground: #1a1f36;

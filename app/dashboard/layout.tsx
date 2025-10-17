@@ -6,6 +6,7 @@ import { UserButton, useUser } from "@clerk/nextjs"
 import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useUIStore } from "@/lib/store/useStore"
+import { useToast } from "@/components/ToastContainer"
 import { SignOutButton } from "@clerk/nextjs"
 
 export default function DashboardLayout({
@@ -16,6 +17,7 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const router = useRouter()
   const { user} = useUser()
+  const toast = useToast()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
@@ -40,15 +42,18 @@ export default function DashboardLayout({
     if (newTheme) {
       document.documentElement.classList.add('dark')
       localStorage.setItem('theme', 'dark')
+      toast.success('Switched to dark mode')
     } else {
       document.documentElement.classList.remove('dark')
       localStorage.setItem('theme', 'light')
+      toast.success('Switched to light mode')
     }
   }
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Documents", href: "/dashboard/documents", icon: FileText },
+    { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ]
 
   const learningModes = [
@@ -60,7 +65,7 @@ export default function DashboardLayout({
 
   const handleModeClick = (modeId: string, comingSoon: boolean) => {
     if (comingSoon) {
-      alert(`This mode is coming soon! Stay tuned.`)
+      toast.info('This mode is coming soon! Stay tuned.')
       return
     }
     setActiveMode(modeId as any)
@@ -130,7 +135,9 @@ export default function DashboardLayout({
             {/* Main Navigation */}
             <div className="space-y-2">
               {navigation.map((item) => {
-                const isActive = pathname === item.href && (item.href !== "/dashboard" || activeMode === "home")
+                const isActive = item.href === "/dashboard"
+                  ? pathname === item.href && activeMode === "home"
+                  : pathname === item.href
                 return (
                   <Link
                     key={item.name}
@@ -204,21 +211,6 @@ export default function DashboardLayout({
 
           {/* User Section */}
           <div className="p-4 border-t border-gray-200 dark:border-gray-800 space-y-3">
-            {/* Settings Button */}
-            <Link
-              href="/dashboard/settings"
-              onClick={() => setSidebarOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
-                pathname === "/dashboard/settings"
-                  ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400"
-              } ${sidebarCollapsed ? "justify-center" : ""}`}
-              title={sidebarCollapsed ? "Settings" : undefined}
-            >
-              <Settings className="w-5 h-5" />
-              {!sidebarCollapsed && "Settings"}
-            </Link>
-
             {/* Theme Toggle & Sign Out Buttons */}
             <div className={`flex gap-2 ${sidebarCollapsed ? "flex-col" : ""}`}>
               {/* Theme Toggle Button */}
