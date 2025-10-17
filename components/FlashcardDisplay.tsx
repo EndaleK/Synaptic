@@ -1,16 +1,18 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { ChevronLeft, ChevronRight, RotateCcw, Download, Home, ChevronDown } from "lucide-react"
+import { ChevronLeft, ChevronRight, RotateCcw, Download, Home, ChevronDown, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Flashcard } from "@/lib/types"
 
 interface FlashcardDisplayProps {
   flashcards: Flashcard[]
   onReset: () => void
+  onRegenerate?: () => void
+  isRegenerating?: boolean
 }
 
-export default function FlashcardDisplay({ flashcards, onReset }: FlashcardDisplayProps) {
+export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, isRegenerating = false }: FlashcardDisplayProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [studiedCards, setStudiedCards] = useState<Set<string>>(new Set())
@@ -390,14 +392,28 @@ ${'='.repeat(50)}`).join('\n')}`
           style={{ padding: "var(--space-4)" }}
         >
           <div className="flex justify-between items-center">
-            <button
-              onClick={onReset}
-              className="flex items-center text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 transition-colors text-body-sm"
-              style={{ gap: "var(--space-1)" }}
-            >
-              <Home className="h-4 w-4" />
-              Back to Upload
-            </button>
+            <div className="flex items-center" style={{ gap: "var(--space-3)" }}>
+              <button
+                onClick={onReset}
+                className="flex items-center text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 transition-colors text-body-sm"
+                style={{ gap: "var(--space-1)" }}
+              >
+                <Home className="h-4 w-4" />
+                Back to Upload
+              </button>
+              {onRegenerate && (
+                <button
+                  onClick={onRegenerate}
+                  disabled={isRegenerating}
+                  className="flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors text-body-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ gap: "var(--space-1)" }}
+                  title="Generate different flashcards from the same content"
+                >
+                  <RefreshCw className={cn("h-4 w-4", isRegenerating && "animate-spin")} />
+                  {isRegenerating ? "Regenerating..." : "Regenerate"}
+                </button>
+              )}
+            </div>
             <div className="flex items-center" style={{ gap: "var(--space-3)" }}>
               <span className="text-caption text-gray-600 dark:text-gray-400">
                 Card {currentIndex + 1} of {flashcards.length}

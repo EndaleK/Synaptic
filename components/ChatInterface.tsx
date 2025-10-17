@@ -323,7 +323,7 @@ export default function ChatInterface() {
   const isPDFFile = chatDocument.file?.type === "application/pdf"
 
   return (
-    <div className="h-full flex bg-white dark:bg-black rounded-2xl border border-gray-300 dark:border-gray-700 shadow-xl overflow-hidden">
+    <div className="h-full flex bg-white dark:bg-black border-gray-300 dark:border-gray-700 overflow-hidden">
       {/* Two Column Layout: PDF Viewer | Chat (50/50 split) */}
         {!chatDocument.file ? (
           /* Upload Area - Full Width */

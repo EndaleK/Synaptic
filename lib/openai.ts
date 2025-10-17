@@ -1,7 +1,7 @@
 import OpenAI from "openai"
 import { Flashcard } from "./types"
 
-export async function generateFlashcards(text: string): Promise<Flashcard[]> {
+export async function generateFlashcards(text: string, variation: number = 0): Promise<Flashcard[]> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OpenAI API key not configured")
   }
@@ -13,7 +13,7 @@ export async function generateFlashcards(text: string): Promise<Flashcard[]> {
   // Safety check: truncate if text is still too long (backup safety net)
   const maxChars = 45000 // Conservative limit to ensure we stay under token limits
   let processedText = text
-  
+
   if (text.length > maxChars) {
     // Try to truncate at a sentence boundary
     processedText = text.substring(0, maxChars)
@@ -23,6 +23,16 @@ export async function generateFlashcards(text: string): Promise<Flashcard[]> {
     }
     console.log(`Flashcard generation: Text truncated from ${text.length} to ${processedText.length} characters`)
   }
+
+  // Calculate number of flashcards based on content length
+  // ~1 flashcard per 200-300 words, min 5, max 30
+  const wordCount = processedText.split(/\s+/).length
+  const minCards = 5
+  const maxCards = 30
+  const calculatedCards = Math.floor(wordCount / 250)
+  const targetCards = Math.max(minCards, Math.min(calculatedCards, maxCards))
+
+  console.log(`Content: ${wordCount} words → Target: ${targetCards} flashcards`)
 
   const prompt = `You are tasked with extracting flashcard content from a given text chunk. Your goal is to identify key terms and their corresponding definitions or explanations that would be suitable for creating flashcards.
 
@@ -37,8 +47,9 @@ Guidelines for extracting flashcard content:
 3. Ensure that the term and definition pairs are concise and clear.
 4. Extract only the most relevant and significant information.
 5. Aim for a balance between comprehensiveness and brevity.
+6. Generate different flashcards each time by focusing on varied aspects of the content.
 
-Create between 5-15 flashcards based on the content available.
+Create exactly ${targetCards} flashcards based on the content available.
 
 Respond ONLY with a valid JSON array in this exact format:
 [
@@ -51,6 +62,10 @@ Respond ONLY with a valid JSON array in this exact format:
 DO NOT include any text outside the JSON array.`
 
   try {
+    // Add variation to temperature for different results each time
+    // Base temperature: 0.3, variation adds 0-0.4 based on variation parameter
+    const temperature = Math.min(0.9, 0.3 + (variation * 0.15))
+
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -63,7 +78,7 @@ DO NOT include any text outside the JSON array.`
           content: prompt
         }
       ],
-      temperature: 0.3,
+      temperature: temperature,
       max_tokens: 2000,
     })
 

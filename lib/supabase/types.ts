@@ -1,7 +1,7 @@
 // TypeScript Types for Supabase Database Tables
 
 export type LearningStyle = 'visual' | 'auditory' | 'kinesthetic' | 'reading_writing' | 'mixed'
-export type PreferredMode = 'flashcards' | 'chat' | 'podcast' | 'mindmap'
+export type PreferredMode = 'home' | 'flashcards' | 'chat' | 'podcast' | 'mindmap'
 export type SubscriptionTier = 'free' | 'premium' | 'enterprise'
 export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'past_due'
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed'

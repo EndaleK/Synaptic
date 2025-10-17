@@ -111,12 +111,17 @@ export default function DashboardLayout({
             {/* Main Navigation */}
             <div className="space-y-2">
               {navigation.map((item) => {
-                const isActive = pathname === item.href
+                const isActive = pathname === item.href && (item.href !== "/dashboard" || activeMode === "home")
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
-                    onClick={() => setSidebarOpen(false)}
+                    onClick={() => {
+                      setSidebarOpen(false)
+                      if (item.href === "/dashboard") {
+                        setActiveMode("home")
+                      }
+                    }}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
                       isActive
                         ? "bg-black dark:bg-white text-white dark:text-black"
@@ -229,6 +234,17 @@ export default function DashboardLayout({
                     {user?.primaryEmailAddress?.emailAddress}
                   </p>
                 </div>
+              )}
+            </div>
+
+            {/* Copyright Notice */}
+            <div className={`px-4 py-2 text-center text-xs text-gray-500 dark:text-gray-400 ${
+              sidebarCollapsed ? "text-center" : ""
+            }`}>
+              {sidebarCollapsed ? (
+                <p className="text-[10px]">©</p>
+              ) : (
+                <p>© 2025 ካንእ AI Study Guide</p>
               )}
             </div>
           </div>

@@ -45,7 +45,7 @@ export default function LandingPage() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link
-                href={isSignedIn ? "/dashboard" : "/sign-up"}
+                href={isSignedIn ? "/dashboard" : "/sign-in"}
                 className="group px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-xl font-semibold hover:scale-105 transition-all shadow-xl flex items-center gap-2"
               >
                 {isSignedIn ? "Go to Dashboard" : "Get Started Free"}
@@ -234,7 +234,7 @@ export default function LandingPage() {
             Join thousands of learners who study smarter with AI
           </p>
           <Link
-            href={isSignedIn ? "/dashboard" : "/sign-up"}
+            href={isSignedIn ? "/dashboard" : "/sign-in"}
             className="inline-flex items-center gap-2 px-8 py-4 bg-white dark:bg-black text-black dark:text-white rounded-xl font-semibold hover:scale-105 transition-all shadow-xl"
           >
             {isSignedIn ? "Go to Dashboard" : "Get Started Free"}

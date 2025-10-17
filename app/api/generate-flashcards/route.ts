@@ -7,6 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const mode = formData.get("mode") as string
+    const variation = parseInt(formData.get("variation") as string || "0")
     let textContent = ""
 
     if (mode === "file") {
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
       console.log(`Created JSON structure with ${documentJSON.sections.length} sections`)
     }
     
-    const flashcards = await generateFlashcards(textContent)
+    const flashcards = await generateFlashcards(textContent, variation)
     
     return NextResponse.json({ 
       flashcards,

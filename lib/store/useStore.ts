@@ -10,6 +10,20 @@ interface UserState {
   setLearningStyle: (style: LearningStyle) => void
   preferredMode: PreferredMode
   setPreferredMode: (mode: PreferredMode) => void
+  hasCompletedAssessment: boolean
+  setHasCompletedAssessment: (completed: boolean) => void
+  assessmentScores: {
+    visual: number
+    auditory: number
+    kinesthetic: number
+    reading_writing: number
+  } | null
+  setAssessmentScores: (scores: {
+    visual: number
+    auditory: number
+    kinesthetic: number
+    reading_writing: number
+  } | null) => void
 }
 
 interface DocumentState {
@@ -44,6 +58,10 @@ export const useUserStore = create<UserState>()(
       setLearningStyle: (style) => set({ learningStyle: style }),
       preferredMode: 'flashcards',
       setPreferredMode: (mode) => set({ preferredMode: mode }),
+      hasCompletedAssessment: false,
+      setHasCompletedAssessment: (completed) => set({ hasCompletedAssessment: completed }),
+      assessmentScores: null,
+      setAssessmentScores: (scores) => set({ assessmentScores: scores }),
     }),
     {
       name: 'user-storage',
@@ -78,7 +96,7 @@ export const useDocumentStore = create<DocumentState>()(
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
-      activeMode: 'flashcards',
+      activeMode: 'home',
       setActiveMode: (mode) => set({ activeMode: mode }),
       isDarkMode: false,
       toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
