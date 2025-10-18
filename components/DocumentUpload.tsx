@@ -178,10 +178,10 @@ export default function DocumentUpload({
               className={cn(
                 "flex-1 text-body-sm font-medium border-b-2 transition-all duration-300 relative",
                 activeTab === "upload"
-                  ? "border-purple-500 text-purple-600 dark:text-purple-400"
-                  : "border-transparent text-gray-500 hover:text-purple-600 hover:border-purple-300 dark:text-gray-400 dark:hover:text-purple-400"
+                  ? "border-accent-primary text-accent-primary"
+                  : "border-transparent text-gray-500 hover:text-accent-primary hover:border-accent-primary/50 dark:text-gray-400"
               )}
-              style={{ 
+              style={{
                 padding: "var(--space-3) var(--space-4)"
               }}
             >
@@ -195,10 +195,10 @@ export default function DocumentUpload({
               className={cn(
                 "flex-1 text-body-sm font-medium border-b-2 transition-all duration-300 relative",
                 activeTab === "paste"
-                  ? "border-purple-500 text-purple-600 dark:text-purple-400"
-                  : "border-transparent text-gray-500 hover:text-purple-600 hover:border-purple-300 dark:text-gray-400 dark:hover:text-purple-400"
+                  ? "border-accent-primary text-accent-primary"
+                  : "border-transparent text-gray-500 hover:text-accent-primary hover:border-accent-primary/50 dark:text-gray-400"
               )}
-              style={{ 
+              style={{
                 padding: "var(--space-3) var(--space-4)"
               }}
             >
@@ -218,14 +218,14 @@ export default function DocumentUpload({
                     onDrop={handleDrop}
                     onDragOver={(e) => e.preventDefault()}
                     onClick={triggerFileInput}
-                    className="border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-lg text-center hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 transition-all duration-300 group flex items-center justify-center min-h-[400px] cursor-pointer bg-purple-50/30 dark:bg-purple-900/10"
+                    className="border-2 border-dashed border-accent-primary/30 dark:border-accent-primary/50 rounded-lg text-center hover:border-accent-primary dark:hover:border-accent-primary hover:bg-accent-primary/5 dark:hover:bg-accent-primary/10 transition-all duration-300 group flex items-center justify-center min-h-[400px] cursor-pointer bg-accent-primary/5 dark:bg-accent-primary/5"
                     style={{
                       padding: "var(--space-8)",
                       borderRadius: "var(--radius-xl)"
                     }}
                   >
                     <div className="text-center">
-                      <div className="mx-auto w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-lg" style={{ marginBottom: "var(--space-4)" }}>
+                      <div className="mx-auto w-20 h-20 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-lg" style={{ marginBottom: "var(--space-4)" }}>
                         <Upload className="h-10 w-10 text-white" />
                       </div>
                       <h3 className="text-2xl font-bold text-black dark:text-white" style={{ marginBottom: "var(--space-2)" }}>
@@ -239,14 +239,14 @@ export default function DocumentUpload({
                       <div className="flex gap-4 justify-center" style={{ marginBottom: "var(--space-4)" }}>
                         <button
                           onClick={triggerFileInput}
-                          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary hover:opacity-90 text-white rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
                         >
                           <Upload className="h-5 w-5" />
                           Choose File
                         </button>
                         <button
                           onClick={triggerFileInput}
-                          className="flex items-center gap-2 px-6 py-3 bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 border border-purple-300 dark:border-purple-700"
+                          className="flex items-center gap-2 px-6 py-3 bg-accent-primary/10 dark:bg-accent-primary/20 hover:bg-accent-primary/20 dark:hover:bg-accent-primary/30 text-accent-primary rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 border border-accent-primary/30 dark:border-accent-primary/50"
                         >
                           <FileText className="h-5 w-5" />
                           Browse Documents

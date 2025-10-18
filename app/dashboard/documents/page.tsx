@@ -118,7 +118,7 @@ export default function DocumentsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500 mb-2">
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-accent-secondary mb-2">
               My Documents
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
@@ -130,7 +130,7 @@ export default function DocumentsPage() {
             <button
               onClick={fetchDocuments}
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg font-medium hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-all disabled:opacity-50 border border-purple-200 dark:border-purple-800"
+              className="flex items-center gap-2 px-4 py-2.5 bg-accent-primary/10 dark:bg-accent-primary/20 text-accent-primary rounded-lg font-medium hover:bg-accent-primary/20 dark:hover:bg-accent-primary/30 transition-all disabled:opacity-50 border border-accent-primary/30 dark:border-accent-primary/50"
               title="Refresh documents"
             >
               <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -139,7 +139,7 @@ export default function DocumentsPage() {
 
             <button
               onClick={handleUploadClick}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:shadow-xl transition-all shadow-lg"
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-semibold hover:shadow-xl transition-all shadow-lg"
             >
               <Upload className="w-5 h-5" />
               Upload Document

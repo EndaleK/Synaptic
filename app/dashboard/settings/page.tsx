@@ -6,6 +6,16 @@ import { User, Bell, Palette, Database, Shield, Download, Trash2, Moon, Sun, Sav
 import Breadcrumb, { settingsBreadcrumb } from "@/components/Breadcrumb"
 import { useToast } from "@/components/ToastContainer"
 import { cn } from "@/lib/utils"
+import { type AccentColor, applyAccentColor, saveAccentColor, getSavedAccentColor } from "@/lib/accent-color-utils"
+
+type FontSize = 'small' | 'medium' | 'large'
+
+interface NotificationPreferences {
+  studyReminders: boolean
+  newFeatures: boolean
+  learningProgress: boolean
+  achievementBadges: boolean
+}
 
 export default function SettingsPage() {
   const { user } = useUser()
@@ -13,13 +23,43 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'notifications' | 'data'>('profile')
   const [isSaving, setIsSaving] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [fontSize, setFontSize] = useState<FontSize>('medium')
+  const [accentColor, setAccentColor] = useState<AccentColor>('default')
+  const [notifications, setNotifications] = useState<NotificationPreferences>({
+    studyReminders: true,
+    newFeatures: true,
+    learningProgress: false,
+    achievementBadges: true
+  })
 
-  // Initialize theme from localStorage
+  // Initialize all settings from localStorage
   useEffect(() => {
+    // Theme
     const savedTheme = localStorage.getItem('theme')
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
     setIsDarkMode(savedTheme === 'dark' || (!savedTheme && prefersDark))
+
+    // Font Size
+    const savedFontSize = localStorage.getItem('fontSize') as FontSize
+    if (savedFontSize) {
+      setFontSize(savedFontSize)
+      document.documentElement.classList.remove('font-size-small', 'font-size-medium', 'font-size-large')
+      document.documentElement.classList.add(`font-size-${savedFontSize}`)
+    }
+
+    // Accent Color
+    const savedAccentColor = getSavedAccentColor()
+    const colorToUse = savedAccentColor || 'default'
+    setAccentColor(colorToUse)
+    applyAccentColor(colorToUse)
+
+    // Notifications
+    const savedNotifications = localStorage.getItem('notificationPreferences')
+    if (savedNotifications) {
+      setNotifications(JSON.parse(savedNotifications))
+    }
   }, [])
+
 
   const handleThemeToggle = () => {
     const newTheme = !isDarkMode
@@ -32,6 +72,36 @@ export default function SettingsPage() {
       localStorage.setItem('theme', 'light')
     }
     toast.success('Theme updated successfully')
+  }
+
+  const handleFontSizeChange = (size: FontSize) => {
+    setFontSize(size)
+    document.documentElement.classList.remove('font-size-small', 'font-size-medium', 'font-size-large')
+    document.documentElement.classList.add(`font-size-${size}`)
+    localStorage.setItem('fontSize', size)
+    toast.success(`Font size changed to ${size}`)
+  }
+
+  const handleAccentColorChange = (color: AccentColor) => {
+    setAccentColor(color)
+    applyAccentColor(color)
+    saveAccentColor(color)
+
+    if (color === 'default') {
+      toast.success('Reset to default theme')
+    } else {
+      toast.success(`Accent color changed to ${color}`)
+    }
+  }
+
+  const handleNotificationToggle = (key: keyof NotificationPreferences) => {
+    const newNotifications = {
+      ...notifications,
+      [key]: !notifications[key]
+    }
+    setNotifications(newNotifications)
+    localStorage.setItem('notificationPreferences', JSON.stringify(newNotifications))
+    toast.success(`${key} ${newNotifications[key] ? 'enabled' : 'disabled'}`)
   }
 
   const handleSaveProfile = async () => {
@@ -71,7 +141,7 @@ export default function SettingsPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500 mb-2">
+          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-accent-secondary mb-2">
             Settings
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
@@ -93,8 +163,8 @@ export default function SettingsPage() {
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left font-medium transition-all",
                       isActive
-                        ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                        ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20"
                     )}
                   >
                     <Icon className="w-5 h-5" />
@@ -122,7 +192,7 @@ export default function SettingsPage() {
                 <div className="space-y-4">
                   {/* User Avatar */}
                   <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                    <div className="w-20 h-20 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-full flex items-center justify-center text-white text-2xl font-bold">
                       {user?.firstName?.charAt(0) || user?.username?.charAt(0) || 'U'}
                     </div>
                     <div>
@@ -144,7 +214,7 @@ export default function SettingsPage() {
                       <input
                         type="text"
                         defaultValue={user?.fullName || ''}
-                        className="w-full px-4 py-2 border border-purple-200 dark:border-purple-800 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-accent-primary/30 dark:border-accent-primary/50 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary focus:border-transparent"
                       />
                     </div>
 
@@ -170,7 +240,7 @@ export default function SettingsPage() {
                       <textarea
                         placeholder="What are your learning goals?"
                         rows={4}
-                        className="w-full px-4 py-2 border border-purple-200 dark:border-purple-800 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-accent-primary/30 dark:border-accent-primary/50 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -178,7 +248,7 @@ export default function SettingsPage() {
                   <button
                     onClick={handleSaveProfile}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-semibold hover:from-accent-primary-hover hover:to-accent-secondary-hover transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSaving ? (
                       <>
@@ -213,9 +283,9 @@ export default function SettingsPage() {
                   <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex items-center gap-3">
                       {isDarkMode ? (
-                        <Moon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        <Moon className="w-5 h-5 text-accent-primary" />
                       ) : (
-                        <Sun className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        <Sun className="w-5 h-5 text-accent-primary" />
                       )}
                       <div>
                         <h3 className="font-semibold text-gray-900 dark:text-white">
@@ -230,7 +300,7 @@ export default function SettingsPage() {
                       onClick={handleThemeToggle}
                       className={cn(
                         "relative w-14 h-8 rounded-full transition-colors",
-                        isDarkMode ? "bg-purple-600" : "bg-gray-300"
+                        isDarkMode ? "bg-accent-primary" : "bg-gray-300"
                       )}
                     >
                       <span
@@ -248,40 +318,192 @@ export default function SettingsPage() {
                       Font Size
                     </label>
                     <div className="flex gap-2">
-                      {['Small', 'Medium', 'Large'].map((size) => (
+                      {(['small', 'medium', 'large'] as FontSize[]).map((size) => (
                         <button
                           key={size}
-                          className="flex-1 px-4 py-2 border border-purple-200 dark:border-purple-800 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                          onClick={() => handleFontSizeChange(size)}
+                          className={cn(
+                            "flex-1 px-4 py-2 border rounded-lg text-sm font-medium transition-all",
+                            fontSize === size
+                              ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white border-transparent shadow-md"
+                              : "border-accent-primary/30 dark:border-accent-primary/50 text-gray-700 dark:text-gray-300 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20"
+                          )}
                         >
-                          {size}
+                          {size.charAt(0).toUpperCase() + size.slice(1)}
                         </button>
                       ))}
                     </div>
                   </div>
 
                   {/* Accent Color */}
-                  <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <label className="block font-semibold text-gray-900 dark:text-white mb-3">
-                      Accent Color
-                    </label>
-                    <div className="grid grid-cols-6 gap-3">
-                      {[
-                        'bg-purple-500',
-                        'bg-blue-500',
-                        'bg-green-500',
-                        'bg-yellow-500',
-                        'bg-red-500',
-                        'bg-pink-500'
-                      ].map((color, index) => (
-                        <button
-                          key={index}
-                          className={cn(
-                            "w-12 h-12 rounded-lg border-2 border-transparent hover:border-white transition-all",
-                            color,
-                            index === 0 && "ring-2 ring-purple-500 ring-offset-2"
-                          )}
-                        />
-                      ))}
+                  <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-lg space-y-6">
+                    <div>
+                      <label className="block font-semibold text-gray-900 dark:text-white mb-2">
+                        Accent Color
+                      </label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Choose a color theme for your learning experience
+                      </p>
+                    </div>
+
+                    {/* Default Theme - Full Width Card */}
+                    <button
+                      onClick={() => handleAccentColorChange('default')}
+                      className={cn(
+                        "w-full p-4 rounded-xl border-2 transition-all hover:scale-[1.02] flex items-center gap-4",
+                        accentColor === 'default'
+                          ? "bg-gradient-to-r from-purple-500 to-pink-500 border-transparent shadow-lg"
+                          : "bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 border-gray-300 dark:border-gray-600 hover:border-purple-400 dark:hover:border-purple-500"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0",
+                        accentColor === 'default' && "ring-2 ring-white ring-offset-2"
+                      )}>
+                        {accentColor === 'default' && (
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="text-left flex-1">
+                        <h4 className={cn(
+                          "font-semibold text-base",
+                          accentColor === 'default' ? "text-white" : "text-gray-900 dark:text-white"
+                        )}>
+                          System Default
+                        </h4>
+                        <p className={cn(
+                          "text-sm",
+                          accentColor === 'default' ? "text-white/80" : "text-gray-600 dark:text-gray-400"
+                        )}>
+                          Classic purple & pink gradient
+                        </p>
+                      </div>
+                    </button>
+
+                    {/* Vibrant Colors */}
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                        Vibrant Colors
+                      </h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        {[
+                          { name: 'purple' as AccentColor, class: 'bg-purple-500', label: 'Purple' },
+                          { name: 'blue' as AccentColor, class: 'bg-blue-500', label: 'Blue' },
+                          { name: 'green' as AccentColor, class: 'bg-green-500', label: 'Green' },
+                          { name: 'yellow' as AccentColor, class: 'bg-yellow-500', label: 'Yellow' },
+                          { name: 'red' as AccentColor, class: 'bg-red-500', label: 'Red' },
+                          { name: 'pink' as AccentColor, class: 'bg-pink-500', label: 'Pink' },
+                        ].map((color) => (
+                          <button
+                            key={color.name}
+                            onClick={() => handleAccentColorChange(color.name)}
+                            className="flex flex-col items-center gap-2 group"
+                          >
+                            <div className={cn(
+                              "w-14 h-14 rounded-xl transition-all relative",
+                              color.class,
+                              accentColor === color.name
+                                ? "ring-4 ring-gray-400 dark:ring-gray-500 ring-offset-2 dark:ring-offset-gray-900 shadow-lg scale-110"
+                                : "hover:scale-110 hover:shadow-md"
+                            )}>
+                              {accentColor === color.name && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <svg className="w-6 h-6 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                              {color.label}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Trendy & Fresh */}
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                        Trendy & Fresh
+                      </h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        {[
+                          { name: 'teal' as AccentColor, class: 'bg-teal-500', label: 'Teal' },
+                          { name: 'coral' as AccentColor, class: 'bg-orange-400', label: 'Coral' },
+                          { name: 'lavender' as AccentColor, class: 'bg-violet-400', label: 'Lavender' },
+                          { name: 'mint' as AccentColor, class: 'bg-emerald-400', label: 'Mint' },
+                          { name: 'rose' as AccentColor, class: 'bg-pink-400', label: 'Rose' },
+                          { name: 'electric' as AccentColor, class: 'bg-blue-400', label: 'Electric' },
+                        ].map((color) => (
+                          <button
+                            key={color.name}
+                            onClick={() => handleAccentColorChange(color.name)}
+                            className="flex flex-col items-center gap-2 group"
+                          >
+                            <div className={cn(
+                              "w-14 h-14 rounded-xl transition-all relative",
+                              color.class,
+                              accentColor === color.name
+                                ? "ring-4 ring-gray-400 dark:ring-gray-500 ring-offset-2 dark:ring-offset-gray-900 shadow-lg scale-110"
+                                : "hover:scale-110 hover:shadow-md"
+                            )}>
+                              {accentColor === color.name && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <svg className="w-6 h-6 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                              {color.label}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Professional & Neutral */}
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                        Professional & Neutral
+                      </h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        {[
+                          { name: 'slate' as AccentColor, class: 'bg-slate-500', label: 'Slate' },
+                          { name: 'gray' as AccentColor, class: 'bg-gray-500', label: 'Gray' },
+                          { name: 'neutral' as AccentColor, class: 'bg-neutral-500', label: 'Neutral' },
+                          { name: 'stone' as AccentColor, class: 'bg-stone-500', label: 'Stone' },
+                        ].map((color) => (
+                          <button
+                            key={color.name}
+                            onClick={() => handleAccentColorChange(color.name)}
+                            className="flex flex-col items-center gap-2 group"
+                          >
+                            <div className={cn(
+                              "w-14 h-14 rounded-xl transition-all relative",
+                              color.class,
+                              accentColor === color.name
+                                ? "ring-4 ring-gray-400 dark:ring-gray-500 ring-offset-2 dark:ring-offset-gray-900 shadow-lg scale-110"
+                                : "hover:scale-110 hover:shadow-md"
+                            )}>
+                              {accentColor === color.name && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <svg className="w-6 h-6 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                              {color.label}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -302,13 +524,13 @@ export default function SettingsPage() {
 
                 <div className="space-y-3">
                   {[
-                    { label: 'Study Reminders', description: 'Get reminded to study daily' },
-                    { label: 'New Features', description: 'Learn about new features and updates' },
-                    { label: 'Learning Progress', description: 'Weekly learning progress reports' },
-                    { label: 'Achievement Badges', description: 'Notifications when you earn badges' }
-                  ].map((item, index) => (
+                    { key: 'studyReminders' as keyof NotificationPreferences, label: 'Study Reminders', description: 'Get reminded to study daily' },
+                    { key: 'newFeatures' as keyof NotificationPreferences, label: 'New Features', description: 'Learn about new features and updates' },
+                    { key: 'learningProgress' as keyof NotificationPreferences, label: 'Learning Progress', description: 'Weekly learning progress reports' },
+                    { key: 'achievementBadges' as keyof NotificationPreferences, label: 'Achievement Badges', description: 'Notifications when you earn badges' }
+                  ].map((item) => (
                     <div
-                      key={index}
+                      key={item.key}
                       className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
                     >
                       <div>
@@ -320,11 +542,19 @@ export default function SettingsPage() {
                         </p>
                       </div>
                       <button
+                        onClick={() => handleNotificationToggle(item.key)}
                         className={cn(
-                          "relative w-14 h-8 rounded-full transition-colors bg-purple-600"
+                          "relative w-14 h-8 rounded-full transition-colors",
+                          notifications[item.key] ? "bg-accent-primary" : "bg-gray-300 dark:bg-gray-600"
                         )}
+                        aria-label={`Toggle ${item.label}`}
                       >
-                        <span className="absolute top-1 left-7 w-6 h-6 bg-white rounded-full" />
+                        <span
+                          className={cn(
+                            "absolute top-1 w-6 h-6 bg-white rounded-full transition-transform",
+                            notifications[item.key] ? "left-7" : "left-1"
+                          )}
+                        />
                       </button>
                     </div>
                   ))}

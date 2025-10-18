@@ -84,8 +84,8 @@ export default function DocumentList({
           className={cn(
             "flex items-center gap-2 px-4 py-2.5 border rounded-lg font-medium transition-all",
             showFilters
-              ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white border-transparent shadow-lg"
-              : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+              ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white border-transparent shadow-lg"
+              : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-accent-primary/30 dark:border-accent-primary/50 hover:bg-accent-primary/5 dark:hover:bg-accent-primary/10"
           )}
         >
           <SlidersHorizontal className="w-5 h-5" />
@@ -113,8 +113,8 @@ export default function DocumentList({
                     className={cn(
                       "px-4 py-2 rounded-lg text-sm font-medium transition-all",
                       sortBy === option.value
-                        ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md"
-                        : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 border border-purple-200 dark:border-purple-800"
+                        ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-md"
+                        : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-accent-primary/5 dark:hover:bg-accent-primary/10 border border-accent-primary/30 dark:border-accent-primary/50"
                     )}
                   >
                     {option.label}

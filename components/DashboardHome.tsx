@@ -43,7 +43,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
       name: "Flashcards",
       icon: BookOpen,
       description: "Transform documents into interactive flashcards",
-      gradient: "from-purple-500 to-pink-500",
+      gradient: "from-accent-primary to-accent-secondary",
       available: true
     },
     {
@@ -103,14 +103,14 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
     if (type.includes('pdf')) return 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
     if (type.includes('word') || type.includes('doc')) return 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
     if (type.includes('text')) return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-    return 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+    return 'bg-accent-primary/20 dark:bg-accent-primary/30 text-accent-primary'
   }
 
   return (
     <div className="h-screen overflow-y-auto bg-gray-50 dark:bg-gray-950">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-8 text-white">
+        <div className="bg-gradient-to-r from-accent-primary to-accent-secondary rounded-2xl p-8 text-white">
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-4xl font-bold mb-2">
@@ -134,7 +134,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Your Learning Profile</h2>
               <button
                 onClick={() => window.location.href = '/dashboard/settings'}
-                className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+                className="text-sm text-accent-primary hover:underline"
               >
                 View Full Profile
               </button>
@@ -142,9 +142,9 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
 
             <div className="grid md:grid-cols-2 gap-6">
               {/* Dominant Style */}
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-6 border border-purple-200 dark:border-purple-800">
+              <div className="bg-gradient-to-br from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-xl p-6 border border-accent-primary/30 dark:border-accent-primary/50">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white">
+                  <div className="w-12 h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center text-white">
                     {(() => {
                       const Icon = getStyleIcon(learningStyle)
                       return <Icon className="w-6 h-6" />
@@ -180,7 +180,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                         </div>
                         <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
+                            className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full transition-all duration-500"
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
@@ -234,7 +234,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recent Documents</h2>
             <button
               onClick={() => window.location.href = '/dashboard/documents'}
-              className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+              className="text-sm text-accent-primary hover:underline"
             >
               View All Documents
             </button>
@@ -256,7 +256,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
               </p>
               <button
                 onClick={() => window.location.href = '/dashboard/documents'}
-                className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+                className="px-6 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold hover:shadow-lg transition-all"
               >
                 Upload Document
               </button>
@@ -290,7 +290,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                         // Set document and switch to flashcards mode
                         onModeSelect('flashcards')
                       }}
-                      className="flex-1 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+                      className="flex-1 px-3 py-1.5 bg-accent-primary/20 dark:bg-accent-primary/30 text-accent-primary rounded-lg text-xs font-semibold hover:bg-accent-primary/30 dark:hover:bg-accent-primary/40 transition-colors"
                     >
                       Flashcards
                     </button>

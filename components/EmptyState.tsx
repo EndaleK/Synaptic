@@ -37,9 +37,9 @@ export default function EmptyState({
     <div className={cn("flex flex-col items-center justify-center text-center", containerClass, className)}>
       {/* Icon with gradient background */}
       <div className="relative mb-6">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl blur-2xl opacity-20 animate-pulse" />
-        <div className="relative w-24 h-24 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-3xl flex items-center justify-center border-2 border-purple-200 dark:border-purple-800">
-          <Icon className="w-12 h-12 text-purple-600 dark:text-purple-400" />
+        <div className="absolute inset-0 bg-gradient-to-r from-accent-primary to-accent-secondary rounded-3xl blur-2xl opacity-20 animate-pulse" />
+        <div className="relative w-24 h-24 bg-gradient-to-br from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-3xl flex items-center justify-center border-2 border-accent-primary/30 dark:border-accent-primary/50">
+          <Icon className="w-12 h-12 text-accent-primary" />
         </div>
       </div>
 
@@ -63,7 +63,7 @@ export default function EmptyState({
                 "flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all shadow-lg",
                 action.variant === 'secondary'
                   ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 hover:shadow-xl shadow-purple-500/30"
+                  : "bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:opacity-90 hover:shadow-xl"
               )}
             >
               {action.label}

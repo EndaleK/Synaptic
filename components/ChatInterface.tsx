@@ -332,10 +332,10 @@ export default function ChatInterface() {
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
               onClick={triggerChatFileInput}
-              className="w-full max-w-2xl flex items-center justify-center border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-xl hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 transition-all duration-300 group cursor-pointer bg-purple-50/30 dark:bg-purple-900/10 p-12"
+              className="w-full max-w-2xl flex items-center justify-center border-2 border-dashed border-accent-primary/30 dark:border-accent-primary/50 rounded-xl hover:border-accent-primary dark:hover:border-accent-primary hover:bg-accent-primary/5 dark:hover:bg-accent-primary/10 transition-all duration-300 group cursor-pointer bg-accent-primary/5 dark:bg-accent-primary/5 p-12"
             >
               <div className="text-center max-w-md">
-                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-lg shadow-purple-500/30 mb-6">
+                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-lg mb-6">
                   <Upload className="h-10 w-10 text-white" />
                 </div>
                 <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
@@ -347,7 +347,7 @@ export default function ChatInterface() {
 
                 <button
                   onClick={triggerChatFileInput}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 mx-auto mb-4"
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary hover:opacity-90 text-white rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 mx-auto mb-4"
                 >
                   <Upload className="h-5 w-5" />
                   Choose File
@@ -470,22 +470,22 @@ export default function ChatInterface() {
                             className={cn(
                               "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
                               message.type === "user"
-                                ? "bg-gradient-to-br from-purple-500 to-pink-500"
-                                : "bg-purple-100 dark:bg-purple-900/30"
+                                ? "bg-gradient-to-br from-accent-primary to-accent-secondary"
+                                : "bg-accent-primary/10 dark:bg-accent-primary/20"
                             )}
                           >
                             {message.type === "user" ? (
                               <User className="h-4 w-4 text-white" />
                             ) : (
-                              <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                              <Bot className="h-4 w-4 text-accent-primary" />
                             )}
                           </div>
                           <div
                             className={cn(
                               "rounded-lg px-4 py-2",
                               message.type === "user"
-                                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-                                : "bg-purple-50 dark:bg-purple-900/20 text-gray-900 dark:text-gray-100 border border-purple-200 dark:border-purple-800"
+                                ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white"
+                                : "bg-accent-primary/5 dark:bg-accent-primary/10 text-gray-900 dark:text-gray-100 border border-accent-primary/30 dark:border-accent-primary/50"
                             )}
                           >
                             <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -497,12 +497,12 @@ export default function ChatInterface() {
                     {isLoading && (
                       <div className="flex justify-start">
                         <div className="flex gap-2">
-                          <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-                            <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                          <div className="w-8 h-8 bg-accent-primary/10 dark:bg-accent-primary/20 rounded-full flex items-center justify-center">
+                            <Bot className="h-4 w-4 text-accent-primary" />
                           </div>
-                          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg px-4 py-2 flex items-center gap-2 border border-purple-200 dark:border-purple-800">
-                            <Loader2 className="h-4 w-4 animate-spin text-purple-600 dark:text-purple-400" />
-                            <span className="text-sm text-purple-600 dark:text-purple-400">
+                          <div className="bg-accent-primary/5 dark:bg-accent-primary/10 rounded-lg px-4 py-2 flex items-center gap-2 border border-accent-primary/30 dark:border-accent-primary/50">
+                            <Loader2 className="h-4 w-4 animate-spin text-accent-primary" />
+                            <span className="text-sm text-accent-primary">
                               Thinking...
                             </span>
                           </div>
@@ -524,14 +524,14 @@ export default function ChatInterface() {
                     onKeyPress={handleKeyPress}
                     placeholder="Ask a question about the document..."
                     disabled={chatDocument.isProcessing}
-                    className="flex-1 resize-none border border-purple-200 dark:border-purple-800 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent dark:bg-gray-700 dark:text-gray-100 text-sm min-h-[44px] max-h-[120px]"
+                    className="flex-1 resize-none border border-accent-primary/30 dark:border-accent-primary/50 rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent-primary focus:border-transparent dark:bg-gray-700 dark:text-gray-100 text-sm min-h-[44px] max-h-[120px]"
                     rows={1}
                   />
                   <button
                     onClick={handleSendMessage}
                     disabled={!inputMessage.trim() || isLoading || chatDocument.isProcessing}
                     className={cn(
-                      "px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg transition-colors flex items-center justify-center min-w-[44px] shadow-lg shadow-purple-500/30",
+                      "px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary hover:opacity-90 text-white rounded-lg transition-colors flex items-center justify-center min-w-[44px] shadow-lg",
                       (!inputMessage.trim() || isLoading || chatDocument.isProcessing) &&
                       "opacity-50 cursor-not-allowed"
                     )}

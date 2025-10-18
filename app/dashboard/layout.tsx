@@ -88,8 +88,8 @@ export default function DashboardLayout({
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed top-0 left-0 z-50 h-full bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-all duration-300 ease-in-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         } ${sidebarCollapsed ? "w-20" : "w-64"}`}
       >
         <div className="flex flex-col h-full">
@@ -98,11 +98,11 @@ export default function DashboardLayout({
             <Link href="/dashboard" className="flex items-center gap-3 group">
               {!sidebarCollapsed ? (
                 <>
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center flex-shrink-0">
                     <span className="text-white text-xl font-bold">AI</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                    <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-accent-secondary">
                       AI Learning
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -111,7 +111,7 @@ export default function DashboardLayout({
                   </div>
                 </>
               ) : (
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center">
                   <span className="text-white text-xl font-bold">AI</span>
                 </div>
               )}
@@ -119,7 +119,7 @@ export default function DashboardLayout({
             {/* Collapse button - desktop only */}
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="hidden lg:flex p-2 text-gray-600 dark:text-gray-400 hover:text-purple-500 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+              className="hidden lg:flex p-2 text-gray-600 dark:text-gray-400 hover:text-accent-primary rounded-lg hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 transition-colors"
               title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {sidebarCollapsed ? (
@@ -150,8 +150,8 @@ export default function DashboardLayout({
                     }}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
                       isActive
-                        ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30"
-                        : "text-gray-600 dark:text-gray-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400"
+                        ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
                     } ${sidebarCollapsed ? "justify-center" : ""}`}
                     title={sidebarCollapsed ? item.name : undefined}
                   >
@@ -167,11 +167,11 @@ export default function DashboardLayout({
               {!sidebarCollapsed && (
                 <div className="px-4 mb-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="h-px flex-1 bg-gradient-to-r from-purple-500/20 to-transparent"></div>
-                    <h3 className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
+                    <div className="h-px flex-1 bg-gradient-to-r from-accent-primary/20 to-transparent"></div>
+                    <h3 className="text-xs font-semibold text-accent-primary uppercase tracking-wider">
                       Learning Modes
                     </h3>
-                    <div className="h-px flex-1 bg-gradient-to-l from-purple-500/20 to-transparent"></div>
+                    <div className="h-px flex-1 bg-gradient-to-l from-accent-primary/20 to-transparent"></div>
                   </div>
                 </div>
               )}
@@ -184,10 +184,10 @@ export default function DashboardLayout({
                       onClick={() => handleModeClick(mode.id, mode.comingSoon)}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all text-left ${
                         isActive
-                          ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30"
+                          ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
                           : mode.comingSoon
                           ? "text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
-                          : "text-gray-600 dark:text-gray-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400"
+                          : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
                       } ${sidebarCollapsed ? "justify-center" : ""}`}
                       title={sidebarCollapsed ? mode.name : undefined}
                     >
@@ -216,7 +216,7 @@ export default function DashboardLayout({
               {/* Theme Toggle Button */}
               <button
                 onClick={toggleTheme}
-                className={`flex items-center justify-center gap-2 px-4 py-3 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl transition-all font-medium border border-purple-200 dark:border-purple-800 ${
+                className={`flex items-center justify-center gap-2 px-4 py-3 bg-accent-primary/10 dark:bg-accent-primary/20 hover:bg-accent-primary/20 dark:hover:bg-accent-primary/30 text-accent-primary rounded-xl transition-all font-medium border border-accent-primary/30 dark:border-accent-primary/50 ${
                   sidebarCollapsed ? "w-full" : "flex-1"
                 }`}
                 title={sidebarCollapsed ? (isDarkMode ? "Light mode" : "Dark mode") : undefined}
@@ -240,7 +240,7 @@ export default function DashboardLayout({
             </div>
 
             {/* User Info */}
-            <div className={`flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-100 dark:border-purple-800/50 ${
+            <div className={`flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-xl border border-accent-primary/20 dark:border-accent-primary/50 ${
               sidebarCollapsed ? "justify-center" : ""
             }`}>
               <div className="relative">

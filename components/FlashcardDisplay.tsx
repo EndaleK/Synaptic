@@ -463,11 +463,11 @@ ${'='.repeat(50)}`).join('\n')}`
         <div style={{ padding: "var(--space-4)" }}>
           <div style={{ marginBottom: "var(--space-3)" }}>
             <div
-              className="w-full bg-purple-100 dark:bg-purple-900/30 rounded-full"
+              className="w-full bg-accent-primary/10 dark:bg-accent-primary/20 rounded-full"
               style={{ height: "8px" }}
             >
               <div
-                className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full transition-all duration-300"
                 style={{
                   width: `${progress}%`,
                   height: "8px"
@@ -499,8 +499,8 @@ ${'='.repeat(50)}`).join('\n')}`
               }}
             >
               <div
-                className="absolute inset-0 w-full h-full bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/40 dark:to-pink-900/40 rounded-lg shadow-lg flex items-center justify-center backface-hidden border-2 border-purple-200 dark:border-purple-700"
-                style={{ 
+                className="absolute inset-0 w-full h-full bg-gradient-to-br from-accent-primary/5 to-accent-secondary/5 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-lg shadow-lg flex items-center justify-center backface-hidden border-2 border-accent-primary/30 dark:border-accent-primary/50"
+                style={{
                   backfaceVisibility: "hidden",
                   padding: "var(--space-6)",
                   borderRadius: "var(--radius-lg)"
@@ -512,8 +512,8 @@ ${'='.repeat(50)}`).join('\n')}`
               </div>
               
               <div
-                className="absolute inset-0 w-full h-full bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/50 dark:to-purple-900/50 rounded-lg shadow-lg flex items-center justify-center backface-hidden rotate-y-180 border-2 border-pink-200 dark:border-pink-700"
-                style={{ 
+                className="absolute inset-0 w-full h-full bg-gradient-to-br from-accent-secondary/5 to-accent-primary/5 dark:from-accent-secondary/30 dark:to-accent-primary/30 rounded-lg shadow-lg flex items-center justify-center backface-hidden rotate-y-180 border-2 border-accent-secondary/30 dark:border-accent-secondary/50"
+                style={{
                   backfaceVisibility: "hidden",
                   transform: "rotateY(180deg)",
                   padding: "var(--space-6)",

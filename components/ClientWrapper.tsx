@@ -4,6 +4,7 @@ import dynamic from "next/dynamic"
 import { ToastProvider } from "@/components/ToastContainer"
 import KeyboardShortcutsModal, { useKeyboardShortcuts } from "@/components/KeyboardShortcuts"
 import QuickActionButton from "@/components/QuickActionButton"
+import AccentColorInitializer from "@/components/AccentColorInitializer"
 
 // Dynamic import to prevent SSR issues with PDF.js
 const PDFWorkerInitializer = dynamic(() => import("@/components/PDFWorkerInitializer"), {
@@ -15,6 +16,7 @@ function ClientWrapperContent({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <AccentColorInitializer />
       <PDFWorkerInitializer />
       {children}
       <QuickActionButton />
