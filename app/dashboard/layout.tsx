@@ -59,8 +59,8 @@ export default function DashboardLayout({
   const learningModes = [
     { name: "Flashcards", id: "flashcards", icon: BookOpen, comingSoon: false },
     { name: "Chat", id: "chat", icon: MessageSquare, comingSoon: false },
-    { name: "Podcast", id: "podcast", icon: Mic, comingSoon: true },
-    { name: "Mind Map", id: "mindmap", icon: Network, comingSoon: true },
+    { name: "Podcast", id: "podcast", icon: Mic, comingSoon: false },
+    { name: "Mind Map", id: "mindmap", icon: Network, comingSoon: false },
   ]
 
   const handleModeClick = (modeId: string, comingSoon: boolean) => {

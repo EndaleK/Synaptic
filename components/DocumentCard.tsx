@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { FileText, File, FileType, Trash2, Download, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
+import { useState, useEffect } from "react"
+import { FileText, File, FileType, Trash2, Download, Loader2, CheckCircle2, AlertCircle, ChevronDown } from "lucide-react"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { cn } from "@/lib/utils"
 
@@ -14,6 +14,17 @@ interface DocumentCardProps {
 export default function DocumentCard({ document, onSelectMode, onDelete }: DocumentCardProps) {
   const [showModeSelector, setShowModeSelector] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [lastUsedMode, setLastUsedMode] = useState<PreferredMode>('flashcards')
+
+  // Load last used mode from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('lastUsedMode') as PreferredMode
+      if (savedMode && ['flashcards', 'chat', 'podcast', 'mindmap'].includes(savedMode)) {
+        setLastUsedMode(savedMode)
+      }
+    }
+  }, [])
 
   const getFileIcon = () => {
     const type = document.file_type.toLowerCase()
@@ -85,9 +96,34 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
   const modes = [
     { id: 'flashcards', name: 'Flashcards', icon: '🎯', available: true },
     { id: 'chat', name: 'Chat', icon: '💬', available: true },
-    { id: 'podcast', name: 'Podcast', icon: '🎙️', available: false },
-    { id: 'mindmap', name: 'Mind Map', icon: '🗺️', available: false }
+    { id: 'podcast', name: 'Podcast', icon: '🎙️', available: true },
+    { id: 'mindmap', name: 'Mind Map', icon: '🗺️', available: true }
   ]
+
+  const handleQuickOpen = () => {
+    // Check if last used mode is available
+    const mode = modes.find(m => m.id === lastUsedMode)
+    if (mode?.available) {
+      // Save mode and open
+      localStorage.setItem('lastUsedMode', lastUsedMode)
+      onSelectMode(document.id, lastUsedMode)
+    } else {
+      // Fallback to flashcards if last mode isn't available
+      localStorage.setItem('lastUsedMode', 'flashcards')
+      onSelectMode(document.id, 'flashcards')
+    }
+  }
+
+  const handleModeSelect = (modeId: string) => {
+    const mode = modes.find(m => m.id === modeId)
+    if (mode?.available) {
+      localStorage.setItem('lastUsedMode', modeId)
+      setLastUsedMode(modeId as PreferredMode)
+      onSelectMode(document.id, modeId as PreferredMode)
+    } else {
+      alert(`${mode?.name} mode is coming soon!`)
+    }
+  }
 
   return (
     <div className={cn(
@@ -114,20 +150,35 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
         <span>{formatDate(document.created_at)}</span>
       </div>
 
-      {/* Mode Selection */}
+      {/* Smart Mode Selection */}
       {!showModeSelector ? (
-        <button
-          onClick={() => setShowModeSelector(true)}
-          disabled={document.processing_status !== 'completed'}
-          className={cn(
-            "w-full py-2 px-4 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium transition-all shadow-lg",
-            document.processing_status === 'completed'
-              ? "hover:opacity-90 hover:shadow-xl"
-              : "opacity-50 cursor-not-allowed"
-          )}
-        >
-          Open Document
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleQuickOpen}
+            disabled={document.processing_status !== 'completed'}
+            className={cn(
+              "flex-1 py-2 px-4 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium transition-all shadow-lg",
+              document.processing_status === 'completed'
+                ? "hover:opacity-90 hover:shadow-xl"
+                : "opacity-50 cursor-not-allowed"
+            )}
+          >
+            Open in {modes.find(m => m.id === lastUsedMode)?.name || 'Flashcards'}
+          </button>
+          <button
+            onClick={() => setShowModeSelector(true)}
+            disabled={document.processing_status !== 'completed'}
+            className={cn(
+              "py-2 px-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg transition-all shadow-lg",
+              document.processing_status === 'completed'
+                ? "hover:opacity-90 hover:shadow-xl"
+                : "opacity-50 cursor-not-allowed"
+            )}
+            title="Choose different mode"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        </div>
       ) : (
         <div className="space-y-2">
           <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
@@ -137,13 +188,7 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
             {modes.map((mode) => (
               <button
                 key={mode.id}
-                onClick={() => {
-                  if (mode.available) {
-                    onSelectMode(document.id, mode.id as PreferredMode)
-                  } else {
-                    alert(`${mode.name} mode is coming soon!`)
-                  }
-                }}
+                onClick={() => handleModeSelect(mode.id)}
                 disabled={!mode.available}
                 className={cn(
                   "flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all",

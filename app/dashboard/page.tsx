@@ -7,6 +7,8 @@ import DocumentUpload from "@/components/DocumentUpload"
 import FlashcardDisplay from "@/components/FlashcardDisplay"
 import LearningStyleAssessment from "@/components/LearningStyleAssessment"
 import DashboardHome from "@/components/DashboardHome"
+import PodcastView from "@/components/PodcastView"
+import MindMapView from "@/components/MindMapView"
 import { Flashcard } from "@/lib/types"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import { useDocumentStore } from "@/lib/store/useStore"
@@ -198,44 +200,68 @@ export default function DashboardPage() {
         )
 
       case "podcast":
-        return (
-          <div className="h-full flex items-center justify-center p-6">
-            <div className="text-center max-w-md">
-              <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <span className="text-white text-4xl">🎙️</span>
-              </div>
-              <h2 className="text-3xl font-bold text-black dark:text-white mb-4">
-                Podcast Mode Coming Soon
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Convert your documents into AI-narrated podcasts with natural voice synthesis.
-                Perfect for learning on the go!
-              </p>
-              <div className="inline-block px-6 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm text-gray-600 dark:text-gray-400">
-                Stay tuned for this feature
+        if (!currentDocument) {
+          return (
+            <div className="h-full flex items-center justify-center p-6">
+              <div className="text-center max-w-md">
+                <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                  <span className="text-white text-4xl">🎙️</span>
+                </div>
+                <h2 className="text-3xl font-bold text-black dark:text-white mb-4">
+                  No Document Selected
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Please select a document from the Documents page to generate a podcast.
+                </p>
+                <button
+                  onClick={() => setActiveMode("home")}
+                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:shadow-xl transition-all"
+                >
+                  Go to Home
+                </button>
               </div>
             </div>
+          )
+        }
+        return (
+          <div className="h-full overflow-y-auto p-6">
+            <PodcastView
+              documentId={currentDocument.id}
+              documentName={currentDocument.name}
+            />
           </div>
         )
 
       case "mindmap":
-        return (
-          <div className="h-full flex items-center justify-center p-6">
-            <div className="text-center max-w-md">
-              <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <span className="text-white text-4xl">🗺️</span>
-              </div>
-              <h2 className="text-3xl font-bold text-black dark:text-white mb-4">
-                Mind Map Mode Coming Soon
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Visualize concepts and their relationships as interactive mind maps.
-                See the big picture at a glance!
-              </p>
-              <div className="inline-block px-6 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm text-gray-600 dark:text-gray-400">
-                Stay tuned for this feature
+        if (!currentDocument) {
+          return (
+            <div className="h-full flex items-center justify-center p-6">
+              <div className="text-center max-w-md">
+                <div className="w-24 h-24 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-3xl flex items-center justify-center mx-auto mb-6">
+                  <span className="text-white text-4xl">🗺️</span>
+                </div>
+                <h2 className="text-3xl font-bold text-black dark:text-white mb-4">
+                  No Document Selected
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Please select a document from the Documents page to generate a mind map.
+                </p>
+                <button
+                  onClick={() => setActiveMode("home")}
+                  className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold hover:shadow-xl transition-all"
+                >
+                  Go to Home
+                </button>
               </div>
             </div>
+          )
+        }
+        return (
+          <div className="h-full overflow-y-auto p-6">
+            <MindMapView
+              documentId={currentDocument.id}
+              documentName={currentDocument.name}
+            />
           </div>
         )
 

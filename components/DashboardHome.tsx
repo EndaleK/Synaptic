@@ -58,17 +58,17 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
       id: "podcast",
       name: "Podcast",
       icon: Mic,
-      description: "Coming Soon - Audio learning on the go",
+      description: "Generate AI-hosted podcast discussions",
       gradient: "from-green-500 to-emerald-500",
-      available: false
+      available: true
     },
     {
       id: "mindmap",
       name: "Mind Map",
       icon: Network,
-      description: "Coming Soon - Visual concept mapping",
+      description: "Visualize concepts and relationships interactively",
       gradient: "from-orange-500 to-red-500",
-      available: false
+      available: true
     }
   ]
 
