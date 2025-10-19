@@ -9,11 +9,12 @@ interface ChatRequest {
   message: string
   fileName?: string
   documentContent?: string
+  teachingMode?: 'socratic' | 'direct' | 'mixed'
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, fileName, documentContent }: ChatRequest = await request.json()
+    const { message, fileName, documentContent, teachingMode }: ChatRequest = await request.json()
 
     if (!message) {
       return NextResponse.json(
@@ -69,9 +70,13 @@ Please try uploading a text-based document (TXT, DOCX) or a PDF with selectable 
           const { learningProfile: dbLearningProfile } = await getUserLearningProfile(profile.id)
 
           if (dbLearningProfile && profile.learning_style) {
+            // Use override if provided, otherwise use saved preference
+            const effectiveTeachingMode = teachingMode ||
+              (dbLearningProfile.teaching_style_preference || 'mixed') as TeachingStylePreference
+
             learningProfile = createLearningProfile(
               profile.learning_style as LearningStyle,
-              (dbLearningProfile.teaching_style_preference || 'mixed') as TeachingStylePreference,
+              effectiveTeachingMode as TeachingStylePreference,
               {
                 visual: dbLearningProfile.visual_score,
                 auditory: dbLearningProfile.auditory_score,
@@ -81,7 +86,7 @@ Please try uploading a text-based document (TXT, DOCX) or a PDF with selectable 
               dbLearningProfile.socratic_percentage
             )
 
-            console.log(`Using personalized chat for ${profile.learning_style} learner with ${dbLearningProfile.teaching_style_preference} teaching`)
+            console.log(`Using personalized chat for ${profile.learning_style} learner with ${effectiveTeachingMode} teaching ${teachingMode ? '(override)' : '(saved preference)'}`)
           }
         }
       }

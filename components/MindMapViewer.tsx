@@ -350,14 +350,16 @@ export default function MindMapViewer({ title, nodes, edges, documentText, onNod
           </defs>
           <path
             d={(() => {
-              // Calculate Bézier curve from node to panel
+              // Calculate Bézier curve from node to panel (default compact mode: 384px)
               const startX = selectedNodePosition.x
               const startY = selectedNodePosition.y
-              const endX = window.innerWidth - (window.innerWidth <= 768 ? window.innerWidth : window.innerWidth * 0.5) + 20
-              const endY = 150 // Panel top area
+              // Mobile: full width, Tablet+: 384px compact panel width
+              const panelWidth = window.innerWidth <= 768 ? window.innerWidth : 384
+              const endX = window.innerWidth - panelWidth + 24 // 24px padding from edge
+              const endY = 140 // Panel header area
 
               // Control point for smooth curve
-              const controlX = startX + (endX - startX) * 0.6
+              const controlX = startX + (endX - startX) * 0.65
               const controlY = startY
 
               return `M ${startX} ${startY} Q ${controlX} ${controlY}, ${endX} ${endY}`

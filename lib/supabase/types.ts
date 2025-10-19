@@ -9,6 +9,7 @@ export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed'
 export type MessageType = 'user' | 'assistant'
 export type TeachingMode = 'direct' | 'socratic' | 'guided'
 export type Difficulty = 'easy' | 'medium' | 'hard'
+export type SourceType = 'arxiv' | 'youtube' | 'web' | 'medium' | 'pdf-url' | 'unknown'
 
 export interface UserProfile {
   id: string
@@ -55,6 +56,9 @@ export interface Document {
   storage_path?: string
   processing_status: ProcessingStatus
   error_message?: string
+  source_url?: string
+  source_type?: SourceType
+  metadata?: Record<string, any>
   created_at: string
   updated_at: string
 }

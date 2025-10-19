@@ -56,6 +56,9 @@ CREATE TABLE IF NOT EXISTS documents (
   storage_path TEXT, -- Path in Supabase storage
   processing_status TEXT DEFAULT 'pending' CHECK (processing_status IN ('pending', 'processing', 'completed', 'failed')),
   error_message TEXT,
+  source_url TEXT, -- Original URL if imported from web
+  source_type TEXT CHECK (source_type IN ('arxiv', 'youtube', 'web', 'medium', 'pdf-url', 'unknown')),
+  metadata JSONB DEFAULT '{}'::jsonb, -- Rich metadata for imported content
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

@@ -383,124 +383,175 @@ export default function SettingsPage() {
                     </button>
 
                     {/* Vibrant Colors */}
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                        Vibrant Colors
-                      </h4>
-                      <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
+                        <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest">
+                          Vibrant Colors
+                        </h4>
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
+                      </div>
+                      <div className="grid grid-cols-3 gap-5">
                         {[
-                          { name: 'purple' as AccentColor, class: 'bg-purple-500', label: 'Purple' },
-                          { name: 'blue' as AccentColor, class: 'bg-blue-500', label: 'Blue' },
-                          { name: 'green' as AccentColor, class: 'bg-green-500', label: 'Green' },
-                          { name: 'yellow' as AccentColor, class: 'bg-yellow-500', label: 'Yellow' },
-                          { name: 'red' as AccentColor, class: 'bg-red-500', label: 'Red' },
-                          { name: 'pink' as AccentColor, class: 'bg-pink-500', label: 'Pink' },
+                          { name: 'purple' as AccentColor, gradient: 'from-purple-400 via-purple-500 to-purple-600', label: 'Purple', shadow: 'hover:shadow-purple-500/50' },
+                          { name: 'blue' as AccentColor, gradient: 'from-blue-400 via-blue-500 to-blue-600', label: 'Blue', shadow: 'hover:shadow-blue-500/50' },
+                          { name: 'green' as AccentColor, gradient: 'from-green-400 via-green-500 to-green-600', label: 'Green', shadow: 'hover:shadow-green-500/50' },
+                          { name: 'yellow' as AccentColor, gradient: 'from-yellow-400 via-yellow-500 to-yellow-600', label: 'Yellow', shadow: 'hover:shadow-yellow-500/50' },
+                          { name: 'red' as AccentColor, gradient: 'from-red-400 via-red-500 to-red-600', label: 'Red', shadow: 'hover:shadow-red-500/50' },
+                          { name: 'pink' as AccentColor, gradient: 'from-pink-400 via-pink-500 to-pink-600', label: 'Pink', shadow: 'hover:shadow-pink-500/50' },
                         ].map((color) => (
                           <button
                             key={color.name}
                             onClick={() => handleAccentColorChange(color.name)}
-                            className="flex flex-col items-center gap-2 group"
+                            className="group relative"
                           >
                             <div className={cn(
-                              "w-14 h-14 rounded-xl transition-all relative",
-                              color.class,
+                              "relative w-full aspect-square rounded-2xl transition-all duration-300",
+                              "bg-gradient-to-br",
+                              color.gradient,
                               accentColor === color.name
-                                ? "ring-4 ring-gray-400 dark:ring-gray-500 ring-offset-2 dark:ring-offset-gray-900 shadow-lg scale-110"
-                                : "hover:scale-110 hover:shadow-md"
+                                ? "ring-4 ring-offset-2 dark:ring-offset-gray-900 ring-gray-400 dark:ring-white/30 shadow-2xl scale-105"
+                                : `hover:scale-105 hover:shadow-xl ${color.shadow} shadow-lg`
                             )}>
+                              {/* Glass overlay effect */}
+                              <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/20 to-transparent opacity-50" />
+
+                              {/* Checkmark */}
                               {accentColor === color.name && (
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                  <svg className="w-6 h-6 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                  </svg>
+                                  <div className="w-10 h-10 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center ring-2 ring-white/50">
+                                    <svg className="w-6 h-6 text-white drop-shadow-2xl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </div>
                                 </div>
                               )}
                             </div>
-                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                            <p className={cn(
+                              "mt-2 text-sm font-semibold text-center transition-all",
+                              accentColor === color.name
+                                ? "text-gray-900 dark:text-white scale-105"
+                                : "text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+                            )}>
                               {color.label}
-                            </span>
+                            </p>
                           </button>
                         ))}
                       </div>
                     </div>
 
                     {/* Trendy & Fresh */}
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                        Trendy & Fresh
-                      </h4>
-                      <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
+                        <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest">
+                          Trendy & Fresh
+                        </h4>
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
+                      </div>
+                      <div className="grid grid-cols-3 gap-5">
                         {[
-                          { name: 'teal' as AccentColor, class: 'bg-teal-500', label: 'Teal' },
-                          { name: 'coral' as AccentColor, class: 'bg-orange-400', label: 'Coral' },
-                          { name: 'lavender' as AccentColor, class: 'bg-violet-400', label: 'Lavender' },
-                          { name: 'mint' as AccentColor, class: 'bg-emerald-400', label: 'Mint' },
-                          { name: 'rose' as AccentColor, class: 'bg-pink-400', label: 'Rose' },
-                          { name: 'electric' as AccentColor, class: 'bg-blue-400', label: 'Electric' },
+                          { name: 'teal' as AccentColor, gradient: 'from-teal-400 via-teal-500 to-cyan-600', label: 'Teal', shadow: 'hover:shadow-teal-500/50' },
+                          { name: 'coral' as AccentColor, gradient: 'from-orange-300 via-orange-400 to-orange-500', label: 'Coral', shadow: 'hover:shadow-orange-400/50' },
+                          { name: 'lavender' as AccentColor, gradient: 'from-violet-300 via-violet-400 to-purple-500', label: 'Lavender', shadow: 'hover:shadow-violet-400/50' },
+                          { name: 'mint' as AccentColor, gradient: 'from-emerald-300 via-emerald-400 to-green-500', label: 'Mint', shadow: 'hover:shadow-emerald-400/50' },
+                          { name: 'rose' as AccentColor, gradient: 'from-pink-300 via-pink-400 to-rose-500', label: 'Rose', shadow: 'hover:shadow-pink-400/50' },
+                          { name: 'electric' as AccentColor, gradient: 'from-blue-300 via-blue-400 to-cyan-500', label: 'Electric', shadow: 'hover:shadow-blue-400/50' },
                         ].map((color) => (
                           <button
                             key={color.name}
                             onClick={() => handleAccentColorChange(color.name)}
-                            className="flex flex-col items-center gap-2 group"
+                            className="group relative"
                           >
                             <div className={cn(
-                              "w-14 h-14 rounded-xl transition-all relative",
-                              color.class,
+                              "relative w-full aspect-square rounded-2xl transition-all duration-300",
+                              "bg-gradient-to-br",
+                              color.gradient,
                               accentColor === color.name
-                                ? "ring-4 ring-gray-400 dark:ring-gray-500 ring-offset-2 dark:ring-offset-gray-900 shadow-lg scale-110"
-                                : "hover:scale-110 hover:shadow-md"
+                                ? "ring-4 ring-offset-2 dark:ring-offset-gray-900 ring-gray-400 dark:ring-white/30 shadow-2xl scale-105"
+                                : `hover:scale-105 hover:shadow-xl ${color.shadow} shadow-lg`
                             )}>
+                              {/* Glass overlay effect */}
+                              <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/20 to-transparent opacity-50" />
+
+                              {/* Checkmark */}
                               {accentColor === color.name && (
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                  <svg className="w-6 h-6 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                  </svg>
+                                  <div className="w-10 h-10 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center ring-2 ring-white/50">
+                                    <svg className="w-6 h-6 text-white drop-shadow-2xl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </div>
                                 </div>
                               )}
                             </div>
-                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                            <p className={cn(
+                              "mt-2 text-sm font-semibold text-center transition-all",
+                              accentColor === color.name
+                                ? "text-gray-900 dark:text-white scale-105"
+                                : "text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+                            )}>
                               {color.label}
-                            </span>
+                            </p>
                           </button>
                         ))}
                       </div>
                     </div>
 
                     {/* Professional & Neutral */}
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                        Professional & Neutral
-                      </h4>
-                      <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-4">
+                      {/* Elegant header with gradient dividers */}
+                      <div className="flex items-center gap-2">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
+                        <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest">
+                          Professional & Neutral
+                        </h4>
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
+                      </div>
+
+                      {/* Enhanced color tiles with gradients */}
+                      <div className="grid grid-cols-2 gap-5">
                         {[
-                          { name: 'slate' as AccentColor, class: 'bg-slate-500', label: 'Slate' },
-                          { name: 'gray' as AccentColor, class: 'bg-gray-500', label: 'Gray' },
-                          { name: 'neutral' as AccentColor, class: 'bg-neutral-500', label: 'Neutral' },
-                          { name: 'stone' as AccentColor, class: 'bg-stone-500', label: 'Stone' },
+                          { name: 'slate' as AccentColor, gradient: 'from-slate-400 via-slate-500 to-slate-600', label: 'Slate', shadow: 'hover:shadow-slate-500/50' },
+                          { name: 'gray' as AccentColor, gradient: 'from-gray-400 via-gray-500 to-gray-600', label: 'Gray', shadow: 'hover:shadow-gray-500/50' },
+                          { name: 'neutral' as AccentColor, gradient: 'from-neutral-400 via-neutral-500 to-neutral-600', label: 'Neutral', shadow: 'hover:shadow-neutral-500/50' },
+                          { name: 'stone' as AccentColor, gradient: 'from-stone-400 via-stone-500 to-stone-600', label: 'Stone', shadow: 'hover:shadow-stone-500/50' },
                         ].map((color) => (
                           <button
                             key={color.name}
                             onClick={() => handleAccentColorChange(color.name)}
-                            className="flex flex-col items-center gap-2 group"
+                            className="group relative"
                           >
                             <div className={cn(
-                              "w-14 h-14 rounded-xl transition-all relative",
-                              color.class,
+                              "relative w-full aspect-square rounded-2xl transition-all duration-300",
+                              "bg-gradient-to-br",
+                              color.gradient,
                               accentColor === color.name
-                                ? "ring-4 ring-gray-400 dark:ring-gray-500 ring-offset-2 dark:ring-offset-gray-900 shadow-lg scale-110"
-                                : "hover:scale-110 hover:shadow-md"
+                                ? "ring-4 ring-offset-2 dark:ring-offset-gray-900 ring-gray-400 dark:ring-white/30 shadow-2xl scale-105"
+                                : `hover:scale-105 hover:shadow-xl ${color.shadow} shadow-lg`
                             )}>
+                              {/* Glass overlay effect */}
+                              <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/20 to-transparent opacity-50" />
+
+                              {/* Enhanced checkmark with backdrop blur */}
                               {accentColor === color.name && (
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                  <svg className="w-6 h-6 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                  </svg>
+                                  <div className="w-10 h-10 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center ring-2 ring-white/50">
+                                    <svg className="w-6 h-6 text-white drop-shadow-2xl" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </div>
                                 </div>
                               )}
                             </div>
-                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                            <p className={cn(
+                              "mt-2 text-sm font-semibold text-center transition-all",
+                              accentColor === color.name
+                                ? "text-gray-900 dark:text-white scale-105"
+                                : "text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+                            )}>
                               {color.label}
-                            </span>
+                            </p>
                           </button>
                         ))}
                       </div>

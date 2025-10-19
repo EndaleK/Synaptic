@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, FileText, Bot, User, Loader2, Upload, X } from "lucide-react"
+import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 import { useDocumentStore } from "@/lib/store/useStore"
@@ -41,6 +41,8 @@ export default function ChatInterface() {
     isProcessing: false
   })
   const [isClient, setIsClient] = useState(false)
+  const [socraticMode, setSocraticMode] = useState(false)
+  const [showSocraticTooltip, setShowSocraticTooltip] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const { currentDocument, setCurrentDocument } = useDocumentStore()
@@ -270,6 +272,7 @@ export default function ChatInterface() {
           message: inputMessage,
           fileName: chatDocument.file?.name,
           documentContent: chatDocument.content,
+          teachingMode: socraticMode ? 'socratic' : 'mixed',
         }),
       })
 
@@ -414,20 +417,62 @@ export default function ChatInterface() {
             <div className="w-1/2 flex flex-col">
               {/* Document Header */}
               <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
                       {chatDocument.file?.name}
                     </span>
                   </div>
-                  <button
-                    onClick={handleReset}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    Change
-                  </button>
+
+                  {/* Socratic Mode Toggle */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="relative">
+                      <button
+                        onClick={() => setSocraticMode(!socraticMode)}
+                        onMouseEnter={() => setShowSocraticTooltip(true)}
+                        onMouseLeave={() => setShowSocraticTooltip(false)}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all",
+                          socraticMode
+                            ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 border border-transparent"
+                        )}
+                      >
+                        <Lightbulb className={cn(
+                          "w-3.5 h-3.5",
+                          socraticMode && "fill-current"
+                        )} />
+                        Socratic
+                      </button>
+
+                      {/* Tooltip */}
+                      {showSocraticTooltip && (
+                        <div className="absolute right-0 top-full mt-2 w-72 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-xl p-3 z-50">
+                          <div className="flex items-start gap-2">
+                            <Info className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-semibold mb-1">Socratic Mode</p>
+                              <p className="text-gray-300 dark:text-gray-400 leading-relaxed">
+                                {socraticMode
+                                  ? "AI guides you with questions to discover answers yourself"
+                                  : "Toggle to enable guided discovery learning through questions"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="absolute -top-1 right-4 w-2 h-2 bg-gray-900 dark:bg-gray-800 transform rotate-45" />
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={handleReset}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      Change
+                    </button>
+                  </div>
                 </div>
               </div>
 

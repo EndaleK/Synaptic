@@ -266,7 +266,7 @@ export default function DashboardLayout({
               {sidebarCollapsed ? (
                 <p className="text-[10px]">©</p>
               ) : (
-                <p>© 2025 ካንእ AI Study Guide</p>
+                <p>© 2025 Synaptic</p>
               )}
             </div>
           </div>
