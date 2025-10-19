@@ -1,4 +1,5 @@
 import OpenAI from "openai"
+import { chunkDocument, getChunkingSummary, type ChunkOptions } from "./document-chunker"
 
 export interface MindMapNode {
   id: string
@@ -234,4 +235,154 @@ export function validateMindMap(data: MindMapData): boolean {
   }
 
   return true
+}
+
+/**
+ * Generate mind map from large documents by chunking and merging
+ * Merges sub-mind maps into a comprehensive hierarchical structure
+ */
+export async function generateMindMapChunked(
+  options: GenerateMindMapOptions,
+  chunkOptions: ChunkOptions = {},
+  onProgress?: (current: number, total: number, message: string) => void
+): Promise<MindMapData> {
+  const { text, maxNodes = 25, maxDepth = 3 } = options
+
+  console.log(`[Chunked Mind Map] Starting chunked generation for ${text.length} characters`)
+
+  // Chunk the document
+  const chunkingResult = chunkDocument(text, chunkOptions)
+  console.log(`[Chunked Mind Map] ${getChunkingSummary(chunkingResult)}`)
+
+  if (onProgress) {
+    onProgress(0, chunkingResult.totalChunks, `Analyzing ${chunkingResult.totalChunks} sections`)
+  }
+
+  // Generate mind map for each chunk
+  const chunkMindMaps: MindMapData[] = []
+  const nodesPerChunk = Math.ceil(maxNodes / chunkingResult.totalChunks)
+
+  for (let i = 0; i < chunkingResult.chunks.length; i++) {
+    const chunk = chunkingResult.chunks[i]
+    const progressMsg = `Processing section ${i + 1}/${chunkingResult.totalChunks}`
+
+    console.log(`[Chunked Mind Map] ${progressMsg}`)
+
+    if (onProgress) {
+      onProgress(i + 1, chunkingResult.totalChunks, progressMsg)
+    }
+
+    try {
+      const chunkMindMap = await generateMindMap({
+        text: chunk.text,
+        maxNodes: nodesPerChunk,
+        maxDepth: maxDepth - 1 // Reserve one level for root
+      })
+
+      chunkMindMaps.push(chunkMindMap)
+
+      console.log(`[Chunked Mind Map] Generated sub-map ${i + 1}: ${chunkMindMap.nodes.length} nodes`)
+    } catch (error) {
+      console.error(`[Chunked Mind Map] Error processing chunk ${i + 1}:`, error)
+      // Continue with other chunks
+    }
+  }
+
+  // Merge all mind maps into one hierarchical structure
+  const mergedMindMap = mergeMindMaps(chunkMindMaps, text)
+
+  console.log(`[Chunked Mind Map] Merged result: ${mergedMindMap.nodes.length} nodes, ${mergedMindMap.edges.length} edges`)
+
+  if (onProgress) {
+    onProgress(
+      chunkingResult.totalChunks,
+      chunkingResult.totalChunks,
+      `Complete! Generated mind map with ${mergedMindMap.nodes.length} nodes`
+    )
+  }
+
+  return mergedMindMap
+}
+
+/**
+ * Merge multiple mind maps into a single comprehensive map
+ */
+function mergeMindMaps(mindMaps: MindMapData[], originalText: string): MindMapData {
+  if (mindMaps.length === 0) {
+    throw new Error("No mind maps to merge")
+  }
+
+  if (mindMaps.length === 1) {
+    return mindMaps[0]
+  }
+
+  // Create a root node to connect all sub-maps
+  const rootId = "root"
+  const title = mindMaps[0].title || "Comprehensive Mind Map"
+
+  const mergedNodes: MindMapNode[] = [
+    {
+      id: rootId,
+      label: title,
+      level: 0,
+      description: `Overview of ${originalText.substring(0, 100)}...`,
+      category: "concept"
+    }
+  ]
+
+  const mergedEdges: MindMapEdge[] = []
+  const allCategories = new Set<string>()
+
+  // Add nodes and edges from each sub-map, incrementing levels
+  mindMaps.forEach((map, index) => {
+    const idPrefix = `chunk${index}_`
+
+    // Add nodes with incremented levels and prefixed IDs
+    map.nodes.forEach(node => {
+      const newNode: MindMapNode = {
+        ...node,
+        id: node.level === 0 ? idPrefix + "root" : idPrefix + node.id,
+        level: node.level + 1 // Increment by 1 to make room for root
+      }
+
+      mergedNodes.push(newNode)
+
+      if (node.category) {
+        allCategories.add(node.category)
+      }
+
+      // Connect chunk root to main root
+      if (node.level === 0) {
+        mergedEdges.push({
+          id: `root_to_${idPrefix}`,
+          from: rootId,
+          to: newNode.id,
+          relationship: "contains"
+        })
+      }
+    })
+
+    // Add edges with prefixed IDs
+    map.edges.forEach(edge => {
+      mergedEdges.push({
+        ...edge,
+        id: idPrefix + edge.id,
+        from: edge.from === map.nodes[0].id ? idPrefix + "root" : idPrefix + edge.from,
+        to: idPrefix + edge.to
+      })
+    })
+  })
+
+  const maxDepthFound = Math.max(...mergedNodes.map(n => n.level))
+
+  return {
+    title,
+    nodes: mergedNodes,
+    edges: mergedEdges,
+    metadata: {
+      totalNodes: mergedNodes.length,
+      maxDepth: maxDepthFound,
+      categories: Array.from(allCategories)
+    }
+  }
 }

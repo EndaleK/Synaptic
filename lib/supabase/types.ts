@@ -2,6 +2,7 @@
 
 export type LearningStyle = 'visual' | 'auditory' | 'kinesthetic' | 'reading_writing' | 'mixed'
 export type PreferredMode = 'home' | 'flashcards' | 'chat' | 'podcast' | 'mindmap'
+export type TeachingStylePreference = 'socratic' | 'direct' | 'mixed'
 export type SubscriptionTier = 'free' | 'premium' | 'enterprise'
 export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'past_due'
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed'
@@ -33,6 +34,12 @@ export interface LearningProfile {
   kinesthetic_score: number
   reading_writing_score: number
   dominant_style: LearningStyle
+  teaching_style_preference?: TeachingStylePreference
+  socratic_percentage?: number
+  teaching_style_scores?: {
+    socratic: number
+    direct: number
+  }
   learning_preferences?: Record<string, any>
   assessment_date: string
 }

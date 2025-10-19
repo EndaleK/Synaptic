@@ -6,9 +6,58 @@ import { auth } from '@clerk/nextjs/server'
 import {
   getUserProfile,
   saveLearningProfile,
-  updateUserProfile
+  updateUserProfile,
+  getUserLearningProfile
 } from '@/lib/supabase/user-profile'
 import type { LearningStyle } from '@/lib/supabase/types'
+
+/**
+ * GET /api/user/learning-profile
+ * Fetch user's learning profile
+ */
+export async function GET() {
+  try {
+    const { userId } = await auth()
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Get user's profile to get user_id
+    const { profile, error: profileError } = await getUserProfile(userId)
+
+    if (profileError || !profile) {
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 404 }
+      )
+    }
+
+    // Get learning profile
+    const { learningProfile, error } = await getUserLearningProfile(profile.id)
+
+    if (error) {
+      return NextResponse.json(
+        { error: `Failed to fetch learning profile: ${error}` },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      learningProfile,
+      userProfile: profile
+    })
+  } catch (error) {
+    console.error('GET /api/user/learning-profile error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
 
 /**
  * POST /api/user/learning-profile
@@ -43,6 +92,9 @@ export async function POST(request: NextRequest) {
       kinesthetic_score,
       reading_writing_score,
       dominant_style,
+      teaching_style_preference,
+      socratic_percentage,
+      teaching_style_scores,
       learning_preferences
     } = body
 
@@ -70,6 +122,9 @@ export async function POST(request: NextRequest) {
       kinesthetic_score,
       reading_writing_score,
       dominant_style: dominant_style as LearningStyle,
+      teaching_style_preference,
+      socratic_percentage,
+      teaching_style_scores,
       learning_preferences
     })
 

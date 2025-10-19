@@ -99,11 +99,11 @@ export default function DashboardLayout({
               {!sidebarCollapsed ? (
                 <>
                   <div className="w-10 h-10 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-xl font-bold">AI</span>
+                    <span className="text-white text-xl font-bold">S</span>
                   </div>
                   <div className="flex flex-col">
                     <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-accent-secondary">
-                      AI Learning
+                      Synaptic
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       Study Smarter
@@ -112,7 +112,7 @@ export default function DashboardLayout({
                 </>
               ) : (
                 <div className="w-10 h-10 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center">
-                  <span className="text-white text-xl font-bold">AI</span>
+                  <span className="text-white text-xl font-bold">S</span>
                 </div>
               )}
             </Link>
@@ -291,7 +291,7 @@ export default function DashboardLayout({
 
             <Link href="/dashboard" className="flex items-center gap-2">
               <span className="font-bold text-black dark:text-white">
-                AI Learning
+                Synaptic
               </span>
             </Link>
 

@@ -37,6 +37,7 @@ interface MindMapData {
 export default function MindMapView({ documentId, documentName }: MindMapViewProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [mindMapData, setMindMapData] = useState<MindMapData | null>(null)
+  const [documentText, setDocumentText] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [maxNodes, setMaxNodes] = useState(25)
@@ -68,6 +69,11 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
       // Extract the mindMap object if it exists
       const mindMapData = data.mindMap || data
       setMindMapData(mindMapData)
+
+      // Store document text for detail generation
+      if (data.documentText) {
+        setDocumentText(data.documentText)
+      }
     } catch (err) {
       console.error('Mind map generation error:', err)
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
@@ -111,6 +117,7 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
             title={mindMapData.title}
             nodes={mindMapData.nodes}
             edges={mindMapData.edges}
+            documentText={documentText}
           />
         </div>
       </div>

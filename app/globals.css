@@ -191,6 +191,26 @@ html.font-size-large {
   }
 }
 
+@keyframes dashAnimation {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -100;
+  }
+}
+
+@keyframes slideInFromRight {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* Typography utilities */
 .text-display-lg {
   font-size: var(--font-size-4xl);

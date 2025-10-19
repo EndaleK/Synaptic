@@ -113,6 +113,12 @@ export default function DashboardPage() {
       reading_writing: number
     }
     recommended_mode: PreferredMode
+    teaching_style_preference?: string
+    socratic_percentage?: number
+    teaching_style_scores?: {
+      socratic: number
+      direct: number
+    }
   }) => {
     try {
       // Save to database
@@ -126,6 +132,9 @@ export default function DashboardPage() {
           kinesthetic_score: result.scores.kinesthetic,
           reading_writing_score: result.scores.reading_writing,
           dominant_style: result.dominant_style,
+          teaching_style_preference: result.teaching_style_preference,
+          socratic_percentage: result.socratic_percentage,
+          teaching_style_scores: result.teaching_style_scores,
           learning_preferences: {
             recommended_mode: result.recommended_mode
           }
@@ -190,7 +199,12 @@ export default function DashboardPage() {
   const renderModeContent = () => {
     switch (activeMode) {
       case "home":
-        return <DashboardHome onModeSelect={(mode) => setActiveMode(mode as any)} />
+        return (
+          <DashboardHome
+            onModeSelect={(mode) => setActiveMode(mode as any)}
+            onOpenAssessment={() => setShowAssessment(true)}
+          />
+        )
 
       case "chat":
         return (

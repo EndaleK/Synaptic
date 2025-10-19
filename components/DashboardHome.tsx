@@ -4,13 +4,15 @@ import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar } from "lucide-react"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
+import LearningProfileBanner from "@/components/LearningProfileBanner"
 import type { Document } from "@/lib/supabase/types"
 
 interface DashboardHomeProps {
   onModeSelect: (mode: string) => void
+  onOpenAssessment?: () => void
 }
 
-export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
+export default function DashboardHome({ onModeSelect, onOpenAssessment }: DashboardHomeProps) {
   const { user } = useUser()
   const [recentDocuments, setRecentDocuments] = useState<Document[]>([])
   const [isLoadingDocs, setIsLoadingDocs] = useState(true)
@@ -126,6 +128,11 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
             </div>
           </div>
         </div>
+
+        {/* Learning Profile Banner - Shows Below Welcome */}
+        <LearningProfileBanner
+          onTakeAssessment={() => onOpenAssessment?.()}
+        />
 
         {/* Learning Profile Card */}
         {learningStyle && (

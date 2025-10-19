@@ -238,5 +238,122 @@ export const quickAssessmentQuestions: AssessmentQuestion[] = [
         scores: { reading_writing: 2, linguistic: 2 }
       }
     ]
+  },
+
+  // Socratic/Teaching Style Preferences (5 questions)
+  {
+    id: 11,
+    question: "When learning something new, you prefer:",
+    category: 'teaching_style',
+    options: [
+      {
+        text: "Being guided through questions that help you discover the answer yourself",
+        scores: { socratic: 3, intrapersonal: 1 }
+      },
+      {
+        text: "Getting clear explanations and direct answers right away",
+        scores: { direct: 3, structured_materials: 1 }
+      },
+      {
+        text: "A mix of both - some guidance and some direct answers",
+        scores: { socratic: 1, direct: 1, flexible_approach: 1 }
+      },
+      {
+        text: "Figuring it out entirely on my own without help",
+        scores: { socratic: 1, intrapersonal: 2 }
+      }
+    ]
+  },
+  {
+    id: 12,
+    question: "When you're stuck on a problem, you'd rather:",
+    category: 'teaching_style',
+    options: [
+      {
+        text: "Have someone ask me questions to help me think it through",
+        scores: { socratic: 3, auditory: 1 }
+      },
+      {
+        text: "Be shown the solution step-by-step",
+        scores: { direct: 3, visual: 1, structured_materials: 1 }
+      },
+      {
+        text: "Be given hints that point me in the right direction",
+        scores: { socratic: 2, direct: 1 }
+      },
+      {
+        text: "Try different approaches until I find the answer",
+        scores: { socratic: 1, kinesthetic: 1, flexible_approach: 1 }
+      }
+    ]
+  },
+  {
+    id: 13,
+    question: "You learn most deeply when:",
+    category: 'teaching_style',
+    options: [
+      {
+        text: "Someone challenges my thinking with thought-provoking questions",
+        scores: { socratic: 3, logical_mathematical: 1 }
+      },
+      {
+        text: "Information is presented clearly and comprehensively",
+        scores: { direct: 3, reading_writing: 1 }
+      },
+      {
+        text: "I can discuss and debate ideas with others",
+        scores: { socratic: 2, interpersonal: 2, group_learning: 1 }
+      },
+      {
+        text: "I receive immediate feedback on my understanding",
+        scores: { direct: 2, kinesthetic: 1 }
+      }
+    ]
+  },
+  {
+    id: 14,
+    question: "In a learning situation, you prefer when the teacher:",
+    category: 'teaching_style',
+    options: [
+      {
+        text: "Asks questions that make me reflect and reason",
+        scores: { socratic: 3, intrapersonal: 1 }
+      },
+      {
+        text: "Provides complete explanations with examples",
+        scores: { direct: 3, structured_materials: 1 }
+      },
+      {
+        text: "Facilitates discovery through guided exploration",
+        scores: { socratic: 2, flexible_approach: 1 }
+      },
+      {
+        text: "Lets me learn at my own pace with resources available",
+        scores: { direct: 1, intrapersonal: 2, flexible_approach: 1 }
+      }
+    ]
+  },
+  {
+    id: 15,
+    question: "When explaining concepts back to someone, you find it most valuable to:",
+    category: 'teaching_style',
+    options: [
+      {
+        text: "Answer their probing questions about my reasoning",
+        scores: { socratic: 3, linguistic: 1 }
+      },
+      {
+        text: "Clearly state the facts and main points",
+        scores: { direct: 3, reading_writing: 1 }
+      },
+      {
+        text: "Engage in a back-and-forth dialogue exploring the topic",
+        scores: { socratic: 2, interpersonal: 2 }
+      },
+      {
+        text: "Demonstrate or show examples of the concept in action",
+        scores: { direct: 2, visual: 1, kinesthetic: 1 }
+      }
+    ]
   }
 ]

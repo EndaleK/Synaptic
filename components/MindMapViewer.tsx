@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import {
   ReactFlow,
   Node,
@@ -17,12 +17,26 @@ import '@xyflow/react/dist/style.css'
 import { Download, Maximize2 } from 'lucide-react'
 import html2canvas from 'html2canvas'
 import type { MindMapNode, MindMapEdge } from '@/lib/mindmap-generator'
+import MindMapDetailPanel from './MindMapDetailPanel'
 
 interface MindMapViewerProps {
   title: string
   nodes: MindMapNode[]
   edges: MindMapEdge[]
+  documentText?: string
   onNodeClick?: (node: MindMapNode) => void
+}
+
+interface NodeDetail {
+  expandedExplanation: string
+  quotes: Array<{
+    text: string
+    context: string
+  }>
+  examples: Array<{
+    title: string
+    description: string
+  }>
 }
 
 // Category color mapping
@@ -34,7 +48,14 @@ const categoryColors: Record<string, { bg: string; border: string; text: string 
   principle: { bg: '#F3E8FF', border: '#A855F7', text: '#6B21A8' },
 }
 
-export default function MindMapViewer({ title, nodes, edges, onNodeClick }: MindMapViewerProps) {
+export default function MindMapViewer({ title, nodes, edges, documentText, onNodeClick }: MindMapViewerProps) {
+  // State for detail panel
+  const [selectedNode, setSelectedNode] = useState<MindMapNode | null>(null)
+  const [isPanelOpen, setIsPanelOpen] = useState(false)
+  const [nodeDetails, setNodeDetails] = useState<NodeDetail | null>(null)
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false)
+  const [selectedNodePosition, setSelectedNodePosition] = useState<{ x: number; y: number } | null>(null)
+
   // Convert our node format to React Flow format
   const flowNodes: Node[] = useMemo(() => {
     return nodes.map((node, index) => {
@@ -76,6 +97,7 @@ export default function MindMapViewer({ title, nodes, edges, onNodeClick }: Mind
           minWidth: node.level === 0 ? '200px' : '150px',
           fontSize: node.level === 0 ? '16px' : '14px',
           boxShadow: node.level === 0 ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          cursor: 'pointer',
         },
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
@@ -105,12 +127,78 @@ export default function MindMapViewer({ title, nodes, edges, onNodeClick }: Mind
   const [reactFlowNodes, setNodes, onNodesChange] = useNodesState(flowNodes)
   const [reactFlowEdges, setEdges, onEdgesChange] = useEdgesState(flowEdges)
 
-  const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+  const handleNodeClick = useCallback(async (_event: React.MouseEvent, node: Node) => {
+    console.log('[MindMapViewer] Node clicked:', node.id)
     const originalNode = nodes.find(n => n.id === node.id)
-    if (originalNode && onNodeClick) {
+    if (!originalNode) {
+      console.log('[MindMapViewer] Original node not found for:', node.id)
+      return
+    }
+
+    console.log('[MindMapViewer] Opening panel for:', originalNode.label)
+
+    // Call the optional callback if provided
+    if (onNodeClick) {
       onNodeClick(originalNode)
     }
-  }, [nodes, onNodeClick])
+
+    // Get node position from the DOM
+    const nodeElement = document.querySelector(`[data-id="${node.id}"]`) as HTMLElement
+    if (nodeElement) {
+      const rect = nodeElement.getBoundingClientRect()
+      setSelectedNodePosition({
+        x: rect.right,
+        y: rect.top + rect.height / 2
+      })
+    }
+
+    // Open panel and fetch details
+    setSelectedNode(originalNode)
+    setIsPanelOpen(true)
+    setIsLoadingDetails(true)
+    setNodeDetails(null)
+
+    console.log('[MindMapViewer] Fetching details from API...')
+    try {
+      const response = await fetch('/api/mindmap/expand-node', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nodeId: originalNode.id,
+          nodeLabel: originalNode.label,
+          nodeDescription: originalNode.description,
+          documentText: documentText || ''
+        })
+      })
+
+      if (!response.ok) {
+        console.error('[MindMapViewer] API response not ok:', response.status)
+        throw new Error('Failed to fetch node details')
+      }
+
+      const data = await response.json()
+      console.log('[MindMapViewer] Received data:', data)
+      setNodeDetails({
+        expandedExplanation: data.expandedExplanation,
+        quotes: data.quotes || [],
+        examples: data.examples || []
+      })
+    } catch (error) {
+      console.error('[MindMapViewer] Error fetching node details:', error)
+      setNodeDetails(null)
+    } finally {
+      setIsLoadingDetails(false)
+    }
+  }, [nodes, documentText, onNodeClick])
+
+  const handleClosePanel = useCallback(() => {
+    setIsPanelOpen(false)
+    setSelectedNode(null)
+    setNodeDetails(null)
+    setSelectedNodePosition(null)
+  }, [])
 
   // Export as PNG
   const handleExportPNG = useCallback(async () => {
@@ -146,8 +234,9 @@ export default function MindMapViewer({ title, nodes, edges, onNodeClick }: Mind
   }, [title, nodes, edges])
 
   return (
-    <div className="w-full h-full bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden flex flex-col">
-      {/* Header */}
+    <div className="relative w-full h-full">
+      <div className="w-full h-full bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden flex flex-col">
+        {/* Header */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-black dark:text-white">{title}</h2>
@@ -217,6 +306,74 @@ export default function MindMapViewer({ title, nodes, edges, onNodeClick }: Mind
           ))}
         </div>
       </div>
+      </div>
+
+      {/* Detail Panel */}
+      <MindMapDetailPanel
+        isOpen={isPanelOpen}
+        onClose={handleClosePanel}
+        nodeLabel={selectedNode?.label || ''}
+        nodeDescription={selectedNode?.description}
+        nodeDetails={nodeDetails}
+        isLoading={isLoadingDetails}
+        selectedNodePosition={selectedNodePosition}
+      />
+
+      {/* Connection Line */}
+      {isPanelOpen && selectedNodePosition && (
+        <svg
+          className="fixed inset-0 pointer-events-none z-45"
+          style={{ width: '100%', height: '100%' }}
+        >
+          <defs>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+            <marker
+              id="arrowhead"
+              markerWidth="10"
+              markerHeight="10"
+              refX="9"
+              refY="3"
+              orient="auto"
+              markerUnits="strokeWidth"
+            >
+              <path
+                d="M0,0 L0,6 L9,3 z"
+                fill="rgb(var(--accent-primary))"
+              />
+            </marker>
+          </defs>
+          <path
+            d={(() => {
+              // Calculate Bézier curve from node to panel
+              const startX = selectedNodePosition.x
+              const startY = selectedNodePosition.y
+              const endX = window.innerWidth - (window.innerWidth <= 768 ? window.innerWidth : window.innerWidth * 0.5) + 20
+              const endY = 150 // Panel top area
+
+              // Control point for smooth curve
+              const controlX = startX + (endX - startX) * 0.6
+              const controlY = startY
+
+              return `M ${startX} ${startY} Q ${controlX} ${controlY}, ${endX} ${endY}`
+            })()}
+            stroke="rgb(var(--accent-primary))"
+            strokeWidth="2"
+            fill="none"
+            strokeDasharray="8 4"
+            filter="url(#glow)"
+            markerEnd="url(#arrowhead)"
+            style={{
+              animation: 'dashAnimation 20s linear infinite'
+            }}
+          />
+        </svg>
+      )}
     </div>
   )
 }

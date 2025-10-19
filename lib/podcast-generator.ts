@@ -1,4 +1,7 @@
 import OpenAI from "openai"
+import { personalizePrompt, createLearningProfile, type LearningProfile } from "./personalization/personalization-engine"
+import type { LearningStyle, TeachingStylePreference } from "./supabase/types"
+import { chunkDocument, getChunkingSummary, type ChunkOptions } from "./document-chunker"
 
 export type PodcastFormat = 'deep-dive' | 'brief' | 'critique' | 'debate'
 export type Speaker = 'host_a' | 'host_b'
@@ -23,6 +26,15 @@ interface GeneratePodcastScriptOptions {
   format?: PodcastFormat
   customPrompt?: string
   targetDuration?: number // in minutes, default 10
+  learningStyle?: LearningStyle
+  teachingStylePreference?: TeachingStylePreference
+  varkScores?: {
+    visual: number
+    auditory: number
+    kinesthetic: number
+    reading_writing: number
+  }
+  socraticPercentage?: number
 }
 
 /**
@@ -36,7 +48,11 @@ export async function generatePodcastScript(
     text,
     format = 'deep-dive',
     customPrompt,
-    targetDuration = 10
+    targetDuration = 10,
+    learningStyle,
+    teachingStylePreference,
+    varkScores,
+    socraticPercentage
   } = options
 
   if (!process.env.OPENAI_API_KEY) {
@@ -68,7 +84,8 @@ export async function generatePodcastScript(
 
   const wordCount = Math.floor(targetDuration * 150) // ~150 words per minute of speech
 
-  const systemPrompt = `You are an expert podcast script writer for an educational AI audio series. You create engaging, natural-sounding conversations between two hosts who discuss documents.
+  // Build base system prompt
+  let baseSystemPrompt = `You are an expert podcast script writer for an educational AI audio series. You create engaging, natural-sounding conversations between two hosts who discuss documents.
 
 Host Personalities:
 - **Alex** (host_a): Curious, asks great questions, makes complex topics accessible. Slightly more enthusiastic.
@@ -100,6 +117,20 @@ Return ONLY a valid JSON object in this exact format:
 }
 
 DO NOT include any text outside the JSON object.`
+
+  // Apply personalization if learning profile provided
+  let systemPrompt = baseSystemPrompt
+  if (learningStyle && teachingStylePreference) {
+    const profile: LearningProfile = createLearningProfile(
+      learningStyle,
+      teachingStylePreference,
+      varkScores,
+      socraticPercentage
+    )
+
+    systemPrompt = personalizePrompt({ profile, mode: 'podcast' }, baseSystemPrompt)
+    console.log(`Podcast personalization: ${learningStyle} learner, ${teachingStylePreference} teaching`)
+  }
 
   const userPrompt = `Create a podcast script based on this content:
 
@@ -182,4 +213,88 @@ Make it engaging and educational!`
     }
     throw new Error(`Failed to generate podcast script: ${error.message}`)
   }
+}
+
+/**
+ * Generate podcast script from large documents by chunking
+ * Creates a multi-part podcast series with intro/outro for each part
+ */
+export async function generatePodcastScriptChunked(
+  options: GeneratePodcastScriptOptions,
+  chunkOptions: ChunkOptions = {},
+  onProgress?: (current: number, total: number, message: string) => void
+): Promise<PodcastScript[]> {
+  const { text, targetDuration = 10 } = options
+
+  console.log(`[Chunked Podcast] Starting chunked generation for ${text.length} characters`)
+
+  // Chunk the document
+  const chunkingResult = chunkDocument(text, chunkOptions)
+  console.log(`[Chunked Podcast] ${getChunkingSummary(chunkingResult)}`)
+
+  if (onProgress) {
+    onProgress(0, chunkingResult.totalChunks, `Creating ${chunkingResult.totalChunks}-part podcast series`)
+  }
+
+  // Generate podcast for each chunk
+  const podcastScripts: PodcastScript[] = []
+
+  for (let i = 0; i < chunkingResult.chunks.length; i++) {
+    const chunk = chunkingResult.chunks[i]
+    const partNumber = i + 1
+    const totalParts = chunkingResult.totalChunks
+
+    const progressMsg = `Generating Part ${partNumber}/${totalParts} (${chunk.metadata.wordCount} words)`
+    console.log(`[Chunked Podcast] ${progressMsg}`)
+
+    if (onProgress) {
+      onProgress(partNumber, totalParts, progressMsg)
+    }
+
+    try {
+      // Add context about the multi-part series
+      const customPrompt = totalParts > 1
+        ? `This is Part ${partNumber} of ${totalParts} in a multi-part series. ${
+            partNumber === 1
+              ? 'Start with a warm introduction to the overall topic and mention this is part 1 of a series.'
+              : partNumber === totalParts
+              ? 'This is the final part. Wrap up the series with final thoughts and key takeaways from all parts.'
+              : `This is a continuation from part ${partNumber - 1}. Briefly recap the previous part before diving into new content.`
+          }`
+        : options.customPrompt
+
+      // Generate script for this chunk
+      const script = await generatePodcastScript({
+        ...options,
+        text: chunk.text,
+        targetDuration,
+        customPrompt
+      })
+
+      // Update title to include part number if multi-part
+      if (totalParts > 1) {
+        script.title = `${script.title} (Part ${partNumber}/${totalParts})`
+        script.description = `Part ${partNumber} of ${totalParts}: ${script.description}`
+      }
+
+      podcastScripts.push(script)
+
+      console.log(`[Chunked Podcast] Generated Part ${partNumber}: "${script.title}"`)
+    } catch (error) {
+      console.error(`[Chunked Podcast] Error generating Part ${partNumber}:`, error)
+      throw error // Don't continue if a part fails
+    }
+  }
+
+  if (onProgress) {
+    onProgress(
+      chunkingResult.totalChunks,
+      chunkingResult.totalChunks,
+      `Complete! Created ${podcastScripts.length}-part series`
+    )
+  }
+
+  console.log(`[Chunked Podcast] Series complete: ${podcastScripts.length} episodes`)
+
+  return podcastScripts
 }

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Learning Platform - Study Smarter with AI",
+  title: "Synaptic - AI-Powered Personalized Learning",
   description: "Transform your documents into flashcards, podcasts, and mind maps. AI-powered personalized learning tailored to your style.",
 };
 

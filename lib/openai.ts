@@ -1,7 +1,32 @@
 import OpenAI from "openai"
 import { Flashcard } from "./types"
+import { personalizePrompt, createLearningProfile, type LearningProfile } from "./personalization/personalization-engine"
+import type { LearningStyle, TeachingStylePreference } from "./supabase/types"
+import { chunkDocument, mergeChunkResults, getChunkingSummary, type ChunkOptions } from "./document-chunker"
 
-export async function generateFlashcards(text: string, variation: number = 0): Promise<Flashcard[]> {
+export interface FlashcardGenerationOptions {
+  variation?: number
+  learningStyle?: LearningStyle
+  teachingStylePreference?: TeachingStylePreference
+  varkScores?: {
+    visual: number
+    auditory: number
+    kinesthetic: number
+    reading_writing: number
+  }
+  socraticPercentage?: number
+}
+
+export async function generateFlashcards(
+  text: string,
+  optionsOrVariation: FlashcardGenerationOptions | number = 0
+): Promise<Flashcard[]> {
+  // Handle backward compatibility: if number passed, treat as variation
+  const options: FlashcardGenerationOptions = typeof optionsOrVariation === 'number'
+    ? { variation: optionsOrVariation }
+    : optionsOrVariation
+
+  const variation = options.variation || 0
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OpenAI API key not configured")
   }
@@ -34,7 +59,8 @@ export async function generateFlashcards(text: string, variation: number = 0): P
 
   console.log(`Content: ${wordCount} words → Target: ${targetCards} flashcards`)
 
-  const prompt = `You are tasked with extracting flashcard content from a given text chunk. Your goal is to identify key terms and their corresponding definitions or explanations that would be suitable for creating flashcards.
+  // Build base prompt
+  let basePrompt = `You are tasked with extracting flashcard content from a given text chunk. Your goal is to identify key terms and their corresponding definitions or explanations that would be suitable for creating flashcards.
 
 Here's the text chunk you need to analyze:
 <text_chunk>
@@ -60,6 +86,20 @@ Respond ONLY with a valid JSON array in this exact format:
 ]
 
 DO NOT include any text outside the JSON array.`
+
+  // Apply personalization if learning profile provided
+  let prompt = basePrompt
+  if (options.learningStyle && options.teachingStylePreference) {
+    const profile: LearningProfile = createLearningProfile(
+      options.learningStyle,
+      options.teachingStylePreference,
+      options.varkScores,
+      options.socraticPercentage
+    )
+
+    prompt = personalizePrompt({ profile, mode: 'flashcards' }, basePrompt)
+    console.log(`Applied personalization: ${options.learningStyle} learner, ${options.teachingStylePreference} teaching`)
+  }
 
   try {
     // Add variation to temperature for different results each time
@@ -117,4 +157,78 @@ DO NOT include any text outside the JSON array.`
       throw new Error("Failed to generate flashcards")
     }
   }
+}
+
+/**
+ * Generate flashcards from large documents by chunking them intelligently
+ * Returns progress callback for UI updates
+ */
+export async function generateFlashcardsChunked(
+  text: string,
+  options: FlashcardGenerationOptions = {},
+  chunkOptions: ChunkOptions = {},
+  onProgress?: (current: number, total: number, message: string) => void
+): Promise<Flashcard[]> {
+  console.log(`[Chunked Flashcards] Starting chunked generation for ${text.length} characters`)
+
+  // Chunk the document
+  const chunkingResult = chunkDocument(text, chunkOptions)
+  console.log(`[Chunked Flashcards] ${getChunkingSummary(chunkingResult)}`)
+
+  if (onProgress) {
+    onProgress(0, chunkingResult.totalChunks, `Divided into ${chunkingResult.totalChunks} chunks`)
+  }
+
+  // Process each chunk
+  const allFlashcards: Flashcard[][] = []
+
+  for (let i = 0; i < chunkingResult.chunks.length; i++) {
+    const chunk = chunkingResult.chunks[i]
+    const progressMsg = `Processing chunk ${i + 1}/${chunkingResult.totalChunks} (${chunk.metadata.wordCount} words)`
+
+    console.log(`[Chunked Flashcards] ${progressMsg}`)
+
+    if (onProgress) {
+      onProgress(i + 1, chunkingResult.totalChunks, progressMsg)
+    }
+
+    try {
+      // Generate flashcards for this chunk
+      const chunkFlashcards = await generateFlashcards(chunk.text, options)
+      allFlashcards.push(chunkFlashcards)
+
+      console.log(`[Chunked Flashcards] Generated ${chunkFlashcards.length} flashcards from chunk ${i + 1}`)
+    } catch (error) {
+      console.error(`[Chunked Flashcards] Error processing chunk ${i + 1}:`, error)
+      // Continue with other chunks even if one fails
+      allFlashcards.push([])
+    }
+  }
+
+  // Merge and deduplicate flashcards
+  const deduplicateFn = (flashcards: Flashcard[]) => {
+    const seen = new Set<string>()
+    return flashcards.filter(card => {
+      const key = `${card.front.toLowerCase()}:${card.back.toLowerCase()}`
+      if (seen.has(key)) {
+        return false
+      }
+      seen.add(key)
+      return true
+    })
+  }
+
+  const mergedFlashcards = mergeChunkResults(allFlashcards, deduplicateFn)
+
+  console.log(`[Chunked Flashcards] Final result: ${mergedFlashcards.length} unique flashcards from ${chunkingResult.totalChunks} chunks`)
+
+  if (onProgress) {
+    onProgress(
+      chunkingResult.totalChunks,
+      chunkingResult.totalChunks,
+      `Complete! Generated ${mergedFlashcards.length} flashcards`
+    )
+  }
+
+  return mergedFlashcards
 }

@@ -25,7 +25,7 @@ export default function MarketingLayout({
                 <BookOpen className="w-6 h-6 text-white dark:text-black" />
               </div>
               <span className="text-xl font-bold text-black dark:text-white">
-                AI Learning
+                Synaptic
               </span>
             </Link>
 
@@ -164,14 +164,14 @@ export default function MarketingLayout({
                   <BookOpen className="w-6 h-6 text-white dark:text-black" />
                 </div>
                 <span className="text-xl font-bold text-black dark:text-white">
-                  AI Learning Platform
+                  Synaptic
                 </span>
               </div>
               <p className="text-gray-600 dark:text-gray-400 max-w-md mb-4">
                 Transform your documents into personalized learning experiences. Powered by AI to adapt to your unique learning style.
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-500">
-                © 2025 AI Learning Platform. All rights reserved.
+                © 2025 Synaptic. All rights reserved.
               </p>
             </div>
 

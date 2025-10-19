@@ -32,6 +32,10 @@ export function calculateAssessmentResults(
     background_music: 0,
     structured_materials: 0,
     flexible_approach: 0,
+
+    // Teaching Style
+    socratic: 0,
+    direct: 0,
   }
 
   // Calculate scores from answers
@@ -78,6 +82,26 @@ export function calculateAssessmentResults(
     background_music: scores.background_music || 0,
     structured_materials: scores.structured_materials || 0,
     flexible_approach: scores.flexible_approach || 0,
+  }
+
+  // Build Teaching Style preferences
+  const teaching_style_scores = {
+    socratic: scores.socratic || 0,
+    direct: scores.direct || 0,
+  }
+
+  // Calculate teaching style preference (percentage 0-100)
+  const totalTeachingScore = teaching_style_scores.socratic + teaching_style_scores.direct
+  const socraticPercentage = totalTeachingScore > 0
+    ? Math.round((teaching_style_scores.socratic / totalTeachingScore) * 100)
+    : 50 // Default to balanced if no teaching style questions answered
+
+  // Determine teaching style preference
+  let teaching_style_preference: 'socratic' | 'direct' | 'mixed' = 'mixed'
+  if (socraticPercentage >= 65) {
+    teaching_style_preference = 'socratic'
+  } else if (socraticPercentage <= 35) {
+    teaching_style_preference = 'direct'
   }
 
   // Determine dominant VARK style
@@ -132,6 +156,9 @@ export function calculateAssessmentResults(
     vark_scores,
     intelligence_scores,
     environmental_preferences,
+    teaching_style_scores,
+    teaching_style_preference,
+    socratic_percentage: socraticPercentage,
     dominant_style: dominant_learning_style,
     secondary_styles,
     recommended_mode,

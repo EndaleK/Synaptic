@@ -129,6 +129,12 @@ export async function saveLearningProfile(data: {
   kinesthetic_score: number
   reading_writing_score: number
   dominant_style: LearningStyle
+  teaching_style_preference?: string
+  socratic_percentage?: number
+  teaching_style_scores?: {
+    socratic: number
+    direct: number
+  }
   learning_preferences?: Record<string, any>
 }): Promise<{
   learningProfile: LearningProfile | null
@@ -147,6 +153,9 @@ export async function saveLearningProfile(data: {
         kinesthetic_score: data.kinesthetic_score,
         reading_writing_score: data.reading_writing_score,
         dominant_style: data.dominant_style,
+        teaching_style_preference: data.teaching_style_preference,
+        socratic_percentage: data.socratic_percentage,
+        teaching_style_scores: data.teaching_style_scores,
         learning_preferences: data.learning_preferences
       }])
       .select()

@@ -112,7 +112,8 @@ export async function POST(req: NextRequest) {
         nodes: mindMapData.nodes,
         edges: mindMapData.edges,
         metadata: mindMapData.metadata
-      }
+      },
+      documentText: document.extracted_text // Include for node detail expansion
     })
 
   } catch (error: any) {

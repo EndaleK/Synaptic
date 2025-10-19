@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { generateFlashcards } from "@/lib/openai"
+import { generateFlashcards, type FlashcardGenerationOptions } from "@/lib/openai"
 import { parseDocument } from "@/lib/document-parser"
 import { convertTextToDocumentJSON } from "@/lib/document-to-json"
+import { auth } from "@clerk/nextjs/server"
+import { getUserProfile, getUserLearningProfile } from "@/lib/supabase/user-profile"
+import type { LearningStyle, TeachingStylePreference } from "@/lib/supabase/types"
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,15 +64,53 @@ export async function POST(request: NextRequest) {
     if (mode === "file") {
       const file = formData.get("file") as File
       documentJSON = convertTextToDocumentJSON(
-        textContent, 
-        file.name, 
-        file.type, 
+        textContent,
+        file.name,
+        file.type,
         file.size
       )
       console.log(`Created JSON structure with ${documentJSON.sections.length} sections`)
     }
-    
-    const flashcards = await generateFlashcards(textContent, variation)
+
+    // Fetch user learning profile for personalization
+    let generationOptions: FlashcardGenerationOptions = { variation }
+
+    try {
+      const { userId } = await auth()
+
+      if (userId) {
+        // Get user profile
+        const { profile } = await getUserProfile(userId)
+
+        if (profile?.id) {
+          // Get learning profile
+          const { learningProfile } = await getUserLearningProfile(profile.id)
+
+          if (learningProfile && profile.learning_style) {
+            // Build personalization options
+            generationOptions = {
+              variation,
+              learningStyle: profile.learning_style as LearningStyle,
+              teachingStylePreference: (learningProfile.teaching_style_preference || 'mixed') as TeachingStylePreference,
+              varkScores: {
+                visual: learningProfile.visual_score,
+                auditory: learningProfile.auditory_score,
+                kinesthetic: learningProfile.kinesthetic_score,
+                reading_writing: learningProfile.reading_writing_score
+              },
+              socraticPercentage: learningProfile.socratic_percentage
+            }
+
+            console.log(`Using personalized generation for ${profile.learning_style} learner`)
+          }
+        }
+      }
+    } catch (profileError) {
+      // If profile fetch fails, just continue with default generation
+      console.log('Could not fetch user profile for personalization:', profileError)
+    }
+
+    const flashcards = await generateFlashcards(textContent, generationOptions)
     
     return NextResponse.json({ 
       flashcards,

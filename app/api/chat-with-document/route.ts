@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
+import { auth } from "@clerk/nextjs/server"
+import { getUserProfile, getUserLearningProfile } from "@/lib/supabase/user-profile"
+import { personalizePrompt, createLearningProfile, type LearningProfile } from "@/lib/personalization/personalization-engine"
+import type { LearningStyle, TeachingStylePreference } from "@/lib/supabase/types"
 
 interface ChatRequest {
   message: string
@@ -50,8 +54,44 @@ Please try uploading a text-based document (TXT, DOCX) or a PDF with selectable 
       apiKey: process.env.OPENAI_API_KEY,
     })
 
+    // Fetch user learning profile for personalization
+    let learningProfile: LearningProfile | null = null
+
+    try {
+      const { userId } = await auth()
+
+      if (userId) {
+        // Get user profile
+        const { profile } = await getUserProfile(userId)
+
+        if (profile?.id) {
+          // Get learning profile
+          const { learningProfile: dbLearningProfile } = await getUserLearningProfile(profile.id)
+
+          if (dbLearningProfile && profile.learning_style) {
+            learningProfile = createLearningProfile(
+              profile.learning_style as LearningStyle,
+              (dbLearningProfile.teaching_style_preference || 'mixed') as TeachingStylePreference,
+              {
+                visual: dbLearningProfile.visual_score,
+                auditory: dbLearningProfile.auditory_score,
+                kinesthetic: dbLearningProfile.kinesthetic_score,
+                reading_writing: dbLearningProfile.reading_writing_score
+              },
+              dbLearningProfile.socratic_percentage
+            )
+
+            console.log(`Using personalized chat for ${profile.learning_style} learner with ${dbLearningProfile.teaching_style_preference} teaching`)
+          }
+        }
+      }
+    } catch (profileError) {
+      // If profile fetch fails, just continue with default chat
+      console.log('Could not fetch user profile for personalization:', profileError)
+    }
+
     // Create a focused prompt for document-based Q&A
-    const systemPrompt = `You are a helpful AI assistant that answers questions based strictly on the provided document content. 
+    let baseSystemPrompt = `You are a helpful AI assistant that answers questions based strictly on the provided document content.
 
 Key guidelines:
 - Only use information from the provided document to answer questions
@@ -59,6 +99,11 @@ Key guidelines:
 - Be specific and cite relevant parts of the document when possible
 - Provide clear, educational answers
 - If asked about topics not in the document, politely redirect to document content`
+
+    // Apply personalization if profile exists
+    const systemPrompt = learningProfile
+      ? personalizePrompt({ profile: learningProfile, mode: 'chat' }, baseSystemPrompt)
+      : baseSystemPrompt
 
     const userPrompt = `Document: "${fileName || 'Uploaded Document'}"
 

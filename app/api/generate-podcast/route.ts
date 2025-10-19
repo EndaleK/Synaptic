@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server"
 import { generatePodcastScript, type PodcastFormat } from "@/lib/podcast-generator"
 import { generatePodcastAudio } from "@/lib/tts-generator"
 import { concatenateAudioBuffers, generateTranscript } from "@/lib/audio-utils"
+import { getUserProfile, getUserLearningProfile } from "@/lib/supabase/user-profile"
+import type { LearningStyle, TeachingStylePreference } from "@/lib/supabase/types"
 
 export const maxDuration = 300 // 5 minutes max execution time (Vercel limit)
 
@@ -59,13 +61,46 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Fetch user learning profile for personalization
+    let personalizationOptions: any = {}
+
+    try {
+      // Get user profile
+      const { profile } = await getUserProfile(userId)
+
+      if (profile?.id) {
+        // Get learning profile
+        const { learningProfile } = await getUserLearningProfile(profile.id)
+
+        if (learningProfile && profile.learning_style) {
+          personalizationOptions = {
+            learningStyle: profile.learning_style as LearningStyle,
+            teachingStylePreference: (learningProfile.teaching_style_preference || 'mixed') as TeachingStylePreference,
+            varkScores: {
+              visual: learningProfile.visual_score,
+              auditory: learningProfile.auditory_score,
+              kinesthetic: learningProfile.kinesthetic_score,
+              reading_writing: learningProfile.reading_writing_score
+            },
+            socraticPercentage: learningProfile.socratic_percentage
+          }
+
+          console.log(`Using personalized podcast for ${profile.learning_style} learner`)
+        }
+      }
+    } catch (profileError) {
+      // If profile fetch fails, just continue with default generation
+      console.log('Could not fetch user profile for personalization:', profileError)
+    }
+
     // Step 1: Generate podcast script
     console.log(`[Podcast] Generating script...`)
     const script = await generatePodcastScript({
       text: document.extracted_text,
       format: format as PodcastFormat,
       customPrompt,
-      targetDuration
+      targetDuration,
+      ...personalizationOptions
     })
 
     console.log(`[Podcast] Script generated: ${script.lines.length} lines`)
