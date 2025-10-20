@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { ChevronLeft, ChevronRight, RotateCcw, Download, Home, ChevronDown, RefreshCw } from "lucide-react"
+import { ChevronLeft, ChevronRight, RotateCcw, Download, Home, ChevronDown, RefreshCw, BookOpen, Sparkles, Zap, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Flashcard } from "@/lib/types"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
@@ -387,8 +387,44 @@ ${'='.repeat(50)}`).join('\n')}`
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md card-hover border border-purple-100 dark:border-purple-900/30">
-        <div 
+      {/* Header Section */}
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden mb-6">
+        <div className="p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
+          <div className="flex items-start gap-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+              <BookOpen className="w-8 h-8 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-3xl font-bold text-black dark:text-white mb-2">
+                Interactive Flashcards
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Master your material with AI-generated flashcards featuring spaced repetition and progress tracking
+              </p>
+
+              {/* Feature Badges */}
+              <div className="flex flex-wrap gap-2">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
+                  <Sparkles className="w-3.5 h-3.5 text-accent-primary" />
+                  AI-Generated
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
+                  <Zap className="w-3.5 h-3.5 text-accent-primary" />
+                  Interactive Learning
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
+                  <TrendingUp className="w-3.5 h-3.5 text-accent-primary" />
+                  Progress Tracking
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Flashcard Viewer */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md card-hover border border-accent-primary/20 dark:border-accent-primary/30">
+        <div
           className="border-b border-gray-200 dark:border-gray-700"
           style={{ padding: "var(--space-4)" }}
         >
@@ -406,7 +442,7 @@ ${'='.repeat(50)}`).join('\n')}`
                 <button
                   onClick={onRegenerate}
                   disabled={isRegenerating}
-                  className="flex items-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors text-body-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center text-accent-primary hover:text-accent-secondary transition-colors text-body-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ gap: "var(--space-1)" }}
                   title="Generate different flashcards from the same content"
                 >
@@ -423,7 +459,7 @@ ${'='.repeat(50)}`).join('\n')}`
                 <button
                   onClick={() => setShowExportMenu(!showExportMenu)}
                   className="btn-secondary flex items-center"
-                  style={{ 
+                  style={{
                     gap: "var(--space-1)",
                     padding: "var(--space-1) var(--space-2)",
                     fontSize: "var(--font-size-xs)"
@@ -433,7 +469,7 @@ ${'='.repeat(50)}`).join('\n')}`
                   Export
                   <ChevronDown className="h-3 w-3" />
                 </button>
-                
+
                 {showExportMenu && (
                   <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
                     <button

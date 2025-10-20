@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Upload, BookOpen, MessageSquare, X } from "lucide-react"
+import { Plus, Upload, BookOpen, MessageSquare, X, Mic, Network } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
@@ -26,7 +26,7 @@ export default function QuickActionButton({ className }: QuickActionButtonProps)
     {
       icon: BookOpen,
       label: "Create Flashcards",
-      color: "from-blue-500 to-cyan-500",
+      color: "from-accent-primary to-accent-secondary",
       action: () => {
         setIsOpen(false)
         router.push('/dashboard?mode=flashcards')
@@ -35,10 +35,28 @@ export default function QuickActionButton({ className }: QuickActionButtonProps)
     {
       icon: MessageSquare,
       label: "Start Chat",
-      color: "from-green-500 to-emerald-500",
+      color: "from-accent-primary to-accent-secondary",
       action: () => {
         setIsOpen(false)
         router.push('/dashboard?mode=chat')
+      }
+    },
+    {
+      icon: Mic,
+      label: "Generate Podcast",
+      color: "from-accent-primary to-accent-secondary",
+      action: () => {
+        setIsOpen(false)
+        router.push('/dashboard?mode=podcast')
+      }
+    },
+    {
+      icon: Network,
+      label: "Create Mind Map",
+      color: "from-accent-primary to-accent-secondary",
+      action: () => {
+        setIsOpen(false)
+        router.push('/dashboard?mode=mindmap')
       }
     }
   ]

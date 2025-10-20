@@ -90,9 +90,9 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
     <div className="max-w-4xl mx-auto">
       <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden">
         {/* Header */}
-        <div className="p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-500/10 to-emerald-500/10 dark:from-green-500/20 dark:to-emerald-500/20">
+        <div className="p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
           <div className="flex items-start gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+            <div className="w-16 h-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
               <Mic className="w-8 h-8 text-white" />
             </div>
             <div className="flex-1">
@@ -125,8 +125,8 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
                   onClick={() => setFormat(option.value as PodcastFormat)}
                   className={`p-4 rounded-xl border-2 transition-all text-left ${
                     format === option.value
-                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-700'
+                      ? 'border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 dark:hover:border-accent-primary/50'
                   }`}
                 >
                   <div className="text-2xl mb-2">{option.icon}</div>
@@ -145,7 +145,7 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
           <div>
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-sm font-medium text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors"
+              className="text-sm font-medium text-accent-primary hover:text-accent-secondary transition-colors"
             >
               {showAdvanced ? '− Hide' : '+ Show'} Advanced Options
             </button>
@@ -160,7 +160,7 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
                     value={customPrompt}
                     onChange={(e) => setCustomPrompt(e.target.value)}
                     placeholder="E.g., 'Focus on practical applications' or 'Explain for beginners'"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all resize-none"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white focus:ring-2 focus:ring-accent-primary focus:border-accent-primary transition-all resize-none"
                     rows={3}
                   />
                   <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -172,28 +172,28 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
           </div>
 
           {/* What to Expect */}
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 rounded-xl p-6 border border-green-200 dark:border-green-800">
+          <div className="bg-gradient-to-r from-accent-primary/5 to-accent-secondary/5 dark:from-accent-primary/10 dark:to-accent-secondary/10 rounded-xl p-6 border border-accent-primary/20 dark:border-accent-primary/30">
             <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+              <Sparkles className="w-5 h-5 text-accent-primary flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-semibold text-black dark:text-white mb-2">
                   What to Expect
                 </h3>
                 <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
                   <li className="flex items-start gap-2">
-                    <span className="text-green-600 dark:text-green-400">•</span>
+                    <span className="text-accent-primary">•</span>
                     <span>Two AI hosts (Alex & Jordan) discuss your document</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-green-600 dark:text-green-400">•</span>
+                    <span className="text-accent-primary">•</span>
                     <span>~10 minutes of engaging conversation</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-green-600 dark:text-green-400">•</span>
+                    <span className="text-accent-primary">•</span>
                     <span>Interactive transcript with timestamps</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-green-600 dark:text-green-400">•</span>
+                    <span className="text-accent-primary">•</span>
                     <span>Downloadable MP3 for offline listening</span>
                   </li>
                 </ul>
@@ -220,7 +220,7 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="w-full py-4 px-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold text-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg"
+            className="w-full py-4 px-6 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold text-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg"
           >
             {isGenerating ? (
               <>
@@ -238,9 +238,9 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
           {isGenerating && (
             <div className="text-center space-y-3">
               <div className="flex justify-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <div className="w-2 h-2 bg-accent-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 bg-accent-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 bg-accent-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 This may take 2-3 minutes. We're crafting a conversation just for you...

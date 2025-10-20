@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info } from "lucide-react"
+import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain } from "lucide-react"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 import { useDocumentStore } from "@/lib/store/useStore"
@@ -332,44 +332,82 @@ export default function ChatInterface() {
     <div className="h-full flex bg-white dark:bg-black border-gray-300 dark:border-gray-700 overflow-hidden">
       {/* Two Column Layout: PDF Viewer | Chat (50/50 split) */}
         {!chatDocument.file ? (
-          /* Upload Area - Full Width */
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div
-              onDrop={handleDrop}
-              onDragOver={(e) => e.preventDefault()}
-              onClick={triggerChatFileInput}
-              className="w-full max-w-2xl flex items-center justify-center border-2 border-dashed border-accent-primary/30 dark:border-accent-primary/50 rounded-xl hover:border-accent-primary dark:hover:border-accent-primary hover:bg-accent-primary/5 dark:hover:bg-accent-primary/10 transition-all duration-300 group cursor-pointer bg-accent-primary/5 dark:bg-accent-primary/5 p-12"
-            >
-              <div className="text-center max-w-md">
-                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-lg mb-6">
-                  <Upload className="h-10 w-10 text-white" />
+          /* Upload Area - Full Width with Header */
+          <div className="flex-1 overflow-auto">
+            <div className="max-w-4xl mx-auto p-8">
+              {/* Header Section */}
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden mb-6">
+                <div className="p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                      <MessageSquare className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-3xl font-bold text-black dark:text-white mb-2">
+                        Chat with Your Document
+                      </h2>
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">
+                        Upload any document and engage with an AI teaching assistant that guides you through Socratic dialogue
+                      </p>
+
+                      {/* Feature Badges */}
+                      <div className="flex flex-wrap gap-2">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
+                          <Brain className="w-3.5 h-3.5 text-accent-primary" />
+                          Socratic Teaching
+                        </div>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
+                          <Sparkles className="w-3.5 h-3.5 text-accent-primary" />
+                          AI-Powered
+                        </div>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
+                          <FileText className="w-3.5 h-3.5 text-accent-primary" />
+                          Multi-Format Support
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
-                  Upload a document to start chatting
-                </h3>
-                <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-                  Drag and drop your file here, or click to browse
-                </p>
+              </div>
 
-                <button
-                  onClick={triggerChatFileInput}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary hover:opacity-90 text-white rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 mx-auto mb-4"
-                >
-                  <Upload className="h-5 w-5" />
-                  Choose File
-                </button>
+              {/* Upload Area */}
+              <div
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
+                onClick={triggerChatFileInput}
+                className="border-2 border-dashed border-accent-primary/30 dark:border-accent-primary/50 rounded-2xl hover:border-accent-primary dark:hover:border-accent-primary hover:bg-accent-primary/5 dark:hover:bg-accent-primary/10 transition-all duration-300 group cursor-pointer bg-accent-primary/5 dark:bg-accent-primary/10 p-12"
+              >
+                <div className="text-center max-w-md mx-auto">
+                  <div className="mx-auto w-20 h-20 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-lg mb-6">
+                    <Upload className="h-10 w-10 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
+                    Upload a document to start chatting
+                  </h3>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+                    Drag and drop your file here, or click to browse
+                  </p>
 
-                <input
-                  id="chat-file-input"
-                  type="file"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  accept=".pdf,.txt,.doc,.docx,.json"
-                />
+                  <button
+                    onClick={triggerChatFileInput}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary hover:opacity-90 text-white rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 mx-auto mb-4"
+                  >
+                    <Upload className="h-5 w-5" />
+                    Choose File
+                  </button>
 
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                  Supported formats: PDF, TXT, DOC, DOCX, JSON
-                </p>
+                  <input
+                    id="chat-file-input"
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    accept=".pdf,.txt,.doc,.docx,.json"
+                  />
+
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                    Supported formats: PDF, TXT, DOC, DOCX, JSON
+                  </p>
+                </div>
               </div>
             </div>
           </div>
