@@ -8,7 +8,7 @@ import { useUserStore } from "@/lib/store/useStore"
 export default function QuizPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const { setLearningStyle } = useUserStore()
+  const { setLearningStyle, setHasCompletedAssessment, setAssessmentScores } = useUserStore()
 
   const handleQuizComplete = async (responses: Record<string, string>) => {
     setIsLoading(true)
@@ -28,8 +28,10 @@ export default function QuizPage() {
 
       const result = await response.json()
 
-      // Store learning style in global state
+      // Store learning style and assessment results in global state
       setLearningStyle(result.dominantStyle)
+      setHasCompletedAssessment(true)
+      setAssessmentScores(result.scores)
 
       // Navigate to results page with data
       router.push(

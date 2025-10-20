@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
-import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar } from "lucide-react"
+import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar, Link2, Globe, CheckCircle2, ArrowRight } from "lucide-react"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import LearningProfileBanner from "@/components/LearningProfileBanner"
 import type { Document } from "@/lib/supabase/types"
@@ -253,20 +253,95 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
               <p className="text-sm text-gray-600 dark:text-gray-400">Loading documents...</p>
             </div>
           ) : recentDocuments.length === 0 ? (
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 p-12 text-center">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Upload className="w-8 h-8 text-gray-400" />
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 p-8">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Upload className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Get Started with Your Documents</h3>
+                <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                  Upload documents or import from URLs to start generating flashcards, mind maps, podcasts, and chat with AI
+                </p>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No documents yet</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Upload your first document to get started with AI-powered learning
-              </p>
-              <button
-                onClick={() => window.location.href = '/dashboard/documents'}
-                className="px-6 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold hover:shadow-lg transition-all"
-              >
-                Upload Document
-              </button>
+
+              {/* Upload Methods Grid */}
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                {/* Upload Files Card */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-white" />
+                    </div>
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white">Upload Files</h4>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Drag and drop or browse to upload your documents
+                  </p>
+                  <ul className="space-y-2 mb-6">
+                    <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>Formats:</strong> PDF, DOCX, DOC, TXT, JSON</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>Size:</strong> Up to 500MB per file</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>Content:</strong> Textbooks, notes, research papers</span>
+                    </li>
+                  </ul>
+                  <button
+                    onClick={() => window.location.href = '/dashboard/documents'}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Go to Documents
+                  </button>
+                </div>
+
+                {/* Import from URL Card */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                      <Globe className="w-6 h-6 text-white" />
+                    </div>
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white">Import from URL</h4>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Import content directly from the internet
+                  </p>
+                  <ul className="space-y-2 mb-6">
+                    <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <CheckCircle2 className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>arXiv:</strong> Scientific papers & research</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <CheckCircle2 className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>Web:</strong> Medium, blogs, articles</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <CheckCircle2 className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>YouTube:</strong> Transcripts (coming soon)</span>
+                    </li>
+                  </ul>
+                  <button
+                    onClick={() => window.location.href = '/dashboard/documents'}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
+                  >
+                    <Link2 className="w-4 h-4" />
+                    Go to Documents
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Start Info */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-center">
+                <p className="text-sm text-blue-700 dark:text-blue-400">
+                  <strong>Quick Start:</strong> Click "Go to Documents" above to access the upload page, then choose your preferred method to get started
+                </p>
+              </div>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">

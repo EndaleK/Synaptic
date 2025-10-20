@@ -50,7 +50,8 @@ export default function LearningProfileBanner({ onTakeAssessment }: LearningProf
   }
 
   // Not assessed state - encourage user to take assessment
-  if (!hasCompletedAssessment) {
+  // Show this banner if user hasn't completed assessment OR if learning style is null
+  if (!hasCompletedAssessment || !learningStyle) {
     return (
       <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl p-6 border border-purple-200 dark:border-purple-800 shadow-sm">
         <div className="flex items-start gap-4">

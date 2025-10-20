@@ -327,20 +327,20 @@ Examples:
             </div>
           )}
 
-          <div className="flex justify-end" style={{ marginTop: "var(--space-4)" }}>
+          <div className="flex justify-center" style={{ marginTop: "var(--space-6)" }}>
             <button
               onClick={handleGenerate}
               disabled={isLoading || (!file && !textContent)}
               className={cn(
-                "btn-primary flex items-center gap-2 transition-all duration-200",
+                "btn-primary flex items-center gap-2 transition-all duration-200 px-8 py-3 text-lg font-semibold",
                 isLoading || (!file && !textContent)
                   ? "opacity-50 cursor-not-allowed transform-none shadow-none"
-                  : ""
+                  : "shadow-lg hover:shadow-xl transform hover:scale-105"
               )}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                   Generating...
                 </>
               ) : (
