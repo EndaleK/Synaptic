@@ -26,6 +26,8 @@ interface UserState {
   } | null) => void
 }
 
+import type { SectionStructure } from '@/lib/document-parser/section-detector'
+
 interface DocumentState {
   currentDocument: {
     id: string
@@ -33,8 +35,9 @@ interface DocumentState {
     content: string
     fileType: string
     storagePath?: string
+    sections?: SectionStructure
   } | null
-  setCurrentDocument: (doc: { id: string; name: string; content: string; fileType: string; storagePath?: string } | null) => void
+  setCurrentDocument: (doc: { id: string; name: string; content: string; fileType: string; storagePath?: string; sections?: SectionStructure } | null) => void
   documentHistory: Array<{ id: string; name: string; timestamp: string }>
   addToHistory: (doc: { id: string; name: string }) => void
 }

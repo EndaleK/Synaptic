@@ -4,41 +4,69 @@ import { createClient } from "@/lib/supabase/server"
 import { detectContentType, getSourceName } from "@/lib/importers/detector"
 import { arxivImporter } from "@/lib/importers/arxiv"
 import { webPageImporter } from "@/lib/importers/web-page"
+import { detectDocumentSections } from "@/lib/document-parser/section-detector"
 import type { WebImportProvider } from "@/lib/importers/types"
+import { applyRateLimit, RateLimits } from "@/lib/rate-limit"
+import { logger } from "@/lib/logger"
+import { URLImportSchema, validateDocumentLength, validateContentSafety, validateImportURL } from "@/lib/validation"
 
 interface ImportRequest {
   url: string
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+
   try {
+    // Authenticate user
+    const { userId } = await auth()
+    if (!userId) {
+      logger.warn('Unauthenticated import request')
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      )
+    }
+
+    // Apply rate limiting (upload tier - 20 requests/hour)
+    const rateLimitResponse = await applyRateLimit(request, RateLimits.upload, userId)
+    if (rateLimitResponse) {
+      logger.warn('Rate limit exceeded for URL import', { userId })
+      return rateLimitResponse
+    }
+
     const { url }: ImportRequest = await request.json()
 
     if (!url) {
+      logger.warn('No URL provided in import request', { userId })
       return NextResponse.json(
         { error: "URL is required" },
         { status: 400 }
       )
     }
 
-    // Validate URL format
+    // Validate URL format and safety (SSRF prevention)
     try {
-      new URL(url)
-    } catch {
+      URLImportSchema.parse({ url })
+    } catch (validationError) {
+      logger.warn('URL validation failed', { userId, url, error: validationError })
       return NextResponse.json(
-        { error: "Invalid URL format" },
+        { error: "Invalid URL. Must be a valid HTTPS URL." },
         { status: 400 }
       )
     }
 
-    // Authenticate user
-    const { userId } = await auth()
-    if (!userId) {
+    // Additional URL safety check
+    const urlValidation = validateImportURL(url)
+    if (!urlValidation.valid) {
+      logger.warn('URL safety validation failed', { userId, url, reason: urlValidation.reason })
       return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
+        { error: urlValidation.reason },
+        { status: 400 }
       )
     }
+
+    logger.debug('Processing URL import', { userId, url })
 
     // Note: We use clerk userId directly as documents table uses user_id
     // which is the Clerk user ID from JWT
@@ -81,9 +109,18 @@ export async function POST(request: NextRequest) {
     // Extract content
     let extractedContent
     try {
+      logger.debug('Extracting content from URL', { userId, url, contentType: detected.type })
       extractedContent = await importer.extract(url)
+      logger.debug('Content extraction successful', {
+        userId,
+        url,
+        contentLength: extractedContent.content.length,
+        title: extractedContent.metadata.title
+      })
     } catch (extractError) {
-      console.error('Content extraction error:', extractError)
+      logger.error('Content extraction error', extractError, { userId, url })
+      const duration = Date.now() - startTime
+      logger.api('POST', '/api/import-from-url', 500, duration, { userId, error: 'Extraction failed' })
       return NextResponse.json(
         {
           error: `Failed to extract content: ${extractError instanceof Error ? extractError.message : 'Unknown error'}`,
@@ -93,8 +130,60 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate extracted content
+    const lengthValidation = validateDocumentLength(extractedContent.content)
+    if (!lengthValidation.valid) {
+      logger.warn('Extracted content length validation failed', {
+        userId,
+        url,
+        length: extractedContent.content.length,
+        reason: lengthValidation.reason
+      })
+      const duration = Date.now() - startTime
+      logger.api('POST', '/api/import-from-url', 400, duration, { userId, error: 'Invalid content length' })
+      return NextResponse.json(
+        { error: lengthValidation.reason },
+        { status: 400 }
+      )
+    }
+
+    const safetyValidation = validateContentSafety(extractedContent.content)
+    if (!safetyValidation.safe) {
+      logger.warn('Extracted content safety validation failed', {
+        userId,
+        url,
+        reason: safetyValidation.reason
+      })
+      const duration = Date.now() - startTime
+      logger.api('POST', '/api/import-from-url', 400, duration, { userId, error: 'Content unsafe' })
+      return NextResponse.json(
+        { error: safetyValidation.reason },
+        { status: 400 }
+      )
+    }
+
+    // Parse document sections
+    const sections = detectDocumentSections(
+      extractedContent.content,
+      extractedContent.metadata.sourceType
+    )
+    logger.debug('Document sections detected', {
+      userId,
+      url,
+      totalSections: sections.totalSections,
+      maxDepth: sections.maxDepth,
+      sourceType: extractedContent.metadata.sourceType
+    })
+
     // Save to Supabase
     const supabase = await createClient()
+
+    logger.debug('Saving imported content to database', {
+      userId,
+      url,
+      title: extractedContent.metadata.title,
+      contentLength: extractedContent.content.length
+    })
 
     const { data: document, error: dbError } = await supabase
       .from('documents')
@@ -104,6 +193,7 @@ export async function POST(request: NextRequest) {
         file_type: 'imported',
         file_size: new TextEncoder().encode(extractedContent.content).length,
         extracted_text: extractedContent.content,
+        sections: sections,
         processing_status: 'completed',
         source_url: url,
         source_type: extractedContent.metadata.sourceType,
@@ -122,12 +212,32 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (dbError) {
-      console.error('Database save error:', dbError)
+      logger.error('Database save error for imported content', dbError, { userId, url })
+      const duration = Date.now() - startTime
+      logger.api('POST', '/api/import-from-url', 500, duration, { userId, error: 'Database error' })
       return NextResponse.json(
         { error: "Failed to save imported content" },
         { status: 500 }
       )
     }
+
+    const duration = Date.now() - startTime
+    logger.api('POST', '/api/import-from-url', 200, duration, {
+      userId,
+      url,
+      documentId: document.id,
+      sourceType: extractedContent.metadata.sourceType,
+      contentLength: extractedContent.content.length,
+      sectionsCount: sections.totalSections
+    })
+
+    logger.debug('URL import successful', {
+      userId,
+      url,
+      documentId: document.id,
+      title: extractedContent.metadata.title,
+      duration: `${duration}ms`
+    })
 
     return NextResponse.json({
       success: true,
@@ -138,7 +248,9 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error("Import API error:", error)
+    const duration = Date.now() - startTime
+    logger.error('Import API error', error, { userId, url: request.url, duration: `${duration}ms` })
+    logger.api('POST', '/api/import-from-url', 500, duration, { userId, error: 'Unknown error' })
 
     return NextResponse.json(
       {

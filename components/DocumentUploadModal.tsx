@@ -40,10 +40,10 @@ export default function DocumentUploadModal({
         return
       }
 
-      // Validate file size (100MB limit)
-      const maxSize = 100 * 1024 * 1024
+      // Validate file size (500MB limit)
+      const maxSize = 500 * 1024 * 1024
       if (selectedFile.size > maxSize) {
-        setError('File size exceeds 100MB limit.')
+        setError('File size exceeds 500MB limit.')
         return
       }
 
@@ -77,6 +77,10 @@ export default function DocumentUploadModal({
     setIsUploading(true)
     setError(null)
 
+    // Create abort controller for timeout handling
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 300000) // 5 minute timeout
+
     try {
       const formData = new FormData()
       formData.append('file', file)
@@ -84,7 +88,10 @@ export default function DocumentUploadModal({
       const response = await fetch('/api/documents', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       })
+
+      clearTimeout(timeout)
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -95,8 +102,21 @@ export default function DocumentUploadModal({
       onSuccess()
       handleClose()
     } catch (err) {
+      clearTimeout(timeout)
       console.error('Upload error:', err)
-      setError(err instanceof Error ? err.message : 'Failed to upload document')
+
+      // Provide specific error messages based on error type
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          setError('Upload timed out after 5 minutes. Please try a smaller file or check your internet connection.')
+        } else if (err.message === 'Failed to fetch') {
+          setError('Network error. Please check if the server is running at http://localhost:3000 and try again.')
+        } else {
+          setError(err.message)
+        }
+      } else {
+        setError('Failed to upload document. Please try again.')
+      }
     } finally {
       setIsUploading(false)
     }
@@ -263,7 +283,7 @@ export default function DocumentUploadModal({
                         Click to upload or drag and drop
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        PDF, DOCX, DOC, TXT, or JSON (max 100MB)
+                        PDF, DOCX, DOC, TXT, or JSON (max 500MB)
                       </p>
                     </div>
                   </div>

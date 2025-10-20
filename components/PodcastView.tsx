@@ -5,6 +5,7 @@ import { Mic, Loader2, AlertCircle, Sparkles } from "lucide-react"
 import PodcastPlayer, { type TranscriptEntry } from "./PodcastPlayer"
 import { useToast } from "./ToastContainer"
 import type { PodcastFormat } from "@/lib/podcast-generator"
+import DocumentSwitcherModal from "./DocumentSwitcherModal"
 
 interface PodcastViewProps {
   documentId: string
@@ -253,6 +254,15 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
           </div>
         </div>
       </div>
+
+      {/* Document Switcher */}
+      <DocumentSwitcherModal
+        onDocumentSwitch={() => {
+          // Clear podcast data when switching documents
+          setPodcastData(null)
+          setIsGenerating(false)
+        }}
+      />
     </div>
   )
 }

@@ -5,6 +5,9 @@ import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info } from "
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 import { useDocumentStore } from "@/lib/store/useStore"
+import DocumentSwitcherModal from "./DocumentSwitcherModal"
+import SectionNavigator from "./SectionNavigator"
+import type { DocumentSection } from "@/lib/document-parser/section-detector"
 
 const PDFViewer = dynamic(() => import("./PDFViewer"), {
   ssr: false,
@@ -587,6 +590,33 @@ export default function ChatInterface() {
               </div>
             </div>
           </>
+        )}
+
+        {/* Document Switcher */}
+        <DocumentSwitcherModal
+          onDocumentSwitch={() => {
+            // Reload chat interface with new document
+            if (currentDocument) {
+              setChatDocument({
+                file: null,
+                content: currentDocument.content,
+                isProcessing: false
+              })
+              // Clear messages for new document conversation
+              setMessages([])
+            }
+          }}
+        />
+
+        {/* Section Navigator */}
+        {currentDocument?.sections && currentDocument.sections.sections.length > 0 && (
+          <SectionNavigator
+            sections={currentDocument.sections.sections}
+            onSectionClick={(section: DocumentSection) => {
+              // Auto-populate input with question about the section
+              setInputMessage(`Tell me about the "${section.title}" section`)
+            }}
+          />
         )}
     </div>
   )

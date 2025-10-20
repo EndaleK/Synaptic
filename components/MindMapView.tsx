@@ -4,6 +4,7 @@ import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Network, Loader2, AlertCircle, Sparkles, RefreshCw } from 'lucide-react'
 import type { MindMapNode, MindMapEdge } from '@/lib/mindmap-generator'
+import DocumentSwitcherModal from './DocumentSwitcherModal'
 
 // Dynamically import MindMapViewer to avoid SSR issues with React Flow
 const MindMapViewer = dynamic(() => import('./MindMapViewer'), {
@@ -285,6 +286,15 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
           </p>
         </div>
       </div>
+
+      {/* Document Switcher */}
+      <DocumentSwitcherModal
+        onDocumentSwitch={() => {
+          // Clear mind map data when switching documents
+          setMindMapData(null)
+          setIsGenerating(false)
+        }}
+      />
     </div>
   )
 }

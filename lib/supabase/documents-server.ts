@@ -3,39 +3,80 @@ import { createClient } from './server'
 import type { Document, DocumentInsert } from './types'
 
 /**
- * Upload document file to Supabase Storage (Server-Side)
+ * Upload document file to Supabase Storage (Server-Side) with retry logic
+ *
+ * Converts File to Buffer for Node.js environment compatibility.
+ * Supports files up to 500MB (after increasing Supabase storage limit).
  */
 export async function uploadDocumentToStorage(
   file: File,
-  userId: string
+  userId: string,
+  maxRetries = 3
 ): Promise<{ path: string; error: string | null }> {
-  try {
-    const supabase = await createClient()
+  let lastError: Error | null = null
 
-    // Create unique file path: userId/timestamp-filename
-    const timestamp = Date.now()
-    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-    const filePath = `${userId}/${timestamp}-${sanitizedFileName}`
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const supabase = await createClient()
 
-    const { data, error } = await supabase.storage
-      .from('documents')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      })
+      // Create unique file path: userId/timestamp-filename
+      const timestamp = Date.now()
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+      const filePath = `${userId}/${timestamp}-${sanitizedFileName}`
 
-    if (error) {
-      console.error('Storage upload error:', error)
-      return { path: '', error: error.message }
+      console.log(`Upload attempt ${attempt}/${maxRetries}: ${file.name} (${file.size} bytes)`)
+
+      // CRITICAL FIX: Convert File to Buffer for Node.js server environment
+      // Supabase's server-side SDK requires Buffer, not File object
+      const arrayBuffer = await file.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .upload(filePath, buffer, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type  // Preserve MIME type
+        })
+
+      if (error) {
+        lastError = error instanceof Error ? error : new Error(error.message)
+        console.error(`Upload error (attempt ${attempt}/${maxRetries}):`, error)
+
+        // Retry on timeout or network errors
+        const isRetryable = error.message.toLowerCase().includes('timeout') ||
+                           error.message.toLowerCase().includes('fetch failed') ||
+                           error.message.toLowerCase().includes('headers timeout')
+
+        if (attempt < maxRetries && isRetryable) {
+          const backoffDelay = 1000 * Math.pow(2, attempt - 1) // Exponential backoff: 1s, 2s, 4s
+          console.log(`Retrying upload after ${backoffDelay}ms...`)
+          await new Promise(resolve => setTimeout(resolve, backoffDelay))
+          continue
+        }
+
+        return { path: '', error: error.message }
+      }
+
+      console.log(`✅ Upload successful: ${data.path}`)
+      return { path: data.path, error: null }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error')
+      console.error(`Upload attempt ${attempt}/${maxRetries} failed:`, error)
+
+      // Retry on network errors
+      if (attempt < maxRetries) {
+        const backoffDelay = 1000 * Math.pow(2, attempt - 1)
+        console.log(`Retrying upload after ${backoffDelay}ms...`)
+        await new Promise(resolve => setTimeout(resolve, backoffDelay))
+        continue
+      }
     }
+  }
 
-    return { path: data.path, error: null }
-  } catch (error) {
-    console.error('Upload to storage failed:', error)
-    return {
-      path: '',
-      error: error instanceof Error ? error.message : 'Upload failed'
-    }
+  return {
+    path: '',
+    error: lastError?.message || 'Upload failed after retries'
   }
 }
 

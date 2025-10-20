@@ -1,13 +1,55 @@
 import { NextRequest, NextResponse } from "next/server"
 import { generateFlashcards, type FlashcardGenerationOptions } from "@/lib/openai"
+import { generateFlashcardsAuto, selectAIProvider } from "@/lib/ai-provider"
 import { parseDocument } from "@/lib/document-parser"
 import { convertTextToDocumentJSON } from "@/lib/document-to-json"
 import { auth } from "@clerk/nextjs/server"
 import { getUserProfile, getUserLearningProfile } from "@/lib/supabase/user-profile"
 import type { LearningStyle, TeachingStylePreference } from "@/lib/supabase/types"
+import { applyRateLimit, RateLimits } from "@/lib/rate-limit"
+import { logger } from "@/lib/logger"
+import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
+import { FileUploadSchema, validateDocumentLength, validateContentSafety } from "@/lib/validation"
+import { canGenerateFlashcards, trackFlashcardGeneration } from "@/lib/usage-tracker"
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+
   try {
+    // Get authenticated user
+    const { userId } = await auth()
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      )
+    }
+
+    // Apply rate limiting (10 requests per minute for AI endpoints)
+    const rateLimitResponse = await applyRateLimit(request, RateLimits.ai, userId)
+    if (rateLimitResponse) {
+      logger.warn("Rate limit exceeded for flashcard generation", { userId })
+      return rateLimitResponse
+    }
+
+    // Check usage limits (free tier: 50 flashcard generations/month)
+    const usageCheck = canGenerateFlashcards(userId, 'free') // TODO: Get actual tier from user profile
+    if (!usageCheck.allowed) {
+      logger.warn('Flashcard generation blocked - usage limit reached', {
+        userId,
+        reason: usageCheck.reason,
+        currentUsage: usageCheck.currentUsage
+      })
+      return NextResponse.json(
+        {
+          error: usageCheck.reason,
+          currentUsage: usageCheck.currentUsage,
+          upgradeUrl: '/pricing'
+        },
+        { status: 403 }
+      )
+    }
+
     const formData = await request.formData()
     const mode = formData.get("mode") as string
     const variation = parseInt(formData.get("variation") as string || "0")
@@ -16,29 +58,56 @@ export async function POST(request: NextRequest) {
     if (mode === "file") {
       const file = formData.get("file") as File
       if (!file) {
-        console.error("No file provided in request")
+        logger.warn("No file provided in flashcard generation request", { userId })
         return NextResponse.json(
           { error: "No file provided" },
           { status: 400 }
         )
       }
 
-      console.log(`Processing file upload: ${file.name}, type: ${file.type}, size: ${file.size}`)
-      
+      // Validate file
+      try {
+        FileUploadSchema.parse({
+          name: file.name,
+          size: file.size,
+          type: file.type,
+        })
+      } catch (validationError) {
+        logger.warn("File validation failed", { userId, fileName: file.name, error: validationError })
+        return NextResponse.json(
+          { error: "Invalid file. Must be PDF, DOCX, DOC, TXT, or JSON under 500MB" },
+          { status: 400 }
+        )
+      }
+
+      logger.debug("Processing file upload", {
+        userId,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size
+      })
+
       const parseResult = await parseDocument(file)
       if (parseResult.error) {
-        console.error(`File parsing failed for ${file.name}:`, parseResult.error)
+        logger.error("File parsing failed", new Error(parseResult.error), {
+          userId,
+          fileName: file.name
+        })
         return NextResponse.json(
           { error: parseResult.error },
           { status: 400 }
         )
       }
-      
+
       textContent = parseResult.text
-      console.log(`Successfully extracted ${textContent.length} characters from ${file.name}`)
-      
+      logger.debug("File parsed successfully", {
+        userId,
+        fileName: file.name,
+        textLength: textContent.length
+      })
+
       if (textContent.length === 0) {
-        console.warn(`File ${file.name} produced no text content`)
+        logger.warn("File produced no text content", { userId, fileName: file.name })
         return NextResponse.json(
           { error: "File contains no readable text content" },
           { status: 400 }
@@ -55,6 +124,33 @@ export async function POST(request: NextRequest) {
     } else {
       return NextResponse.json(
         { error: "Invalid mode" },
+        { status: 400 }
+      )
+    }
+
+    // Validate document length
+    const lengthValidation = validateDocumentLength(textContent)
+    if (!lengthValidation.valid) {
+      logger.warn("Document length validation failed", {
+        userId,
+        length: textContent.length,
+        reason: lengthValidation.reason
+      })
+      return NextResponse.json(
+        { error: lengthValidation.reason },
+        { status: 400 }
+      )
+    }
+
+    // Validate content safety
+    const safetyValidation = validateContentSafety(textContent)
+    if (!safetyValidation.safe) {
+      logger.warn("Content safety validation failed", {
+        userId,
+        reason: safetyValidation.reason
+      })
+      return NextResponse.json(
+        { error: safetyValidation.reason },
         { status: 400 }
       )
     }
@@ -76,56 +172,110 @@ export async function POST(request: NextRequest) {
     let generationOptions: FlashcardGenerationOptions = { variation }
 
     try {
-      const { userId } = await auth()
+      // Get user profile
+      const { profile } = await getUserProfile(userId)
 
-      if (userId) {
-        // Get user profile
-        const { profile } = await getUserProfile(userId)
+      if (profile?.id) {
+        // Get learning profile
+        const { learningProfile } = await getUserLearningProfile(profile.id)
 
-        if (profile?.id) {
-          // Get learning profile
-          const { learningProfile } = await getUserLearningProfile(profile.id)
-
-          if (learningProfile && profile.learning_style) {
-            // Build personalization options
-            generationOptions = {
-              variation,
-              learningStyle: profile.learning_style as LearningStyle,
-              teachingStylePreference: (learningProfile.teaching_style_preference || 'mixed') as TeachingStylePreference,
-              varkScores: {
-                visual: learningProfile.visual_score,
-                auditory: learningProfile.auditory_score,
-                kinesthetic: learningProfile.kinesthetic_score,
-                reading_writing: learningProfile.reading_writing_score
-              },
-              socraticPercentage: learningProfile.socratic_percentage
-            }
-
-            console.log(`Using personalized generation for ${profile.learning_style} learner`)
+        if (learningProfile && profile.learning_style) {
+          // Build personalization options
+          generationOptions = {
+            variation,
+            learningStyle: profile.learning_style as LearningStyle,
+            teachingStylePreference: (learningProfile.teaching_style_preference || 'mixed') as TeachingStylePreference,
+            varkScores: {
+              visual: learningProfile.visual_score,
+              auditory: learningProfile.auditory_score,
+              kinesthetic: learningProfile.kinesthetic_score,
+              reading_writing: learningProfile.reading_writing_score
+            },
+            socraticPercentage: learningProfile.socratic_percentage
           }
+
+          logger.debug("Using personalized generation", {
+            userId,
+            learningStyle: profile.learning_style
+          })
         }
       }
     } catch (profileError) {
       // If profile fetch fails, just continue with default generation
-      console.log('Could not fetch user profile for personalization:', profileError)
+      logger.warn("Could not fetch user profile for personalization", {
+        userId,
+        error: profileError
+      })
     }
 
-    const flashcards = await generateFlashcards(textContent, generationOptions)
-    
-    return NextResponse.json({ 
+    // Select optimal AI provider based on document size
+    const providerSelection = selectAIProvider(textContent.length, 'flashcards')
+    logger.info("Smart routing selected provider", {
+      userId,
+      provider: providerSelection.provider,
+      reason: providerSelection.reason,
+      textLength: textContent.length
+    })
+
+    // Generate flashcards with automatic provider selection
+    const result = await generateFlashcardsAuto(textContent, generationOptions)
+    const flashcards = result.flashcards
+
+    logger.info("Flashcards generated successfully", {
+      userId,
+      provider: result.provider,
+      flashcardCount: flashcards.length
+    })
+
+    // Track usage (use the selected provider's model for cost tracking)
+    const modelMap: Record<string, 'gpt-3.5-turbo' | 'claude-3-5-sonnet' | 'gemini-1.5-pro'> = {
+      'openai': 'gpt-3.5-turbo',
+      'claude': 'claude-3-5-sonnet',
+      'gemini': 'gemini-1.5-pro'
+    }
+
+    const modelForCost = modelMap[result.provider] || 'gpt-3.5-turbo'
+    const costEstimate = estimateRequestCost(modelForCost, textContent, 2000)
+    trackUsage(userId, modelForCost, costEstimate.inputTokens, costEstimate.outputTokens)
+
+    // Track flashcard generation for usage limits
+    trackFlashcardGeneration(userId, 'free') // TODO: Get actual tier from user profile
+
+    const duration = Date.now() - startTime
+
+    logger.api('POST', '/api/generate-flashcards', 200, duration, {
+      userId,
+      flashcardCount: flashcards.length,
+      textLength: textContent.length,
+      mode
+    })
+
+    return NextResponse.json({
       flashcards,
       documentJSON: documentJSON || null,
       textLength: textContent.length,
-      extractedText: textContent // Include extracted text for chat functionality
+      extractedText: textContent, // Include extracted text for chat functionality
+      aiProvider: result.provider, // Include which AI provider was used
+      providerReason: result.providerReason // Explain why this provider was selected
     })
   } catch (error) {
-    console.error("API error:", error)
+    const duration = Date.now() - startTime
+    logger.error("Flashcard generation failed", error, {
+      userId,
+      duration: `${duration}ms`
+    })
+
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
-    const errorDetails = error instanceof Error && 'response' in error 
+    const errorDetails = error instanceof Error && 'response' in error
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ? (error as any).response?.data?.error?.message || errorMessage
       : errorMessage
-    
+
+    logger.api('POST', '/api/generate-flashcards', 500, duration, {
+      userId,
+      error: errorDetails
+    })
+
     return NextResponse.json(
       { error: `Failed to generate flashcards: ${errorDetails}` },
       { status: 500 }

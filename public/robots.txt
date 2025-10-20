@@ -1,0 +1,18 @@
+# robots.txt for Synaptic AI Learning Platform
+
+# Allow all crawlers to index public pages
+User-agent: *
+Allow: /
+Allow: /pricing
+Allow: /about
+
+# Disallow dashboard and user-specific pages
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /sign-out
+Disallow: /clerk-debug
+
+# Sitemap location
+Sitemap: https://synaptic.ai/sitemap.xml

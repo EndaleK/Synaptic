@@ -1,4 +1,5 @@
 // TypeScript Types for Supabase Database Tables
+import type { SectionStructure } from '@/lib/document-parser/section-detector'
 
 export type LearningStyle = 'visual' | 'auditory' | 'kinesthetic' | 'reading_writing' | 'mixed'
 export type PreferredMode = 'home' | 'flashcards' | 'chat' | 'podcast' | 'mindmap'
@@ -59,6 +60,7 @@ export interface Document {
   source_url?: string
   source_type?: SourceType
   metadata?: Record<string, any>
+  sections?: SectionStructure
   created_at: string
   updated_at: string
 }

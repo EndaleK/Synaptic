@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import dynamic from "next/dynamic"
+import { useRouter } from "next/navigation"
 import { useUser } from "@clerk/nextjs"
 import DocumentUpload from "@/components/DocumentUpload"
 import FlashcardDisplay from "@/components/FlashcardDisplay"
@@ -28,6 +29,7 @@ const ChatInterface = dynamic(() => import("@/components/ChatInterface"), {
 })
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { user } = useUser()
   const [flashcards, setFlashcards] = useState<Flashcard[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -207,6 +209,29 @@ export default function DashboardPage() {
         )
 
       case "chat":
+        if (!currentDocument) {
+          return (
+            <div className="h-full flex items-center justify-center p-6">
+              <div className="text-center max-w-md">
+                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                  <span className="text-white text-4xl">💬</span>
+                </div>
+                <h2 className="text-3xl font-bold text-black dark:text-white mb-4">
+                  No Document Selected
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Please select a document from the Documents page to start chatting.
+                </p>
+                <button
+                  onClick={() => router.push('/dashboard/documents')}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-semibold hover:shadow-xl transition-all"
+                >
+                  Go to Documents
+                </button>
+              </div>
+            </div>
+          )
+        }
         return (
           <div className="h-full">
             <ChatInterface />
@@ -228,10 +253,10 @@ export default function DashboardPage() {
                   Please select a document from the Documents page to generate a podcast.
                 </p>
                 <button
-                  onClick={() => setActiveMode("home")}
+                  onClick={() => router.push('/dashboard/documents')}
                   className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:shadow-xl transition-all"
                 >
-                  Go to Home
+                  Go to Documents
                 </button>
               </div>
             </div>
@@ -261,10 +286,10 @@ export default function DashboardPage() {
                   Please select a document from the Documents page to generate a mind map.
                 </p>
                 <button
-                  onClick={() => setActiveMode("home")}
+                  onClick={() => router.push('/dashboard/documents')}
                   className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold hover:shadow-xl transition-all"
                 >
-                  Go to Home
+                  Go to Documents
                 </button>
               </div>
             </div>
@@ -281,6 +306,29 @@ export default function DashboardPage() {
 
       case "flashcards":
       default:
+        if (!currentDocument) {
+          return (
+            <div className="h-full flex items-center justify-center p-6">
+              <div className="text-center max-w-md">
+                <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                  <span className="text-white text-4xl">🃏</span>
+                </div>
+                <h2 className="text-3xl font-bold text-black dark:text-white mb-4">
+                  No Document Selected
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Please select a document from the Documents page to generate flashcards.
+                </p>
+                <button
+                  onClick={() => router.push('/dashboard/documents')}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold hover:shadow-xl transition-all"
+                >
+                  Go to Documents
+                </button>
+              </div>
+            </div>
+          )
+        }
         return (
           <div className="h-full p-4">
             {flashcards.length === 0 ? (

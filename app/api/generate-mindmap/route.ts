@@ -2,15 +2,30 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { createClient } from "@/lib/supabase/server"
 import { generateMindMap, validateMindMap } from "@/lib/mindmap-generator"
+import { applyRateLimit, RateLimits } from "@/lib/rate-limit"
+import { logger } from "@/lib/logger"
+import { MindMapGenerationSchema } from "@/lib/validation"
+import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
+import { canGenerateMindMap, trackMindMapGeneration } from "@/lib/usage-tracker"
 
 export const maxDuration = 60 // 1 minute max execution time
 
 export async function POST(req: NextRequest) {
+  const startTime = Date.now()
+
   try {
     // Authenticate user
     const { userId } = await auth()
     if (!userId) {
+      logger.warn('Unauthenticated mind map generation request')
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Apply rate limiting (AI tier - 10 requests/min)
+    const rateLimitResponse = await applyRateLimit(req, RateLimits.ai, userId)
+    if (rateLimitResponse) {
+      logger.warn('Rate limit exceeded for mind map generation', { userId })
+      return rateLimitResponse
     }
 
     // Parse request body
@@ -21,14 +36,45 @@ export async function POST(req: NextRequest) {
       maxDepth = 3
     } = body
 
-    if (!documentId) {
+    // Validate input
+    try {
+      MindMapGenerationSchema.parse({
+        documentId,
+        maxNodes,
+        maxDepth
+      })
+    } catch (validationError) {
+      logger.warn('Mind map generation validation failed', { userId, error: validationError })
       return NextResponse.json(
-        { error: "Document ID is required" },
+        { error: "Invalid input. Check documentId, maxNodes, and maxDepth." },
         { status: 400 }
       )
     }
 
-    console.log(`[Mind Map Generation] Starting for document ${documentId}, user ${userId}`)
+    // Check usage limits (free tier: 10 mind map generations/month)
+    const usageCheck = canGenerateMindMap(userId, 'free') // TODO: Get actual tier from user profile
+    if (!usageCheck.allowed) {
+      logger.warn('Mind map generation blocked - usage limit reached', {
+        userId,
+        reason: usageCheck.reason,
+        currentUsage: usageCheck.currentUsage
+      })
+      return NextResponse.json(
+        {
+          error: usageCheck.reason,
+          currentUsage: usageCheck.currentUsage,
+          upgradeUrl: '/pricing'
+        },
+        { status: 403 }
+      )
+    }
+
+    logger.debug('Starting mind map generation', {
+      userId,
+      documentId,
+      maxNodes,
+      maxDepth
+    })
 
     // Initialize Supabase
     const supabase = await createClient()
@@ -42,7 +88,9 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (docError || !document) {
-      console.error("Document fetch error:", docError)
+      logger.error('Document fetch error for mind map generation', docError, { userId, documentId })
+      const duration = Date.now() - startTime
+      logger.api('POST', '/api/generate-mindmap', 404, duration, { userId, error: 'Document not found' })
       return NextResponse.json(
         { error: "Document not found" },
         { status: 404 }
@@ -50,14 +98,32 @@ export async function POST(req: NextRequest) {
     }
 
     if (!document.extracted_text) {
+      logger.warn('Document has no extracted text', { userId, documentId })
+      const duration = Date.now() - startTime
+      logger.api('POST', '/api/generate-mindmap', 400, duration, { userId, error: 'No extracted text' })
       return NextResponse.json(
         { error: "Document has no extracted text" },
         { status: 400 }
       )
     }
 
+    logger.debug('Document fetched successfully', {
+      userId,
+      documentId,
+      fileName: document.file_name,
+      textLength: document.extracted_text.length
+    })
+
+    // Estimate cost before generation
+    const costEstimate = estimateRequestCost('gpt-3.5-turbo', document.extracted_text, 2000)
+    logger.debug('Cost estimate for mind map generation', {
+      userId,
+      documentId,
+      ...costEstimate
+    })
+
     // Generate mind map
-    console.log(`[Mind Map] Generating...`)
+    logger.debug('Generating mind map', { userId, documentId, maxNodes, maxDepth })
     const mindMapData = await generateMindMap({
       text: document.extracted_text,
       maxNodes,
@@ -67,8 +133,20 @@ export async function POST(req: NextRequest) {
     // Validate mind map
     const isValid = validateMindMap(mindMapData)
     if (!isValid) {
-      console.warn("Mind map validation failed, but continuing...")
+      logger.warn('Mind map validation failed, but continuing', {
+        userId,
+        documentId,
+        nodeCount: mindMapData.nodes.length,
+        edgeCount: mindMapData.edges.length
+      })
     }
+
+    logger.debug('Mind map generated', {
+      userId,
+      documentId,
+      nodeCount: mindMapData.nodes.length,
+      edgeCount: mindMapData.edges.length
+    })
 
     // Save to database
     const { data: mindMap, error: dbError } = await supabase
@@ -85,15 +163,23 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (dbError) {
-      console.error("Database save error:", dbError)
+      logger.error('Database save error for mind map', dbError, { userId, documentId })
       // Don't fail the request, mind map is still generated
     }
 
     // Track usage
+    const totalTokens = mindMapData.nodes.reduce((sum, node) => sum + node.label.length + node.description.length, 0)
+
+    // Track GPT usage for cost monitoring
+    trackUsage(userId, 'gpt-3.5-turbo', costEstimate.inputTokens, costEstimate.outputTokens)
+
+    // Track mind map generation for usage limits
+    trackMindMapGeneration(userId, 'free') // TODO: Get actual tier from user profile
+
     await supabase.from('usage_tracking').insert({
       user_id: userId,
       action_type: 'mindmap_generation',
-      tokens_used: mindMapData.nodes.reduce((sum, node) => sum + node.label.length + node.description.length, 0),
+      tokens_used: totalTokens,
       metadata: {
         document_id: documentId,
         node_count: mindMapData.nodes.length,
@@ -101,7 +187,22 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    console.log(`[Mind Map] Generation complete: ${mindMapData.nodes.length} nodes, ${mindMapData.edges.length} edges`)
+    const duration = Date.now() - startTime
+    logger.api('POST', '/api/generate-mindmap', 200, duration, {
+      userId,
+      documentId,
+      mindMapId: mindMap?.id,
+      nodeCount: mindMapData.nodes.length,
+      edgeCount: mindMapData.edges.length
+    })
+
+    logger.debug('Mind map generation complete', {
+      userId,
+      documentId,
+      nodeCount: mindMapData.nodes.length,
+      edgeCount: mindMapData.edges.length,
+      duration: `${duration}ms`
+    })
 
     // Return response
     return NextResponse.json({
@@ -117,7 +218,10 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error("[Mind Map Generation] Error:", error)
+    const duration = Date.now() - startTime
+    logger.error('Mind map generation error', error, { userId, documentId: req.url, duration: `${duration}ms` })
+    logger.api('POST', '/api/generate-mindmap', 500, duration, { userId, error: 'Unknown error' })
+
     return NextResponse.json(
       {
         error: error.message || "Failed to generate mind map",

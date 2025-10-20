@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { ChevronLeft, ChevronRight, RotateCcw, Download, Home, ChevronDown, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Flashcard } from "@/lib/types"
+import DocumentSwitcherModal from "./DocumentSwitcherModal"
 
 interface FlashcardDisplayProps {
   flashcards: Flashcard[]
@@ -565,6 +566,14 @@ ${'='.repeat(50)}`).join('\n')}`
           </p>
         </div>
       </div>
+
+      {/* Document Switcher */}
+      <DocumentSwitcherModal
+        onDocumentSwitch={() => {
+          // Reset flashcard display when switching documents
+          onReset()
+        }}
+      />
     </div>
   )
 }
