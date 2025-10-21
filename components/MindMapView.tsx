@@ -35,14 +35,26 @@ interface MindMapData {
   }
 }
 
+interface ComplexityAnalysis {
+  complexity: 'simple' | 'moderate' | 'complex' | 'very_complex'
+  score: number
+  factors: {
+    length: number
+    vocabulary: number
+    structure: number
+    technical: number
+  }
+  reasoning: string
+  recommendedNodes: number
+  recommendedDepth: number
+}
+
 export default function MindMapView({ documentId, documentName }: MindMapViewProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [mindMapData, setMindMapData] = useState<MindMapData | null>(null)
   const [documentText, setDocumentText] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
-  const [showAdvanced, setShowAdvanced] = useState(false)
-  const [maxNodes, setMaxNodes] = useState(25)
-  const [maxDepth, setMaxDepth] = useState(3)
+  const [complexityAnalysis, setComplexityAnalysis] = useState<ComplexityAnalysis | null>(null)
 
   const generateMindMap = async () => {
     setIsGenerating(true)
@@ -53,9 +65,8 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          documentId,
-          maxNodes,
-          maxDepth
+          documentId
+          // No maxNodes or maxDepth - let API auto-detect
         })
       })
 
@@ -70,6 +81,11 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
       // Extract the mindMap object if it exists
       const mindMapData = data.mindMap || data
       setMindMapData(mindMapData)
+
+      // Store complexity analysis
+      if (data.complexityAnalysis) {
+        setComplexityAnalysis(data.complexityAnalysis)
+      }
 
       // Store document text for detail generation
       if (data.documentText) {
@@ -94,13 +110,30 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
       <div className="h-full flex flex-col">
         {/* Header with Regenerate Button */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <div>
+          <div className="flex-1">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               {documentName}
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Mind Map Visualization
-            </p>
+            <div className="flex items-center gap-3 mt-1">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Mind Map Visualization
+              </p>
+              {complexityAnalysis && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={`px-2 py-1 rounded-full font-medium ${
+                    complexityAnalysis.complexity === 'simple' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                    complexityAnalysis.complexity === 'moderate' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                    complexityAnalysis.complexity === 'complex' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
+                    'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                  }`}>
+                    {complexityAnalysis.complexity.replace('_', ' ').toUpperCase()}
+                  </span>
+                  <span className="text-gray-500 dark:text-gray-400">
+                    Score: {complexityAnalysis.score}/100 • {complexityAnalysis.recommendedNodes} nodes • {complexityAnalysis.recommendedDepth} levels
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
           <button
             onClick={handleRegenerate}
@@ -159,59 +192,39 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
         </div>
       </div>
 
-      {/* Advanced Options */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-        >
-          <span className="font-semibold text-gray-900 dark:text-white">
-            Advanced Options
-          </span>
-          <span className={`transform transition-transform ${showAdvanced ? 'rotate-180' : ''}`}>
-            ▼
-          </span>
-        </button>
-
-        {showAdvanced && (
-          <div className="px-6 pb-6 space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-            {/* Max Nodes */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Maximum Nodes: {maxNodes}
-              </label>
-              <input
-                type="range"
-                min="10"
-                max="50"
-                value={maxNodes}
-                onChange={(e) => setMaxNodes(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-accent-primary"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                More nodes = more detailed map (may take longer to generate)
-              </p>
-            </div>
-
-            {/* Max Depth */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Maximum Depth: {maxDepth}
-              </label>
-              <input
-                type="range"
-                min="2"
-                max="5"
-                value={maxDepth}
-                onChange={(e) => setMaxDepth(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-accent-primary"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Higher depth = more hierarchical levels
-              </p>
-            </div>
+      {/* AI-Powered Analysis Info */}
+      <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-2xl border border-blue-200 dark:border-blue-800 p-6">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-5 h-5 text-white" />
           </div>
-        )}
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+              AI-Powered Complexity Analysis
+            </h3>
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              Our AI automatically analyzes your document to determine the optimal mind map structure
+            </p>
+          </div>
+        </div>
+        <div className="grid md:grid-cols-4 gap-3 text-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Document Length</div>
+            <div className="font-semibold text-gray-900 dark:text-white">Auto-detected</div>
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Vocabulary Richness</div>
+            <div className="font-semibold text-gray-900 dark:text-white">Analyzed</div>
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Structure Complexity</div>
+            <div className="font-semibold text-gray-900 dark:text-white">Measured</div>
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Technical Density</div>
+            <div className="font-semibold text-gray-900 dark:text-white">Evaluated</div>
+          </div>
+        </div>
       </div>
 
       {/* Error Display */}

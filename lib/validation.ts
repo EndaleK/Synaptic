@@ -60,6 +60,7 @@ export const PodcastGenerationSchema = z.object({
 export const MindMapGenerationSchema = z.object({
   documentId: z.string().uuid(),
   maxNodes: z.number().int().min(5).max(100).optional(),
+  maxDepth: z.number().int().min(2).max(6).optional(),
 })
 
 /**

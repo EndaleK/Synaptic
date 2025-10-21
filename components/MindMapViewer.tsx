@@ -39,13 +39,16 @@ interface NodeDetail {
   }>
 }
 
-// Category color mapping
+// Category color mapping with enhanced palette for better readability
 const categoryColors: Record<string, { bg: string; border: string; text: string }> = {
-  concept: { bg: '#EBF5FF', border: '#3B82F6', text: '#1E40AF' },
-  process: { bg: '#F0FDF4', border: '#10B981', text: '#065F46' },
-  example: { bg: '#FEF3C7', border: '#F59E0B', text: '#92400E' },
-  definition: { bg: '#FCE7F3', border: '#EC4899', text: '#9F1239' },
-  principle: { bg: '#F3E8FF', border: '#A855F7', text: '#6B21A8' },
+  concept: { bg: '#EBF5FF', border: '#3B82F6', text: '#1E40AF' },       // Blue - Abstract ideas
+  process: { bg: '#F0FDF4', border: '#10B981', text: '#065F46' },       // Green - Procedures
+  example: { bg: '#FEF3C7', border: '#F59E0B', text: '#92400E' },       // Amber - Illustrations
+  definition: { bg: '#FCE7F3', border: '#EC4899', text: '#9F1239' },    // Pink - Terminology
+  principle: { bg: '#F3E8FF', border: '#A855F7', text: '#6B21A8' },     // Purple - Rules/Laws
+  data: { bg: '#FEF2F2', border: '#EF4444', text: '#991B1B' },          // Red - Statistics/Facts
+  technique: { bg: '#ECFDF5', border: '#14B8A6', text: '#134E4A' },     // Teal - Skills/Tools
+  outcome: { bg: '#FFF7ED', border: '#F97316', text: '#9A3412' },       // Orange - Results/Benefits
 }
 
 export default function MindMapViewer({ title, nodes, edges, documentText, onNodeClick }: MindMapViewerProps) {
@@ -61,29 +64,38 @@ export default function MindMapViewer({ title, nodes, edges, documentText, onNod
     return nodes.map((node, index) => {
       const colors = categoryColors[node.category || 'concept'] || categoryColors.concept
 
-      // Calculate position based on level (hierarchical layout)
-      const levelSpacing = 300
-      const nodeSpacing = 150
-      const nodesAtLevel = nodes.filter(n => n.level === node.level).length
-      const indexAtLevel = nodes.filter(n => n.level === node.level).indexOf(node)
+      // Simple, reliable hierarchical layout
+      const levelSpacing = 400  // Horizontal spacing between levels
+      const nodeSpacing = 200  // Vertical spacing between nodes
+
+      // Get all nodes at this level
+      const nodesAtLevel = nodes.filter(n => n.level === node.level)
+      const indexAtLevel = nodesAtLevel.indexOf(node)
+
+      // Simple vertical centering
+      const totalAtLevel = nodesAtLevel.length
+      const yPosition = (indexAtLevel - (totalAtLevel - 1) / 2) * nodeSpacing
 
       return {
         id: node.id,
         type: 'default',
         position: {
           x: node.level * levelSpacing,
-          y: (indexAtLevel - nodesAtLevel / 2) * nodeSpacing + 400
+          y: yPosition
         },
         data: {
           label: (
-            <div className="text-center px-3 py-2">
-              <div className="font-semibold text-sm" style={{ color: colors.text }}>
+            <div className="text-center px-4 py-3">
+              <div
+                className={`font-semibold ${node.level === 0 ? 'text-base' : node.level === 1 ? 'text-sm' : 'text-xs'} leading-tight`}
+                style={{ color: colors.text }}
+              >
                 {node.label}
               </div>
-              {node.description && (
-                <div className="text-xs text-gray-600 mt-1 max-w-xs">
-                  {node.description.substring(0, 60)}
-                  {node.description.length > 60 ? '...' : ''}
+              {node.description && node.description.trim() && (
+                <div className={`text-xs text-gray-600 dark:text-gray-500 mt-2 leading-relaxed ${node.level === 0 ? 'max-w-sm' : 'max-w-xs'}`}>
+                  {node.description.substring(0, node.level === 0 ? 100 : 70)}
+                  {node.description.length > (node.level === 0 ? 100 : 70) ? '...' : ''}
                 </div>
               )}
             </div>
@@ -91,13 +103,19 @@ export default function MindMapViewer({ title, nodes, edges, documentText, onNod
         },
         style: {
           background: colors.bg,
-          border: `2px solid ${colors.border}`,
-          borderRadius: node.level === 0 ? '20px' : '12px',
-          padding: '10px',
-          minWidth: node.level === 0 ? '200px' : '150px',
+          border: `3px solid ${colors.border}`,
+          borderRadius: node.level === 0 ? '24px' : node.level === 1 ? '16px' : '12px',
+          padding: node.level === 0 ? '14px' : '12px',
+          minWidth: node.level === 0 ? '240px' : node.level === 1 ? '180px' : '160px',
+          maxWidth: node.level === 0 ? '320px' : node.level === 1 ? '260px' : '240px',
           fontSize: node.level === 0 ? '16px' : '14px',
-          boxShadow: node.level === 0 ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          boxShadow: node.level === 0
+            ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+            : node.level === 1
+            ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+            : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
           cursor: 'pointer',
+          transition: 'all 0.2s ease-in-out',
         },
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
@@ -274,9 +292,18 @@ export default function MindMapViewer({ title, nodes, edges, documentText, onNod
           onEdgesChange={onEdgesChange}
           onNodeClick={handleNodeClick}
           fitView
+          fitViewOptions={{
+            padding: 0.2,
+            minZoom: 0.5,
+            maxZoom: 1.5,
+          }}
+          defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
           attributionPosition="bottom-left"
           minZoom={0.1}
-          maxZoom={2}
+          maxZoom={2.5}
+          nodesDraggable={true}
+          nodesConnectable={false}
+          elementsSelectable={true}
         >
           <Background color="#aaa" gap={16} />
           <Controls />

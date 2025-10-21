@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain } from "lucide-react"
+import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 import { useDocumentStore } from "@/lib/store/useStore"
@@ -34,6 +34,32 @@ interface ChatDocument {
   isProcessing: boolean
 }
 
+type TeachingMode = 'socratic' | 'direct' | 'mixed'
+
+const teachingModes = [
+  {
+    value: 'socratic' as TeachingMode,
+    label: 'Socratic',
+    icon: Lightbulb,
+    description: 'Discover answers through guided questions',
+    color: 'text-purple-600 dark:text-purple-400'
+  },
+  {
+    value: 'direct' as TeachingMode,
+    label: 'Direct',
+    icon: MessageSquare,
+    description: 'Get clear, straightforward answers',
+    color: 'text-blue-600 dark:text-blue-400'
+  },
+  {
+    value: 'mixed' as TeachingMode,
+    label: 'Mixed',
+    icon: Brain,
+    description: 'Balance between guidance and direct answers',
+    color: 'text-accent-primary'
+  }
+]
+
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState("")
@@ -44,16 +70,43 @@ export default function ChatInterface() {
     isProcessing: false
   })
   const [isClient, setIsClient] = useState(false)
-  const [socraticMode, setSocraticMode] = useState(false)
-  const [showSocraticTooltip, setShowSocraticTooltip] = useState(false)
+  const [teachingMode, setTeachingMode] = useState<TeachingMode>('mixed')
+  const [showModeDropdown, setShowModeDropdown] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
-  const { currentDocument, setCurrentDocument } = useDocumentStore()
+  const modeDropdownRef = useRef<HTMLDivElement>(null)
+  const { currentDocument, setCurrentDocument} = useDocumentStore()
   const hasLoadedDocument = useRef(false)
 
   useEffect(() => {
     setIsClient(true)
+    // Load teaching mode from localStorage
+    const savedMode = localStorage.getItem('teachingMode') as TeachingMode | null
+    if (savedMode && ['socratic', 'direct', 'mixed'].includes(savedMode)) {
+      setTeachingMode(savedMode)
+    }
   }, [])
+
+  // Save teaching mode to localStorage when it changes
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem('teachingMode', teachingMode)
+    }
+  }, [teachingMode, isClient])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modeDropdownRef.current && !modeDropdownRef.current.contains(event.target as Node)) {
+        setShowModeDropdown(false)
+      }
+    }
+
+    if (showModeDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showModeDropdown])
 
   // Load document from store if available
   useEffect(() => {
@@ -275,7 +328,7 @@ export default function ChatInterface() {
           message: inputMessage,
           fileName: chatDocument.file?.name,
           documentContent: chatDocument.content,
-          teachingMode: socraticMode ? 'socratic' : 'mixed',
+          teachingMode: teachingMode,
         }),
       })
 
@@ -367,6 +420,41 @@ export default function ChatInterface() {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Teaching Mode Selector */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-black dark:text-white mb-3">
+                  How would you like to learn?
+                </h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {teachingModes.map((mode) => {
+                    const Icon = mode.icon
+                    const isSelected = teachingMode === mode.value
+                    return (
+                      <button
+                        key={mode.value}
+                        onClick={() => setTeachingMode(mode.value)}
+                        className={cn(
+                          "p-4 rounded-xl border-2 transition-all text-left",
+                          isSelected
+                            ? "border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20"
+                            : "border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 dark:hover:border-accent-primary/50"
+                        )}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon className={cn("w-5 h-5", isSelected ? "text-accent-primary" : "text-gray-600 dark:text-gray-400")} />
+                          <span className="font-semibold text-sm text-black dark:text-white">
+                            {mode.label}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {mode.description}
+                        </p>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -466,42 +554,79 @@ export default function ChatInterface() {
                     </span>
                   </div>
 
-                  {/* Socratic Mode Toggle */}
+                  {/* Teaching Mode Dropdown */}
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <div className="relative">
+                    <div className="relative" ref={modeDropdownRef}>
                       <button
-                        onClick={() => setSocraticMode(!socraticMode)}
-                        onMouseEnter={() => setShowSocraticTooltip(true)}
-                        onMouseLeave={() => setShowSocraticTooltip(false)}
+                        onClick={() => setShowModeDropdown(!showModeDropdown)}
                         className={cn(
-                          "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all",
-                          socraticMode
-                            ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700"
-                            : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 border border-transparent"
+                          "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all border",
+                          teachingMode === 'socratic'
+                            ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700"
+                            : teachingMode === 'direct'
+                            ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700"
+                            : "bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 text-accent-primary border-accent-primary/30 dark:border-accent-primary/50"
                         )}
                       >
-                        <Lightbulb className={cn(
-                          "w-3.5 h-3.5",
-                          socraticMode && "fill-current"
-                        )} />
-                        Socratic
+                        {(() => {
+                          const currentMode = teachingModes.find(m => m.value === teachingMode)
+                          const Icon = currentMode?.icon || Brain
+                          return (
+                            <>
+                              <Icon className="w-3.5 h-3.5" />
+                              {currentMode?.label}
+                              <ChevronDown className={cn(
+                                "w-3 h-3 transition-transform",
+                                showModeDropdown && "rotate-180"
+                              )} />
+                            </>
+                          )
+                        })()}
                       </button>
 
-                      {/* Tooltip */}
-                      {showSocraticTooltip && (
-                        <div className="absolute right-0 top-full mt-2 w-72 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-xl p-3 z-50">
-                          <div className="flex items-start gap-2">
-                            <Info className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
-                            <div>
-                              <p className="font-semibold mb-1">Socratic Mode</p>
-                              <p className="text-gray-300 dark:text-gray-400 leading-relaxed">
-                                {socraticMode
-                                  ? "AI guides you with questions to discover answers yourself"
-                                  : "Toggle to enable guided discovery learning through questions"}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="absolute -top-1 right-4 w-2 h-2 bg-gray-900 dark:bg-gray-800 transform rotate-45" />
+                      {/* Dropdown Menu */}
+                      {showModeDropdown && (
+                        <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                          {teachingModes.map((mode) => {
+                            const Icon = mode.icon
+                            const isActive = teachingMode === mode.value
+                            return (
+                              <button
+                                key={mode.value}
+                                onClick={() => {
+                                  setTeachingMode(mode.value)
+                                  setShowModeDropdown(false)
+                                }}
+                                className={cn(
+                                  "w-full flex items-start gap-3 p-3 text-left transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0",
+                                  isActive
+                                    ? "bg-accent-primary/10 dark:bg-accent-primary/20"
+                                    : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                )}
+                              >
+                                <Icon className={cn(
+                                  "w-4 h-4 flex-shrink-0 mt-0.5",
+                                  isActive ? "text-accent-primary" : mode.color
+                                )} />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className={cn(
+                                      "text-sm font-semibold",
+                                      isActive ? "text-accent-primary" : "text-gray-900 dark:text-white"
+                                    )}>
+                                      {mode.label}
+                                    </span>
+                                    {isActive && (
+                                      <div className="w-1.5 h-1.5 rounded-full bg-accent-primary" />
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                    {mode.description}
+                                  </p>
+                                </div>
+                              </button>
+                            )
+                          })}
                         </div>
                       )}
                     </div>

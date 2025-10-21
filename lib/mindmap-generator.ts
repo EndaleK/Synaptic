@@ -29,8 +29,8 @@ export interface MindMapData {
 
 interface GenerateMindMapOptions {
   text: string
-  maxNodes?: number // Maximum nodes to generate (default 25)
-  maxDepth?: number // Maximum depth levels (default 3)
+  maxNodes?: number // Maximum nodes to generate (default 36)
+  maxDepth?: number // Maximum depth levels (default 4)
 }
 
 /**
@@ -42,8 +42,8 @@ export async function generateMindMap(
 ): Promise<MindMapData> {
   const {
     text,
-    maxNodes = 25,
-    maxDepth = 3
+    maxNodes = 36,
+    maxDepth = 4
   } = options
 
   if (!process.env.OPENAI_API_KEY) {
@@ -66,18 +66,54 @@ export async function generateMindMap(
     console.log(`Mind map: Text truncated from ${text.length} to ${processedText.length} characters`)
   }
 
-  const systemPrompt = `You are an expert at extracting hierarchical knowledge structures from text. Create a comprehensive mind map that visualizes the main concepts and their relationships.
+  const systemPrompt = `You are an expert at extracting hierarchical knowledge structures from text. Create a rich, comprehensive mind map that visualizes the main concepts, their relationships, and supporting details in a highly readable format.
 
-Guidelines:
-1. Identify the main topic (root node - level 0)
-2. Extract key themes and concepts (level 1 nodes - typically 3-6 main branches)
-3. Break down each theme into subtopics (level 2 nodes)
-4. Add detailed concepts if relevant (level 3 nodes)
-5. Ensure nodes are concise (3-8 words ideal)
-6. Create meaningful relationships between nodes
-7. Assign categories for color coding (e.g., "concept", "process", "example", "definition")
+CORE PRINCIPLES:
+1. **Comprehensive Coverage**: Extract ALL major concepts and their supporting details
+2. **Clear Hierarchy**: Organize information in logical, easy-to-follow levels
+3. **Balanced Distribution**: Ensure each main branch has 3-5 detailed sub-branches
+4. **Rich Descriptions**: Provide informative descriptions that add context beyond the label
+
+HIERARCHICAL STRUCTURE:
+- **Level 0** (Root): Central topic/document title
+- **Level 1** (Main Themes): 4-7 primary concepts/sections (major pillars)
+- **Level 2** (Subtopics): 3-5 subdivisions per main theme (key details)
+- **Level 3** (Details): 2-4 specific points per subtopic (examples, applications, nuances)
+- **Level 4** (Optional): Granular details if depth allows
+
+LABELING BEST PRACTICES:
+- Root: Clear, engaging title (4-10 words)
+- Level 1: Concise theme labels (2-5 words)
+- Level 2-3: Specific concepts (3-8 words)
+- Avoid generic labels like "Introduction" or "Overview"
+- Use action verbs for processes, nouns for concepts
+
+DESCRIPTION GUIDELINES:
+- Root: One-sentence summary of the document's purpose
+- Main themes: 1-2 sentences explaining significance
+- Subtopics: Concrete details, not just rephrased labels
+- Include numbers, data, or examples when available
+
+CATEGORY ASSIGNMENT (for color coding):
+- **concept**: Abstract ideas, theories, frameworks
+- **process**: Procedures, methods, workflows, steps
+- **example**: Case studies, illustrations, scenarios
+- **definition**: Terminology, key terms, vocabulary
+- **principle**: Rules, laws, guidelines, best practices
+- **data**: Statistics, metrics, measurements, facts
+- **technique**: Specific skills, tools, applications
+- **outcome**: Results, benefits, impacts, consequences
+
+RELATIONSHIP TYPES:
+- "contains": Hierarchical parent-child
+- "leads to": Causal or sequential
+- "example of": Illustrative relationship
+- "related to": Associative connection
+- "requires": Dependency
+- "produces": Output relationship
 
 Target: ${maxNodes} nodes maximum, ${maxDepth} levels deep
+Aim for: ~${Math.ceil(maxNodes * 0.20)} main branches (level 1), each with ${Math.floor((maxNodes - Math.ceil(maxNodes * 0.20)) / Math.ceil(maxNodes * 0.20))} sub-branches
 
 Return ONLY a valid JSON object in this exact format:
 {
@@ -88,7 +124,7 @@ Return ONLY a valid JSON object in this exact format:
       "label": "Node label (concise)",
       "level": 0,
       "description": "Brief explanation of this concept",
-      "category": "concept" | "process" | "example" | "definition" | "principle"
+      "category": "concept" | "process" | "example" | "definition" | "principle" | "data" | "technique" | "outcome"
     }
   ],
   "edges": [
@@ -96,7 +132,7 @@ Return ONLY a valid JSON object in this exact format:
       "id": "edge_unique_id",
       "from": "parent_node_id",
       "to": "child_node_id",
-      "relationship": "contains" | "leads to" | "example of" | "related to"
+      "relationship": "contains" | "leads to" | "example of" | "related to" | "requires" | "produces"
     }
   ]
 }

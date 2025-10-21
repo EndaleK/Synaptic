@@ -214,7 +214,7 @@ export async function chatWithClaude(
 /**
  * Generate mind map using Claude
  */
-export async function generateMindMapWithClaude(text: string, maxNodes: number = 25): Promise<any> {
+export async function generateMindMapWithClaude(text: string, maxNodes: number = 25, maxDepth: number = 3): Promise<any> {
   const systemPrompt = `You are an expert at extracting hierarchical concept maps from text.`
 
   const userPrompt = `Analyze the following text and create a hierarchical mind map structure:
@@ -223,11 +223,13 @@ export async function generateMindMapWithClaude(text: string, maxNodes: number =
 ${text}
 </text>
 
-Create a mind map with up to ${maxNodes} nodes. Include:
-1. A central concept (root node)
+Create a mind map with up to ${maxNodes} nodes and a maximum depth of ${maxDepth} levels. Include:
+1. A central concept (root node at level 0)
 2. Main branches (level 1 nodes)
-3. Sub-branches (level 2 nodes)
+3. Sub-branches (continuing to level ${maxDepth - 1})
 4. Each node should have a concise label and brief description
+
+IMPORTANT: Ensure the mind map has exactly ${maxDepth} levels of depth (0 through ${maxDepth - 1}).
 
 Respond with a JSON object in this exact format:
 {
@@ -248,7 +250,7 @@ Respond with a JSON object in this exact format:
   ],
   "metadata": {
     "totalNodes": 10,
-    "maxDepth": 2
+    "maxDepth": ${maxDepth}
   }
 }
 
@@ -259,7 +261,10 @@ DO NOT include any text outside the JSON object.`
       role: 'user',
       content: userPrompt,
     },
-  ])
+  ], {
+    maxTokens: 8000, // Allow larger responses for complex mind maps (up to 55 nodes)
+    temperature: 0.5
+  })
 
   try {
     // Remove markdown code blocks if present
