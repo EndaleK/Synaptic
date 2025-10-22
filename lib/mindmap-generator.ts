@@ -66,76 +66,120 @@ export async function generateMindMap(
     console.log(`Mind map: Text truncated from ${text.length} to ${processedText.length} characters`)
   }
 
-  const systemPrompt = `You are an expert at extracting hierarchical knowledge structures from text. Create a rich, comprehensive mind map that visualizes the main concepts, their relationships, and supporting details in a highly readable format.
+  const systemPrompt = `You are an expert at creating CONCEPT MAPS - hierarchical, networked knowledge structures with explicit labeled relationships.
 
-CORE PRINCIPLES:
-1. **Comprehensive Coverage**: Extract ALL major concepts and their supporting details
-2. **Clear Hierarchy**: Organize information in logical, easy-to-follow levels
-3. **Balanced Distribution**: Ensure each main branch has 3-5 detailed sub-branches
-4. **Rich Descriptions**: Provide informative descriptions that add context beyond the label
+CONCEPT MAP PRINCIPLES (NOT traditional mind maps):
+1. **Hierarchical & Networked**: Top-down organization (most general → specific) with cross-links between branches
+2. **Explicit Relationships**: Every connection MUST have a labeled linking phrase (e.g., "leads to", "is a type of", "requires")
+3. **Propositional Structure**: Each edge forms a readable sentence: Concept1 + Linking Phrase + Concept2
+4. **Cross-Links**: Connect related concepts across different branches to show knowledge integration
+
+CORE DESIGN GOALS:
+✓ Answer a focus question about the document's main topic
+✓ Create clear visual-verbal mnemonics for deep understanding
+✓ Show both hierarchy (top-down) AND network (cross-links)
+✓ Enable verification of knowledge through complete propositions
 
 HIERARCHICAL STRUCTURE:
-- **Level 0** (Root): Central topic/document title
-- **Level 1** (Main Themes): 4-7 primary concepts/sections (major pillars)
-- **Level 2** (Subtopics): 3-5 subdivisions per main theme (key details)
-- **Level 3** (Details): 2-4 specific points per subtopic (examples, applications, nuances)
-- **Level 4** (Optional): Granular details if depth allows
+- **Level 0** (Root): Most general, inclusive concept (answers "What is this about?")
+- **Level 1** (Major Concepts): 4-7 primary concepts (broad categories)
+- **Level 2** (Subconcepts): 3-5 subdivisions per major concept
+- **Level 3** (Details): 2-4 specific points (examples, applications)
+- **Level 4** (Optional): Granular supporting details
 
-LABELING BEST PRACTICES:
-- Root: Clear, engaging title (4-10 words)
-- Level 1: Concise theme labels (2-5 words)
-- Level 2-3: Specific concepts (3-8 words)
-- Avoid generic labels like "Introduction" or "Overview"
-- Use action verbs for processes, nouns for concepts
+NODE LABELING (Critical for Readability):
+- Root: Clear, inclusive concept (e.g., "Safety Protocol Implementation")
+- Level 1: Broad categories (e.g., "Heat-Related Hazards", "Emergency Procedures")
+- Levels 2-4: Specific terms/concepts (e.g., "Heat Exhaustion Symptoms", "Buddy System Protocol")
+- Use NOUNS or NOUN PHRASES (not sentences)
+- Keep concise (1-6 words) for visual clarity
 
 DESCRIPTION GUIDELINES:
-- Root: One-sentence summary of the document's purpose
-- Main themes: 1-2 sentences explaining significance
-- Subtopics: Concrete details, not just rephrased labels
-- Include numbers, data, or examples when available
+- Provide context and details beyond the label
+- Include specific examples, data, or applications
+- Help users understand WHY this concept matters
 
 CATEGORY ASSIGNMENT (for color coding):
 - **concept**: Abstract ideas, theories, frameworks
-- **process**: Procedures, methods, workflows, steps
-- **example**: Case studies, illustrations, scenarios
-- **definition**: Terminology, key terms, vocabulary
 - **principle**: Rules, laws, guidelines, best practices
-- **data**: Statistics, metrics, measurements, facts
+- **process**: Procedures, methods, workflows
 - **technique**: Specific skills, tools, applications
-- **outcome**: Results, benefits, impacts, consequences
+- **example**: Case studies, illustrations, scenarios
+- **data**: Statistics, metrics, facts
+- **definition**: Key terms, terminology
+- **outcome**: Results, benefits, consequences
 
-RELATIONSHIP TYPES:
-- "contains": Hierarchical parent-child
-- "leads to": Causal or sequential
-- "example of": Illustrative relationship
-- "related to": Associative connection
-- "requires": Dependency
-- "produces": Output relationship
+RELATIONSHIP TYPES (Critical - MUST be specific and meaningful):
+**Hierarchical (parent → child):**
+- "includes" / "contains" / "consists of"
+- "is divided into"
+- "has types"
+
+**Causal & Sequential:**
+- "leads to" / "causes" / "results in"
+- "prevents" / "reduces"
+- "follows" / "preceded by"
+
+**Definitional & Classificatory:**
+- "is a type of" / "is an example of"
+- "is defined as"
+- "characterized by"
+
+**Functional & Dependency:**
+- "requires" / "depends on" / "needs"
+- "uses" / "employs"
+- "produces" / "generates"
+
+**Comparative & Associative:**
+- "contrasts with" / "differs from"
+- "similar to" / "related to"
+- "supports" / "reinforces"
+
+CROSS-LINKS (10-20% of total edges):
+- Connect concepts from DIFFERENT branches
+- Show knowledge integration and synthesis
+- Use relationships like: "reinforces", "contrasts with", "applies to", "exemplifies"
+- Example: "Heat Exhaustion" → "requires" → "Buddy System Protocol"
 
 Target: ${maxNodes} nodes maximum, ${maxDepth} levels deep
 Aim for: ~${Math.ceil(maxNodes * 0.20)} main branches (level 1), each with ${Math.floor((maxNodes - Math.ceil(maxNodes * 0.20)) / Math.ceil(maxNodes * 0.20))} sub-branches
+CRITICAL: Include ${Math.ceil(maxNodes * 0.15)} cross-links connecting concepts from different branches!
 
 Return ONLY a valid JSON object in this exact format:
 {
-  "title": "Main topic/title of the document",
+  "title": "Main topic/title (the focus question answer)",
   "nodes": [
     {
-      "id": "unique_id",
-      "label": "Node label (concise)",
+      "id": "unique_snake_case_id",
+      "label": "Concise Concept Label",
       "level": 0,
-      "description": "Brief explanation of this concept",
-      "category": "concept" | "process" | "example" | "definition" | "principle" | "data" | "technique" | "outcome"
+      "description": "Detailed explanation with context, examples, or significance",
+      "category": "concept"
     }
   ],
   "edges": [
     {
       "id": "edge_unique_id",
-      "from": "parent_node_id",
-      "to": "child_node_id",
-      "relationship": "contains" | "leads to" | "example of" | "related to" | "requires" | "produces"
+      "from": "source_concept_id",
+      "to": "target_concept_id",
+      "relationship": "specific linking phrase (e.g., 'is a type of', 'leads to', 'requires')"
     }
   ]
 }
+
+EDGE REQUIREMENTS:
+1. Every node (except root) MUST have at least one incoming hierarchical edge
+2. Include cross-links (10-20% of edges) between concepts in different branches
+3. Use SPECIFIC, MEANINGFUL relationship labels - avoid generic "contains" when possible
+4. Ensure relationships form complete, readable propositions
+
+EXAMPLE of good cross-link:
+{
+  "from": "heat_exhaustion",
+  "to": "buddy_system",
+  "relationship": "prevented by using"
+}
+This creates: "Heat Exhaustion" + "prevented by using" + "Buddy System" = complete knowledge proposition
 
 DO NOT include any text outside the JSON object.`
 

@@ -76,10 +76,19 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
       }
 
       const data = await response.json()
-      console.log('Mind map data received:', data)
+      console.log('[MindMapView] Raw API response:', data)
+      console.log('[MindMapView] data.mindMap exists:', !!data.mindMap)
+      console.log('[MindMapView] data.mindMap.nodes:', data.mindMap?.nodes?.length)
+      console.log('[MindMapView] data.mindMap.edges:', data.mindMap?.edges?.length)
 
       // Extract the mindMap object if it exists
       const mindMapData = data.mindMap || data
+      console.log('[MindMapView] Setting mindMapData:', {
+        title: mindMapData.title,
+        nodeCount: mindMapData.nodes?.length,
+        edgeCount: mindMapData.edges?.length,
+        nodesPreview: mindMapData.nodes?.slice(0, 2)
+      })
       setMindMapData(mindMapData)
 
       // Store complexity analysis
@@ -148,9 +157,9 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
         {/* Mind Map Viewer */}
         <div className="flex-1">
           <MindMapViewer
-            title={mindMapData.title}
-            nodes={mindMapData.nodes}
-            edges={mindMapData.edges}
+            title={mindMapData.title || 'Untitled Mind Map'}
+            nodes={mindMapData.nodes || []}
+            edges={mindMapData.edges || []}
             documentText={documentText}
           />
         </div>

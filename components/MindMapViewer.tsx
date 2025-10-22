@@ -51,7 +51,18 @@ const categoryColors: Record<string, { bg: string; border: string; text: string 
   outcome: { bg: '#FFF7ED', border: '#F97316', text: '#9A3412' },       // Orange - Results/Benefits
 }
 
-export default function MindMapViewer({ title, nodes, edges, documentText, onNodeClick }: MindMapViewerProps) {
+export default function MindMapViewer({ title, nodes = [], edges = [], documentText, onNodeClick }: MindMapViewerProps) {
+  // Debug logging
+  React.useEffect(() => {
+    console.log('[MindMapViewer] Initialized with:', {
+      title,
+      nodeCount: nodes?.length || 0,
+      edgeCount: edges?.length || 0,
+      nodes: nodes?.slice(0, 3) || [], // First 3 nodes
+      edges: edges?.slice(0, 3) || [], // First 3 edges
+    })
+  }, [title, nodes, edges])
+
   // State for detail panel
   const [selectedNode, setSelectedNode] = useState<MindMapNode | null>(null)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
@@ -61,18 +72,34 @@ export default function MindMapViewer({ title, nodes, edges, documentText, onNod
 
   // Convert our node format to React Flow format
   const flowNodes: Node[] = useMemo(() => {
-    return nodes.map((node, index) => {
+    console.log('[MindMapViewer] flowNodes useMemo triggered', {
+      nodesExists: !!nodes,
+      nodesIsArray: Array.isArray(nodes),
+      nodesLength: nodes?.length,
+      nodesType: typeof nodes,
+      firstNode: nodes?.[0]
+    })
+
+    // Guard clause: return empty array if nodes is undefined or empty
+    if (!nodes || nodes.length === 0) {
+      console.log('[MindMapViewer] No nodes to convert, returning empty array')
+      return []
+    }
+
+    console.log('[MindMapViewer] Converting', nodes.length, 'nodes to React Flow format')
+
+    const converted = nodes.map((node, index) => {
       const colors = categoryColors[node.category || 'concept'] || categoryColors.concept
 
-      // Simple, reliable hierarchical layout
-      const levelSpacing = 400  // Horizontal spacing between levels
-      const nodeSpacing = 200  // Vertical spacing between nodes
+      // Enhanced hierarchical layout with better spacing
+      const levelSpacing = 500  // Horizontal spacing between levels (increased)
+      const nodeSpacing = 280  // Vertical spacing between nodes (increased for readability)
 
       // Get all nodes at this level
       const nodesAtLevel = nodes.filter(n => n.level === node.level)
       const indexAtLevel = nodesAtLevel.indexOf(node)
 
-      // Simple vertical centering
+      // Simple vertical centering with better distribution
       const totalAtLevel = nodesAtLevel.length
       const yPosition = (indexAtLevel - (totalAtLevel - 1) / 2) * nodeSpacing
 
@@ -95,7 +122,7 @@ export default function MindMapViewer({ title, nodes, edges, documentText, onNod
               {node.description && node.description.trim() && (
                 <div className={`text-xs text-gray-600 dark:text-gray-500 mt-2 leading-relaxed ${node.level === 0 ? 'max-w-sm' : 'max-w-xs'}`}>
                   {node.description.substring(0, node.level === 0 ? 100 : 70)}
-                  {node.description.length > (node.level === 0 ? 100 : 70) ? '...' : ''}
+                  {(node.description?.length || 0) > (node.level === 0 ? 100 : 70) ? '...' : ''}
                 </div>
               )}
             </div>
@@ -105,9 +132,9 @@ export default function MindMapViewer({ title, nodes, edges, documentText, onNod
           background: colors.bg,
           border: `3px solid ${colors.border}`,
           borderRadius: node.level === 0 ? '24px' : node.level === 1 ? '16px' : '12px',
-          padding: node.level === 0 ? '14px' : '12px',
-          minWidth: node.level === 0 ? '240px' : node.level === 1 ? '180px' : '160px',
-          maxWidth: node.level === 0 ? '320px' : node.level === 1 ? '260px' : '240px',
+          padding: node.level === 0 ? '16px' : '14px',
+          minWidth: node.level === 0 ? '260px' : node.level === 1 ? '200px' : '180px',
+          maxWidth: node.level === 0 ? '360px' : node.level === 1 ? '280px' : '260px',
           fontSize: node.level === 0 ? '16px' : '14px',
           boxShadow: node.level === 0
             ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
@@ -115,35 +142,87 @@ export default function MindMapViewer({ title, nodes, edges, documentText, onNod
             ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
             : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
           cursor: 'pointer',
-          transition: 'all 0.2s ease-in-out',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         },
+        className: 'mindmap-node hover:scale-105 hover:shadow-2xl active:scale-95',
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
       }
     })
+
+    console.log('[MindMapViewer] Converted nodes complete:', {
+      convertedLength: converted.length,
+      firstConverted: converted[0],
+      hasPosition: !!converted[0]?.position,
+      hasData: !!converted[0]?.data
+    })
+
+    return converted
   }, [nodes])
 
-  // Convert our edge format to React Flow format
+  // Convert our edge format to React Flow format with enhanced readability
   const flowEdges: Edge[] = useMemo(() => {
-    return edges.map((edge) => ({
-      id: edge.id,
-      source: edge.from,
-      target: edge.to,
-      type: 'smoothstep',
-      animated: true,
-      style: { stroke: 'rgb(var(--accent-primary))', strokeWidth: 2 },
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: 'rgb(var(--accent-primary))',
-      },
-      label: edge.relationship !== 'contains' ? edge.relationship : '',
-      labelStyle: { fill: '#666', fontSize: 10 },
-      labelBgStyle: { fill: 'white', fillOpacity: 0.8 },
-    }))
-  }, [edges])
+    return edges.map((edge) => {
+      // Determine if this is a cross-link (connects nodes at different branches/levels)
+      const sourceNode = nodes.find(n => n.id === edge.from)
+      const targetNode = nodes.find(n => n.id === edge.to)
+      const isCrossLink = sourceNode && targetNode && Math.abs(sourceNode.level - targetNode.level) > 1
+
+      return {
+        id: edge.id,
+        source: edge.from,
+        target: edge.to,
+        type: isCrossLink ? 'default' : 'smoothstep', // Use straight lines for cross-links
+        animated: !isCrossLink, // Only animate hierarchical edges
+        style: {
+          stroke: isCrossLink ? '#F97316' : '#3B82F6', // Orange for cross-links, blue for hierarchy
+          strokeWidth: isCrossLink ? 3 : 2.5,
+          strokeDasharray: isCrossLink ? '8 6' : undefined, // Dashed for cross-links
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: isCrossLink ? '#F97316' : '#3B82F6',
+          width: 20,
+          height: 20,
+        },
+        label: edge.relationship,
+        labelStyle: {
+          fill: '#1F2937',
+          fontSize: 13,
+          fontWeight: 600,
+          letterSpacing: '0.015em'
+        },
+        labelBgStyle: {
+          fill: isCrossLink ? '#FFF7ED' : '#EBF5FF',
+          fillOpacity: 0.95,
+          rx: 4,
+          ry: 4,
+        },
+        labelBgPadding: [8, 12] as [number, number],
+        labelBgBorderRadius: 6,
+      }
+    })
+  }, [edges, nodes])
 
   const [reactFlowNodes, setNodes, onNodesChange] = useNodesState(flowNodes)
   const [reactFlowEdges, setEdges, onEdgesChange] = useEdgesState(flowEdges)
+
+  // Update React Flow nodes/edges when flowNodes/flowEdges change
+  React.useEffect(() => {
+    console.log('[MindMapViewer] Updating reactFlowNodes', {
+      flowNodesLength: flowNodes.length,
+      currentReactFlowNodesLength: reactFlowNodes.length
+    })
+    setNodes(flowNodes)
+  }, [flowNodes, setNodes])
+
+  React.useEffect(() => {
+    console.log('[MindMapViewer] Updating reactFlowEdges', {
+      flowEdgesLength: flowEdges.length,
+      currentReactFlowEdgesLength: reactFlowEdges.length
+    })
+    setEdges(flowEdges)
+  }, [flowEdges, setEdges])
 
   const handleNodeClick = useCallback(async (_event: React.MouseEvent, node: Node) => {
     console.log('[MindMapViewer] Node clicked:', node.id)
@@ -253,13 +332,44 @@ export default function MindMapViewer({ title, nodes, edges, documentText, onNod
 
   return (
     <div className="relative w-full h-full">
+      <style jsx global>{`
+        .react-flow-controls {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 8px !important;
+        }
+
+        .react-flow-controls button {
+          background-color: white !important;
+          border: 1px solid #e2e8f0 !important;
+          border-radius: 8px !important;
+          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+          color: #1e293b !important;
+          cursor: pointer !important;
+          height: 36px !important;
+          width: 36px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
+        .react-flow-controls button:hover {
+          background-color: #f8fafc !important;
+          box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .react-flow-controls svg {
+          width: 16px !important;
+          height: 16px !important;
+        }
+      `}</style>
       <div className="w-full h-full bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden flex flex-col">
         {/* Header */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-black dark:text-white">{title}</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            {nodes.length} concepts • {edges.length} connections
+            {nodes?.length || 0} concepts • {edges?.length || 0} connections
           </p>
         </div>
 
@@ -285,50 +395,101 @@ export default function MindMapViewer({ title, nodes, edges, documentText, onNod
 
       {/* React Flow Canvas */}
       <div className="flex-1 relative">
-        <ReactFlow
-          nodes={reactFlowNodes}
-          edges={reactFlowEdges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onNodeClick={handleNodeClick}
-          fitView
-          fitViewOptions={{
-            padding: 0.2,
-            minZoom: 0.5,
-            maxZoom: 1.5,
-          }}
-          defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
-          attributionPosition="bottom-left"
-          minZoom={0.1}
-          maxZoom={2.5}
-          nodesDraggable={true}
-          nodesConnectable={false}
-          elementsSelectable={true}
-        >
-          <Background color="#aaa" gap={16} />
-          <Controls />
-          <MiniMap
-            nodeColor={(node) => {
-              const originalNode = nodes.find(n => n.id === node.id)
-              const category = originalNode?.category || 'concept'
-              return categoryColors[category]?.border || categoryColors.concept.border
+        {(reactFlowNodes?.length ?? 0) > 0 ? (
+          <ReactFlow
+            nodes={reactFlowNodes}
+            edges={reactFlowEdges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onNodeClick={handleNodeClick}
+            fitView
+            fitViewOptions={{
+              padding: 0.3,
+              includeHiddenNodes: false,
             }}
-            maskColor="rgba(0, 0, 0, 0.1)"
-          />
-        </ReactFlow>
+            attributionPosition="bottom-right"
+            minZoom={0.05}
+            maxZoom={3}
+            nodesDraggable={true}
+            nodesConnectable={false}
+            elementsSelectable={true}
+            panOnScroll={true}
+            zoomOnScroll={true}
+            zoomOnPinch={true}
+            panOnDrag={true}
+            selectNodesOnDrag={false}
+            proOptions={{ hideAttribution: false }}
+          >
+            <Background
+              color="#cbd5e1"
+              gap={20}
+              size={1}
+              style={{ backgroundColor: '#f8fafc' }}
+            />
+            <Controls
+              showZoom={true}
+              showFitView={true}
+              showInteractive={true}
+              position="bottom-left"
+              className="react-flow-controls"
+            />
+            <MiniMap
+              nodeColor={(node) => {
+                const originalNode = nodes.find(n => n.id === node.id)
+                const category = originalNode?.category || 'concept'
+                return categoryColors[category]?.border || categoryColors.concept.border
+              }}
+              maskColor="rgba(0, 0, 0, 0.1)"
+              position="bottom-right"
+              style={{
+                backgroundColor: 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+              }}
+            />
+          </ReactFlow>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="text-gray-400 mb-2">No nodes to display</div>
+              <div className="text-sm text-gray-500">The concept map appears to be empty</div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Legend */}
-      <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950">
-        <div className="flex flex-wrap gap-3 text-xs">
-          <span className="text-gray-600 dark:text-gray-400 font-semibold">Categories:</span>
+      {/* Legend & Instructions */}
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-950 dark:to-blue-950/30">
+        {/* Instructions */}
+        <div className="mb-3 flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg">
+            <span className="text-blue-700 dark:text-blue-300 font-semibold">💡 Tip:</span>
+            <span className="text-blue-600 dark:text-blue-400">Click any concept to expand and explore details</span>
+          </div>
+          <div className="flex-1" />
+          <div className="flex gap-2 text-xs">
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-md">
+              <div className="w-8 h-0.5 bg-blue-500"></div>
+              <span className="text-gray-700 dark:text-gray-300">Hierarchy</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 rounded-md">
+              <div className="w-8 h-0.5 bg-orange-500 border-t-2 border-dashed border-orange-500"></div>
+              <span className="text-gray-700 dark:text-gray-300">Cross-link</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Category Legend */}
+        <div className="flex flex-wrap gap-2 text-xs">
+          <span className="text-gray-600 dark:text-gray-400 font-semibold mr-1">Categories:</span>
           {Object.entries(categoryColors).map(([category, colors]) => (
-            <div key={category} className="flex items-center gap-1.5">
+            <div key={category} className="flex items-center gap-1.5 px-2 py-1 rounded-md" style={{ backgroundColor: colors.bg }}>
               <div
                 className="w-3 h-3 rounded-sm"
-                style={{ backgroundColor: colors.bg, border: `2px solid ${colors.border}` }}
+                style={{ border: `2px solid ${colors.border}` }}
               />
-              <span className="text-gray-700 dark:text-gray-300 capitalize">{category}</span>
+              <span className="font-medium capitalize" style={{ color: colors.text }}>{category}</span>
             </div>
           ))}
         </div>

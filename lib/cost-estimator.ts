@@ -35,6 +35,10 @@ const PRICING = {
   },
   // Anthropic Claude Models
   'claude-3-5-sonnet': {
+    input: 3.00,  // $3.00 per 1M input tokens (deprecated)
+    output: 15.00, // $15.00 per 1M output tokens (deprecated)
+  },
+  'claude-sonnet-4-20250514': {
     input: 3.00,  // $3.00 per 1M input tokens
     output: 15.00, // $15.00 per 1M output tokens
   },

@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Estimate cost before generation
-    const modelName = selectedProvider === 'claude' ? 'claude-3.5-sonnet' : 'gpt-4o'
+    const modelName = selectedProvider === 'claude' ? 'claude-sonnet-4-20250514' : 'gpt-4o'
     const costEstimate = estimateRequestCost(modelName, document.extracted_text, 4000)
     logger.debug('Cost estimate for mind map generation', {
       userId,
@@ -233,11 +233,13 @@ export async function POST(req: NextRequest) {
       edgeCount: mindMapData.edges.length
     })
 
-    // Save to database
-    const { data: mindMap, error: dbError } = await supabase
+    // Save to database using Clerk user ID directly
+    // Note: Documents table uses user_id as TEXT (Clerk ID), not UUID reference
+    let mindMap = null
+    const { data: savedMindMap, error: dbError } = await supabase
       .from('mindmaps')
       .insert({
-        user_id: userId,
+        user_id: userId, // Use Clerk user ID directly (TEXT type)
         document_id: documentId,
         title: mindMapData.title,
         nodes: mindMapData.nodes,
@@ -248,8 +250,22 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (dbError) {
-      logger.error('Database save error for mind map', dbError, { userId, documentId })
+      logger.error('Database save error for mind map', dbError, {
+        userId,
+        documentId,
+        errorCode: dbError.code,
+        errorMessage: dbError.message,
+        errorDetails: dbError.details,
+        errorHint: dbError.hint
+      })
       // Don't fail the request, mind map is still generated
+    } else {
+      mindMap = savedMindMap
+      logger.debug('Mind map saved to database', {
+        mindMapId: mindMap.id,
+        userId,
+        documentId
+      })
     }
 
     // Track usage

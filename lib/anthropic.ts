@@ -1,12 +1,13 @@
 /**
  * Anthropic Claude API Integration
  *
- * Provides integration with Claude 3.5 Sonnet for high-quality text generation
- * with good context window (200K tokens). Best for medium-large documents.
+ * Provides integration with Claude Sonnet 4 for high-quality text generation
+ * with excellent context window (200K tokens). Best for medium-large documents.
  *
  * Features:
  * - 200K token context window
- * - Superior quality vs GPT-3.5
+ * - Latest Claude Sonnet 4 (May 2025)
+ * - Superior quality and reasoning
  * - Good balance of cost and performance
  */
 
@@ -44,10 +45,11 @@ function getClaudeClient() {
 }
 
 /**
- * Generate completion using Claude 3.5 Sonnet
+ * Generate completion using Claude Sonnet 4
  *
  * Best for: Documents 100K-800K characters (25K-200K tokens)
  * Cost: ~$3 per million input tokens, ~$15 per million output tokens
+ * Model: claude-sonnet-4-20250514 (latest as of May 2025)
  */
 export async function generateClaudeCompletion(
   systemPrompt: string,
@@ -57,13 +59,14 @@ export async function generateClaudeCompletion(
   try {
     const client = getClaudeClient()
 
-    logger.debug('Sending request to Claude 3.5 Sonnet', {
+    logger.debug('Sending request to Claude Sonnet 4', {
       messageCount: messages.length,
       systemPromptLength: systemPrompt.length,
+      model: 'claude-sonnet-4-20250514',
     })
 
     const response = await client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: options.maxTokens ?? 2000,
       temperature: options.temperature ?? 0.3,
       top_p: options.topP ?? 0.95,
@@ -215,44 +218,69 @@ export async function chatWithClaude(
  * Generate mind map using Claude
  */
 export async function generateMindMapWithClaude(text: string, maxNodes: number = 25, maxDepth: number = 3): Promise<any> {
-  const systemPrompt = `You are an expert at extracting hierarchical concept maps from text.`
+  const systemPrompt = `You are an expert at creating CONCEPT MAPS - hierarchical, networked knowledge structures with explicit labeled relationships that promote deep understanding and knowledge integration.`
 
-  const userPrompt = `Analyze the following text and create a hierarchical mind map structure:
+  const userPrompt = `Create a CONCEPT MAP (not a traditional mind map) from the following text:
 
 <text>
 ${text}
 </text>
 
-Create a mind map with up to ${maxNodes} nodes and a maximum depth of ${maxDepth} levels. Include:
-1. A central concept (root node at level 0)
-2. Main branches (level 1 nodes)
-3. Sub-branches (continuing to level ${maxDepth - 1})
-4. Each node should have a concise label and brief description
+CONCEPT MAP REQUIREMENTS:
+Target: ${maxNodes} nodes, ${maxDepth} levels deep
+Cross-links: ${Math.ceil(maxNodes * 0.15)} connections between different branches
 
-IMPORTANT: Ensure the mind map has exactly ${maxDepth} levels of depth (0 through ${maxDepth - 1}).
+KEY PRINCIPLES:
+1. **Hierarchical & Networked**: Top-down (general → specific) with cross-links
+2. **Explicit Relationships**: EVERY edge must have a specific linking phrase
+3. **Propositional Structure**: Each edge forms: Concept1 + Linking Phrase + Concept2
+4. **Cross-Links**: Connect related concepts across branches for knowledge synthesis
+
+RELATIONSHIP TYPES (use specific, meaningful phrases):
+**Hierarchical**: "includes", "consists of", "is divided into", "has types"
+**Causal**: "leads to", "causes", "prevents", "results in"
+**Definitional**: "is a type of", "is an example of", "characterized by"
+**Functional**: "requires", "depends on", "uses", "produces"
+**Comparative**: "contrasts with", "similar to", "reinforces", "applies to"
+
+STRUCTURE:
+- Level 0: Most general, inclusive concept (root)
+- Level 1: 4-7 major concepts (broad categories)
+- Level 2-${maxDepth - 1}: Increasingly specific subconcepts
+- Include ${Math.ceil(maxNodes * 0.15)} cross-links between different branches
+
+NODE LABELS: Use concise noun phrases (1-6 words)
+DESCRIPTIONS: Provide context, examples, or significance
 
 Respond with a JSON object in this exact format:
 {
-  "title": "Central Concept",
+  "title": "Root Concept",
   "nodes": [
     {
-      "id": "node-1",
-      "label": "Node label",
-      "description": "Brief description",
-      "level": 0
+      "id": "snake_case_id",
+      "label": "Concept Label",
+      "description": "Detailed explanation with context",
+      "level": 0,
+      "category": "concept"
     }
   ],
   "edges": [
     {
-      "source": "node-1",
-      "target": "node-2"
+      "id": "edge_id",
+      "from": "source_node_id",
+      "to": "target_node_id",
+      "relationship": "specific linking phrase"
     }
   ],
   "metadata": {
-    "totalNodes": 10,
+    "totalNodes": ${maxNodes},
     "maxDepth": ${maxDepth}
   }
 }
+
+CRITICAL: Use "from" and "to" fields (NOT "source" and "target")
+CRITICAL: Include meaningful "relationship" labels on ALL edges
+CRITICAL: Add cross-links connecting concepts from different branches
 
 DO NOT include any text outside the JSON object.`
 
