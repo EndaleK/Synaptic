@@ -1,5 +1,5 @@
-import OpenAI from "openai"
 import { chunkDocument, getChunkingSummary, type ChunkOptions } from "./document-chunker"
+import { getProviderForFeature, type AIProvider } from "./ai"
 
 export interface MindMapNode {
   id: string
@@ -31,6 +31,7 @@ interface GenerateMindMapOptions {
   text: string
   maxNodes?: number // Maximum nodes to generate (default 36)
   maxDepth?: number // Maximum depth levels (default 4)
+  provider?: AIProvider // Optional provider (defaults to configured provider for 'mindmap' feature)
 }
 
 /**
@@ -43,16 +44,18 @@ export async function generateMindMap(
   const {
     text,
     maxNodes = 36,
-    maxDepth = 4
+    maxDepth = 4,
+    provider: customProvider
   } = options
 
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OpenAI API key not configured")
+  // Get provider (use custom if provided, otherwise get configured provider)
+  const provider = customProvider || getProviderForFeature('mindmap')
+
+  if (!provider.isConfigured()) {
+    throw new Error(`AI provider not configured. Please add the appropriate API key to your environment variables.`)
   }
 
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  })
+  console.log(`[MindMap] Using ${provider.name} provider for generation`)
 
   // Truncate if necessary
   const maxChars = 48000
@@ -192,17 +195,18 @@ ${processedText}
 Create a clear, well-structured mind map with ${maxNodes} nodes organized in ${maxDepth} levels.`
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
+    const response = await provider.complete(
+      [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      temperature: 0.5, // Balanced between creativity and structure
-      max_tokens: 4000,
-    })
+      {
+        temperature: 0.5, // Balanced between creativity and structure
+        maxTokens: 4000,
+      }
+    )
 
-    let responseText = completion.choices[0]?.message?.content || "{}"
+    let responseText = response.content || "{}"
 
     // Remove markdown code blocks if present
     responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
@@ -280,10 +284,10 @@ Create a clear, well-structured mind map with ${maxNodes} nodes organized in ${m
     }
 
   } catch (error: any) {
-    console.error("OpenAI API error (mind map):", error)
+    console.error(`${provider.name} API error (mind map):`, error)
     if (error.response) {
       console.error("Response:", error.response.data)
-      throw new Error(`OpenAI API error: ${error.response.data?.error?.message || error.message}`)
+      throw new Error(`${provider.name} API error: ${error.response.data?.error?.message || error.message}`)
     }
     throw new Error(`Failed to generate mind map: ${error.message}`)
   }
@@ -326,7 +330,7 @@ export async function generateMindMapChunked(
   chunkOptions: ChunkOptions = {},
   onProgress?: (current: number, total: number, message: string) => void
 ): Promise<MindMapData> {
-  const { text, maxNodes = 25, maxDepth = 3 } = options
+  const { text, maxNodes = 25, maxDepth = 3, provider } = options
 
   console.log(`[Chunked Mind Map] Starting chunked generation for ${text.length} characters`)
 
@@ -356,7 +360,8 @@ export async function generateMindMapChunked(
       const chunkMindMap = await generateMindMap({
         text: chunk.text,
         maxNodes: nodesPerChunk,
-        maxDepth: maxDepth - 1 // Reserve one level for root
+        maxDepth: maxDepth - 1, // Reserve one level for root
+        provider // Pass through provider
       })
 
       chunkMindMaps.push(chunkMindMap)

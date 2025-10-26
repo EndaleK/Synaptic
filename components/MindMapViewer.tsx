@@ -112,17 +112,17 @@ export default function MindMapViewer({ title, nodes = [], edges = [], documentT
         },
         data: {
           label: (
-            <div className="text-center px-4 py-3">
+            <div className="text-center px-5 py-4">
               <div
-                className={`font-semibold ${node.level === 0 ? 'text-base' : node.level === 1 ? 'text-sm' : 'text-xs'} leading-tight`}
+                className={`font-bold ${node.level === 0 ? 'text-lg' : node.level === 1 ? 'text-base' : 'text-sm'} leading-snug`}
                 style={{ color: colors.text }}
               >
                 {node.label}
               </div>
               {node.description && node.description.trim() && (
-                <div className={`text-xs text-gray-600 dark:text-gray-500 mt-2 leading-relaxed ${node.level === 0 ? 'max-w-sm' : 'max-w-xs'}`}>
-                  {node.description.substring(0, node.level === 0 ? 100 : 70)}
-                  {(node.description?.length || 0) > (node.level === 0 ? 100 : 70) ? '...' : ''}
+                <div className={`text-sm text-gray-700 dark:text-gray-600 mt-2 leading-relaxed font-medium ${node.level === 0 ? 'max-w-sm' : 'max-w-xs'}`}>
+                  {node.description.substring(0, node.level === 0 ? 120 : 80)}
+                  {(node.description?.length || 0) > (node.level === 0 ? 120 : 80) ? '...' : ''}
                 </div>
               )}
             </div>
@@ -130,12 +130,12 @@ export default function MindMapViewer({ title, nodes = [], edges = [], documentT
         },
         style: {
           background: colors.bg,
-          border: `3px solid ${colors.border}`,
-          borderRadius: node.level === 0 ? '24px' : node.level === 1 ? '16px' : '12px',
-          padding: node.level === 0 ? '16px' : '14px',
-          minWidth: node.level === 0 ? '260px' : node.level === 1 ? '200px' : '180px',
-          maxWidth: node.level === 0 ? '360px' : node.level === 1 ? '280px' : '260px',
-          fontSize: node.level === 0 ? '16px' : '14px',
+          border: `4px solid ${colors.border}`,
+          borderRadius: node.level === 0 ? '28px' : node.level === 1 ? '20px' : '16px',
+          padding: node.level === 0 ? '20px' : '16px',
+          minWidth: node.level === 0 ? '300px' : node.level === 1 ? '240px' : '200px',
+          maxWidth: node.level === 0 ? '400px' : node.level === 1 ? '320px' : '280px',
+          fontSize: node.level === 0 ? '18px' : '16px',
           boxShadow: node.level === 0
             ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
             : node.level === 1
@@ -365,31 +365,45 @@ export default function MindMapViewer({ title, nodes = [], edges = [], documentT
       `}</style>
       <div className="w-full h-full bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden flex flex-col">
         {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-black dark:text-white">{title}</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {nodes?.length || 0} concepts • {edges?.length || 0} connections
-          </p>
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h2 className="text-xl font-bold text-black dark:text-white">{title}</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {nodes?.length || 0} concepts • {edges?.length || 0} connections
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleExportPNG}
+              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              title="Export as PNG"
+            >
+              <Download className="w-4 h-4" />
+              PNG
+            </button>
+            <button
+              onClick={handleExportJSON}
+              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              title="Export as JSON"
+            >
+              <Download className="w-4 h-4" />
+              JSON
+            </button>
+          </div>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            onClick={handleExportPNG}
-            className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            title="Export as PNG"
-          >
-            <Download className="w-4 h-4" />
-            PNG
-          </button>
-          <button
-            onClick={handleExportJSON}
-            className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            title="Export as JSON"
-          >
-            <Download className="w-4 h-4" />
-            JSON
-          </button>
+        {/* Interaction Guide */}
+        <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
+          <span className="flex items-center gap-1">
+            <span className="font-semibold">🖱️ Scroll:</span> Zoom
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="font-semibold">🖱️ Drag:</span> Pan
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="font-semibold">Click:</span> Node Details
+          </span>
         </div>
       </div>
 
@@ -404,20 +418,25 @@ export default function MindMapViewer({ title, nodes = [], edges = [], documentT
             onNodeClick={handleNodeClick}
             fitView
             fitViewOptions={{
-              padding: 0.3,
+              padding: 0.2,
               includeHiddenNodes: false,
+              minZoom: 0.5,
+              maxZoom: 1.5,
             }}
             attributionPosition="bottom-right"
-            minZoom={0.05}
-            maxZoom={3}
+            minZoom={0.1}
+            maxZoom={2}
+            defaultZoom={0.8}
             nodesDraggable={true}
             nodesConnectable={false}
             elementsSelectable={true}
-            panOnScroll={true}
+            panOnScroll={false}
             zoomOnScroll={true}
             zoomOnPinch={true}
             panOnDrag={true}
             selectNodesOnDrag={false}
+            zoomOnDoubleClick={false}
+            preventScrolling={true}
             proOptions={{ hideAttribution: false }}
           >
             <Background

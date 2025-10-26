@@ -1,7 +1,7 @@
-import OpenAI from "openai"
 import { personalizePrompt, createLearningProfile, type LearningProfile } from "./personalization/personalization-engine"
 import type { LearningStyle, TeachingStylePreference } from "./supabase/types"
 import { chunkDocument, getChunkingSummary, type ChunkOptions } from "./document-chunker"
+import { getProviderForFeature, type AIProvider } from "./ai"
 
 export type PodcastFormat = 'deep-dive' | 'brief' | 'critique' | 'debate'
 export type Speaker = 'host_a' | 'host_b'
@@ -35,6 +35,7 @@ interface GeneratePodcastScriptOptions {
     reading_writing: number
   }
   socraticPercentage?: number
+  provider?: AIProvider // Optional provider (defaults to configured provider for 'podcast_script' feature)
 }
 
 /**
@@ -52,16 +53,18 @@ export async function generatePodcastScript(
     learningStyle,
     teachingStylePreference,
     varkScores,
-    socraticPercentage
+    socraticPercentage,
+    provider: customProvider
   } = options
 
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OpenAI API key not configured")
+  // Get provider (use custom if provided, otherwise get configured provider for podcast scripts)
+  const provider = customProvider || getProviderForFeature('podcast_script')
+
+  if (!provider.isConfigured()) {
+    throw new Error(`AI provider not configured. Please add the appropriate API key to your environment variables.`)
   }
 
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  })
+  console.log(`[Podcast Script] Using ${provider.name} provider for generation`)
 
   // Truncate if necessary (similar to flashcard generation)
   const maxChars = 48000
@@ -146,17 +149,18 @@ Structure:
 Make it engaging and educational!`
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
+    const response = await provider.complete(
+      [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      temperature: 0.8, // Higher creativity for natural conversation
-      max_tokens: 4000,
-    })
+      {
+        temperature: 0.8, // Higher creativity for natural conversation
+        maxTokens: 4000,
+      }
+    )
 
-    let responseText = completion.choices[0]?.message?.content || "{}"
+    let responseText = response.content || "{}"
 
     // Remove markdown code blocks if present
     responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
@@ -206,10 +210,10 @@ Make it engaging and educational!`
     }
 
   } catch (error: any) {
-    console.error("OpenAI API error (podcast script):", error)
+    console.error(`${provider.name} API error (podcast script):`, error)
     if (error.response) {
       console.error("Response:", error.response.data)
-      throw new Error(`OpenAI API error: ${error.response.data?.error?.message || error.message}`)
+      throw new Error(`${provider.name} API error: ${error.response.data?.error?.message || error.message}`)
     }
     throw new Error(`Failed to generate podcast script: ${error.message}`)
   }
@@ -224,7 +228,7 @@ export async function generatePodcastScriptChunked(
   chunkOptions: ChunkOptions = {},
   onProgress?: (current: number, total: number, message: string) => void
 ): Promise<PodcastScript[]> {
-  const { text, targetDuration = 10 } = options
+  const { text, targetDuration = 10, provider } = options
 
   console.log(`[Chunked Podcast] Starting chunked generation for ${text.length} characters`)
 

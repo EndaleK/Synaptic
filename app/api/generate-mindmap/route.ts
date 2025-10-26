@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { createClient } from "@/lib/supabase/server"
 import { generateMindMap, validateMindMap } from "@/lib/mindmap-generator"
-import { generateMindMapWithClaude } from "@/lib/anthropic"
+import { providerFactory } from "@/lib/ai"
 import { applyRateLimit, RateLimits } from "@/lib/rate-limit"
 import { logger } from "@/lib/logger"
 import { MindMapGenerationSchema } from "@/lib/validation"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { canGenerateMindMap, trackMindMapGeneration } from "@/lib/usage-tracker"
 import { analyzeDocumentComplexity } from "@/lib/document-complexity-analyzer"
-import type { AIProvider } from "@/lib/ai-provider"
 
 export const maxDuration = 60 // 1 minute max execution time
 
@@ -166,30 +165,47 @@ export async function POST(req: NextRequest) {
     const effectiveMaxNodes = body.maxNodes !== undefined ? body.maxNodes : complexityAnalysis.recommendedNodes
     const effectiveMaxDepth = body.maxDepth !== undefined ? body.maxDepth : complexityAnalysis.recommendedDepth
 
-    // Select AI provider based on complexity score
-    // Simple/Moderate (< 50): GPT-4o (cheaper, handles 15-25 nodes)
-    // Complex/Very Complex (≥ 50): Claude 3.5 Sonnet (handles 40-55 nodes without truncation)
-    const selectedProvider: AIProvider = complexityAnalysis.score >= 50 ? 'claude' : 'openai'
-    const providerReason = complexityAnalysis.score >= 50
-      ? `Complex document (score ${complexityAnalysis.score}/100) requires Claude 3.5 Sonnet for large mind maps (${effectiveMaxNodes} nodes) without JSON truncation`
-      : `Simple/moderate document (score ${complexityAnalysis.score}/100) can use GPT-4o for cost-effective generation (${effectiveMaxNodes} nodes)`
+    // Select AI provider based on complexity score and environment configuration
+    // Priority: Environment variable (MINDMAP_PROVIDER) > Complexity-based selection > DeepSeek (cost-effective default)
+    const envProvider = process.env.MINDMAP_PROVIDER as 'openai' | 'deepseek' | 'anthropic' | undefined
+
+    let selectedProviderType: 'openai' | 'deepseek' | 'anthropic'
+    if (envProvider) {
+      selectedProviderType = envProvider
+    } else if (complexityAnalysis.score >= 50) {
+      // Complex documents: Use Anthropic for better handling of large JSON outputs
+      selectedProviderType = 'anthropic'
+    } else {
+      // Simple/moderate documents: Use DeepSeek for cost savings (60-70% cheaper than OpenAI)
+      selectedProviderType = 'deepseek'
+    }
+
+    const selectedProvider = providerFactory.getProviderWithFallback(selectedProviderType)
+
+    const providerReason = envProvider
+      ? `Using ${selectedProvider.name} (configured via MINDMAP_PROVIDER environment variable)`
+      : complexityAnalysis.score >= 50
+        ? `Complex document (score ${complexityAnalysis.score}/100) using ${selectedProvider.name} for large mind maps (${effectiveMaxNodes} nodes)`
+        : `Simple/moderate document (score ${complexityAnalysis.score}/100) using ${selectedProvider.name} for cost-effective generation (${effectiveMaxNodes} nodes)`
 
     logger.info('Selected AI provider for mind map', {
       userId,
       documentId,
-      provider: selectedProvider,
+      provider: selectedProvider.name,
       complexityScore: complexityAnalysis.score,
       recommendedNodes: effectiveMaxNodes,
       reason: providerReason
     })
 
     // Estimate cost before generation
-    const modelName = selectedProvider === 'claude' ? 'claude-sonnet-4-20250514' : 'gpt-4o'
+    const modelName = selectedProvider.name === 'anthropic' ? 'claude-sonnet-4-20250514'
+      : selectedProvider.name === 'deepseek' ? 'deepseek-chat'
+      : 'gpt-4o'
     const costEstimate = estimateRequestCost(modelName, document.extracted_text, 4000)
     logger.debug('Cost estimate for mind map generation', {
       userId,
       documentId,
-      provider: selectedProvider,
+      provider: selectedProvider.name,
       model: modelName,
       ...costEstimate
     })
@@ -198,22 +214,19 @@ export async function POST(req: NextRequest) {
     logger.debug('Generating mind map', {
       userId,
       documentId,
-      provider: selectedProvider,
+      provider: selectedProvider.name,
       maxNodes: effectiveMaxNodes,
       maxDepth: effectiveMaxDepth,
       autoDetected: body.maxNodes === undefined && body.maxDepth === undefined
     })
 
-    let mindMapData: any
-    if (selectedProvider === 'claude') {
-      mindMapData = await generateMindMapWithClaude(document.extracted_text, effectiveMaxNodes, effectiveMaxDepth)
-    } else {
-      mindMapData = await generateMindMap({
-        text: document.extracted_text,
-        maxNodes: effectiveMaxNodes,
-        maxDepth: effectiveMaxDepth
-      })
-    }
+    // Use the refactored generateMindMap function with provider injection
+    const mindMapData = await generateMindMap({
+      text: document.extracted_text,
+      maxNodes: effectiveMaxNodes,
+      maxDepth: effectiveMaxDepth,
+      provider: selectedProvider
+    })
 
     // Validate mind map
     const isValid = validateMindMap(mindMapData)
@@ -293,7 +306,7 @@ export async function POST(req: NextRequest) {
       userId,
       documentId,
       mindMapId: mindMap?.id,
-      provider: selectedProvider,
+      provider: selectedProvider.name,
       nodeCount: mindMapData.nodes.length,
       edgeCount: mindMapData.edges.length
     })
@@ -301,7 +314,7 @@ export async function POST(req: NextRequest) {
     logger.debug('Mind map generation complete', {
       userId,
       documentId,
-      provider: selectedProvider,
+      provider: selectedProvider.name,
       nodeCount: mindMapData.nodes.length,
       edgeCount: mindMapData.edges.length,
       duration: `${duration}ms`
@@ -327,7 +340,7 @@ export async function POST(req: NextRequest) {
         recommendedDepth: complexityAnalysis.recommendedDepth
       },
       aiProvider: {
-        selected: selectedProvider,
+        selected: selectedProvider.name,
         reason: providerReason,
         model: modelName
       }

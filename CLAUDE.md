@@ -83,8 +83,16 @@ Two parallel processing pipelines exist:
 
 Required environment variables in `.env.local` (see `.env.example` for full template):
 ```bash
-# OpenAI API
-OPENAI_API_KEY=your_openai_api_key_here
+# AI Provider API Keys (configure at least one)
+OPENAI_API_KEY=your_openai_api_key_here              # Required for TTS
+DEEPSEEK_API_KEY=your_deepseek_api_key_here          # Recommended for cost savings
+ANTHROPIC_API_KEY=your_anthropic_api_key_here        # Optional for complex documents
+
+# AI Provider Selection (Optional - intelligent defaults if not set)
+MINDMAP_PROVIDER=deepseek                            # Options: openai | deepseek | anthropic
+PODCAST_SCRIPT_PROVIDER=deepseek                     # Options: openai | deepseek | anthropic
+# FLASHCARD_PROVIDER=openai                           # Optional override
+# CHAT_PROVIDER=openai                                # Optional override
 
 # Supabase (Database & Storage)
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
@@ -112,19 +120,59 @@ STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
 - **Authentication**: Clerk (with Supabase integration)
 - **Database**: Supabase (PostgreSQL) with Row-Level Security
 - **State Management**: Zustand (global state with persistence)
-- **AI**: OpenAI SDK (gpt-3.5-turbo for text, GPT-4o-Mini-TTS for audio)
+- **AI Providers**: Multi-provider architecture supporting OpenAI, DeepSeek, and Anthropic Claude
+  - **OpenAI**: gpt-3.5-turbo, gpt-4o, TTS models
+  - **DeepSeek**: deepseek-chat (60-70% cheaper than OpenAI)
+  - **Anthropic**: claude-3-5-sonnet, claude-sonnet-4 (best for complex documents)
 - **Payments**: Stripe (subscription management)
 - **Document Processing**: mammoth (DOCX), pdf2json (server-side), pdfjs-dist & react-pdf (client-side)
 - **Icons**: lucide-react
 
 ## Critical Implementation Details
 
-### OpenAI Integration (`lib/openai.ts`)
-- Uses gpt-3.5-turbo for both flashcards and chat
-- **Flashcard generation**: temperature 0.3, max 2000 tokens, structured JSON prompt requesting 5-15 cards
-- **Document chat** (`/api/chat-with-document`): temperature 0.1, max 1000 tokens, strict document-grounding
-- **Token management**: Both pipelines implement intelligent truncation at sentence boundaries (~45K chars for flashcards, ~48K for chat)
-- Graceful fallback messages when API key missing (informative, not errors)
+### AI Provider Architecture (`lib/ai/`)
+The app uses a flexible multi-provider architecture that allows easy switching between AI services:
+
+**Provider Abstraction** (`lib/ai/providers/base.ts`):
+- Common interface for all AI providers
+- Supports text completion and streaming
+- TTS generation (OpenAI only)
+- Provider health checks via `isConfigured()`
+
+**Available Providers**:
+1. **OpenAI** (`lib/ai/providers/openai.ts`):
+   - Models: gpt-3.5-turbo, gpt-4o
+   - TTS: tts-1, tts-1-hd
+   - Best for: Established, reliable, good quality
+   - Cost: ~$0.50/M input tokens, ~$1.50/M output tokens
+
+2. **DeepSeek** (`lib/ai/providers/deepseek.ts`):
+   - Model: deepseek-chat
+   - Best for: Cost savings (60-70% cheaper than OpenAI)
+   - Cost: ~$0.27/M input tokens, ~$1.10/M output tokens
+   - Default provider for mind maps and podcast scripts
+
+3. **Anthropic** (`lib/ai/providers/anthropic.ts`):
+   - Models: claude-3-5-sonnet, claude-sonnet-4
+   - Best for: Complex documents, large JSON outputs, superior reasoning
+   - Cost: ~$3/M input tokens, ~$15/M output tokens
+   - Automatically used for complex mind maps (complexity score ≥ 50)
+
+**Provider Selection** (`lib/ai/index.ts`):
+- Automatic provider selection based on feature and document complexity
+- Manual override via environment variables (e.g., `MINDMAP_PROVIDER=openai`)
+- Fallback logic if primary provider not configured
+- Feature-specific defaults:
+  - Mind maps: DeepSeek (simple/moderate) or Anthropic (complex)
+  - Podcast scripts: DeepSeek
+  - Podcast audio: OpenAI (TTS)
+  - Flashcards: OpenAI (existing implementation)
+  - Chat: OpenAI (existing implementation)
+
+**Token Management**:
+- Intelligent truncation at sentence boundaries (~45-48K chars depending on feature)
+- Usage tracking for cost monitoring
+- Graceful fallback messages when API keys missing
 
 ### PDF Handling Architecture
 The app uses a dual-mode PDF strategy:

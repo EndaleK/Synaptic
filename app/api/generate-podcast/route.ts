@@ -6,6 +6,7 @@ import { generatePodcastAudio } from "@/lib/tts-generator"
 import { concatenateAudioBuffers, generateTranscript } from "@/lib/audio-utils"
 import { getUserProfile, getUserLearningProfile } from "@/lib/supabase/user-profile"
 import type { LearningStyle, TeachingStylePreference } from "@/lib/supabase/types"
+import { providerFactory } from "@/lib/ai"
 import { applyRateLimit, RateLimits } from "@/lib/rate-limit"
 import { logger } from "@/lib/logger"
 import { PodcastGenerationSchema } from "@/lib/validation"
@@ -159,6 +160,22 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Select AI provider for script generation
+    // Priority: Environment variable (PODCAST_SCRIPT_PROVIDER) > DeepSeek (cost-effective default)
+    const envProvider = process.env.PODCAST_SCRIPT_PROVIDER as 'openai' | 'deepseek' | 'anthropic' | undefined
+    const selectedProviderType = envProvider || 'deepseek' // Default to DeepSeek for cost savings
+
+    const scriptProvider = providerFactory.getProviderWithFallback(selectedProviderType)
+
+    logger.info('Selected AI provider for podcast script', {
+      userId,
+      documentId,
+      provider: scriptProvider.name,
+      reason: envProvider
+        ? `Using ${scriptProvider.name} (configured via PODCAST_SCRIPT_PROVIDER environment variable)`
+        : `Using ${scriptProvider.name} for cost-effective script generation (60-70% cheaper than OpenAI)`
+    })
+
     // Estimate cost before generation (TTS is expensive)
     const scriptLengthEstimate = Math.min(document.extracted_text.length * 0.3, 5000) // Rough estimate
     const costEstimate = estimateRequestCost('tts-1', scriptLengthEstimate, 0)
@@ -168,14 +185,15 @@ export async function POST(req: NextRequest) {
       ...costEstimate
     })
 
-    // Step 1: Generate podcast script
-    logger.debug('Generating podcast script', { userId, documentId, format })
+    // Step 1: Generate podcast script with selected provider
+    logger.debug('Generating podcast script', { userId, documentId, format, provider: scriptProvider.name })
     const script = await generatePodcastScript({
       text: document.extracted_text,
       format: format as PodcastFormat,
       customPrompt,
       targetDuration,
-      ...personalizationOptions
+      ...personalizationOptions,
+      provider: scriptProvider
     })
 
     logger.debug('Podcast script generated', {
