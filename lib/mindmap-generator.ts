@@ -1,5 +1,6 @@
 import { chunkDocument, getChunkingSummary, type ChunkOptions } from "./document-chunker"
 import { getProviderForFeature, type AIProvider } from "./ai"
+import { type TemplateType, getRecommendedTemplate, TEMPLATES } from "./mindmap-templates"
 
 export interface MindMapNode {
   id: string
@@ -20,6 +21,8 @@ export interface MindMapData {
   title: string
   nodes: MindMapNode[]
   edges: MindMapEdge[]
+  template: TemplateType // Visualization template selected by AI or user
+  templateReason?: string // Why this template was chosen
   metadata: {
     totalNodes: number
     maxDepth: number
@@ -32,6 +35,7 @@ interface GenerateMindMapOptions {
   maxNodes?: number // Maximum nodes to generate (default 36)
   maxDepth?: number // Maximum depth levels (default 4)
   provider?: AIProvider // Optional provider (defaults to configured provider for 'mindmap' feature)
+  template?: TemplateType // Optional template override (AI auto-selects if not provided)
 }
 
 /**
@@ -45,7 +49,8 @@ export async function generateMindMap(
     text,
     maxNodes = 36,
     maxDepth = 4,
-    provider: customProvider
+    provider: customProvider,
+    template: userTemplate
   } = options
 
   // Get provider (use custom if provided, otherwise get configured provider)
@@ -56,6 +61,10 @@ export async function generateMindMap(
   }
 
   console.log(`[MindMap] Using ${provider.name} provider for generation`)
+
+  // Determine visualization template
+  let selectedTemplate: TemplateType = userTemplate || 'hierarchical' // Default to hierarchical if not specified
+  let templateSelectionMode: 'user' | 'ai-auto' = userTemplate ? 'user' : 'ai-auto'
 
   // Truncate if necessary
   const maxChars = 48000
@@ -202,7 +211,7 @@ Create a clear, well-structured mind map with ${maxNodes} nodes organized in ${m
       ],
       {
         temperature: 0.5, // Balanced between creativity and structure
-        maxTokens: 4000,
+        maxTokens: 8000, // Increased to prevent JSON truncation
       }
     )
 
@@ -210,6 +219,9 @@ Create a clear, well-structured mind map with ${maxNodes} nodes organized in ${m
 
     // Remove markdown code blocks if present
     responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+
+    // Log response length for debugging
+    console.log(`[MindMap] Response length: ${responseText.length} chars, tokens used: ${response.usage?.totalTokens || 'unknown'}`)
 
     try {
       const parsed = JSON.parse(responseText)
@@ -259,14 +271,38 @@ Create a clear, well-structured mind map with ${maxNodes} nodes organized in ${m
         }
       })
 
-      // Calculate metadata
+      // Calculate metadata first
       const maxDepthFound = Math.max(...validatedNodes.map(n => n.level))
       const categories = Array.from(new Set(validatedNodes.map(n => n.category).filter(Boolean)))
+
+      // Determine final template using content analysis
+      let templateReason = '';
+
+      if (templateSelectionMode === 'user') {
+        // User explicitly selected template
+        templateReason = 'User selected template';
+      } else {
+        // Auto-detect template based on content
+        const contentAnalysis = getRecommendedTemplate({
+          text: processedText,
+          nodes: validatedNodes,
+          edges: validatedEdges
+        });
+
+        selectedTemplate = contentAnalysis.template;
+        templateReason = contentAnalysis.reason || `Auto-selected ${selectedTemplate} template based on content`;
+
+        console.log(`[MindMap] Template auto-selected: ${selectedTemplate} (confidence: ${Math.round(contentAnalysis.confidence * 100)}%)`);
+      }
+
+      console.log(`[MindMap] Final template: ${selectedTemplate} - ${templateReason}`);
 
       const mindMapData: MindMapData = {
         title: parsed.title || "Mind Map",
         nodes: validatedNodes,
         edges: validatedEdges,
+        template: selectedTemplate,
+        templateReason,
         metadata: {
           totalNodes: validatedNodes.length,
           maxDepth: maxDepthFound,
@@ -279,7 +315,48 @@ Create a clear, well-structured mind map with ${maxNodes} nodes organized in ${m
       return mindMapData
 
     } catch (parseError) {
-      console.error("Failed to parse mind map:", responseText)
+      console.error("Failed to parse mind map JSON. Response preview:", responseText.substring(0, 500))
+      console.error("Response end (last 500 chars):", responseText.substring(Math.max(0, responseText.length - 500)))
+      console.error("Parse error:", parseError)
+
+      // Try to recover by fixing common JSON issues
+      let fixedText = responseText;
+
+      // If truncated mid-array, try closing it
+      if (responseText.includes('"edges"') && !responseText.trim().endsWith('}')) {
+        console.log("Attempting to fix truncated JSON...");
+        fixedText = responseText.trim();
+
+        // Close any open string
+        const openQuotes = (fixedText.match(/"/g) || []).length;
+        if (openQuotes % 2 !== 0) {
+          fixedText += '"';
+        }
+
+        // Close the edges array if needed
+        if (!fixedText.includes(']}')) {
+          fixedText += ']}';
+        }
+
+        // Close the main object
+        if (!fixedText.endsWith('}')) {
+          fixedText += '}';
+        }
+
+        try {
+          const recovered = JSON.parse(fixedText);
+          console.log("Successfully recovered truncated JSON!");
+          // Continue with recovered data but with reduced nodes
+          if (recovered.nodes && recovered.edges) {
+            // Re-run through validation
+            responseText = JSON.stringify(recovered);
+            throw new Error("RETRY_PARSE"); // Signal to retry parsing
+          }
+        } catch (retryError) {
+          console.error("Recovery failed:", retryError);
+        }
+      }
+
       throw new Error(`Failed to parse mind map: ${parseError}`)
     }
 
@@ -460,10 +537,15 @@ function mergeMindMaps(mindMaps: MindMapData[], originalText: string): MindMapDa
 
   const maxDepthFound = Math.max(...mergedNodes.map(n => n.level))
 
+  // Use the template from the first mind map (they should all be similar content)
+  const mergedTemplate = mindMaps[0].template || 'hierarchical';
+
   return {
     title,
     nodes: mergedNodes,
     edges: mergedEdges,
+    template: mergedTemplate,
+    templateReason: `Merged from ${mindMaps.length} sections`,
     metadata: {
       totalNodes: mergedNodes.length,
       maxDepth: maxDepthFound,

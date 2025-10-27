@@ -14,17 +14,23 @@ import {
   MarkerType,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { Download, Maximize2 } from 'lucide-react'
+import { Download, Maximize2, RefreshCw } from 'lucide-react'
 import html2canvas from 'html2canvas'
-import type { MindMapNode, MindMapEdge } from '@/lib/mindmap-generator'
+import type { MindMapNode, MindMapEdge, MindMapData } from '@/lib/mindmap-generator'
+import type { TemplateType } from '@/lib/mindmap-templates'
+import { layoutMindMap } from '@/lib/mindmap-layouts'
+import { TEMPLATES, getAllTemplates } from '@/lib/mindmap-templates'
 import MindMapDetailPanel from './MindMapDetailPanel'
 
 interface MindMapViewerProps {
   title: string
   nodes: MindMapNode[]
   edges: MindMapEdge[]
+  template?: TemplateType
+  templateReason?: string
   documentText?: string
   onNodeClick?: (node: MindMapNode) => void
+  onTemplateChange?: (template: TemplateType) => void
 }
 
 interface NodeDetail {
@@ -51,17 +57,29 @@ const categoryColors: Record<string, { bg: string; border: string; text: string 
   outcome: { bg: '#FFF7ED', border: '#F97316', text: '#9A3412' },       // Orange - Results/Benefits
 }
 
-export default function MindMapViewer({ title, nodes = [], edges = [], documentText, onNodeClick }: MindMapViewerProps) {
+export default function MindMapViewer({
+  title,
+  nodes = [],
+  edges = [],
+  template: initialTemplate = 'hierarchical',
+  templateReason,
+  documentText,
+  onNodeClick,
+  onTemplateChange
+}: MindMapViewerProps) {
+  // State for template switching
+  const [currentTemplate, setCurrentTemplate] = useState<TemplateType>(initialTemplate);
+
   // Debug logging
   React.useEffect(() => {
     console.log('[MindMapViewer] Initialized with:', {
       title,
       nodeCount: nodes?.length || 0,
       edgeCount: edges?.length || 0,
-      nodes: nodes?.slice(0, 3) || [], // First 3 nodes
-      edges: edges?.slice(0, 3) || [], // First 3 edges
+      template: currentTemplate,
+      templateReason,
     })
-  }, [title, nodes, edges])
+  }, [title, nodes, edges, currentTemplate, templateReason])
 
   // State for detail panel
   const [selectedNode, setSelectedNode] = useState<MindMapNode | null>(null)
@@ -70,159 +88,61 @@ export default function MindMapViewer({ title, nodes = [], edges = [], documentT
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
   const [selectedNodePosition, setSelectedNodePosition] = useState<{ x: number; y: number } | null>(null)
 
-  // Convert our node format to React Flow format
-  const flowNodes: Node[] = useMemo(() => {
-    console.log('[MindMapViewer] flowNodes useMemo triggered', {
-      nodesExists: !!nodes,
-      nodesIsArray: Array.isArray(nodes),
-      nodesLength: nodes?.length,
-      nodesType: typeof nodes,
-      firstNode: nodes?.[0]
-    })
+  // Handle template change
+  const handleTemplateChange = (newTemplate: TemplateType) => {
+    setCurrentTemplate(newTemplate);
+    if (onTemplateChange) {
+      onTemplateChange(newTemplate);
+    }
+  };
 
-    // Guard clause: return empty array if nodes is undefined or empty
+  // Convert to ReactFlow nodes and edges using template-specific layout
+  const { flowNodes, flowEdges } = useMemo(() => {
+    console.log('[MindMapViewer] Applying layout with template:', currentTemplate)
+
+    // Guard clause: return empty if no nodes
     if (!nodes || nodes.length === 0) {
-      console.log('[MindMapViewer] No nodes to convert, returning empty array')
-      return []
+      console.log('[MindMapViewer] No nodes to layout')
+      return { flowNodes: [], flowEdges: [] }
     }
 
-    console.log('[MindMapViewer] Converting', nodes.length, 'nodes to React Flow format')
-
-    const converted = nodes.map((node, index) => {
-      const colors = categoryColors[node.category || 'concept'] || categoryColors.concept
-
-      // Enhanced hierarchical layout with better spacing
-      const levelSpacing = 500  // Horizontal spacing between levels (increased)
-      const nodeSpacing = 280  // Vertical spacing between nodes (increased for readability)
-
-      // Get all nodes at this level
-      const nodesAtLevel = nodes.filter(n => n.level === node.level)
-      const indexAtLevel = nodesAtLevel.indexOf(node)
-
-      // Simple vertical centering with better distribution
-      const totalAtLevel = nodesAtLevel.length
-      const yPosition = (indexAtLevel - (totalAtLevel - 1) / 2) * nodeSpacing
-
-      return {
-        id: node.id,
-        type: 'default',
-        position: {
-          x: node.level * levelSpacing,
-          y: yPosition
-        },
-        data: {
-          label: (
-            <div className="text-center px-5 py-4">
-              <div
-                className={`font-bold ${node.level === 0 ? 'text-lg' : node.level === 1 ? 'text-base' : 'text-sm'} leading-snug`}
-                style={{ color: colors.text }}
-              >
-                {node.label}
-              </div>
-              {node.description && node.description.trim() && (
-                <div className={`text-sm text-gray-700 dark:text-gray-600 mt-2 leading-relaxed font-medium ${node.level === 0 ? 'max-w-sm' : 'max-w-xs'}`}>
-                  {node.description.substring(0, node.level === 0 ? 120 : 80)}
-                  {(node.description?.length || 0) > (node.level === 0 ? 120 : 80) ? '...' : ''}
-                </div>
-              )}
-            </div>
-          )
-        },
-        style: {
-          background: colors.bg,
-          border: `4px solid ${colors.border}`,
-          borderRadius: node.level === 0 ? '28px' : node.level === 1 ? '20px' : '16px',
-          padding: node.level === 0 ? '20px' : '16px',
-          minWidth: node.level === 0 ? '300px' : node.level === 1 ? '240px' : '200px',
-          maxWidth: node.level === 0 ? '400px' : node.level === 1 ? '320px' : '280px',
-          fontSize: node.level === 0 ? '18px' : '16px',
-          boxShadow: node.level === 0
-            ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
-            : node.level === 1
-            ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-            : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-          cursor: 'pointer',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        },
-        className: 'mindmap-node hover:scale-105 hover:shadow-2xl active:scale-95',
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
+    // Create MindMapData structure for layout function
+    const mindMapData: MindMapData = {
+      title,
+      nodes,
+      edges,
+      template: currentTemplate,
+      templateReason,
+      metadata: {
+        totalNodes: nodes.length,
+        maxDepth: Math.max(...nodes.map(n => n.level)),
+        categories: Array.from(new Set(nodes.map(n => n.category).filter(Boolean) as string[]))
       }
-    })
+    };
 
-    console.log('[MindMapViewer] Converted nodes complete:', {
-      convertedLength: converted.length,
-      firstConverted: converted[0],
-      hasPosition: !!converted[0]?.position,
-      hasData: !!converted[0]?.data
-    })
+    // Apply template-specific layout
+    const { nodes: layoutedNodes, edges: layoutedEdges } = layoutMindMap(mindMapData);
 
-    return converted
-  }, [nodes])
+    console.log('[MindMapViewer] Layout complete:', {
+      nodesCount: layoutedNodes.length,
+      edgesCount: layoutedEdges.length
+    });
 
-  // Convert our edge format to React Flow format with enhanced readability
-  const flowEdges: Edge[] = useMemo(() => {
-    return edges.map((edge) => {
-      // Determine if this is a cross-link (connects nodes at different branches/levels)
-      const sourceNode = nodes.find(n => n.id === edge.from)
-      const targetNode = nodes.find(n => n.id === edge.to)
-      const isCrossLink = sourceNode && targetNode && Math.abs(sourceNode.level - targetNode.level) > 1
-
-      return {
-        id: edge.id,
-        source: edge.from,
-        target: edge.to,
-        type: isCrossLink ? 'default' : 'smoothstep', // Use straight lines for cross-links
-        animated: !isCrossLink, // Only animate hierarchical edges
-        style: {
-          stroke: isCrossLink ? '#F97316' : '#3B82F6', // Orange for cross-links, blue for hierarchy
-          strokeWidth: isCrossLink ? 3 : 2.5,
-          strokeDasharray: isCrossLink ? '8 6' : undefined, // Dashed for cross-links
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: isCrossLink ? '#F97316' : '#3B82F6',
-          width: 20,
-          height: 20,
-        },
-        label: edge.relationship,
-        labelStyle: {
-          fill: '#1F2937',
-          fontSize: 13,
-          fontWeight: 600,
-          letterSpacing: '0.015em'
-        },
-        labelBgStyle: {
-          fill: isCrossLink ? '#FFF7ED' : '#EBF5FF',
-          fillOpacity: 0.95,
-          rx: 4,
-          ry: 4,
-        },
-        labelBgPadding: [8, 12] as [number, number],
-        labelBgBorderRadius: 6,
-      }
-    })
-  }, [edges, nodes])
+    return { flowNodes: layoutedNodes, flowEdges: layoutedEdges }
+  }, [nodes, edges, currentTemplate, title, templateReason])
 
   const [reactFlowNodes, setNodes, onNodesChange] = useNodesState(flowNodes)
   const [reactFlowEdges, setEdges, onEdgesChange] = useEdgesState(flowEdges)
 
-  // Update React Flow nodes/edges when flowNodes/flowEdges change
+  // Update React Flow nodes/edges when layout changes
   React.useEffect(() => {
-    console.log('[MindMapViewer] Updating reactFlowNodes', {
+    console.log('[MindMapViewer] Updating nodes and edges', {
       flowNodesLength: flowNodes.length,
-      currentReactFlowNodesLength: reactFlowNodes.length
+      flowEdgesLength: flowEdges.length
     })
     setNodes(flowNodes)
-  }, [flowNodes, setNodes])
-
-  React.useEffect(() => {
-    console.log('[MindMapViewer] Updating reactFlowEdges', {
-      flowEdgesLength: flowEdges.length,
-      currentReactFlowEdgesLength: reactFlowEdges.length
-    })
     setEdges(flowEdges)
-  }, [flowEdges, setEdges])
+  }, [flowNodes, flowEdges, setNodes, setEdges])
 
   const handleNodeClick = useCallback(async (_event: React.MouseEvent, node: Node) => {
     console.log('[MindMapViewer] Node clicked:', node.id)
@@ -363,47 +283,72 @@ export default function MindMapViewer({ title, nodes = [], edges = [], documentT
           height: 16px !important;
         }
       `}</style>
-      <div className="w-full h-full bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden flex flex-col">
-        {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h2 className="text-xl font-bold text-black dark:text-white">{title}</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {nodes?.length || 0} concepts • {edges?.length || 0} connections
-            </p>
+      <div className="w-full h-full bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden flex flex-col">
+        {/* Compact Header */}
+      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
+        <div className="flex items-center justify-between gap-3">
+          {/* Title and Stats */}
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base font-bold text-black dark:text-white truncate">{title}</h2>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                {nodes?.length || 0} concepts • {edges?.length || 0} connections
+                {templateReason && (
+                  <span className="ml-2 italic text-gray-500">
+                    {TEMPLATES[currentTemplate]?.metadata.icon} {templateReason}
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
-          <div className="flex gap-2">
+
+          {/* Export Buttons - Compact */}
+          <div className="flex gap-1.5">
             <button
               onClick={handleExportPNG}
-              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               title="Export as PNG"
             >
-              <Download className="w-4 h-4" />
-              PNG
+              <Download className="w-3 h-3" />
+              <span className="hidden sm:inline">PNG</span>
             </button>
             <button
               onClick={handleExportJSON}
-              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               title="Export as JSON"
             >
-              <Download className="w-4 h-4" />
-              JSON
+              <Download className="w-3 h-3" />
+              <span className="hidden sm:inline">JSON</span>
             </button>
           </div>
         </div>
 
-        {/* Interaction Guide */}
-        <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
-          <span className="flex items-center gap-1">
-            <span className="font-semibold">🖱️ Scroll:</span> Zoom
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="font-semibold">🖱️ Drag:</span> Pan
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="font-semibold">Click:</span> Node Details
-          </span>
+        {/* Template Switcher - Compact */}
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="flex gap-1.5">
+            {['hierarchical', 'flowchart', 'timeline'].map((templateType) => {
+              const template = TEMPLATES[templateType as TemplateType];
+              const isActive = currentTemplate === templateType;
+              return (
+                <button
+                  key={templateType}
+                  onClick={() => handleTemplateChange(templateType as TemplateType)}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-all ${
+                    isActive
+                      ? 'bg-blue-100 dark:bg-blue-900 border border-blue-500 text-blue-700 dark:text-blue-300'
+                      : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                  title={template.metadata.description}
+                >
+                  <span className="text-sm">{template.metadata.icon}</span>
+                  <span className="hidden sm:inline">{template.metadata.name}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 hidden lg:block truncate">
+            {TEMPLATES[currentTemplate]?.metadata.description}
+          </div>
         </div>
       </div>
 
@@ -418,15 +363,16 @@ export default function MindMapViewer({ title, nodes = [], edges = [], documentT
             onNodeClick={handleNodeClick}
             fitView
             fitViewOptions={{
-              padding: 0.2,
+              padding: 0.15,
               includeHiddenNodes: false,
-              minZoom: 0.5,
-              maxZoom: 1.5,
+              minZoom: 0.6,
+              maxZoom: 1.2,
+              duration: 200,
             }}
             attributionPosition="bottom-right"
-            minZoom={0.1}
+            minZoom={0.2}
             maxZoom={2}
-            defaultZoom={0.8}
+            defaultViewport={{ x: 0, y: 0, zoom: 0.9 }}
             nodesDraggable={true}
             nodesConnectable={false}
             elementsSelectable={true}
@@ -437,6 +383,7 @@ export default function MindMapViewer({ title, nodes = [], edges = [], documentT
             selectNodesOnDrag={false}
             zoomOnDoubleClick={false}
             preventScrolling={true}
+            nodeOrigin={[0.5, 0.5]}
             proOptions={{ hideAttribution: false }}
           >
             <Background
@@ -478,39 +425,40 @@ export default function MindMapViewer({ title, nodes = [], edges = [], documentT
         )}
       </div>
 
-      {/* Legend & Instructions */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-950 dark:to-blue-950/30">
-        {/* Instructions */}
-        <div className="mb-3 flex items-center gap-2 text-sm">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg">
-            <span className="text-blue-700 dark:text-blue-300 font-semibold">💡 Tip:</span>
-            <span className="text-blue-600 dark:text-blue-400">Click any concept to expand and explore details</span>
+      {/* Compact Legend */}
+      <div className="px-3 py-1.5 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-950 dark:to-blue-950/30">
+        <div className="flex items-center justify-between gap-3 text-xs">
+          {/* Tip */}
+          <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+            <span className="font-semibold">💡</span>
+            <span className="hidden md:inline">Click nodes to explore details</span>
           </div>
-          <div className="flex-1" />
-          <div className="flex gap-2 text-xs">
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-md">
-              <div className="w-8 h-0.5 bg-blue-500"></div>
-              <span className="text-gray-700 dark:text-gray-300">Hierarchy</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 rounded-md">
-              <div className="w-8 h-0.5 bg-orange-500 border-t-2 border-dashed border-orange-500"></div>
-              <span className="text-gray-700 dark:text-gray-300">Cross-link</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Category Legend */}
-        <div className="flex flex-wrap gap-2 text-xs">
-          <span className="text-gray-600 dark:text-gray-400 font-semibold mr-1">Categories:</span>
-          {Object.entries(categoryColors).map(([category, colors]) => (
-            <div key={category} className="flex items-center gap-1.5 px-2 py-1 rounded-md" style={{ backgroundColor: colors.bg }}>
-              <div
-                className="w-3 h-3 rounded-sm"
-                style={{ border: `2px solid ${colors.border}` }}
-              />
-              <span className="font-medium capitalize" style={{ color: colors.text }}>{category}</span>
+          {/* Edge Types */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <div className="w-6 h-0.5 bg-blue-500"></div>
+              <span className="text-gray-700 dark:text-gray-300 hidden sm:inline">Hierarchy</span>
             </div>
-          ))}
+            <div className="flex items-center gap-1">
+              <div className="w-6 h-0.5 bg-orange-500 border-t border-dashed border-orange-500"></div>
+              <span className="text-gray-700 dark:text-gray-300 hidden sm:inline">Cross-link</span>
+            </div>
+          </div>
+
+          {/* Category Legend - Compact */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-gray-600 dark:text-gray-400 font-semibold hidden lg:inline">Categories:</span>
+            {Object.entries(categoryColors).slice(0, 4).map(([category, colors]) => (
+              <div key={category} className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ backgroundColor: colors.bg }}>
+                <div
+                  className="w-2 h-2 rounded-sm"
+                  style={{ border: `1.5px solid ${colors.border}` }}
+                />
+                <span className="font-medium capitalize text-xs hidden xl:inline" style={{ color: colors.text }}>{category}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
       </div>

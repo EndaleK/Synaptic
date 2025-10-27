@@ -28,6 +28,8 @@ interface MindMapData {
   title: string
   nodes: MindMapNode[]
   edges: MindMapEdge[]
+  template?: 'hierarchical' | 'flowchart' | 'timeline'
+  templateReason?: string
   metadata?: {
     totalNodes: number
     maxDepth: number
@@ -87,6 +89,8 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
         title: mindMapData.title,
         nodeCount: mindMapData.nodes?.length,
         edgeCount: mindMapData.edges?.length,
+        template: mindMapData.template,
+        templateReason: mindMapData.templateReason,
         nodesPreview: mindMapData.nodes?.slice(0, 2)
       })
       setMindMapData(mindMapData)
@@ -113,53 +117,50 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
     generateMindMap()
   }
 
-  // If mind map exists, show viewer
+  // If mind map exists, show viewer - MAXIMIZED VIEW
   if (mindMapData) {
     return (
       <div className="h-full flex flex-col">
-        {/* Header with Regenerate Button */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+        {/* Compact Header with Regenerate Button */}
+        <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-accent-primary/5 to-accent-secondary/5">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
               {documentName}
             </h2>
-            <div className="flex items-center gap-3 mt-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Mind Map Visualization
-              </p>
-              {complexityAnalysis && (
-                <div className="flex items-center gap-2 text-xs">
-                  <span className={`px-2 py-1 rounded-full font-medium ${
-                    complexityAnalysis.complexity === 'simple' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                    complexityAnalysis.complexity === 'moderate' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
-                    complexityAnalysis.complexity === 'complex' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
-                    'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                  }`}>
-                    {complexityAnalysis.complexity.replace('_', ' ').toUpperCase()}
-                  </span>
-                  <span className="text-gray-500 dark:text-gray-400">
-                    Score: {complexityAnalysis.score}/100 • {complexityAnalysis.recommendedNodes} nodes • {complexityAnalysis.recommendedDepth} levels
-                  </span>
-                </div>
-              )}
-            </div>
+            {complexityAnalysis && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className={`px-2 py-0.5 rounded-full font-medium text-xs ${
+                  complexityAnalysis.complexity === 'simple' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                  complexityAnalysis.complexity === 'moderate' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                  complexityAnalysis.complexity === 'complex' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
+                  'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                }`}>
+                  {complexityAnalysis.complexity.replace('_', ' ').toUpperCase()}
+                </span>
+                <span className="text-gray-500 dark:text-gray-400 hidden md:inline">
+                  {complexityAnalysis.recommendedNodes} nodes • {complexityAnalysis.recommendedDepth} levels
+                </span>
+              </div>
+            )}
           </div>
           <button
             onClick={handleRegenerate}
             disabled={isGenerating}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg text-sm font-medium hover:opacity-90 transition-all shadow-md disabled:opacity-50"
           >
-            <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-            Regenerate
+            <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Regenerate</span>
           </button>
         </div>
 
-        {/* Mind Map Viewer */}
-        <div className="flex-1">
+        {/* Mind Map Viewer - MAXIMIZED */}
+        <div className="flex-1 min-h-0">
           <MindMapViewer
             title={mindMapData.title || 'Untitled Mind Map'}
             nodes={mindMapData.nodes || []}
             edges={mindMapData.edges || []}
+            template={mindMapData.template || 'hierarchical'}
+            templateReason={mindMapData.templateReason}
             documentText={documentText}
           />
         </div>

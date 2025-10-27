@@ -71,11 +71,11 @@ class AIProviderFactory {
    */
   getConfiguredProviders(): ProviderType[] {
     const configured: ProviderType[] = [];
-    for (const [type, provider] of this.providers) {
+    Array.from(this.providers.entries()).forEach(([type, provider]) => {
       if (provider.isConfigured()) {
         configured.push(type);
       }
-    }
+    });
     return configured;
   }
 }

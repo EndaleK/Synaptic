@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Use analyzed parameters (or manual override if provided explicitly)
-    const effectiveMaxNodes = body.maxNodes !== undefined ? body.maxNodes : complexityAnalysis.recommendedNodes
+    let effectiveMaxNodes = body.maxNodes !== undefined ? body.maxNodes : complexityAnalysis.recommendedNodes
     const effectiveMaxDepth = body.maxDepth !== undefined ? body.maxDepth : complexityAnalysis.recommendedDepth
 
     // Select AI provider based on complexity score and environment configuration
@@ -170,23 +170,44 @@ export async function POST(req: NextRequest) {
     const envProvider = process.env.MINDMAP_PROVIDER as 'openai' | 'deepseek' | 'anthropic' | undefined
 
     let selectedProviderType: 'openai' | 'deepseek' | 'anthropic'
+    let wasDowngraded = false
+
     if (envProvider) {
       selectedProviderType = envProvider
     } else if (complexityAnalysis.score >= 50) {
-      // Complex documents: Use Anthropic for better handling of large JSON outputs
-      selectedProviderType = 'anthropic'
+      // Complex documents: Prefer Anthropic, but fallback to DeepSeek if not configured
+      const anthropicProvider = providerFactory.getProvider('anthropic')
+      if (anthropicProvider.isConfigured()) {
+        selectedProviderType = 'anthropic'
+      } else {
+        selectedProviderType = 'deepseek'
+        wasDowngraded = true
+        logger.info('Anthropic not configured, falling back to DeepSeek for complex document', { userId, documentId })
+      }
     } else {
       // Simple/moderate documents: Use DeepSeek for cost savings (60-70% cheaper than OpenAI)
       selectedProviderType = 'deepseek'
     }
 
-    const selectedProvider = providerFactory.getProviderWithFallback(selectedProviderType)
+    const selectedProvider = providerFactory.getProviderWithFallback(selectedProviderType, 'openai')
+
+    // Safety cap: DeepSeek works best with fewer nodes (prevents JSON truncation)
+    // Cap at 25 nodes for DeepSeek to ensure complete JSON responses
+    if (selectedProvider.name === 'deepseek' && effectiveMaxNodes > 25) {
+      logger.info('Reducing node count for DeepSeek to prevent truncation', {
+        originalNodes: effectiveMaxNodes,
+        cappedNodes: 25
+      })
+      effectiveMaxNodes = 25
+    }
 
     const providerReason = envProvider
       ? `Using ${selectedProvider.name} (configured via MINDMAP_PROVIDER environment variable)`
-      : complexityAnalysis.score >= 50
-        ? `Complex document (score ${complexityAnalysis.score}/100) using ${selectedProvider.name} for large mind maps (${effectiveMaxNodes} nodes)`
-        : `Simple/moderate document (score ${complexityAnalysis.score}/100) using ${selectedProvider.name} for cost-effective generation (${effectiveMaxNodes} nodes)`
+      : wasDowngraded
+        ? `Complex document (score ${complexityAnalysis.score}/100) using ${selectedProvider.name} (Anthropic not configured)`
+        : complexityAnalysis.score >= 50
+          ? `Complex document (score ${complexityAnalysis.score}/100) using ${selectedProvider.name} for large mind maps (${effectiveMaxNodes} nodes)`
+          : `Simple/moderate document (score ${complexityAnalysis.score}/100) using ${selectedProvider.name} for cost-effective generation (${effectiveMaxNodes} nodes)`
 
     logger.info('Selected AI provider for mind map', {
       userId,
@@ -328,6 +349,8 @@ export async function POST(req: NextRequest) {
         title: mindMapData.title,
         nodes: mindMapData.nodes,
         edges: mindMapData.edges,
+        template: mindMapData.template,
+        templateReason: mindMapData.templateReason,
         metadata: mindMapData.metadata
       },
       documentText: document.extracted_text, // Include for node detail expansion

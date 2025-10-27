@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
-import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar, Link2, Globe, CheckCircle2, ArrowRight } from "lucide-react"
+import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar, Link2, Globe, CheckCircle2, ArrowRight, Brain, Clock, Bell, BarChart3, Target } from "lucide-react"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import LearningProfileBanner from "@/components/LearningProfileBanner"
 import type { Document } from "@/lib/supabase/types"
@@ -232,6 +232,101 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                 </button>
               )
             })}
+          </div>
+        </div>
+
+        {/* Study Scheduler Tools */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Study Tools & Scheduler</h2>
+            <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
+              AI Enhanced
+            </span>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <button
+              onClick={() => window.location.href = '/dashboard/study/review'}
+              className="relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+            >
+              <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full">
+                AI
+              </span>
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4">
+                <Brain className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Review Queue
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                AI-prioritized flashcard reviews
+              </p>
+            </button>
+
+            <button
+              onClick={() => window.location.href = '/dashboard/study/pomodoro'}
+              className="relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+            >
+              <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full">
+                AI
+              </span>
+              <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center mb-4">
+                <Clock className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Pomodoro Timer
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Context-aware smart timer
+              </p>
+            </button>
+
+            <button
+              onClick={() => window.location.href = '/dashboard/study/calendar'}
+              className="relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+            >
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4">
+                <Calendar className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Study Calendar
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Schedule and plan study sessions
+              </p>
+            </button>
+
+            <button
+              onClick={() => window.location.href = '/dashboard/study/statistics'}
+              className="relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+            >
+              <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full">
+                AI
+              </span>
+              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-4">
+                <BarChart3 className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Statistics
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                AI insights & progress tracking
+              </p>
+            </button>
+
+            <button
+              onClick={() => window.location.href = '/dashboard/study/settings'}
+              className="relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+            >
+              <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-xl flex items-center justify-center mb-4">
+                <Bell className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Notifications
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Configure reminders and alerts
+              </p>
+            </button>
           </div>
         </div>
 
