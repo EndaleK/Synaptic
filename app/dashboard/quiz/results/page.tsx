@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Eye, Ear, Hand, BookOpen, Sparkles, ArrowRight, Check } from "lucide-react"
@@ -56,7 +56,7 @@ const styleInfo = {
   },
 }
 
-export default function QuizResultsPage() {
+function QuizResultsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
@@ -219,5 +219,20 @@ export default function QuizResultsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function QuizResultsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-gray-200 dark:border-gray-800 border-t-black dark:border-t-white rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Loading your results...</p>
+        </div>
+      </div>
+    }>
+      <QuizResultsContent />
+    </Suspense>
   )
 }
