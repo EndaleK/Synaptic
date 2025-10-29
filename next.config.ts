@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Recommended for Vercel deployments
+  output: 'standalone',
+
   // Temporarily disable linting and type checking during builds for faster deployment
   eslint: {
     ignoreDuringBuilds: true,
