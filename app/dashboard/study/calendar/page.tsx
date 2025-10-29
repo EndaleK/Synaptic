@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { ArrowLeft, Calendar, CheckCircle, XCircle } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import StudyCalendar from '@/components/StudyScheduler/StudyCalendar'
 
-export default function CalendarPage() {
+function CalendarPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isConnecting, setIsConnecting] = useState(false)
@@ -133,5 +133,20 @@ export default function CalendarPage() {
         <StudyCalendar />
       </div>
     </div>
+  )
+}
+
+export default function CalendarPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-gray-200 dark:border-gray-800 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Loading calendar...</p>
+        </div>
+      </div>
+    }>
+      <CalendarPageContent />
+    </Suspense>
   )
 }
