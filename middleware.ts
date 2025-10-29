@@ -25,6 +25,40 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
       signInUrl.searchParams.set('redirect_url', req.url)
       return NextResponse.redirect(signInUrl)
     }
+
+    // Auto-create user profile if it doesn't exist
+    // Only do this for dashboard routes to avoid performance impact on API routes
+    if (req.nextUrl.pathname.startsWith('/dashboard')) {
+      try {
+        const { createClient } = await import('@/lib/supabase/server')
+        const supabase = await createClient()
+
+        // Check if profile exists
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('clerk_user_id', userId)
+          .single()
+
+        // Create profile if it doesn't exist
+        if (!profile) {
+          const sessionClaims = await auth()
+          const email = sessionClaims.sessionClaims?.email as string || ''
+
+          await supabase
+            .from('user_profiles')
+            .insert({
+              clerk_user_id: userId,
+              email: email,
+              created_at: new Date().toISOString()
+            })
+        }
+      } catch (error) {
+        // Log error for debugging
+        console.error('Failed to auto-create user profile:', error)
+        console.error('Error details:', JSON.stringify(error, null, 2))
+      }
+    }
   }
 
   // Update Supabase session

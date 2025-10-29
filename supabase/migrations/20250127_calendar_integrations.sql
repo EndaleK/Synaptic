@@ -1,7 +1,17 @@
 -- Create calendar_integrations table for storing OAuth tokens
+-- This migration depends on user_profiles table being created first
+
+-- Ensure user_profiles table exists
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'user_profiles') THEN
+    RAISE EXCEPTION 'user_profiles table must exist before creating calendar_integrations';
+  END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS calendar_integrations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   provider TEXT NOT NULL CHECK (provider IN ('google', 'outlook', 'apple')),
   access_token TEXT NOT NULL,
   refresh_token TEXT NOT NULL,
