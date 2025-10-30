@@ -75,12 +75,16 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Interactive Flashcards - ${dateStr}</title>
     <style>
-        * { box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -88,6 +92,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow-x: hidden;
         }
         .flashcard-app {
             background: white;
@@ -112,15 +117,20 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
         .flashcard-container {
             perspective: 1000px;
             margin: 30px 0;
+            touch-action: manipulation;
         }
         .flashcard {
             width: 100%;
-            height: 300px;
+            height: 400px;
             position: relative;
             transform-style: preserve-3d;
             transition: transform 0.6s;
             cursor: pointer;
             margin: 0 auto;
+            touch-action: manipulation;
+        }
+        .flashcard:active {
+            opacity: 0.95;
         }
         .flashcard.flipped {
             transform: rotateY(180deg);
@@ -130,13 +140,16 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
             border-radius: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 30px;
+            padding: 20px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.1);
             border: 2px solid #e2e8f0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         .card-front {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -148,16 +161,20 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
             transform: rotateY(180deg);
         }
         .card-content {
-            font-size: 1.3em;
-            line-height: 1.5;
+            font-size: 1.2em;
+            line-height: 1.6;
             text-align: center;
             word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+            width: 100%;
         }
         .navigation {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-top: 30px;
+            gap: 10px;
         }
         .nav-button {
             background: #4299e1;
@@ -170,22 +187,32 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
             font-weight: 600;
             transition: all 0.3s ease;
             box-shadow: 0 4px 8px rgba(66, 153, 225, 0.3);
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 44px;
+            min-width: 44px;
         }
         .nav-button:hover {
             background: #3182ce;
             transform: translateY(-2px);
             box-shadow: 0 6px 12px rgba(66, 153, 225, 0.4);
         }
+        .nav-button:active {
+            transform: translateY(0);
+            background: #2c5aa0;
+        }
         .nav-button:disabled {
             background: #cbd5e0;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
+            opacity: 0.6;
         }
         .card-counter {
             color: #4a5568;
             font-weight: 600;
             font-size: 1.1em;
+            flex-shrink: 0;
         }
         .flip-hint {
             color: #718096;
@@ -201,10 +228,53 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
             color: #4a5568;
         }
         @media (max-width: 600px) {
-            body { padding: 10px; }
-            .flashcard-app { padding: 20px; }
-            .flashcard { height: 250px; }
-            .card-content { font-size: 1.1em; }
+            body {
+                padding: 10px;
+            }
+            .flashcard-app {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+            .flashcard-container {
+                margin: 20px 0;
+            }
+            .flashcard {
+                height: 350px;
+            }
+            .card-face {
+                padding: 15px;
+            }
+            .card-content {
+                font-size: 1em;
+                line-height: 1.5;
+            }
+            .nav-button {
+                padding: 10px 16px;
+                font-size: 0.9em;
+                flex: 1;
+                max-width: 120px;
+            }
+            .card-counter {
+                font-size: 0.95em;
+            }
+            .flip-hint {
+                font-size: 0.85em;
+                margin-top: 10px;
+            }
+            .keyboard-hints {
+                display: none;
+            }
+        }
+        @media (max-width: 400px) {
+            .flashcard {
+                height: 300px;
+            }
+            .nav-button {
+                padding: 8px 12px;
+                font-size: 0.85em;
+            }
         }
     </style>
 </head>
@@ -230,7 +300,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
             </div>
         </div>
         
-        <div class="flip-hint">Click the card to flip it!</div>
+        <div class="flip-hint">Tap the card to flip it!</div>
         
         <div class="navigation">
             <button class="nav-button" id="prev-btn" onclick="previousCard()">← Previous</button>
