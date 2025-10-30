@@ -517,11 +517,8 @@ ${'='.repeat(50)}`).join('\n')}`
           </div>
 
           <div
-            className="relative cursor-pointer"
+            className="relative cursor-pointer h-64 md:h-80 lg:h-96"
             style={{
-              minHeight: "16rem",
-              maxHeight: "32rem",
-              height: "auto",
               marginBottom: "var(--space-6)"
             }}
           >

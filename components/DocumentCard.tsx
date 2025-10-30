@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { FileText, File, FileType, Trash2, Download, Loader2, CheckCircle2, AlertCircle, ChevronDown } from "lucide-react"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { cn } from "@/lib/utils"
+import { useUIStore } from "@/lib/store/useStore"
 
 interface DocumentCardProps {
   document: Document
@@ -15,6 +16,7 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
   const [showModeSelector, setShowModeSelector] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [lastUsedMode, setLastUsedMode] = useState<PreferredMode>('flashcards')
+  const { activeMode } = useUIStore()
 
   // Load last used mode from localStorage on mount
   useEffect(() => {
@@ -101,14 +103,22 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
   ]
 
   const handleQuickOpen = () => {
-    // Check if last used mode is available
-    const mode = modes.find(m => m.id === lastUsedMode)
+    // Priority 1: If user is in a specific mode (not home), use that mode
+    // This ensures selecting a document from Mind Map mode stays in Mind Map mode
+    let modeToUse: PreferredMode = lastUsedMode
+
+    if (activeMode && activeMode !== 'home' && ['flashcards', 'chat', 'podcast', 'mindmap'].includes(activeMode)) {
+      modeToUse = activeMode as PreferredMode
+    }
+
+    // Check if mode is available
+    const mode = modes.find(m => m.id === modeToUse)
     if (mode?.available) {
       // Save mode and open
-      localStorage.setItem('lastUsedMode', lastUsedMode)
-      onSelectMode(document.id, lastUsedMode)
+      localStorage.setItem('lastUsedMode', modeToUse)
+      onSelectMode(document.id, modeToUse)
     } else {
-      // Fallback to flashcards if last mode isn't available
+      // Fallback to flashcards if mode isn't available
       localStorage.setItem('lastUsedMode', 'flashcards')
       onSelectMode(document.id, 'flashcards')
     }
@@ -163,7 +173,13 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
                 : "opacity-50 cursor-not-allowed"
             )}
           >
-            Open in {modes.find(m => m.id === lastUsedMode)?.name || 'Flashcards'}
+            {(() => {
+              // Show the mode that will actually be used
+              const modeToUse = (activeMode && activeMode !== 'home' && ['flashcards', 'chat', 'podcast', 'mindmap'].includes(activeMode))
+                ? activeMode
+                : lastUsedMode
+              return `Open in ${modes.find(m => m.id === modeToUse)?.name || 'Flashcards'}`
+            })()}
           </button>
           <button
             onClick={() => setShowModeSelector(true)}
