@@ -95,27 +95,41 @@ function layoutHierarchical(
     });
   });
 
-  // Create edges
+  // Create edges with enhanced visibility
   mindMapEdges.forEach((edge) => {
+    const sourceNode = mindMapNodes.find(n => n.id === edge.from);
+    const targetNode = mindMapNodes.find(n => n.id === edge.to);
+    const isCrossLink = sourceNode && targetNode && Math.abs(sourceNode.level - targetNode.level) > 1;
+
     reactFlowEdges.push({
       id: edge.id,
       source: edge.from,
       target: edge.to,
       type: 'smoothstep',
       label: edge.relationship,
-      animated: true,
+      animated: !isCrossLink,
       style: {
-        stroke: '#6366f1',
-        strokeWidth: 2,
+        stroke: isCrossLink ? '#9A7B64' : '#64748B', // Warm copper for cross-links, slate for hierarchy
+        strokeWidth: isCrossLink ? 3 : 4,
+        strokeDasharray: isCrossLink ? '8,4' : undefined,
+      },
+      markerEnd: {
+        type: 'arrowclosed' as any,
+        color: isCrossLink ? '#9A7B64' : '#64748B',
+        width: 22,
+        height: 22,
       },
       labelStyle: {
         fill: '#1f2937',
-        fontWeight: 600,
-        fontSize: 12,
+        fontWeight: 700,
+        fontSize: 14,
+        padding: '4px 8px',
       },
       labelBgStyle: {
         fill: '#ffffff',
-        fillOpacity: 0.9,
+        fillOpacity: 0.95,
+        rx: 6,
+        ry: 6,
       },
     });
   });
@@ -208,52 +222,52 @@ function layoutFlowchart(
       case 'start':
         nodeStyle = {
           ...nodeStyle,
-          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          background: 'linear-gradient(135deg, #6B7280 0%, #4B5563 100%)', // Muted gray
           color: 'white',
-          border: '3px solid #047857',
+          border: '3px solid #374151',
           borderRadius: '30px',
           padding: '18px 24px',
           minWidth: '220px',
           fontSize: '15px',
           fontWeight: '700',
-          boxShadow: '0 6px 16px rgba(16, 185, 129, 0.3)',
+          boxShadow: '0 6px 16px rgba(107, 114, 128, 0.3)',
         };
         break;
       case 'end':
         nodeStyle = {
           ...nodeStyle,
-          background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+          background: 'linear-gradient(135deg, #A16E5E 0%, #8B5E51 100%)', // Muted terracotta
           color: 'white',
-          border: '3px solid #b91c1c',
+          border: '3px solid #7C4D40',
           borderRadius: '30px',
           padding: '18px 24px',
           minWidth: '220px',
           fontSize: '15px',
           fontWeight: '700',
-          boxShadow: '0 6px 16px rgba(239, 68, 68, 0.3)',
+          boxShadow: '0 6px 16px rgba(161, 110, 94, 0.3)',
         };
         break;
       case 'decision':
         nodeStyle = {
           ...nodeStyle,
-          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          background: 'linear-gradient(135deg, #9A7B64 0%, #856B56 100%)', // Warm copper
           color: 'white',
-          border: '3px solid #b45309',
+          border: '3px solid #6D5A49',
           borderRadius: '8px',
           padding: '16px 20px',
           transform: 'rotate(-2deg)',
-          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+          boxShadow: '0 4px 12px rgba(154, 123, 100, 0.3)',
         };
         break;
       default:
         nodeStyle = {
           ...nodeStyle,
-          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+          background: 'linear-gradient(135deg, #64748B 0%, #475569 100%)', // Slate blue
           color: 'white',
-          border: '2.5px solid #1d4ed8',
+          border: '2.5px solid #334155',
           borderRadius: '10px',
           padding: '14px 20px',
-          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
+          boxShadow: '0 4px 12px rgba(100, 116, 139, 0.25)',
         };
     }
 
@@ -278,7 +292,7 @@ function layoutFlowchart(
     });
   });
 
-  // Create edges with enhanced styling
+  // Create edges with enhanced styling and muted colors
   mindMapEdges.forEach((edge, index) => {
     const sourceNode = nodeMap.get(edge.from);
     const targetNode = nodeMap.get(edge.to);
@@ -292,29 +306,27 @@ function layoutFlowchart(
       label: edge.relationship,
       animated: !isCrossLink,
       style: {
-        stroke: isCrossLink ? '#f59e0b' : '#60a5fa',
-        strokeWidth: isCrossLink ? 2.5 : 3,
-        strokeDasharray: isCrossLink ? '5,5' : undefined,
+        stroke: isCrossLink ? '#9A7B64' : '#64748B', // Warm copper for cross-links, slate for hierarchy
+        strokeWidth: isCrossLink ? 3 : 4,
+        strokeDasharray: isCrossLink ? '8,4' : undefined,
       },
       markerEnd: {
         type: 'arrowclosed' as any,
-        color: isCrossLink ? '#f59e0b' : '#60a5fa',
-        width: 20,
-        height: 20,
+        color: isCrossLink ? '#9A7B64' : '#64748B',
+        width: 22,
+        height: 22,
       },
       labelStyle: {
         fill: '#1f2937',
-        fontWeight: 600,
-        fontSize: 11,
-        backgroundColor: '#ffffff',
-        padding: '2px 6px',
-        borderRadius: '4px',
+        fontWeight: 700,
+        fontSize: 14,
+        padding: '4px 8px',
       },
       labelBgStyle: {
         fill: '#ffffff',
         fillOpacity: 0.95,
-        rx: 4,
-        ry: 4,
+        rx: 6,
+        ry: 6,
       },
     });
   });
@@ -547,24 +559,27 @@ function layoutTimeline(
         label: edge.relationship,
         animated: false,
         style: {
-          stroke: '#f472b6',
-          strokeWidth: 2,
+          stroke: '#9A7B64', // Warm copper for timeline relationships
+          strokeWidth: 3,
           strokeDasharray: '8,4',
         },
         markerEnd: {
           type: 'arrowclosed' as any,
-          color: '#f472b6',
+          color: '#9A7B64',
+          width: 22,
+          height: 22,
         },
         labelStyle: {
-          fill: '#831843',
+          fill: '#1f2937',
           fontWeight: 700,
-          fontSize: 11,
+          fontSize: 14,
+          padding: '4px 8px',
         },
         labelBgStyle: {
-          fill: '#fce7f3',
+          fill: '#ffffff',
           fillOpacity: 0.95,
-          rx: 4,
-          ry: 4,
+          rx: 6,
+          ry: 6,
         },
       });
     }
@@ -574,27 +589,27 @@ function layoutTimeline(
 }
 
 /**
- * Helper: Get color for node category
+ * Helper: Get color for node category (muted professional palette)
  */
 function getColorForCategory(category: string, template: VisualizationTemplate): string {
   const colorMap: Record<string, string> = {
-    concept: '#6366f1',
-    process: '#10b981',
-    example: '#f59e0b',
-    definition: '#ec4899',
-    principle: '#a855f7',
-    data: '#ef4444',
-    technique: '#14b8a6',
-    outcome: '#f97316',
+    concept: '#64748B',    // Slate
+    process: '#6B7280',    // Gray
+    example: '#78716C',    // Stone
+    definition: '#8B7FB8', // Lavender
+    principle: '#9F7AEA',  // Soft Purple
+    data: '#A16E5E',       // Terracotta
+    technique: '#5B8A9F',  // Ocean Blue
+    outcome: '#9A7B64',    // Warm Copper
   };
 
   return colorMap[category] || template.style.nodeColors[0];
 }
 
 /**
- * Helper: Get border color based on level
+ * Helper: Get border color based on level (muted palette)
  */
 function getColorForLevel(level: number): string {
-  const colors = ['#4f46e5', '#7c3aed', '#db2777', '#ea580c', '#059669'];
+  const colors = ['#64748B', '#8B7FB8', '#9F7AEA', '#9A7B64', '#5B8A9F'];
   return colors[Math.min(level, colors.length - 1)];
 }

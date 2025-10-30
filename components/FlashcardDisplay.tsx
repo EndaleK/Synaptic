@@ -60,11 +60,12 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   }, [flipped, currentCard.id, studiedCards])
 
   // Check if flashcard has a valid database ID
-  const hasValidDatabaseId = useCallback((id: string) => {
-    // UUIDs from database are 36 characters with dashes
-    // Generated IDs (from crypto.randomUUID) are also UUIDs
-    // But we need to ensure it exists in the database
-    return id && id.length > 20 // Basic check for UUID format
+  const hasValidDatabaseId = useCallback((id: string | number) => {
+    if (!id) return false
+    // Accept both numeric IDs (BIGINT from database) and UUIDs
+    const idStr = String(id)
+    // Valid if it's a number (BIGINT) or a UUID (36 chars with dashes)
+    return !isNaN(Number(idStr)) || idStr.length >= 36
   }, [])
 
   // Handle mastery button clicks

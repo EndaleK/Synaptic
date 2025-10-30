@@ -45,16 +45,16 @@ interface NodeDetail {
   }>
 }
 
-// Category color mapping with enhanced palette for better readability
+// Category color mapping with muted, professional palette for better readability
 const categoryColors: Record<string, { bg: string; border: string; text: string }> = {
-  concept: { bg: '#EBF5FF', border: '#3B82F6', text: '#1E40AF' },       // Blue - Abstract ideas
-  process: { bg: '#F0FDF4', border: '#10B981', text: '#065F46' },       // Green - Procedures
-  example: { bg: '#FEF3C7', border: '#F59E0B', text: '#92400E' },       // Amber - Illustrations
-  definition: { bg: '#FCE7F3', border: '#EC4899', text: '#9F1239' },    // Pink - Terminology
-  principle: { bg: '#F3E8FF', border: '#A855F7', text: '#6B21A8' },     // Purple - Rules/Laws
-  data: { bg: '#FEF2F2', border: '#EF4444', text: '#991B1B' },          // Red - Statistics/Facts
-  technique: { bg: '#ECFDF5', border: '#14B8A6', text: '#134E4A' },     // Teal - Skills/Tools
-  outcome: { bg: '#FFF7ED', border: '#F97316', text: '#9A3412' },       // Orange - Results/Benefits
+  concept: { bg: '#F1F5F9', border: '#64748B', text: '#334155' },       // Slate - Abstract ideas
+  process: { bg: '#F3F4F6', border: '#6B7280', text: '#374151' },       // Gray - Procedures
+  example: { bg: '#FAF5F0', border: '#78716C', text: '#44403C' },       // Stone - Illustrations
+  definition: { bg: '#F5F3FF', border: '#8B7FB8', text: '#5B21B6' },    // Lavender - Terminology
+  principle: { bg: '#FAF5FF', border: '#9F7AEA', text: '#6B21A8' },     // Soft Purple - Rules/Laws
+  data: { bg: '#FEF6F5', border: '#A16E5E', text: '#7C2D12' },          // Terracotta - Statistics/Facts
+  technique: { bg: '#F0F7FA', border: '#5B8A9F', text: '#164E63' },     // Ocean Blue - Skills/Tools
+  outcome: { bg: '#FAF8F5', border: '#9A7B64', text: '#78350F' },       // Warm Copper - Results/Benefits
 }
 
 export default function MindMapViewer({
@@ -437,11 +437,11 @@ export default function MindMapViewer({
           {/* Edge Types */}
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
-              <div className="w-6 h-0.5 bg-blue-500"></div>
+              <div className="w-6 h-1 rounded" style={{ backgroundColor: '#64748B' }}></div>
               <span className="text-gray-700 dark:text-gray-300 hidden sm:inline">Hierarchy</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-6 h-0.5 bg-orange-500 border-t border-dashed border-orange-500"></div>
+              <div className="w-6 h-0.5 border-t-2 border-dashed rounded" style={{ borderColor: '#9A7B64' }}></div>
               <span className="text-gray-700 dark:text-gray-300 hidden sm:inline">Cross-link</span>
             </div>
           </div>

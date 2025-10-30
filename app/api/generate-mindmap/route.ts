@@ -10,7 +10,7 @@ import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { canGenerateMindMap, trackMindMapGeneration } from "@/lib/usage-tracker"
 import { analyzeDocumentComplexity } from "@/lib/document-complexity-analyzer"
 
-export const maxDuration = 60 // 1 minute max execution time
+export const maxDuration = 300 // 5 minutes max execution time for complex documents (Vercel Pro plan)
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now()
@@ -190,6 +190,26 @@ export async function POST(req: NextRequest) {
     }
 
     const selectedProvider = providerFactory.getProviderWithFallback(selectedProviderType, 'openai')
+
+    // Check if provider is configured - return helpful error if not
+    if (!selectedProvider.isConfigured()) {
+      logger.error('AI provider not configured', null, {
+        userId,
+        documentId,
+        attemptedProvider: selectedProvider.name,
+        requestedProvider: selectedProviderType
+      })
+      const duration = Date.now() - startTime
+      logger.api('POST', '/api/generate-mindmap', 500, duration, { userId, error: 'AI provider not configured' })
+      return NextResponse.json(
+        {
+          error: `Mind map generation is not configured. Please add at least one AI provider API key to your environment variables.`,
+          details: `Attempted to use ${selectedProvider.name}, but API key is missing. Add one of: DEEPSEEK_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY`,
+          configurationHelp: 'See .env.example for setup instructions'
+        },
+        { status: 500 }
+      )
+    }
 
     // Safety cap: DeepSeek works best with fewer nodes (prevents JSON truncation)
     // Cap at 25 nodes for DeepSeek to ensure complete JSON responses
@@ -379,12 +399,22 @@ export async function POST(req: NextRequest) {
     } catch {}
 
     logger.error('Mind map generation error', error, { userId: errorUserId, documentId: req.url, duration: `${duration}ms` })
-    logger.api('POST', '/api/generate-mindmap', 500, duration, { userId: errorUserId, error: 'Unknown error' })
+    logger.api('POST', '/api/generate-mindmap', 500, duration, { userId: errorUserId, error: error?.message || 'Unknown error' })
+
+    // Ensure we always return valid JSON
+    const errorMessage = error?.message || "Failed to generate mind map"
+    const isConfigError = errorMessage.toLowerCase().includes('provider not configured') ||
+                          errorMessage.toLowerCase().includes('api key')
 
     return NextResponse.json(
       {
-        error: error.message || "Failed to generate mind map",
-        details: error.stack
+        error: isConfigError
+          ? 'Mind map generation is not configured. Please check your environment variables.'
+          : errorMessage,
+        details: isConfigError
+          ? 'Add at least one AI provider API key: DEEPSEEK_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY'
+          : error?.stack,
+        configurationHelp: isConfigError ? 'See .env.example for setup instructions' : undefined
       },
       { status: 500 }
     )
