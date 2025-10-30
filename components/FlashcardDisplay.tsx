@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, RotateCcw, Download, Home, ChevronDown, Refr
 import { cn } from "@/lib/utils"
 import { Flashcard, MasteryLevel } from "@/lib/types"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
+import { useToast } from "./ToastContainer"
 
 interface FlashcardDisplayProps {
   flashcards: Flashcard[]
@@ -14,6 +15,7 @@ interface FlashcardDisplayProps {
 }
 
 export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, isRegenerating = false }: FlashcardDisplayProps) {
+  const toast = useToast()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [studiedCards, setStudiedCards] = useState<Set<string>>(new Set())
@@ -74,7 +76,9 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update mastery')
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Mastery API error:', errorData)
+        throw new Error(errorData.error || 'Failed to update mastery')
       }
 
       const data = await response.json()
@@ -125,11 +129,17 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
 
     } catch (error) {
       console.error('Error updating mastery:', error)
-      // Show error to user (could add toast notification here)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update mastery'
+      toast.error(errorMessage)
+
+      // If the flashcard doesn't have a database ID, show helpful message
+      if (errorMessage.includes('not found') || errorMessage.includes('Unauthorized')) {
+        toast.info('Flashcards must be saved to track progress. Try regenerating.')
+      }
     } finally {
       setIsUpdatingMastery(false)
     }
-  }, [currentCard.id, currentIndex, masteredCards, needsReviewCards, isUpdatingMastery])
+  }, [currentCard.id, currentIndex, masteredCards, needsReviewCards, isUpdatingMastery, toast])
 
   const downloadFile = (content: string, filename: string, mimeType: string) => {
     const dataUri = `data:${mimeType};charset=utf-8,${encodeURIComponent(content)}`
