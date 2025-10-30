@@ -25,11 +25,11 @@ export default function DashboardLayout({
   const [studyToolsExpanded, setStudyToolsExpanded] = useState(true)
   const { activeMode, setActiveMode } = useUIStore()
 
-  // Initialize theme from localStorage
+  // Initialize theme from localStorage (defaults to light mode)
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const shouldBeDark = savedTheme === 'dark' || (!savedTheme && prefersDark)
+    // Only use dark mode if explicitly set by user (ignore system preference)
+    const shouldBeDark = savedTheme === 'dark'
     setIsDarkMode(shouldBeDark)
     if (shouldBeDark) {
       document.documentElement.classList.add('dark')

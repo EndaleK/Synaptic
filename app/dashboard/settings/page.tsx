@@ -34,10 +34,10 @@ export default function SettingsPage() {
 
   // Initialize all settings from localStorage
   useEffect(() => {
-    // Theme
+    // Theme (defaults to light mode)
     const savedTheme = localStorage.getItem('theme')
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    setIsDarkMode(savedTheme === 'dark' || (!savedTheme && prefersDark))
+    // Only use dark mode if explicitly set by user
+    setIsDarkMode(savedTheme === 'dark')
 
     // Font Size
     const savedFontSize = localStorage.getItem('fontSize') as FontSize
