@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { ChevronLeft, ChevronRight, RotateCcw, Download, Home, ChevronDown, RefreshCw, BookOpen, Sparkles, Zap, TrendingUp } from "lucide-react"
+import { ChevronLeft, ChevronRight, RotateCcw, Download, Home, ChevronDown, RefreshCw, BookOpen, Sparkles, Zap, TrendingUp, Check, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Flashcard } from "@/lib/types"
+import { Flashcard, MasteryLevel } from "@/lib/types"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
 
 interface FlashcardDisplayProps {
@@ -20,8 +20,22 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   const [showExportMenu, setShowExportMenu] = useState(false)
   const exportMenuRef = useRef<HTMLDivElement>(null)
 
-  const currentCard = flashcards[currentIndex]
+  // Mastery tracking state
+  const [masteredCards, setMasteredCards] = useState<Set<string>>(new Set())
+  const [needsReviewCards, setNeedsReviewCards] = useState<Set<string>>(new Set())
+  const [cardMasteryLevels, setCardMasteryLevels] = useState<Map<string, MasteryLevel>>(new Map())
+  const [isUpdatingMastery, setIsUpdatingMastery] = useState(false)
+
+  // Deck ordering state - maintains order of cards with mastered cards at the end
+  const [cardOrder, setCardOrder] = useState<number[]>(() =>
+    Array.from({ length: flashcards.length }, (_, i) => i)
+  )
+
+  // Get the current card based on reordered deck
+  const currentCard = flashcards[cardOrder[currentIndex]]
   const progress = ((studiedCards.size / flashcards.length) * 100).toFixed(0)
+  const masteredCount = masteredCards.size
+  const needsReviewCount = needsReviewCards.size
 
   const handleNext = useCallback(() => {
     if (!studiedCards.has(currentCard.id)) {
@@ -43,6 +57,80 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
     }
   }, [flipped, currentCard.id, studiedCards])
 
+  // Handle mastery button clicks
+  const handleMastery = useCallback(async (action: 'mastered' | 'needs-review') => {
+    if (isUpdatingMastery || !currentCard.id) return
+
+    setIsUpdatingMastery(true)
+
+    try {
+      const response = await fetch('/api/flashcards/mastery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          flashcardId: currentCard.id,
+          action
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update mastery')
+      }
+
+      const data = await response.json()
+
+      // Update local state
+      if (action === 'mastered') {
+        setMasteredCards(new Set([...masteredCards, currentCard.id]))
+        setNeedsReviewCards(prev => {
+          const updated = new Set(prev)
+          updated.delete(currentCard.id)
+          return updated
+        })
+
+        // Reorder deck: move mastered card to the end
+        setCardOrder(prevOrder => {
+          const newOrder = [...prevOrder]
+          const currentCardIndex = newOrder[currentIndex]
+          // Remove current card from its position
+          newOrder.splice(currentIndex, 1)
+          // Add it to the end
+          newOrder.push(currentCardIndex)
+          return newOrder
+        })
+      } else {
+        setNeedsReviewCards(new Set([...needsReviewCards, currentCard.id]))
+
+        // For review cards, move them forward a few positions (reshuffle)
+        setCardOrder(prevOrder => {
+          const newOrder = [...prevOrder]
+          const currentCardIndex = newOrder[currentIndex]
+          // Remove current card from its position
+          newOrder.splice(currentIndex, 1)
+          // Insert it 3-5 cards ahead (or at the end if fewer cards remain)
+          const insertPosition = Math.min(currentIndex + 3, newOrder.length)
+          newOrder.splice(insertPosition, 0, currentCardIndex)
+          return newOrder
+        })
+      }
+
+      setCardMasteryLevels(prev => new Map(prev).set(currentCard.id, data.mastery.level))
+
+      // Move to next card automatically (stay at same index since we removed current card)
+      setTimeout(() => {
+        setFlipped(false)
+        // Don't increment index for mastered cards since we removed the current one
+        // For review cards, index naturally points to next card
+      }, 300)
+
+    } catch (error) {
+      console.error('Error updating mastery:', error)
+      // Show error to user (could add toast notification here)
+    } finally {
+      setIsUpdatingMastery(false)
+    }
+  }, [currentCard.id, currentIndex, masteredCards, needsReviewCards, isUpdatingMastery])
+
   const downloadFile = (content: string, filename: string, mimeType: string) => {
     const dataUri = `data:${mimeType};charset=utf-8,${encodeURIComponent(content)}`
     const linkElement = document.createElement('a')
@@ -60,7 +148,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
 
   const handleExportHTML = () => {
     const dateStr = new Date().toISOString().split('T')[0]
-    
+
     // Helper function to escape HTML special characters
     const escapeHtml = (text: string) => {
       return text
@@ -70,7 +158,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;')
     }
-    
+
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -111,13 +199,79 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
         }
         .metadata {
             color: #718096;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             font-size: 0.9em;
+        }
+        /* Progress Bar */
+        .progress-container {
+            margin: 20px 0;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-segment {
+            position: absolute;
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+        .progress-mastered {
+            background: #10b981;
+        }
+        .progress-reviewed {
+            background: #fbbf24;
+        }
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.85em;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #4a5568;
+        }
+        .stat-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .stat-dot.mastered { background: #10b981; }
+        .stat-dot.review { background: #ef4444; }
+        /* Mastery Badge */
+        .mastery-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .badge-mastered {
+            background: #10b981;
+            color: white;
+        }
+        .badge-review {
+            background: #ef4444;
+            color: white;
         }
         .flashcard-container {
             perspective: 1000px;
-            margin: 30px 0;
+            margin: 20px 0;
             touch-action: manipulation;
+            position: relative;
         }
         .flashcard {
             width: 100%;
@@ -168,6 +322,48 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
             overflow-wrap: break-word;
             max-width: 100%;
             width: 100%;
+        }
+        /* Mastery Buttons */
+        .mastery-buttons {
+            display: none;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .mastery-buttons.show {
+            display: flex;
+        }
+        .mastery-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            touch-action: manipulation;
+            min-height: 44px;
+        }
+        .mastery-btn:active {
+            transform: scale(0.95);
+        }
+        .btn-review {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-review:hover {
+            background: #dc2626;
+        }
+        .btn-mastered {
+            background: #10b981;
+            color: white;
+        }
+        .btn-mastered:hover {
+            background: #059669;
         }
         .navigation {
             display: flex;
@@ -227,6 +423,19 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
             font-size: 0.85em;
             color: #4a5568;
         }
+        .reset-btn {
+            margin-top: 15px;
+            padding: 8px 16px;
+            background: #6b7280;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        .reset-btn:hover {
+            background: #4b5563;
+        }
         @media (max-width: 600px) {
             body {
                 padding: 10px;
@@ -250,6 +459,10 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
                 font-size: 1em;
                 line-height: 1.5;
             }
+            .mastery-btn {
+                padding: 10px 16px;
+                font-size: 0.9em;
+            }
             .nav-button {
                 padding: 10px 16px;
                 font-size: 0.9em;
@@ -271,6 +484,13 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
             .flashcard {
                 height: 300px;
             }
+            .mastery-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .mastery-btn {
+                width: 100%;
+            }
             .nav-button {
                 padding: 8px 12px;
                 font-size: 0.85em;
@@ -284,8 +504,36 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
         <div class="metadata">
             Generated on ${new Date().toLocaleDateString()} • ${flashcards.length} cards
         </div>
-        
+
+        <!-- Progress Bar -->
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-segment progress-mastered" id="progress-mastered"></div>
+                <div class="progress-segment progress-reviewed" id="progress-reviewed"></div>
+            </div>
+            <div class="progress-stats">
+                <div>
+                    <span class="stat-item">
+                        <span class="stat-dot mastered"></span>
+                        <span id="mastered-count">0</span> mastered
+                    </span>
+                </div>
+                <div>
+                    <span class="stat-item">
+                        <span class="stat-dot review"></span>
+                        <span id="review-count">0</span> review
+                    </span>
+                </div>
+                <div>
+                    <span id="studied-count">0</span>/${flashcards.length}
+                </span>
+            </div>
+        </div>
+
         <div class="flashcard-container">
+            <!-- Mastery Badge -->
+            <div id="mastery-badge" class="mastery-badge" style="display: none;"></div>
+
             <div class="flashcard" id="flashcard" onclick="flipCard()">
                 <div class="card-face card-front">
                     <div class="card-content" id="front-content">
@@ -299,9 +547,19 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
                 </div>
             </div>
         </div>
-        
+
+        <!-- Mastery Buttons -->
+        <div class="mastery-buttons" id="mastery-buttons">
+            <button class="mastery-btn btn-review" onclick="handleMastery('review')">
+                ✗ Review Again
+            </button>
+            <button class="mastery-btn btn-mastered" onclick="handleMastery('mastered')">
+                ✓ Got it!
+            </button>
+        </div>
+
         <div class="flip-hint">Tap the card to flip it!</div>
-        
+
         <div class="navigation">
             <button class="nav-button" id="prev-btn" onclick="previousCard()">← Previous</button>
             <div class="card-counter">
@@ -309,48 +567,140 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
             </div>
             <button class="nav-button" id="next-btn" onclick="nextCard()">Next →</button>
         </div>
-        
+
         <div class="keyboard-hints">
             <strong>Keyboard shortcuts:</strong> Space/Enter = Flip • ← → = Navigate • R = Reset
         </div>
+
+        <button class="reset-btn" onclick="resetProgress()">Reset Progress</button>
     </div>
 
     <script>
-        const flashcards = ${JSON.stringify(flashcards.map(card => ({ front: escapeHtml(card.front), back: escapeHtml(card.back) })))};
+        const flashcards = ${JSON.stringify(flashcards.map((card, idx) => ({ id: idx, front: escapeHtml(card.front), back: escapeHtml(card.back) })))};
         let currentIndex = 0;
         let isFlipped = false;
 
+        // Mastery tracking with localStorage
+        const STORAGE_KEY = 'flashcards_mastery_${dateStr}';
+        let masteredCards = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY + '_mastered') || '[]'));
+        let reviewCards = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY + '_review') || '[]'));
+        let cardOrder = JSON.parse(localStorage.getItem(STORAGE_KEY + '_order') || JSON.stringify(Array.from({length: flashcards.length}, (_, i) => i)));
+
+        function saveMasteryState() {
+            localStorage.setItem(STORAGE_KEY + '_mastered', JSON.stringify(Array.from(masteredCards)));
+            localStorage.setItem(STORAGE_KEY + '_review', JSON.stringify(Array.from(reviewCards)));
+            localStorage.setItem(STORAGE_KEY + '_order', JSON.stringify(cardOrder));
+        }
+
+        function updateProgress() {
+            const masteredCount = masteredCards.size;
+            const reviewCount = reviewCards.size;
+            const studied = new Set([...masteredCards, ...reviewCards]).size;
+
+            document.getElementById('mastered-count').textContent = masteredCount;
+            document.getElementById('review-count').textContent = reviewCount;
+            document.getElementById('studied-count').textContent = studied;
+
+            const masteredPercent = (masteredCount / flashcards.length) * 100;
+            const reviewedPercent = ((studied - masteredCount) / flashcards.length) * 100;
+
+            document.getElementById('progress-mastered').style.width = masteredPercent + '%';
+            document.getElementById('progress-reviewed').style.left = masteredPercent + '%';
+            document.getElementById('progress-reviewed').style.width = reviewedPercent + '%';
+        }
+
+        function updateMasteryBadge() {
+            const badge = document.getElementById('mastery-badge');
+            const cardId = cardOrder[currentIndex];
+
+            if (masteredCards.has(cardId)) {
+                badge.className = 'mastery-badge badge-mastered';
+                badge.textContent = '✓ Mastered';
+                badge.style.display = 'flex';
+            } else if (reviewCards.has(cardId)) {
+                badge.className = 'mastery-badge badge-review';
+                badge.textContent = '✗ Review';
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
         function updateCard() {
+            const cardId = cardOrder[currentIndex];
+            const card = flashcards[cardId];
             const frontContent = document.getElementById('front-content');
             const backContent = document.getElementById('back-content');
             const currentCardSpan = document.getElementById('current-card');
             const prevBtn = document.getElementById('prev-btn');
             const nextBtn = document.getElementById('next-btn');
-            
-            if (flashcards[currentIndex]) {
-                frontContent.innerHTML = flashcards[currentIndex].front;
-                backContent.innerHTML = flashcards[currentIndex].back;
+            const masteryButtons = document.getElementById('mastery-buttons');
+
+            if (card) {
+                frontContent.innerHTML = card.front;
+                backContent.innerHTML = card.back;
             }
-            
+
             currentCardSpan.textContent = currentIndex + 1;
-            
+
             prevBtn.disabled = currentIndex === 0;
-            nextBtn.disabled = currentIndex === flashcards.length - 1;
-            
+            nextBtn.disabled = currentIndex === cardOrder.length - 1;
+
             // Reset flip state when changing cards
             const flashcard = document.getElementById('flashcard');
             flashcard.classList.remove('flipped');
             isFlipped = false;
+            masteryButtons.classList.remove('show');
+
+            updateMasteryBadge();
+            updateProgress();
         }
 
         function flipCard() {
             const flashcard = document.getElementById('flashcard');
+            const masteryButtons = document.getElementById('mastery-buttons');
+
             flashcard.classList.toggle('flipped');
             isFlipped = !isFlipped;
+
+            if (isFlipped) {
+                masteryButtons.classList.add('show');
+            } else {
+                masteryButtons.classList.remove('show');
+            }
+        }
+
+        function handleMastery(action) {
+            const cardId = cardOrder[currentIndex];
+
+            if (action === 'mastered') {
+                masteredCards.add(cardId);
+                reviewCards.delete(cardId);
+
+                // Move to end of deck
+                cardOrder.splice(currentIndex, 1);
+                cardOrder.push(cardId);
+            } else {
+                reviewCards.add(cardId);
+
+                // Move 3 positions forward
+                cardOrder.splice(currentIndex, 1);
+                const insertPos = Math.min(currentIndex + 3, cardOrder.length);
+                cardOrder.splice(insertPos, 0, cardId);
+            }
+
+            saveMasteryState();
+
+            // Auto-advance after brief delay
+            setTimeout(() => {
+                if (currentIndex < cardOrder.length) {
+                    updateCard();
+                }
+            }, 300);
         }
 
         function nextCard() {
-            if (currentIndex < flashcards.length - 1) {
+            if (currentIndex < cardOrder.length - 1) {
                 currentIndex++;
                 updateCard();
             }
@@ -359,6 +709,17 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
         function previousCard() {
             if (currentIndex > 0) {
                 currentIndex--;
+                updateCard();
+            }
+        }
+
+        function resetProgress() {
+            if (confirm('Reset all progress? This will clear your mastery tracking.')) {
+                masteredCards.clear();
+                reviewCards.clear();
+                cardOrder = Array.from({length: flashcards.length}, (_, i) => i);
+                currentIndex = 0;
+                saveMasteryState();
                 updateCard();
             }
         }
@@ -392,7 +753,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
     </script>
 </body>
 </html>`
-    
+
     const filename = `interactive-flashcards-${dateStr}.html`
     downloadFile(html, filename, 'text/html')
     setShowExportMenu(false)
@@ -564,20 +925,55 @@ ${'='.repeat(50)}`).join('\n')}`
 
         <div className="p-2 md:p-4">
           <div className="mb-2 md:mb-3">
-            <div className="w-full bg-accent-primary/10 dark:bg-accent-primary/20 rounded-full h-1.5 md:h-2">
-              <div
-                className="bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full transition-all duration-300 h-1.5 md:h-2"
-                style={{ width: `${progress}%` }}
-              />
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 md:h-2">
+              <div className="relative h-full rounded-full overflow-hidden">
+                <div
+                  className="absolute left-0 bg-green-500 h-full transition-all duration-300"
+                  style={{ width: `${(masteredCount / flashcards.length) * 100}%` }}
+                />
+                <div
+                  className="absolute left-0 bg-yellow-500 h-full transition-all duration-300"
+                  style={{
+                    left: `${(masteredCount / flashcards.length) * 100}%`,
+                    width: `${((studiedCards.size - masteredCount) / flashcards.length) * 100}%`
+                  }}
+                />
+              </div>
             </div>
-            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {studiedCards.size}/{flashcards.length} cards ({progress}%)
-            </p>
+            <div className="flex items-center justify-between mt-1 text-xs md:text-sm">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <span className="text-gray-600 dark:text-gray-400">{masteredCount} mastered</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span className="text-gray-600 dark:text-gray-400">{needsReviewCount} review</span>
+                </span>
+              </div>
+              <span className="text-gray-600 dark:text-gray-400">
+                {studiedCards.size}/{flashcards.length}
+              </span>
+            </div>
           </div>
 
           <div
             className="relative cursor-pointer h-80 md:h-80 lg:h-96 mb-3 md:mb-6"
           >
+            {/* Mastery Badge */}
+            {masteredCards.has(currentCard.id) && (
+              <div className="absolute top-2 right-2 z-10 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 shadow-lg">
+                <Check className="h-3 w-3" />
+                <span>Mastered</span>
+              </div>
+            )}
+            {needsReviewCards.has(currentCard.id) && !masteredCards.has(currentCard.id) && (
+              <div className="absolute top-2 right-2 z-10 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 shadow-lg">
+                <X className="h-3 w-3" />
+                <span>Review</span>
+              </div>
+            )}
+
             <div
               className={cn(
                 "absolute inset-0 w-full h-full transition-transform duration-500 cursor-pointer",
@@ -616,6 +1012,29 @@ ${'='.repeat(50)}`).join('\n')}`
               </div>
             </div>
           </div>
+
+          {/* Mastery Buttons - Only show when flipped */}
+          {flipped && (
+            <div className="flex justify-center items-center gap-3 md:gap-4 mt-4 mb-2">
+              <button
+                onClick={() => handleMastery('needs-review')}
+                disabled={isUpdatingMastery}
+                className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+              >
+                <X className="h-4 w-4 md:h-5 md:w-5" />
+                <span>Review Again</span>
+              </button>
+
+              <button
+                onClick={() => handleMastery('mastered')}
+                disabled={isUpdatingMastery}
+                className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+              >
+                <Check className="h-4 w-4 md:h-5 md:w-5" />
+                <span>Got it!</span>
+              </button>
+            </div>
+          )}
 
           <div className="flex justify-center items-center gap-2 md:gap-3">
             <button

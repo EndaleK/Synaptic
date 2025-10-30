@@ -11,6 +11,7 @@ import { logger } from "@/lib/logger"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { FileUploadSchema, validateDocumentLength, validateContentSafety } from "@/lib/validation"
 import { canGenerateFlashcards, trackFlashcardGeneration } from "@/lib/usage-tracker"
+import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
@@ -241,17 +242,85 @@ export async function POST(request: NextRequest) {
     // Track flashcard generation for usage limits
     trackFlashcardGeneration(userId, 'free') // TODO: Get actual tier from user profile
 
+    // Save flashcards to database for persistence and mastery tracking
+    let savedFlashcards = flashcards
+    try {
+      const supabase = await createClient()
+
+      // Get user profile ID
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('clerk_user_id', userId)
+        .single()
+
+      if (profile) {
+        const userProfileId = profile.id
+
+        // Save each flashcard to database
+        const flashcardsToInsert = flashcards.map(card => ({
+          user_id: userProfileId,
+          document_id: null, // No document association for direct text/file generation
+          front: card.front,
+          back: card.back,
+          mastery_level: 'learning' as const,
+          confidence_score: 0,
+          times_reviewed: 0,
+          times_correct: 0
+        }))
+
+        const { data: insertedCards, error: insertError } = await supabase
+          .from('flashcards')
+          .insert(flashcardsToInsert)
+          .select()
+
+        if (!insertError && insertedCards) {
+          // Update flashcards with database IDs and timestamps
+          savedFlashcards = insertedCards.map((dbCard, index) => ({
+            id: dbCard.id,
+            front: dbCard.front,
+            back: dbCard.back,
+            createdAt: new Date(dbCard.created_at),
+            masteryLevel: dbCard.mastery_level as 'learning' | 'reviewing' | 'mastered',
+            confidenceScore: dbCard.confidence_score,
+            timesReviewed: dbCard.times_reviewed,
+            timesCorrect: dbCard.times_correct,
+            lastReviewedAt: dbCard.last_reviewed_at ? new Date(dbCard.last_reviewed_at) : undefined,
+            nextReviewAt: dbCard.next_review_at ? new Date(dbCard.next_review_at) : undefined
+          }))
+
+          logger.info('Flashcards saved to database', {
+            userId,
+            flashcardCount: savedFlashcards.length
+          })
+        } else {
+          logger.warn('Failed to save flashcards to database', {
+            userId,
+            error: insertError?.message,
+            fallbackToMemory: true
+          })
+          // Continue with non-persisted flashcards
+        }
+      }
+    } catch (dbError) {
+      logger.warn('Database save attempt failed, continuing with session-only flashcards', {
+        userId,
+        error: dbError
+      })
+      // Continue with non-persisted flashcards
+    }
+
     const duration = Date.now() - startTime
 
     logger.api('POST', '/api/generate-flashcards', 200, duration, {
       userId,
-      flashcardCount: flashcards.length,
+      flashcardCount: savedFlashcards.length,
       textLength: textContent.length,
       mode
     })
 
     return NextResponse.json({
-      flashcards,
+      flashcards: savedFlashcards,
       documentJSON: documentJSON || null,
       textLength: textContent.length,
       extractedText: textContent, // Include extracted text for chat functionality

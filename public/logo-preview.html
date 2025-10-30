@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synaptic Logo Concepts</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 50px;
+        }
+
+        .logo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .logo-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .logo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        }
+
+        .logo-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .logo-description {
+            color: #718096;
+            font-size: 0.95em;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .logo-display {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 250px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .logo-variations {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .logo-variant {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            overflow: hidden;
+        }
+
+        .logo-variant:hover {
+            transform: scale(1.1);
+        }
+
+        .variant-white {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .variant-dark {
+            background: #2d3748;
+        }
+
+        .variant-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .variant-light {
+            background: #f7fafc;
+        }
+
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .feature-tag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .download-btn {
+            width: 100%;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-top: 15px;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        .usage-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-top: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .usage-section h2 {
+            color: #2d3748;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #f7fafc;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            margin: 15px 0;
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .color-swatch {
+            text-align: center;
+        }
+
+        .color-box {
+            width: 100px;
+            height: 100px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .color-label {
+            font-size: 0.85em;
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .logo-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Synaptic Logo Concepts</h1>
+        <p class="subtitle">Elegant, Modern, Memorable - Choose Your Perfect Logo</p>
+
+        <div class="logo-grid">
+            <!-- Logo Concept 1: Neural Network -->
+            <div class="logo-card">
+                <h3 class="logo-title">1. Neural Network</h3>
+                <p class="logo-description">
+                    Represents interconnected knowledge nodes with synaptic connections.
+                    Perfect for showcasing the AI-powered learning network.
+                </p>
+                <div class="logo-display">
+                    <img src="logo-concept.svg" alt="Neural Network Logo" style="width: 200px; height: 200px;">
+                </div>
+                <div class="features">
+                    <span class="feature-tag">Detailed</span>
+                    <span class="feature-tag">Scientific</span>
+                    <span class="feature-tag">Premium</span>
+                </div>
+                <div class="logo-variations">
+                    <div class="logo-variant variant-white">
+                        <img src="logo-concept.svg" style="width: 45px;">
+                    </div>
+                    <div class="logo-variant variant-dark">
+                        <img src="logo-concept.svg" style="width: 45px;">
+                    </div>
+                    <div class="logo-variant variant-gradient">
+                        <img src="logo-concept.svg" style="width: 45px;">
+                    </div>
+                </div>
+                <button class="download-btn" onclick="downloadSVG('logo-concept.svg')">
+                    Download SVG
+                </button>
+            </div>
+
+            <!-- Logo Concept 2: Minimal S -->
+            <div class="logo-card">
+                <h3 class="logo-title">2. Synaptic Flow</h3>
+                <p class="logo-description">
+                    Stylized "S" forming a brain pathway with neural connection points.
+                    Clean, minimal, and instantly recognizable.
+                </p>
+                <div class="logo-display">
+                    <img src="logo-minimal.svg" alt="Minimal Logo" style="width: 200px; height: 200px;">
+                </div>
+                <div class="features">
+                    <span class="feature-tag">Minimal</span>
+                    <span class="feature-tag">Elegant</span>
+                    <span class="feature-tag">Scalable</span>
+                </div>
+                <div class="logo-variations">
+                    <div class="logo-variant variant-white">
+                        <img src="logo-minimal.svg" style="width: 45px;">
+                    </div>
+                    <div class="logo-variant variant-dark">
+                        <img src="logo-minimal.svg" style="width: 45px;">
+                    </div>
+                    <div class="logo-variant variant-gradient">
+                        <img src="logo-minimal.svg" style="width: 45px;">
+                    </div>
+                </div>
+                <button class="download-btn" onclick="downloadSVG('logo-minimal.svg')">
+                    Download SVG
+                </button>
+            </div>
+
+            <!-- Logo Concept 3: App Icon -->
+            <div class="logo-card">
+                <h3 class="logo-title">3. Knowledge Hub</h3>
+                <p class="logo-description">
+                    App icon optimized design with orbital knowledge nodes.
+                    Designed for iOS/Android with perfect rounded square format.
+                </p>
+                <div class="logo-display">
+                    <img src="logo-app-icon.svg" alt="App Icon Logo" style="width: 200px; height: 200px; border-radius: 45px;">
+                </div>
+                <div class="features">
+                    <span class="feature-tag">App Ready</span>
+                    <span class="feature-tag">Bold</span>
+                    <span class="feature-tag">Mobile-First</span>
+                </div>
+                <div class="logo-variations">
+                    <div class="logo-variant variant-white" style="border-radius: 12px; overflow: hidden;">
+                        <img src="logo-app-icon.svg" style="width: 60px; border-radius: 12px;">
+                    </div>
+                    <div class="logo-variant variant-dark" style="border-radius: 12px;">
+                        <img src="logo-app-icon.svg" style="width: 60px; border-radius: 12px;">
+                    </div>
+                </div>
+                <button class="download-btn" onclick="downloadSVG('logo-app-icon.svg')">
+                    Download SVG (512×512)
+                </button>
+            </div>
+        </div>
+
+        <!-- Usage Guide -->
+        <div class="usage-section">
+            <h2>📐 Brand Guidelines</h2>
+
+            <h3 style="color: #4a5568; margin: 30px 0 15px;">Color Palette</h3>
+            <div class="color-palette">
+                <div class="color-swatch">
+                    <div class="color-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                    <div class="color-label">Primary Gradient</div>
+                    <div style="font-size: 0.75em; color: #718096;">#667eea → #764ba2</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                    <div class="color-label">Accent Gradient</div>
+                    <div style="font-size: 0.75em; color: #718096;">#f093fb → #f5576c</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-box" style="background: #ffffff; border: 2px solid #e2e8f0;"></div>
+                    <div class="color-label">White</div>
+                    <div style="font-size: 0.75em; color: #718096;">#ffffff</div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-box" style="background: #2d3748;"></div>
+                    <div class="color-label">Dark</div>
+                    <div style="font-size: 0.75em; color: #718096;">#2d3748</div>
+                </div>
+            </div>
+
+            <h3 style="color: #4a5568; margin: 30px 0 15px;">Usage in React/Next.js</h3>
+            <div class="code-block">
+<span style="color: #f093fb;">import</span> Image <span style="color: #f093fb;">from</span> <span style="color: #f5576c;">'next/image'</span>
+
+<span style="color: #718096;">// For header/navigation</span>
+<span style="color: #667eea;">&lt;Image</span>
+  src=<span style="color: #f5576c;">"/logo-minimal.svg"</span>
+  alt=<span style="color: #f5576c;">"Synaptic"</span>
+  width={<span style="color: #f5576c;">40</span>}
+  height={<span style="color: #f5576c;">40</span>}
+<span style="color: #667eea;">/&gt;</span>
+
+<span style="color: #718096;">// For landing page hero</span>
+<span style="color: #667eea;">&lt;Image</span>
+  src=<span style="color: #f5576c;">"/logo-concept.svg"</span>
+  alt=<span style="color: #f5576c;">"Synaptic Learning Platform"</span>
+  width={<span style="color: #f5576c;">200</span>}
+  height={<span style="color: #f5576c;">200</span>}
+<span style="color: #667eea;">/&gt;</span>
+
+<span style="color: #718096;">// For app icon (iOS/Android)</span>
+<span style="color: #718096;">// Use logo-app-icon.svg at 512×512 or higher</span>
+            </div>
+
+            <h3 style="color: #4a5568; margin: 30px 0 15px;">Recommended Use Cases</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+                <div style="background: #f7fafc; padding: 20px; border-radius: 10px;">
+                    <div style="font-weight: 700; color: #667eea; margin-bottom: 10px;">🖥️ Website Header</div>
+                    <div style="font-size: 0.9em; color: #4a5568;">Use <strong>Minimal Logo</strong> (40×40px) for clean navigation bar</div>
+                </div>
+                <div style="background: #f7fafc; padding: 20px; border-radius: 10px;">
+                    <div style="font-weight: 700; color: #667eea; margin-bottom: 10px;">📱 Mobile App</div>
+                    <div style="font-size: 0.9em; color: #4a5568;">Use <strong>App Icon</strong> (512×512px) for iOS/Android stores</div>
+                </div>
+                <div style="background: #f7fafc; padding: 20px; border-radius: 10px;">
+                    <div style="font-weight: 700; color: #667eea; margin-bottom: 10px;">🎨 Marketing</div>
+                    <div style="font-size: 0.9em; color: #4a5568;">Use <strong>Neural Network</strong> for presentations and pitch decks</div>
+                </div>
+            </div>
+
+            <h3 style="color: #4a5568; margin: 30px 0 15px;">Export Formats Needed</h3>
+            <ul style="color: #718096; line-height: 2; margin-left: 20px;">
+                <li><strong>SVG:</strong> For web (infinite scalability, small file size)</li>
+                <li><strong>PNG:</strong> 512×512, 1024×1024, 2048×2048 (for app stores)</li>
+                <li><strong>ICO:</strong> 16×16, 32×32, 48×48 (for favicon)</li>
+                <li><strong>WebP:</strong> For optimized web loading</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function downloadSVG(filename) {
+            const link = document.createElement('a');
+            link.href = filename;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
