@@ -10,6 +10,7 @@ import LearningStyleAssessment from "@/components/LearningStyleAssessment"
 import DashboardHome from "@/components/DashboardHome"
 import PodcastView from "@/components/PodcastView"
 import MindMapView from "@/components/MindMapView"
+import QuizPromptModal from "@/components/QuizPromptModal"
 import { Flashcard } from "@/lib/types"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import { useDocumentStore } from "@/lib/store/useStore"
@@ -36,6 +37,7 @@ export default function DashboardPage() {
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [regenerationCount, setRegenerationCount] = useState(0)
   const [showAssessment, setShowAssessment] = useState(false)
+  const [showQuizPrompt, setShowQuizPrompt] = useState(false)
   const [isCheckingProfile, setIsCheckingProfile] = useState(true)
   const hasCheckedProfile = useRef(false)
   const { activeMode, setActiveMode } = useUIStore()
@@ -58,6 +60,9 @@ export default function DashboardPage() {
 
       hasCheckedProfile.current = true
 
+      // Check if user has dismissed the quiz prompt
+      const quizDismissed = localStorage.getItem('quiz-prompt-dismissed')
+
       try {
         // Check if user profile exists
         const response = await fetch('/api/user/profile')
@@ -77,12 +82,12 @@ export default function DashboardPage() {
           if (data.profile.learning_style) {
             setLearningStyle(data.profile.learning_style as LearningStyle)
             setHasCompletedAssessment(true)
-          } else {
-            // No learning style - show assessment
-            setShowAssessment(true)
+          } else if (!quizDismissed) {
+            // No learning style and hasn't dismissed - show modal
+            setShowQuizPrompt(true)
           }
         } else {
-          // No profile - create one and show assessment
+          // No profile - create one
           const createResponse = await fetch('/api/user/profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -92,7 +97,9 @@ export default function DashboardPage() {
           if (createResponse.ok) {
             const createData = await createResponse.json()
             setUserProfile(createData.profile)
-            setShowAssessment(true)
+            if (!quizDismissed) {
+              setShowQuizPrompt(true)
+            }
           }
         }
       } catch (error) {
@@ -160,6 +167,16 @@ export default function DashboardPage() {
     setShowAssessment(false)
     // Mark as completed so it doesn't show again this session
     setHasCompletedAssessment(true)
+  }
+
+  const handleTakeQuiz = () => {
+    setShowQuizPrompt(false)
+    setShowAssessment(true)
+  }
+
+  const handleDismissQuiz = () => {
+    setShowQuizPrompt(false)
+    localStorage.setItem('quiz-prompt-dismissed', 'true')
   }
 
   const handleRegenerate = async () => {
@@ -366,6 +383,14 @@ export default function DashboardPage() {
         onComplete={handleAssessmentComplete}
         allowSkip={true}
       />
+
+      {/* Quiz Prompt Modal */}
+      {showQuizPrompt && (
+        <QuizPromptModal
+          onTakeQuiz={handleTakeQuiz}
+          onDismiss={handleDismissQuiz}
+        />
+      )}
     </>
   )
 }

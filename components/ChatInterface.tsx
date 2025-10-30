@@ -319,6 +319,18 @@ export default function ChatInterface() {
     setIsLoading(true)
 
     try {
+      // Validate document content before sending
+      if (!chatDocument.content || chatDocument.content.trim().length === 0) {
+        throw new Error("NO_DOCUMENT_CONTENT")
+      }
+
+      console.log('[ChatInterface] Sending chat request:', {
+        messageLength: inputMessage.length,
+        contentLength: chatDocument.content.length,
+        fileName: chatDocument.file?.name,
+        teachingMode
+      })
+
       const response = await fetch("/api/chat-with-document", {
         method: "POST",
         headers: {
@@ -332,11 +344,16 @@ export default function ChatInterface() {
         }),
       })
 
+      console.log('[ChatInterface] Response status:', response.status)
+
       if (!response.ok) {
-        throw new Error(`Failed to get response`)
+        const errorText = await response.text()
+        console.error('[ChatInterface] API error response:', errorText)
+        throw new Error(`API returned ${response.status}: ${errorText}`)
       }
 
       const data = await response.json()
+      console.log('[ChatInterface] Received response:', data)
 
       const assistantMessage: Message = {
         id: generateId() + '-response',
@@ -347,10 +364,27 @@ export default function ChatInterface() {
 
       setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
-      console.error("Chat error:", error)
+      console.error("[ChatInterface] Chat error:", error)
+
+      let errorContent = "I apologize, but I'm having trouble processing your request. "
+
+      if (error instanceof Error) {
+        if (error.message === "NO_DOCUMENT_CONTENT") {
+          errorContent = "No document content found. Please try re-uploading your document."
+        } else if (error.message.includes('401')) {
+          errorContent = "Authentication error. Please try signing out and back in."
+        } else if (error.message.includes('429')) {
+          errorContent = "Too many requests. Please wait a moment and try again."
+        } else if (error.message.includes('500')) {
+          errorContent = "Server error. Our team has been notified. Please try again in a few moments."
+        } else {
+          errorContent += `Error details: ${error.message}`
+        }
+      }
+
       const errorMessage: Message = {
         id: generateId() + '-error',
-        content: "I apologize, but I'm having trouble accessing the document right now. Please try again.",
+        content: errorContent,
         type: "assistant",
         timestamp: generateTimestamp()
       }

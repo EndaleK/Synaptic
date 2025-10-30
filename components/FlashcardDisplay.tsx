@@ -516,10 +516,12 @@ ${'='.repeat(50)}`).join('\n')}`
             </p>
           </div>
 
-          <div 
+          <div
             className="relative cursor-pointer"
-            style={{ 
-              height: "24rem",
+            style={{
+              minHeight: "16rem",
+              maxHeight: "32rem",
+              height: "auto",
               marginBottom: "var(--space-6)"
             }}
           >
@@ -536,28 +538,28 @@ ${'='.repeat(50)}`).join('\n')}`
               }}
             >
               <div
-                className="absolute inset-0 w-full h-full bg-gradient-to-br from-accent-primary/5 to-accent-secondary/5 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-lg shadow-lg flex items-center justify-center backface-hidden border-2 border-accent-primary/30 dark:border-accent-primary/50"
+                className="absolute inset-0 w-full h-full bg-gradient-to-br from-accent-primary/5 to-accent-secondary/5 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-lg shadow-lg flex items-center justify-center backface-hidden border-2 border-accent-primary/30 dark:border-accent-primary/50 overflow-y-auto"
                 style={{
                   backfaceVisibility: "hidden",
-                  padding: "var(--space-6)",
+                  padding: "var(--space-4)",
                   borderRadius: "var(--radius-lg)"
                 }}
               >
-                <p className="text-display-sm text-center text-gray-800 dark:text-gray-100">
+                <p className="text-base md:text-lg lg:text-xl text-center text-gray-800 dark:text-gray-100 break-words max-w-full px-2 leading-relaxed">
                   {currentCard.front}
                 </p>
               </div>
               
               <div
-                className="absolute inset-0 w-full h-full bg-gradient-to-br from-accent-secondary/5 to-accent-primary/5 dark:from-accent-secondary/30 dark:to-accent-primary/30 rounded-lg shadow-lg flex items-center justify-center backface-hidden rotate-y-180 border-2 border-accent-secondary/30 dark:border-accent-secondary/50"
+                className="absolute inset-0 w-full h-full bg-gradient-to-br from-accent-secondary/5 to-accent-primary/5 dark:from-accent-secondary/30 dark:to-accent-primary/30 rounded-lg shadow-lg flex items-center justify-center backface-hidden rotate-y-180 border-2 border-accent-secondary/30 dark:border-accent-secondary/50 overflow-y-auto"
                 style={{
                   backfaceVisibility: "hidden",
                   transform: "rotateY(180deg)",
-                  padding: "var(--space-6)",
+                  padding: "var(--space-4)",
                   borderRadius: "var(--radius-lg)"
                 }}
               >
-                <p className="text-heading-lg text-center text-gray-800 dark:text-gray-100">
+                <p className="text-sm md:text-base lg:text-lg text-center text-gray-800 dark:text-gray-100 break-words max-w-full px-2 leading-relaxed">
                   {currentCard.back}
                 </p>
               </div>

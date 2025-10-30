@@ -94,20 +94,20 @@ function CalendarPageContent() {
 
       {/* Header */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
               >
                 <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
                   Study Calendar
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">
                   Plan and schedule your study sessions, exams, and assignments
                 </p>
               </div>
@@ -117,10 +117,10 @@ function CalendarPageContent() {
             <button
               onClick={handleGoogleCalendarConnect}
               disabled={isConnecting || connectionStatus === 'connected'}
-              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-700 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-700 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto flex-shrink-0"
             >
-              <Calendar className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-medium text-gray-900 dark:text-white">
+              <Calendar className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
                 {isConnecting ? 'Connecting...' : connectionStatus === 'connected' ? 'Calendar Connected' : 'Import Google Calendar'}
               </span>
             </button>
