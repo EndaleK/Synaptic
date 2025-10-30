@@ -387,23 +387,23 @@ ${'='.repeat(50)}`).join('\n')}`
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Header Section */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden mb-6">
-        <div className="p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
-          <div className="flex items-start gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
-              <BookOpen className="w-8 h-8 text-white" />
+      {/* Header Section - Compact on Mobile */}
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden mb-3 md:mb-6">
+        <div className="p-3 md:p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
+          <div className="flex items-center gap-2 md:gap-4">
+            <div className="w-10 h-10 md:w-16 md:h-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl md:rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+              <BookOpen className="w-5 h-5 md:w-8 md:h-8 text-white" />
             </div>
-            <div className="flex-1">
-              <h2 className="text-3xl font-bold text-black dark:text-white mb-2">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg md:text-3xl font-bold text-black dark:text-white mb-0 md:mb-2 truncate">
                 Interactive Flashcards
               </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
+              <p className="hidden md:block text-gray-600 dark:text-gray-400 mb-4">
                 Master your material with AI-generated flashcards featuring spaced repetition and progress tracking
               </p>
 
-              {/* Feature Badges */}
-              <div className="flex flex-wrap gap-2">
+              {/* Feature Badges - Hidden on Mobile */}
+              <div className="hidden md:flex flex-wrap gap-2">
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
                   <Sparkles className="w-3.5 h-3.5 text-accent-primary" />
                   AI-Generated
@@ -424,36 +424,31 @@ ${'='.repeat(50)}`).join('\n')}`
 
       {/* Flashcard Viewer */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md card-hover border border-accent-primary/20 dark:border-accent-primary/30">
-        <div
-          className="border-b border-gray-200 dark:border-gray-700"
-          style={{ padding: "var(--space-4)" }}
-        >
-          <div className="flex justify-between items-center">
-            <div className="flex items-center" style={{ gap: "var(--space-3)" }}>
+        <div className="border-b border-gray-200 dark:border-gray-700 px-2 py-2 md:px-4 md:py-3">
+          <div className="flex justify-between items-center flex-wrap gap-2">
+            <div className="flex items-center gap-2 md:gap-3">
               <button
                 onClick={onReset}
-                className="flex items-center text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 transition-colors text-body-sm"
-                style={{ gap: "var(--space-1)" }}
+                className="flex items-center text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 transition-colors text-xs md:text-sm gap-1"
               >
-                <Home className="h-4 w-4" />
-                Back to Upload
+                <Home className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Back to Upload</span>
               </button>
               {onRegenerate && (
                 <button
                   onClick={onRegenerate}
                   disabled={isRegenerating}
-                  className="flex items-center text-accent-primary hover:text-accent-secondary transition-colors text-body-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ gap: "var(--space-1)" }}
+                  className="flex items-center text-accent-primary hover:text-accent-secondary transition-colors text-xs md:text-sm disabled:opacity-50 disabled:cursor-not-allowed gap-1"
                   title="Generate different flashcards from the same content"
                 >
-                  <RefreshCw className={cn("h-4 w-4", isRegenerating && "animate-spin")} />
-                  {isRegenerating ? "Regenerating..." : "Regenerate"}
+                  <RefreshCw className={cn("h-3.5 w-3.5 md:h-4 md:w-4", isRegenerating && "animate-spin")} />
+                  <span className="hidden sm:inline">{isRegenerating ? "Regenerating..." : "Regenerate"}</span>
                 </button>
               )}
             </div>
-            <div className="flex items-center" style={{ gap: "var(--space-3)" }}>
-              <span className="text-caption text-gray-600 dark:text-gray-400">
-                Card {currentIndex + 1} of {flashcards.length}
+            <div className="flex items-center gap-2 md:gap-3">
+              <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                {currentIndex + 1}/{flashcards.length}
               </span>
               <div className="relative" ref={exportMenuRef}>
                 <button
@@ -497,30 +492,21 @@ ${'='.repeat(50)}`).join('\n')}`
           </div>
         </div>
 
-        <div style={{ padding: "var(--space-4)" }}>
-          <div style={{ marginBottom: "var(--space-3)" }}>
-            <div
-              className="w-full bg-accent-primary/10 dark:bg-accent-primary/20 rounded-full"
-              style={{ height: "8px" }}
-            >
+        <div className="p-2 md:p-4">
+          <div className="mb-2 md:mb-3">
+            <div className="w-full bg-accent-primary/10 dark:bg-accent-primary/20 rounded-full h-1.5 md:h-2">
               <div
-                className="bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full transition-all duration-300"
-                style={{
-                  width: `${progress}%`,
-                  height: "8px"
-                }}
+                className="bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full transition-all duration-300 h-1.5 md:h-2"
+                style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="text-caption text-gray-600 dark:text-gray-400" style={{ marginTop: "var(--space-1)" }}>
-              Progress: {studiedCards.size}/{flashcards.length} cards studied ({progress}%)
+            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">
+              {studiedCards.size}/{flashcards.length} cards ({progress}%)
             </p>
           </div>
 
           <div
-            className="relative cursor-pointer h-64 md:h-80 lg:h-96"
-            style={{
-              marginBottom: "var(--space-6)"
-            }}
+            className="relative cursor-pointer h-80 md:h-80 lg:h-96 mb-3 md:mb-6"
           >
             <div
               className={cn(
@@ -535,68 +521,57 @@ ${'='.repeat(50)}`).join('\n')}`
               }}
             >
               <div
-                className="absolute inset-0 w-full h-full bg-gradient-to-br from-accent-primary/5 to-accent-secondary/5 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-lg shadow-lg flex items-center justify-center backface-hidden border-2 border-accent-primary/30 dark:border-accent-primary/50 overflow-y-auto"
+                className="absolute inset-0 w-full h-full bg-gradient-to-br from-accent-primary/5 to-accent-secondary/5 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-lg shadow-lg flex items-center justify-center backface-hidden border-2 border-accent-primary/30 dark:border-accent-primary/50 overflow-y-auto p-3 md:p-4"
                 style={{
                   backfaceVisibility: "hidden",
-                  padding: "var(--space-4)",
                   borderRadius: "var(--radius-lg)"
                 }}
               >
-                <p className="text-base md:text-lg lg:text-xl text-center text-gray-800 dark:text-gray-100 break-words max-w-full px-2 leading-relaxed">
+                <p className="text-sm md:text-base lg:text-lg text-center text-gray-800 dark:text-gray-100 break-words max-w-full leading-relaxed">
                   {currentCard.front}
                 </p>
               </div>
-              
+
               <div
-                className="absolute inset-0 w-full h-full bg-gradient-to-br from-accent-secondary/5 to-accent-primary/5 dark:from-accent-secondary/30 dark:to-accent-primary/30 rounded-lg shadow-lg flex items-center justify-center backface-hidden rotate-y-180 border-2 border-accent-secondary/30 dark:border-accent-secondary/50 overflow-y-auto"
+                className="absolute inset-0 w-full h-full bg-gradient-to-br from-accent-secondary/5 to-accent-primary/5 dark:from-accent-secondary/30 dark:to-accent-primary/30 rounded-lg shadow-lg flex items-center justify-center backface-hidden rotate-y-180 border-2 border-accent-secondary/30 dark:border-accent-secondary/50 overflow-y-auto p-3 md:p-4"
                 style={{
                   backfaceVisibility: "hidden",
                   transform: "rotateY(180deg)",
-                  padding: "var(--space-4)",
                   borderRadius: "var(--radius-lg)"
                 }}
               >
-                <p className="text-sm md:text-base lg:text-lg text-center text-gray-800 dark:text-gray-100 break-words max-w-full px-2 leading-relaxed">
+                <p className="text-sm md:text-base lg:text-lg text-center text-gray-800 dark:text-gray-100 break-words max-w-full leading-relaxed">
                   {currentCard.back}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-center items-center" style={{ gap: "var(--space-3)" }}>
+          <div className="flex justify-center items-center gap-2 md:gap-3">
             <button
               onClick={handlePrevious}
-              className="btn-secondary rounded-full"
-              style={{ 
-                padding: "var(--space-2)",
-                borderRadius: "50%"
-              }}
+              className="btn-secondary rounded-full p-2"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
             </button>
-            
+
             <button
               onClick={handleFlip}
-              className="btn-primary flex items-center"
-              style={{ gap: "var(--space-1)" }}
+              className="btn-primary flex items-center gap-1 px-4 py-2 text-sm md:text-base"
             >
-              <RotateCcw className="h-4 w-4" />
-              Flip Card
+              <RotateCcw className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              Flip
             </button>
-            
+
             <button
               onClick={handleNext}
-              className="btn-secondary rounded-full"
-              style={{ 
-                padding: "var(--space-2)",
-                borderRadius: "50%"
-              }}
+              className="btn-secondary rounded-full p-2"
             >
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
             </button>
           </div>
 
-          <p className="text-center text-caption text-gray-500 dark:text-gray-400" style={{ marginTop: "var(--space-3)" }}>
+          <p className="hidden md:block text-center text-caption text-gray-500 dark:text-gray-400 mt-2 md:mt-3">
             Press Space to flip • Use arrow keys to navigate
           </p>
         </div>
