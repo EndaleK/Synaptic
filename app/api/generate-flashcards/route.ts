@@ -289,24 +289,34 @@ export async function POST(request: NextRequest) {
             nextReviewAt: dbCard.next_review_at ? new Date(dbCard.next_review_at) : undefined
           }))
 
-          logger.info('Flashcards saved to database', {
+          logger.info('✅ Flashcards saved to database successfully', {
             userId,
-            flashcardCount: savedFlashcards.length
+            flashcardCount: savedFlashcards.length,
+            sampleId: savedFlashcards[0]?.id
           })
         } else {
-          logger.warn('Failed to save flashcards to database', {
+          logger.error('❌ Failed to save flashcards to database', {
             userId,
             error: insertError?.message,
+            errorDetails: insertError,
+            hint: 'Database migration may not be applied. See MIGRATION_INSTRUCTIONS.md',
             fallbackToMemory: true
           })
+          console.error('Flashcard DB save error:', insertError)
           // Continue with non-persisted flashcards
         }
+      } else {
+        logger.warn('No user profile found, flashcards will not be persisted', {
+          userId
+        })
       }
     } catch (dbError) {
-      logger.warn('Database save attempt failed, continuing with session-only flashcards', {
+      logger.error('❌ Database save attempt failed critically', {
         userId,
-        error: dbError
+        error: dbError,
+        hint: 'Check database connection and ensure migration is applied'
       })
+      console.error('Critical flashcard DB error:', dbError)
       // Continue with non-persisted flashcards
     }
 

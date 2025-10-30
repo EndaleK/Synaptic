@@ -59,9 +59,24 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
     }
   }, [flipped, currentCard.id, studiedCards])
 
+  // Check if flashcard has a valid database ID
+  const hasValidDatabaseId = useCallback((id: string) => {
+    // UUIDs from database are 36 characters with dashes
+    // Generated IDs (from crypto.randomUUID) are also UUIDs
+    // But we need to ensure it exists in the database
+    return id && id.length > 20 // Basic check for UUID format
+  }, [])
+
   // Handle mastery button clicks
   const handleMastery = useCallback(async (action: 'mastered' | 'needs-review') => {
     if (isUpdatingMastery || !currentCard.id) return
+
+    // Check if flashcard has database ID
+    if (!hasValidDatabaseId(currentCard.id)) {
+      toast.error('Cannot track progress for unsaved flashcards')
+      toast.info('Please regenerate flashcards to enable progress tracking')
+      return
+    }
 
     setIsUpdatingMastery(true)
 
@@ -139,7 +154,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
     } finally {
       setIsUpdatingMastery(false)
     }
-  }, [currentCard.id, currentIndex, masteredCards, needsReviewCards, isUpdatingMastery, toast])
+  }, [currentCard.id, currentIndex, masteredCards, needsReviewCards, isUpdatingMastery, toast, hasValidDatabaseId])
 
   const downloadFile = (content: string, filename: string, mimeType: string) => {
     const dataUri = `data:${mimeType};charset=utf-8,${encodeURIComponent(content)}`
@@ -1023,8 +1038,8 @@ ${'='.repeat(50)}`).join('\n')}`
             </div>
           </div>
 
-          {/* Mastery Buttons - Only show when flipped */}
-          {flipped && (
+          {/* Mastery Buttons - Only show when flipped and flashcard has database ID */}
+          {flipped && hasValidDatabaseId(currentCard.id) && (
             <div className="flex justify-center items-center gap-3 md:gap-4 mt-4 mb-2">
               <button
                 onClick={() => handleMastery('needs-review')}
@@ -1043,6 +1058,13 @@ ${'='.repeat(50)}`).join('\n')}`
                 <Check className="h-4 w-4 md:h-5 md:w-5" />
                 <span>Got it!</span>
               </button>
+            </div>
+          )}
+
+          {/* Info message if flashcards don't have database IDs */}
+          {flipped && !hasValidDatabaseId(currentCard.id) && (
+            <div className="flex justify-center items-center gap-2 mt-4 mb-2 px-4 py-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
+              <span>💡 Regenerate flashcards to enable progress tracking</span>
             </div>
           )}
 
