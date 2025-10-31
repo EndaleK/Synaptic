@@ -12,8 +12,24 @@ import {
   Loader2,
   Sparkles,
   TrendingDown,
-  AlertCircle
+  AlertCircle,
+  BarChart3
 } from 'lucide-react'
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts'
 
 interface StudyStats {
   // Streak Data
@@ -48,6 +64,14 @@ interface StudyStats {
     count: number
     minutes: number
   }>
+
+  // Learning Mode Breakdown
+  modeBreakdown?: {
+    flashcards: number
+    chat: number
+    mindmap: number
+    podcast: number
+  }
 }
 
 export default function StudyStatistics() {
@@ -393,6 +417,188 @@ export default function StudyStatistics() {
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Study Time Trend Chart */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+            <BarChart3 className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Study Time Trend
+            </h3>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              Your daily study minutes over the last {timeRange === 'week' ? '7 days' : timeRange === 'month' ? '30 days' : '365 days'}
+            </p>
+          </div>
+        </div>
+
+        <ResponsiveContainer width="100%" height={300}>
+          <AreaChart data={stats.heatmapData}>
+            <defs>
+              <linearGradient id="colorMinutes" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="rgb(var(--accent-primary))" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="rgb(var(--accent-primary))" stopOpacity={0.1}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
+            <XAxis
+              dataKey="date"
+              tick={{ fill: '#6B7280', fontSize: 12 }}
+              tickFormatter={(value) => {
+                const date = new Date(value)
+                return `${date.getMonth() + 1}/${date.getDate()}`
+              }}
+            />
+            <YAxis
+              tick={{ fill: '#6B7280', fontSize: 12 }}
+              label={{ value: 'Minutes', angle: -90, position: 'insideLeft', fill: '#6B7280' }}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: '#fff',
+                border: '1px solid #E5E7EB',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              }}
+              labelFormatter={(value) => {
+                const date = new Date(value)
+                return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+              }}
+              formatter={(value: number) => [`${value} min`, 'Study Time']}
+            />
+            <Area
+              type="monotone"
+              dataKey="minutes"
+              stroke="rgb(var(--accent-primary))"
+              strokeWidth={2}
+              fillOpacity={1}
+              fill="url(#colorMinutes)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+
+        {/* Trend Summary */}
+        <div className="mt-4 grid grid-cols-3 gap-4">
+          <div className="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Average</div>
+            <div className="text-xl font-bold text-gray-900 dark:text-white">
+              {Math.round(stats.heatmapData.reduce((sum, d) => sum + d.minutes, 0) / stats.heatmapData.length)} min
+            </div>
+          </div>
+          <div className="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Peak Day</div>
+            <div className="text-xl font-bold text-gray-900 dark:text-white">
+              {Math.max(...stats.heatmapData.map(d => d.minutes))} min
+            </div>
+          </div>
+          <div className="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Active Days</div>
+            <div className="text-xl font-bold text-gray-900 dark:text-white">
+              {stats.heatmapData.filter(d => d.minutes > 0).length}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Learning Mode Breakdown */}
+      {stats.modeBreakdown && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+              <Target className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Learning Mode Breakdown
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                How you spend your study time across different modes
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Pie Chart */}
+            <div className="flex items-center justify-center">
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Flashcards', value: stats.modeBreakdown.flashcards, color: '#7B3FF2' },
+                      { name: 'Chat', value: stats.modeBreakdown.chat, color: '#E91E8C' },
+                      { name: 'Mind Maps', value: stats.modeBreakdown.mindmap, color: '#FF6B35' },
+                      { name: 'Podcasts', value: stats.modeBreakdown.podcast, color: '#2D3E9F' }
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {[
+                      { name: 'Flashcards', value: stats.modeBreakdown.flashcards, color: '#7B3FF2' },
+                      { name: 'Chat', value: stats.modeBreakdown.chat, color: '#E91E8C' },
+                      { name: 'Mind Maps', value: stats.modeBreakdown.mindmap, color: '#FF6B35' },
+                      { name: 'Podcasts', value: stats.modeBreakdown.podcast, color: '#2D3E9F' }
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                    formatter={(value: number) => `${value} min`}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Mode Statistics */}
+            <div className="space-y-4">
+              {[
+                { name: 'Flashcards', icon: '🃏', value: stats.modeBreakdown.flashcards, color: '#7B3FF2', bgColor: 'bg-purple-100 dark:bg-purple-900/30' },
+                { name: 'Chat', icon: '💬', value: stats.modeBreakdown.chat, color: '#E91E8C', bgColor: 'bg-pink-100 dark:bg-pink-900/30' },
+                { name: 'Mind Maps', icon: '🗺️', value: stats.modeBreakdown.mindmap, color: '#FF6B35', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
+                { name: 'Podcasts', icon: '🎙️', value: stats.modeBreakdown.podcast, color: '#2D3E9F', bgColor: 'bg-blue-100 dark:bg-blue-900/30' }
+              ].map((mode) => {
+                const total = stats.modeBreakdown!.flashcards + stats.modeBreakdown!.chat + stats.modeBreakdown!.mindmap + stats.modeBreakdown!.podcast
+                const percentage = total > 0 ? Math.round((mode.value / total) * 100) : 0
+
+                return (
+                  <div key={mode.name} className={`${mode.bgColor} rounded-xl p-4 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600 transition-all`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">{mode.icon}</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{mode.name}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-gray-900 dark:text-white">{mode.value} min</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">{percentage}%</div>
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div
+                        className="h-2 rounded-full transition-all duration-500"
+                        style={{
+                          width: `${percentage}%`,
+                          backgroundColor: mode.color
+                        }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}

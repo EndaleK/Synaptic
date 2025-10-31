@@ -218,6 +218,34 @@ export async function GET(req: NextRequest) {
       ? Math.min(Math.round((weekMinutes / weeklyGoalMinutes) * 100), 100)
       : 0
 
+    // Calculate learning mode breakdown based on usage tracking
+    const { data: usageData } = await supabase
+      .from('usage_tracking')
+      .select('action_type, created_at')
+      .eq('user_id', userProfileId)
+      .gte('created_at', heatmapStart.toISOString())
+
+    // Aggregate by mode (estimate minutes based on action counts)
+    const modeBreakdown = {
+      flashcards: 0,
+      chat: 0,
+      mindmap: 0,
+      podcast: 0
+    }
+
+    usageData?.forEach(action => {
+      // Estimate time per action type (in minutes)
+      if (action.action_type === 'flashcard_generation' || action.action_type.includes('flashcard')) {
+        modeBreakdown.flashcards += 5 // Avg 5 min per flashcard session
+      } else if (action.action_type === 'chat_message' || action.action_type.includes('chat')) {
+        modeBreakdown.chat += 3 // Avg 3 min per chat interaction
+      } else if (action.action_type === 'mindmap_generation' || action.action_type.includes('mindmap')) {
+        modeBreakdown.mindmap += 8 // Avg 8 min per mind map
+      } else if (action.action_type === 'podcast_generation' || action.action_type.includes('podcast')) {
+        modeBreakdown.podcast += 10 // Avg 10 min per podcast
+      }
+    })
+
     const stats = {
       // Streak Data
       currentStreak,
@@ -246,7 +274,12 @@ export async function GET(req: NextRequest) {
       weeklyGoalProgress,
 
       // Heatmap Data
-      heatmapData
+      heatmapData,
+
+      // Learning Mode Breakdown
+      modeBreakdown: (modeBreakdown.flashcards + modeBreakdown.chat + modeBreakdown.mindmap + modeBreakdown.podcast) > 0
+        ? modeBreakdown
+        : undefined
     }
 
     const duration = Date.now() - startTime
