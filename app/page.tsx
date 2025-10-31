@@ -18,53 +18,53 @@ export default function LandingPage() {
           <div className="relative aspect-[1155/678] w-[36.125rem] bg-gradient-to-tr from-gray-200 to-gray-400 dark:from-gray-800 dark:to-gray-600 opacity-30" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
-          <div className="text-center max-w-4xl mx-auto">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+          <div className="text-center max-w-5xl mx-auto">
             {/* Brand Logo */}
-            <div className="mb-8 flex justify-center">
+            <div className="mb-10 flex justify-center">
               <img
                 src="/logo-full.png"
                 alt="Synaptic - Study Smarter"
-                width={270}
-                height={270}
-                className="object-contain"
+                width={220}
+                height={220}
+                className="object-contain w-[160px] h-[160px] sm:w-[200px] sm:h-[200px] md:w-[220px] md:h-[220px]"
               />
             </div>
 
             {/* Headline */}
-            <h2 className="text-5xl md:text-7xl font-bold text-black dark:text-white mb-6 leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-black dark:text-white mb-6 leading-tight tracking-tight">
               Transform Documents Into
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35]">
                 Knowledge
               </span>
-            </h2>
+            </h1>
 
             {/* Subheadline */}
-            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-10 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-12 max-w-3xl mx-auto leading-relaxed">
               AI-powered flashcards, podcasts, and mind maps tailored to your learning style.
               Study smarter with intelligent, personalized content.
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-10">
               <Link
                 href={isSignedIn ? "/dashboard" : "/sign-in"}
-                className="group px-8 py-4 bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35] text-white rounded-xl font-semibold hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2"
+                className="group px-8 py-4 bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35] text-white rounded-xl font-semibold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2 min-w-[220px] justify-center"
               >
                 {isSignedIn ? "Go to Dashboard" : "Get Started Free"}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="#features"
-                className="px-8 py-4 bg-white dark:bg-gray-800 text-[#7B3FF2] dark:text-white border-2 border-[#E91E8C]/30 dark:border-gray-700 rounded-xl font-semibold hover:bg-purple-50 dark:hover:bg-gray-700 transition-all"
+                className="px-8 py-4 bg-white dark:bg-gray-800 text-[#7B3FF2] dark:text-white border-2 border-[#E91E8C]/30 dark:border-gray-700 rounded-xl font-semibold text-lg hover:bg-purple-50 dark:hover:bg-gray-700 hover:border-[#E91E8C]/50 transition-all min-w-[220px] justify-center"
               >
                 Explore Features
               </Link>
             </div>
 
             {/* Social Proof */}
-            <p className="mt-8 text-sm text-gray-500 dark:text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-500">
               Trusted by students and professionals worldwide
             </p>
           </div>
