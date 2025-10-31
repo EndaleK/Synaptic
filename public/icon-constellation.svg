@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Clean gradients for minimal aesthetic -->
+    <linearGradient id="iconStellarPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#9333EA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6B46C1;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="iconStellarCyan" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#14B8A6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06B6D4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect x="0" y="0" width="512" height="512" rx="128" fill="url(#iconStellarPurple)"/>
+
+  <!-- Simplified constellation pattern - fewer nodes for clarity at small sizes -->
+
+  <!-- Main connection lines (forming abstract network) -->
+  <line x1="180" y1="140" x2="256" y2="180" stroke="url(#iconStellarCyan)" stroke-width="12" opacity="0.5"/>
+  <line x1="256" y1="180" x2="332" y2="140" stroke="url(#iconStellarCyan)" stroke-width="12" opacity="0.5"/>
+  <line x1="332" y1="140" x2="380" y2="200" stroke="url(#iconStellarCyan)" stroke-width="12" opacity="0.5"/>
+  <line x1="380" y1="200" x2="256" y2="256" stroke="url(#iconStellarCyan)" stroke-width="14" opacity="0.6"/>
+  <line x1="256" y1="256" x2="132" y2="200" stroke="url(#iconStellarCyan)" stroke-width="14" opacity="0.6"/>
+  <line x1="132" y1="200" x2="180" y2="140" stroke="url(#iconStellarCyan)" stroke-width="12" opacity="0.5"/>
+  <line x1="132" y1="200" x2="180" y2="312" stroke="url(#iconStellarCyan)" stroke-width="12" opacity="0.5"/>
+  <line x1="180" y1="312" x2="256" y2="256" stroke="url(#iconStellarCyan)" stroke-width="14" opacity="0.6"/>
+  <line x1="256" y1="256" x2="332" y2="312" stroke="url(#iconStellarCyan)" stroke-width="14" opacity="0.6"/>
+  <line x1="332" y1="312" x2="380" y2="200" stroke="url(#iconStellarCyan)" stroke-width="12" opacity="0.5"/>
+
+  <!-- Cross connections for network effect -->
+  <line x1="180" y1="140" x2="132" y2="200" stroke="url(#iconStellarCyan)" stroke-width="8" opacity="0.3"/>
+  <line x1="332" y1="140" x2="380" y2="200" stroke="url(#iconStellarCyan)" stroke-width="8" opacity="0.3"/>
+  <line x1="256" y1="180" x2="256" y2="256" stroke="url(#iconStellarCyan)" stroke-width="8" opacity="0.35"/>
+  <line x1="180" y1="312" x2="132" y2="200" stroke="url(#iconStellarCyan)" stroke-width="8" opacity="0.3"/>
+  <line x1="332" y1="312" x2="380" y2="200" stroke="url(#iconStellarCyan)" stroke-width="8" opacity="0.3"/>
+
+  <!-- Star nodes (knowledge points) - simplified to 7 key nodes -->
+  <!-- Top tier -->
+  <circle cx="180" cy="140" r="22" fill="white" opacity="0.95"/>
+  <circle cx="180" cy="140" r="14" fill="url(#iconStellarCyan)" opacity="0.9"/>
+
+  <circle cx="256" cy="180" r="18" fill="white" opacity="0.95"/>
+  <circle cx="256" cy="180" r="10" fill="url(#iconStellarCyan)" opacity="0.8"/>
+
+  <circle cx="332" cy="140" r="22" fill="white" opacity="0.95"/>
+  <circle cx="332" cy="140" r="14" fill="url(#iconStellarCyan)" opacity="0.9"/>
+
+  <!-- Side nodes -->
+  <circle cx="132" cy="200" r="18" fill="white" opacity="0.95"/>
+  <circle cx="132" cy="200" r="10" fill="url(#iconStellarCyan)" opacity="0.8"/>
+
+  <circle cx="380" cy="200" r="18" fill="white" opacity="0.95"/>
+  <circle cx="380" cy="200" r="10" fill="url(#iconStellarCyan)" opacity="0.8"/>
+
+  <!-- Bottom tier -->
+  <circle cx="180" cy="312" r="22" fill="white" opacity="0.95"/>
+  <circle cx="180" cy="312" r="14" fill="url(#iconStellarCyan)" opacity="0.9"/>
+
+  <circle cx="332" cy="312" r="22" fill="white" opacity="0.95"/>
+  <circle cx="332" cy="312" r="14" fill="url(#iconStellarCyan)" opacity="0.9"/>
+
+  <!-- Central hub - the main knowledge center -->
+  <circle cx="256" cy="256" r="45" fill="white"/>
+  <circle cx="256" cy="256" r="35" fill="url(#iconStellarCyan)" opacity="0.95">
+    <animate attributeName="opacity" values="0.95;0.75;0.95" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <circle cx="256" cy="256" r="20" fill="white"/>
+  <circle cx="256" cy="256" r="12" fill="url(#iconStellarPurple)"/>
+
+  <!-- Subtle orbital ring around center -->
+  <circle cx="256" cy="256" r="80" fill="none" stroke="white" stroke-width="3" opacity="0.2"/>
+</svg>

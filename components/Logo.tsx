@@ -3,16 +3,31 @@
 import React from 'react'
 
 interface LogoProps {
-  variant?: 'neural' | 'minimal' | 'icon'
+  variant?:
+    // Legacy variants
+    | 'neural' | 'minimal' | 'icon'
+    // New 2024 designs
+    | 'synapse-wave' | 'neural-bloom' | 'constellation'
+    // New icon variants (512×512 app icons)
+    | 'synapse-wave-icon' | 'neural-bloom-icon' | 'constellation-icon'
   size?: number
   className?: string
 }
 
-export default function Logo({ variant = 'minimal', size = 40, className = '' }: LogoProps) {
+export default function Logo({ variant = 'synapse-wave', size = 40, className = '' }: LogoProps) {
   const logoSrc = {
+    // Legacy variants
     neural: '/logo-concept.svg',
     minimal: '/logo-minimal.svg',
-    icon: '/logo-app-icon.svg'
+    icon: '/logo-app-icon.svg',
+    // New 2024 logo designs (200×200)
+    'synapse-wave': '/logo-synapse-wave.svg',
+    'neural-bloom': '/logo-neural-bloom.svg',
+    'constellation': '/logo-constellation.svg',
+    // New icon variants (512×512 for app icons/favicons)
+    'synapse-wave-icon': '/icon-synapse-wave.svg',
+    'neural-bloom-icon': '/icon-neural-bloom.svg',
+    'constellation-icon': '/icon-constellation.svg',
   }
 
   return (
@@ -31,7 +46,7 @@ export default function Logo({ variant = 'minimal', size = 40, className = '' }:
 }
 
 // Animated version with pulse effect
-export function AnimatedLogo({ variant = 'minimal', size = 40, className = '' }: LogoProps) {
+export function AnimatedLogo({ variant = 'synapse-wave', size = 40, className = '' }: LogoProps) {
   return (
     <div className="relative inline-block">
       <style jsx>{`
@@ -63,7 +78,7 @@ export function AnimatedLogo({ variant = 'minimal', size = 40, className = '' }:
 
 // Logo with text
 export function LogoWithText({
-  variant = 'minimal',
+  variant = 'synapse-wave',
   size = 40,
   showTagline = false,
   className = ''
