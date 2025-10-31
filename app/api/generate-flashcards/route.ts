@@ -10,7 +10,7 @@ import { applyRateLimit, RateLimits } from "@/lib/rate-limit"
 import { logger } from "@/lib/logger"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { FileUploadSchema, validateDocumentLength, validateContentSafety } from "@/lib/validation"
-import { canGenerateFlashcards, trackFlashcardGeneration } from "@/lib/usage-tracker"
+import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
 import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
@@ -33,18 +33,21 @@ export async function POST(request: NextRequest) {
       return rateLimitResponse
     }
 
-    // Check usage limits (free tier: 50 flashcard generations/month)
-    const usageCheck = canGenerateFlashcards(userId, 'free') // TODO: Get actual tier from user profile
+    // Check usage limits based on subscription tier
+    const usageCheck = await checkUsageLimit(userId, 'flashcards')
     if (!usageCheck.allowed) {
       logger.warn('Flashcard generation blocked - usage limit reached', {
         userId,
-        reason: usageCheck.reason,
-        currentUsage: usageCheck.currentUsage
+        tier: usageCheck.tier,
+        used: usageCheck.used,
+        limit: usageCheck.limit
       })
       return NextResponse.json(
         {
-          error: usageCheck.reason,
-          currentUsage: usageCheck.currentUsage,
+          error: usageCheck.message,
+          tier: usageCheck.tier,
+          used: usageCheck.used,
+          limit: usageCheck.limit,
           upgradeUrl: '/pricing'
         },
         { status: 403 }
@@ -239,8 +242,8 @@ export async function POST(request: NextRequest) {
     const costEstimate = estimateRequestCost(modelForCost, textContent, 2000)
     trackUsage(userId, modelForCost, costEstimate.inputTokens, costEstimate.outputTokens)
 
-    // Track flashcard generation for usage limits
-    trackFlashcardGeneration(userId, 'free') // TODO: Get actual tier from user profile
+    // Increment usage count for subscription tier limits
+    await incrementUsage(userId, 'flashcards')
 
     // Save flashcards to database for persistence and mastery tracking
     let savedFlashcards = flashcards

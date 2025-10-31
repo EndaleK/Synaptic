@@ -7,7 +7,7 @@ import { applyRateLimit, RateLimits } from "@/lib/rate-limit"
 import { logger } from "@/lib/logger"
 import { MindMapGenerationSchema } from "@/lib/validation"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
-import { canGenerateMindMap, trackMindMapGeneration } from "@/lib/usage-tracker"
+import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
 import { analyzeDocumentComplexity } from "@/lib/document-complexity-analyzer"
 
 export const maxDuration = 300 // 5 minutes max execution time for complex documents (Vercel Pro plan)
@@ -53,18 +53,21 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check usage limits (free tier: 10 mind map generations/month)
-    const usageCheck = canGenerateMindMap(userId, 'free') // TODO: Get actual tier from user profile
+    // Check usage limits based on subscription tier
+    const usageCheck = await checkUsageLimit(userId, 'mindmaps')
     if (!usageCheck.allowed) {
       logger.warn('Mind map generation blocked - usage limit reached', {
         userId,
-        reason: usageCheck.reason,
-        currentUsage: usageCheck.currentUsage
+        tier: usageCheck.tier,
+        used: usageCheck.used,
+        limit: usageCheck.limit
       })
       return NextResponse.json(
         {
-          error: usageCheck.reason,
-          currentUsage: usageCheck.currentUsage,
+          error: usageCheck.message,
+          tier: usageCheck.tier,
+          used: usageCheck.used,
+          limit: usageCheck.limit,
           upgradeUrl: '/pricing'
         },
         { status: 403 }
@@ -328,8 +331,8 @@ export async function POST(req: NextRequest) {
     // Track AI provider usage for cost monitoring
     trackUsage(userId, modelName, costEstimate.inputTokens, costEstimate.outputTokens)
 
-    // Track mind map generation for usage limits
-    trackMindMapGeneration(userId, 'free') // TODO: Get actual tier from user profile
+    // Increment usage count for subscription tier limits
+    await incrementUsage(userId, 'mindmaps')
 
     await supabase.from('usage_tracking').insert({
       user_id: userId,

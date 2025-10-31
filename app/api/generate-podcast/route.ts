@@ -11,7 +11,7 @@ import { applyRateLimit, RateLimits } from "@/lib/rate-limit"
 import { logger } from "@/lib/logger"
 import { PodcastGenerationSchema } from "@/lib/validation"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
-import { canGeneratePodcast, trackPodcastGeneration } from "@/lib/usage-tracker"
+import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
 
 export const maxDuration = 300 // 5 minutes max execution time (Vercel limit)
 
@@ -58,18 +58,21 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check usage limits (free tier: 5 podcast generations/month)
-    const usageCheck = canGeneratePodcast(userId, 'free') // TODO: Get actual tier from user profile
+    // Check usage limits based on subscription tier
+    const usageCheck = await checkUsageLimit(userId, 'podcasts')
     if (!usageCheck.allowed) {
       logger.warn('Podcast generation blocked - usage limit reached', {
         userId,
-        reason: usageCheck.reason,
-        currentUsage: usageCheck.currentUsage
+        tier: usageCheck.tier,
+        used: usageCheck.used,
+        limit: usageCheck.limit
       })
       return NextResponse.json(
         {
-          error: usageCheck.reason,
-          currentUsage: usageCheck.currentUsage,
+          error: usageCheck.message,
+          tier: usageCheck.tier,
+          used: usageCheck.used,
+          limit: usageCheck.limit,
           upgradeUrl: '/pricing'
         },
         { status: 403 }
@@ -276,8 +279,8 @@ export async function POST(req: NextRequest) {
     // Track TTS usage for cost monitoring
     trackUsage(userId, 'tts-1', totalCharacters, 0)
 
-    // Track podcast generation for usage limits
-    trackPodcastGeneration(userId, 'free') // TODO: Get actual tier from user profile
+    // Increment usage count for subscription tier limits
+    await incrementUsage(userId, 'podcasts')
 
     await supabase.from('usage_tracking').insert({
       user_id: userId,
