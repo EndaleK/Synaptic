@@ -3,36 +3,15 @@
 import React from 'react'
 
 interface LogoProps {
-  variant?:
-    // Current brand logo
-    | 'brain' | 'brain-full'
-    // Legacy variants
-    | 'neural' | 'minimal' | 'icon'
-    // 2024 designs (deprecated)
-    | 'synapse-wave' | 'neural-bloom' | 'constellation'
-    // Icon variants (deprecated)
-    | 'synapse-wave-icon' | 'neural-bloom-icon' | 'constellation-icon'
+  variant?: 'full' | 'icon'
   size?: number
   className?: string
 }
 
-export default function Logo({ variant = 'brain-full', size = 40, className = '' }: LogoProps) {
+export default function Logo({ variant = 'full', size = 40, className = '' }: LogoProps) {
   const logoSrc = {
-    // Current brand logo (2024 Gemini design)
-    'brain': '/logo-brain.png',        // Full logo with text
-    'brain-full': '/logo-brain.png',   // Full logo with text
-    // Legacy variants
-    neural: '/logo-concept.svg',
-    minimal: '/logo-minimal.svg',
-    icon: '/logo-app-icon.svg',
-    // 2024 logo designs (deprecated)
-    'synapse-wave': '/logo-synapse-wave.svg',
-    'neural-bloom': '/logo-neural-bloom.svg',
-    'constellation': '/logo-constellation.svg',
-    // Icon variants (deprecated)
-    'synapse-wave-icon': '/icon-synapse-wave.svg',
-    'neural-bloom-icon': '/icon-neural-bloom.svg',
-    'constellation-icon': '/icon-constellation.svg',
+    full: '/logo.svg',      // Full logo with text and tagline
+    icon: '/logo-icon.svg', // Icon only (brain)
   }
 
   return (
@@ -51,7 +30,7 @@ export default function Logo({ variant = 'brain-full', size = 40, className = ''
 }
 
 // Animated version with pulse effect
-export function AnimatedLogo({ variant = 'brain-full', size = 40, className = '' }: LogoProps) {
+export function AnimatedLogo({ variant = 'full', size = 40, className = '' }: LogoProps) {
   return (
     <div className="relative inline-block">
       <style jsx>{`
@@ -81,39 +60,10 @@ export function AnimatedLogo({ variant = 'brain-full', size = 40, className = ''
   )
 }
 
-// Logo with text
-// Note: 'brain-full' variant already includes text, so this just displays the logo
+// Logo with text - just returns the full logo (text is already included)
 export function LogoWithText({
-  variant = 'brain-full',
-  size = 40,
-  showTagline = false,
+  size = 80,
   className = ''
-}: LogoProps & { showTagline?: boolean }) {
-  // For the brain logo which already has text, just show it
-  if (variant === 'brain' || variant === 'brain-full') {
-    return <Logo variant={variant} size={size * 2} className={className} />
-  }
-
-  // For legacy variants without text, add text
-  return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <Logo variant={variant} size={size} />
-      <div className="flex flex-col">
-        <span
-          className="font-bold bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent"
-          style={{ fontSize: size * 0.6 }}
-        >
-          Synaptic
-        </span>
-        {showTagline && (
-          <span
-            className="text-gray-600 dark:text-gray-400"
-            style={{ fontSize: size * 0.25 }}
-          >
-            AI-Powered Learning
-          </span>
-        )}
-      </div>
-    </div>
-  )
+}: { size?: number; className?: string }) {
+  return <Logo variant="full" size={size} className={className} />
 }

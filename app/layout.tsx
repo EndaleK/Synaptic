@@ -15,8 +15,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Synaptic - AI-Powered Personalized Learning",
+  title: "Synaptic - Study Smarter",
   description: "Transform your documents into flashcards, podcasts, and mind maps. AI-powered personalized learning tailored to your style.",
+  icons: {
+    icon: '/logo-icon.svg',
+    apple: '/logo-icon.svg',
+  },
 };
 
 export default function RootLayout({
