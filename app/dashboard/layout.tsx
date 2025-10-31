@@ -120,13 +120,13 @@ export default function DashboardLayout({
                 <img
                   src="/logo-full.png"
                   alt="Synaptic - Study Smarter"
-                  className="h-24 w-auto flex-shrink-0"
+                  className="h-12 w-auto flex-shrink-0"
                 />
               ) : (
                 <img
                   src="/logo-icon.svg"
                   alt="Synaptic"
-                  className="w-14 h-14"
+                  className="w-10 h-10"
                 />
               )}
             </Link>
