@@ -18,11 +18,15 @@
   --warning: #f59e0b;
   --danger: #ef4444;
 
-  /* Accent colors (RGB format for Tailwind compatibility) */
-  --accent-primary: 168 85 247;      /* purple-500 by default */
-  --accent-secondary: 236 72 153;    /* pink-500 by default */
-  --accent-primary-hover: 147 51 234; /* purple-600 */
-  --accent-secondary-hover: 219 39 119; /* pink-600 */
+  /* Accent colors (RGB format for Tailwind compatibility) - Brain Logo Theme */
+  --accent-primary: 123 63 242;       /* Purple from logo #7B3FF2 */
+  --accent-secondary: 233 30 140;     /* Hot pink from logo #E91E8C */
+  --accent-primary-hover: 103 43 222;  /* Darker purple */
+  --accent-secondary-hover: 213 10 120; /* Darker pink */
+
+  /* Additional brain logo colors */
+  --accent-blue: 45 62 159;           /* Deep blue from logo #2D3E9F */
+  --accent-orange: 255 107 53;        /* Orange from logo #FF6B35 */
   
   /* Neutral colors */
   --gray-50: #f9fafb;
@@ -87,11 +91,13 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Accent color utilities */
+  /* Accent color utilities - Brain Logo Theme */
   --color-accent-primary: rgb(var(--accent-primary));
   --color-accent-secondary: rgb(var(--accent-secondary));
-  --color-accent-primary-hover: rgb(--accent-primary-hover);
-  --color-accent-secondary-hover: rgb(--accent-secondary-hover);
+  --color-accent-primary-hover: rgb(var(--accent-primary-hover));
+  --color-accent-secondary-hover: rgb(var(--accent-secondary-hover));
+  --color-accent-blue: rgb(var(--accent-blue));
+  --color-accent-orange: rgb(var(--accent-orange));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -162,8 +168,8 @@ html.font-size-large {
 }
 
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
-  50% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.5); }
+  0%, 100% { box-shadow: 0 0 20px rgba(123, 63, 242, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(233, 30, 140, 0.5); }
 }
 
 @keyframes gradient-shift {
@@ -412,11 +418,11 @@ html {
 
 /* Selection styling */
 ::selection {
-  background: rgba(139, 92, 246, 0.3);
+  background: rgba(123, 63, 242, 0.3);
   color: inherit;
 }
 
 ::-moz-selection {
-  background: rgba(139, 92, 246, 0.3);
+  background: rgba(123, 63, 242, 0.3);
   color: inherit;
 }
