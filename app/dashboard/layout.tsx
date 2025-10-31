@@ -115,23 +115,13 @@ export default function DashboardLayout({
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center gap-3 group">
+            <Link href="/dashboard" className="flex items-center group">
               {!sidebarCollapsed ? (
-                <>
-                  <img
-                    src="/logo-icon.svg"
-                    alt="Synaptic"
-                    className="w-10 h-10 flex-shrink-0"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-accent-secondary">
-                      Synaptic
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      Study Smarter
-                    </span>
-                  </div>
-                </>
+                <img
+                  src="/logo-full.png"
+                  alt="Synaptic - Study Smarter"
+                  className="h-12 w-auto flex-shrink-0"
+                />
               ) : (
                 <img
                   src="/logo-icon.svg"

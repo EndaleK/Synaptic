@@ -35,7 +35,7 @@ export default function LandingPage() {
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-black dark:text-white mb-6 leading-tight tracking-tight">
               Transform Documents Into
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35]">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-orange">
                 Knowledge
               </span>
             </h1>
@@ -50,14 +50,14 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-10">
               <Link
                 href={isSignedIn ? "/dashboard" : "/sign-in"}
-                className="group px-8 py-4 bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35] text-white rounded-xl font-semibold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2 min-w-[220px] justify-center"
+                className="group px-8 py-4 bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-orange text-white rounded-xl font-semibold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2 min-w-[220px] justify-center"
               >
                 {isSignedIn ? "Go to Dashboard" : "Get Started Free"}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="#features"
-                className="px-8 py-4 bg-white dark:bg-gray-800 text-[#7B3FF2] dark:text-white border-2 border-[#E91E8C]/30 dark:border-gray-700 rounded-xl font-semibold text-lg hover:bg-purple-50 dark:hover:bg-gray-700 hover:border-[#E91E8C]/50 transition-all min-w-[220px] justify-center"
+                className="px-8 py-4 bg-white dark:bg-gray-800 text-accent-primary dark:text-white border-2 border-accent-secondary/30 dark:border-gray-700 rounded-xl font-semibold text-lg hover:bg-purple-50 dark:hover:bg-gray-700 hover:border-accent-secondary/50 transition-all min-w-[220px] justify-center"
               >
                 Explore Features
               </Link>
@@ -88,7 +88,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature 1: Flashcards */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-[#7B3FF2] to-[#E91E8C] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <BookOpen className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
@@ -102,7 +102,7 @@ export default function LandingPage() {
 
             {/* Feature 2: Chat */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-[#2D3E9F] to-[#7B3FF2] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-gradient-to-br from-accent-blue to-accent-primary rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <MessageSquare className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
@@ -116,7 +116,7 @@ export default function LandingPage() {
 
             {/* Feature 3: Podcasts */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-[#E91E8C] to-[#FF6B35] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-gradient-to-br from-accent-secondary to-accent-orange rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Mic className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
@@ -130,7 +130,7 @@ export default function LandingPage() {
 
             {/* Feature 4: Mind Maps */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-[#FF6B35] to-[#E91E8C] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-gradient-to-br from-accent-orange to-accent-secondary rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Network className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
@@ -144,7 +144,7 @@ export default function LandingPage() {
 
             {/* Feature 5: Learning Style */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-[#7B3FF2] to-[#FF6B35] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-gradient-to-br from-accent-primary to-accent-orange rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Brain className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
@@ -158,7 +158,7 @@ export default function LandingPage() {
 
             {/* Feature 6: Multi-format */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-[#2D3E9F] to-[#E91E8C] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-gradient-to-br from-accent-blue to-accent-secondary rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Sparkles className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
