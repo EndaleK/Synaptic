@@ -1,11 +1,54 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
 import { Check, Sparkles } from "lucide-react"
 
 export default function PricingPage() {
   const { isSignedIn } = useAuth()
+  const [isUpgrading, setIsUpgrading] = useState(false)
+
+  // TODO: Replace with your actual Stripe Price ID from dashboard
+  // Follow STRIPE_SETUP_GUIDE.md Step 3 to get your Price ID
+  const STRIPE_PRICE_ID = 'price_YOUR_ACTUAL_PRICE_ID'
+
+  const handleUpgrade = async () => {
+    if (!isSignedIn) {
+      window.location.href = '/sign-up'
+      return
+    }
+
+    if (STRIPE_PRICE_ID === 'price_YOUR_ACTUAL_PRICE_ID') {
+      alert('Please configure your Stripe Price ID first. See STRIPE_SETUP_GUIDE.md for instructions.')
+      return
+    }
+
+    setIsUpgrading(true)
+    try {
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceId: STRIPE_PRICE_ID,
+          tier: 'premium'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session')
+      }
+
+      const data = await response.json()
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error)
+      alert('Failed to start checkout. Please try again.')
+      setIsUpgrading(false)
+    }
+  }
 
   const tiers = [
     {
@@ -23,6 +66,7 @@ export default function PricingPage() {
       cta: isSignedIn ? "Current Plan" : "Get Started",
       href: isSignedIn ? "/dashboard" : "/sign-up",
       popular: false,
+      isPremium: false,
     },
     {
       name: "Premium",
@@ -44,6 +88,7 @@ export default function PricingPage() {
       cta: "Start Free Trial",
       href: isSignedIn ? "/dashboard?upgrade=true" : "/sign-up",
       popular: true,
+      isPremium: true,
     },
   ]
 
@@ -130,16 +175,30 @@ export default function PricingPage() {
               </div>
 
               {/* CTA Button */}
-              <Link
-                href={tier.href}
-                className={`block w-full py-3.5 rounded-xl font-semibold text-center transition-all mb-8 ${
-                  tier.popular
-                    ? "bg-white dark:bg-black text-black dark:text-white hover:scale-105"
-                    : "bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
-                }`}
-              >
-                {tier.cta}
-              </Link>
+              {tier.isPremium ? (
+                <button
+                  onClick={handleUpgrade}
+                  disabled={isUpgrading}
+                  className={`block w-full py-3.5 rounded-xl font-semibold text-center transition-all mb-8 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    tier.popular
+                      ? "bg-white dark:bg-black text-black dark:text-white hover:scale-105"
+                      : "bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+                  }`}
+                >
+                  {isUpgrading ? 'Processing...' : tier.cta}
+                </button>
+              ) : (
+                <Link
+                  href={tier.href}
+                  className={`block w-full py-3.5 rounded-xl font-semibold text-center transition-all mb-8 ${
+                    tier.popular
+                      ? "bg-white dark:bg-black text-black dark:text-white hover:scale-105"
+                      : "bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+                  }`}
+                >
+                  {tier.cta}
+                </Link>
+              )}
 
               {/* Features */}
               <ul className="space-y-4">

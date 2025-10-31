@@ -5,6 +5,7 @@ import { useUser } from "@clerk/nextjs"
 import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar, Link2, Globe, CheckCircle2, ArrowRight, Brain, Clock, Bell, BarChart3, Target } from "lucide-react"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import LearningProfileBanner from "@/components/LearningProfileBanner"
+import SubscriptionStatus from "@/components/SubscriptionStatus"
 import type { Document } from "@/lib/supabase/types"
 
 interface DashboardHomeProps {
@@ -129,6 +130,9 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
             </div>
           </div>
         </div>
+
+        {/* Subscription Status */}
+        <SubscriptionStatus />
 
         {/* Learning Profile Banner - Shows Below Welcome */}
         <LearningProfileBanner
