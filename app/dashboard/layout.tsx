@@ -118,9 +118,9 @@ export default function DashboardLayout({
             <Link href="/dashboard" className="flex items-center group">
               {!sidebarCollapsed ? (
                 <img
-                  src="/logo-full.png"
+                  src="/logo-dashboard.svg"
                   alt="Synaptic - Study Smarter"
-                  className="h-24 w-auto flex-shrink-0"
+                  className="h-20 w-auto flex-shrink-0"
                 />
               ) : (
                 <img
