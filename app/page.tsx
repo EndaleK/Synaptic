@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
 import { BookOpen, Brain, MessageSquare, Mic, Network, Sparkles, ArrowRight, Check } from "lucide-react"
+import Logo, { AnimatedLogo } from "@/components/Logo"
 
 export default function LandingPage() {
   const { isSignedIn } = useAuth()
@@ -19,48 +20,38 @@ export default function LandingPage() {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
           <div className="text-center max-w-4xl mx-auto">
-            {/* Brand Name */}
-            <div className="mb-6">
-              <h1 className="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 tracking-tight">
-                Synaptic
-              </h1>
-            </div>
-
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-black/5 dark:bg-white/5 rounded-full mb-8">
-              <Sparkles className="w-4 h-4 text-black dark:text-white" />
-              <span className="text-sm font-medium text-black dark:text-white">
-                AI-Powered Personalized Learning
-              </span>
+            {/* Brand Logo */}
+            <div className="mb-8 flex justify-center">
+              <AnimatedLogo variant="full" size={180} />
             </div>
 
             {/* Headline */}
             <h2 className="text-5xl md:text-7xl font-bold text-black dark:text-white mb-6 leading-tight">
-              Learn Smarter,
+              Transform Documents Into
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
-                Not Harder
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35]">
+                Knowledge
               </span>
             </h2>
 
             {/* Subheadline */}
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-10 max-w-3xl mx-auto leading-relaxed">
-              Transform your documents into flashcards, podcasts, and mind maps.
-              AI adapts to your unique learning style for maximum retention.
+              AI-powered flashcards, podcasts, and mind maps tailored to your learning style.
+              Study smarter with intelligent, personalized content.
             </p>
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link
                 href={isSignedIn ? "/dashboard" : "/sign-in"}
-                className="group px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2"
+                className="group px-8 py-4 bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35] text-white rounded-xl font-semibold hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2"
               >
                 {isSignedIn ? "Go to Dashboard" : "Get Started Free"}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="#features"
-                className="px-8 py-4 bg-white dark:bg-gray-800 text-purple-600 dark:text-white border-2 border-purple-200 dark:border-gray-700 rounded-xl font-semibold hover:bg-purple-50 dark:hover:bg-gray-700 transition-all"
+                className="px-8 py-4 bg-white dark:bg-gray-800 text-[#7B3FF2] dark:text-white border-2 border-[#E91E8C]/30 dark:border-gray-700 rounded-xl font-semibold hover:bg-purple-50 dark:hover:bg-gray-700 transition-all"
               >
                 Explore Features
               </Link>
@@ -91,7 +82,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature 1: Flashcards */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-gradient-to-br from-[#7B3FF2] to-[#E91E8C] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <BookOpen className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
@@ -105,7 +96,7 @@ export default function LandingPage() {
 
             {/* Feature 2: Chat */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-gradient-to-br from-[#2D3E9F] to-[#7B3FF2] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <MessageSquare className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
@@ -119,7 +110,7 @@ export default function LandingPage() {
 
             {/* Feature 3: Podcasts */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-gradient-to-br from-[#E91E8C] to-[#FF6B35] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Mic className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
@@ -133,7 +124,7 @@ export default function LandingPage() {
 
             {/* Feature 4: Mind Maps */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-gradient-to-br from-[#FF6B35] to-[#E91E8C] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Network className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
@@ -147,7 +138,7 @@ export default function LandingPage() {
 
             {/* Feature 5: Learning Style */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-gradient-to-br from-[#7B3FF2] to-[#FF6B35] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Brain className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
@@ -161,7 +152,7 @@ export default function LandingPage() {
 
             {/* Feature 6: Multi-format */}
             <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-gradient-to-br from-[#2D3E9F] to-[#E91E8C] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Sparkles className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
