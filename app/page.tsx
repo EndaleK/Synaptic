@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
 import { BookOpen, Brain, MessageSquare, Mic, Network, Sparkles, ArrowRight, Check } from "lucide-react"
-import Logo, { AnimatedLogo } from "@/components/Logo"
+import Logo from "@/components/Logo"
 
 export default function LandingPage() {
   const { isSignedIn } = useAuth()
@@ -22,7 +22,13 @@ export default function LandingPage() {
           <div className="text-center max-w-4xl mx-auto">
             {/* Brand Logo */}
             <div className="mb-8 flex justify-center">
-              <AnimatedLogo variant="full" size={180} />
+              <img
+                src="/logo-full.png"
+                alt="Synaptic - Study Smarter"
+                width={270}
+                height={270}
+                className="object-contain"
+              />
             </div>
 
             {/* Headline */}
