@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
-import { BookOpen, Menu, X } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { useState } from "react"
 
 export default function MarketingLayout({
@@ -21,9 +21,11 @@ export default function MarketingLayout({
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <BookOpen className="w-6 h-6 text-white dark:text-black" />
-              </div>
+              <img
+                src="/logo-icon.svg"
+                alt="Synaptic"
+                className="w-10 h-10 group-hover:scale-110 transition-transform"
+              />
               <span className="text-xl font-bold text-black dark:text-white">
                 Synaptic
               </span>
@@ -160,9 +162,11 @@ export default function MarketingLayout({
             {/* Brand */}
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center">
-                  <BookOpen className="w-6 h-6 text-white dark:text-black" />
-                </div>
+                <img
+                  src="/logo-icon.svg"
+                  alt="Synaptic"
+                  className="w-10 h-10"
+                />
                 <span className="text-xl font-bold text-black dark:text-white">
                   Synaptic
                 </span>

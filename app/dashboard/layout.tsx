@@ -118,9 +118,11 @@ export default function DashboardLayout({
             <Link href="/dashboard" className="flex items-center gap-3 group">
               {!sidebarCollapsed ? (
                 <>
-                  <div className="w-10 h-10 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-xl font-bold">S</span>
-                  </div>
+                  <img
+                    src="/logo-icon.svg"
+                    alt="Synaptic"
+                    className="w-10 h-10 flex-shrink-0"
+                  />
                   <div className="flex flex-col">
                     <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-accent-secondary">
                       Synaptic
@@ -131,9 +133,11 @@ export default function DashboardLayout({
                   </div>
                 </>
               ) : (
-                <div className="w-10 h-10 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center">
-                  <span className="text-white text-xl font-bold">S</span>
-                </div>
+                <img
+                  src="/logo-icon.svg"
+                  alt="Synaptic"
+                  className="w-10 h-10"
+                />
               )}
             </Link>
             {/* Collapse button - desktop only */}
