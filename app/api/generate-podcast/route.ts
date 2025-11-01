@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
       documentId,
       format = 'deep-dive',
       customPrompt,
-      targetDuration = 10
+      targetDuration = 10,
+      language = 'en-us'
     } = body
 
     // Validate input
@@ -48,7 +49,8 @@ export async function POST(req: NextRequest) {
         documentId,
         format,
         customPrompt,
-        targetDuration
+        targetDuration,
+        language
       })
     } catch (validationError) {
       logger.warn('Podcast generation validation failed', { userId, error: validationError })
@@ -189,12 +191,13 @@ export async function POST(req: NextRequest) {
     })
 
     // Step 1: Generate podcast script with selected provider
-    logger.debug('Generating podcast script', { userId, documentId, format, provider: scriptProvider.name })
+    logger.debug('Generating podcast script', { userId, documentId, format, language, provider: scriptProvider.name })
     const script = await generatePodcastScript({
       text: document.extracted_text,
       format: format as PodcastFormat,
       customPrompt,
       targetDuration,
+      language,
       ...personalizationOptions,
       provider: scriptProvider
     })
@@ -207,8 +210,8 @@ export async function POST(req: NextRequest) {
     })
 
     // Step 2: Generate audio for each line
-    logger.debug('Generating podcast audio', { userId, documentId, lineCount: script.lines.length })
-    const audioSegments = await generatePodcastAudio(script.lines)
+    logger.debug('Generating podcast audio', { userId, documentId, lineCount: script.lines.length, language: script.language })
+    const audioSegments = await generatePodcastAudio(script.lines, script.language)
 
     // Step 3: Concatenate audio segments
     logger.debug('Concatenating audio segments', { userId, documentId, segmentCount: audioSegments.length })

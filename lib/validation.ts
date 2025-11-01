@@ -52,6 +52,10 @@ export const PodcastGenerationSchema = z.object({
   documentId: z.string().uuid(),
   voice: z.enum(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']).optional(),
   speed: z.number().min(0.25).max(4.0).optional(),
+  language: z.enum(['en-us', 'en-gb', 'ja', 'zh', 'es', 'fr', 'hi', 'it', 'pt-br']).optional(),
+  format: z.enum(['deep-dive', 'brief', 'critique', 'debate']).optional(),
+  customPrompt: z.string().optional(),
+  targetDuration: z.number().min(1).max(60).optional(),
 })
 
 /**

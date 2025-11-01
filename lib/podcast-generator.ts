@@ -6,6 +6,7 @@ import { getProviderForFeature, type AIProvider } from "./ai"
 export type PodcastFormat = 'deep-dive' | 'brief' | 'critique' | 'debate'
 export type Speaker = 'host_a' | 'host_b'
 export type Emotion = 'neutral' | 'excited' | 'thoughtful' | 'curious'
+export type PodcastLanguage = 'en-us' | 'en-gb' | 'ja' | 'zh' | 'es' | 'fr' | 'hi' | 'it' | 'pt-br'
 
 export interface ScriptLine {
   speaker: Speaker
@@ -18,6 +19,7 @@ export interface PodcastScript {
   title: string
   description: string
   estimatedDuration: number // in seconds
+  language: PodcastLanguage // Language for TTS generation
   lines: ScriptLine[]
 }
 
@@ -26,6 +28,7 @@ interface GeneratePodcastScriptOptions {
   format?: PodcastFormat
   customPrompt?: string
   targetDuration?: number // in minutes, default 10
+  language?: PodcastLanguage // Language for TTS (default: en-us)
   learningStyle?: LearningStyle
   teachingStylePreference?: TeachingStylePreference
   varkScores?: {
@@ -50,6 +53,7 @@ export async function generatePodcastScript(
     format = 'deep-dive',
     customPrompt,
     targetDuration = 10,
+    language = 'en-us',
     learningStyle,
     teachingStylePreference,
     varkScores,
@@ -197,10 +201,11 @@ Make it engaging and educational!`
         title: parsed.title || "Untitled Podcast",
         description: parsed.description || "An AI-generated audio overview",
         estimatedDuration,
+        language,
         lines: validatedLines
       }
 
-      console.log(`Generated podcast script: "${script.title}", ${validatedLines.length} lines, ~${estimatedDuration}s`)
+      console.log(`Generated podcast script: "${script.title}", ${validatedLines.length} lines, ~${estimatedDuration}s, language: ${language}`)
 
       return script
 

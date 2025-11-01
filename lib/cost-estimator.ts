@@ -30,6 +30,11 @@ const PRICING = {
     input: 10.00, // $10.00 per 1M input tokens
     output: 30.00, // $30.00 per 1M output tokens
   },
+  // Text-to-Speech Models
+  'lemonfox-tts': {
+    input: 2.50,  // $2.50 per 1M characters (83% cheaper than OpenAI TTS!)
+    output: 0,
+  },
   'tts-1': {
     input: 15.00, // $15.00 per 1M characters
     output: 0,
