@@ -60,14 +60,20 @@ export async function checkUsageLimit(
       .single()
 
     if (profileError || !profile) {
-      logger.error('Failed to fetch user profile for usage check', profileError, { clerkUserId, feature })
+      logger.warn('User profile not found, allowing action with free tier defaults', {
+        clerkUserId,
+        feature,
+        error: profileError
+      })
+      // Gracefully allow the action with free tier limits if we can't fetch the profile
+      // This handles cases where the user profile doesn't exist yet
       return {
-        allowed: false,
-        tier: 'unknown',
+        allowed: true, // Changed from false to true to be more graceful
+        tier: 'free',
         used: 0,
-        limit: 0,
-        remaining: 0,
-        message: 'Unable to verify subscription status'
+        limit: USAGE_LIMITS.free[feature],
+        remaining: USAGE_LIMITS.free[feature],
+        message: undefined
       }
     }
 
