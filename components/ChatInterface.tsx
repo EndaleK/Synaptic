@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain, ChevronDown } from "lucide-react"
+import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain, ChevronDown, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 import { useDocumentStore } from "@/lib/store/useStore"
@@ -107,6 +107,22 @@ export default function ChatInterface() {
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [showModeDropdown])
+
+  // Keyboard shortcut: Cmd/Ctrl+K to clear chat
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        if (messages.length > 0) {
+          setMessages([])
+          setInputMessage("")
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [messages.length])
 
   // Load document from store if available
   useEffect(() => {
@@ -299,8 +315,19 @@ export default function ChatInterface() {
     }
   }
 
+  const handleClearChat = () => {
+    setMessages([])
+    setInputMessage("")
+  }
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return
+
+    // Check for /clear command
+    if (inputMessage.trim() === '/clear') {
+      handleClearChat()
+      return
+    }
 
     if (!chatDocument.file) {
       alert("Please upload a document first to start chatting.")
