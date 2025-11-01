@@ -56,9 +56,8 @@ export default function SubscriptionStatus() {
   const handleUpgrade = async () => {
     setIsUpgrading(true)
     try {
-      // TODO: Replace with your actual Stripe Price ID from dashboard
-      // Follow STRIPE_SETUP_GUIDE.md Step 3 to get your Price ID
-      const STRIPE_PRICE_ID = 'price_YOUR_ACTUAL_PRICE_ID'
+      // Live mode Stripe Price ID from dashboard
+      const STRIPE_PRICE_ID = 'price_1SOk7JFjlulH6DEoUU8OO326'
 
       if (STRIPE_PRICE_ID === 'price_YOUR_ACTUAL_PRICE_ID') {
         alert('Please configure your Stripe Price ID first. See STRIPE_SETUP_GUIDE.md for instructions.')

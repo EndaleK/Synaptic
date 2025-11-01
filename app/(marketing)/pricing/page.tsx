@@ -9,9 +9,8 @@ export default function PricingPage() {
   const { isSignedIn } = useAuth()
   const [isUpgrading, setIsUpgrading] = useState(false)
 
-  // TODO: Replace with your actual Stripe Price ID from dashboard
-  // Follow STRIPE_SETUP_GUIDE.md Step 3 to get your Price ID
-  const STRIPE_PRICE_ID = 'price_YOUR_ACTUAL_PRICE_ID'
+  // Live mode Stripe Price ID from dashboard
+  const STRIPE_PRICE_ID = 'price_1SOk7JFjlulH6DEoUU8OO326'
 
   const handleUpgrade = async () => {
     if (!isSignedIn) {

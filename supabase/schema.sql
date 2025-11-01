@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   preferred_mode TEXT CHECK (preferred_mode IN ('flashcards', 'chat', 'podcast', 'mindmap')),
   subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'premium', 'enterprise')),
   stripe_customer_id TEXT UNIQUE,
+  stripe_subscription_id TEXT,
   subscription_status TEXT DEFAULT 'inactive' CHECK (subscription_status IN ('active', 'inactive', 'cancelled', 'past_due')),
   documents_used_this_month INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
