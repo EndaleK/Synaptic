@@ -72,7 +72,7 @@ export default function QuickActionButton({ className }: QuickActionButtonProps)
       )}
 
       {/* Action Menu */}
-      <div className={cn("fixed bottom-44 right-6 z-50 flex flex-col-reverse gap-3", className)}>
+      <div className={cn("fixed bottom-52 right-6 z-50 flex flex-col-reverse gap-3", className)}>
         {isOpen && (
           <>
             {actions.map((action, index) => {
@@ -110,7 +110,7 @@ export default function QuickActionButton({ className }: QuickActionButtonProps)
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "fixed bottom-32 right-6 z-50 w-14 h-14 bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center group",
+          "fixed bottom-40 right-6 z-50 w-14 h-14 bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center group",
           className
         )}
         aria-label="Quick actions"
