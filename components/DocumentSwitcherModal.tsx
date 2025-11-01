@@ -108,7 +108,7 @@ export default function DocumentSwitcherModal({ onDocumentSwitch }: DocumentSwit
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 right-6 z-40 w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all flex items-center justify-center group"
+        className="fixed bottom-20 right-6 z-40 w-14 h-14 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all flex items-center justify-center group"
         title="Switch Document (Cmd+K)"
       >
         <FileText className="w-6 h-6" />
@@ -145,7 +145,7 @@ export default function DocumentSwitcherModal({ onDocumentSwitch }: DocumentSwit
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search documents..."
-                  className="w-full pl-10 pr-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-primary"
                   autoFocus
                 />
               </div>
@@ -155,7 +155,7 @@ export default function DocumentSwitcherModal({ onDocumentSwitch }: DocumentSwit
             <div className="flex-1 overflow-y-auto p-4">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-8 h-8 border-2 border-accent-primary border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : filteredDocuments.length === 0 ? (
                 <div className="text-center py-12">
@@ -174,7 +174,7 @@ export default function DocumentSwitcherModal({ onDocumentSwitch }: DocumentSwit
                         onClick={() => handleDocumentSelect(doc)}
                         className={`w-full text-left p-4 rounded-lg transition-all ${
                           isActive
-                            ? "bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-500"
+                            ? "bg-accent-primary/10 dark:bg-accent-primary/20 border-2 border-accent-primary"
                             : "bg-gray-50 dark:bg-gray-800 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
                         }`}
                       >
@@ -182,10 +182,10 @@ export default function DocumentSwitcherModal({ onDocumentSwitch }: DocumentSwit
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <FileText className={`w-4 h-4 flex-shrink-0 ${
-                                isActive ? "text-purple-600 dark:text-purple-400" : "text-gray-400"
+                                isActive ? "text-accent-primary" : "text-gray-400"
                               }`} />
                               <h3 className={`font-semibold truncate ${
-                                isActive ? "text-purple-700 dark:text-purple-300" : "text-black dark:text-white"
+                                isActive ? "text-accent-primary" : "text-black dark:text-white"
                               }`}>
                                 {doc.file_name}
                               </h3>
@@ -195,7 +195,7 @@ export default function DocumentSwitcherModal({ onDocumentSwitch }: DocumentSwit
                             </p>
                           </div>
                           {isActive && (
-                            <Check className="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                            <Check className="w-5 h-5 text-accent-primary flex-shrink-0" />
                           )}
                         </div>
                       </button>
