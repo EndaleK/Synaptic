@@ -45,10 +45,14 @@ export async function POST(request: NextRequest) {
         message: body.message,
         mode: body.teachingMode
       })
-    } catch (validationError) {
-      logger.warn("Chat validation failed", { userId, error: validationError })
+    } catch (validationError: any) {
+      logger.warn("Chat validation failed", { userId, error: validationError, body })
+      const errorMessage = validationError.errors?.[0]?.message || validationError.message || "Invalid input"
       return NextResponse.json(
-        { error: "Invalid input. Message must be 1-10,000 characters." },
+        {
+          error: `Validation failed: ${errorMessage}`,
+          details: validationError.errors || validationError.message
+        },
         { status: 400 }
       )
     }
