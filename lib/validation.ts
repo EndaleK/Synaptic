@@ -34,7 +34,7 @@ export const URLImportSchema = z.object({
 export const ChatMessageSchema = z.object({
   message: z.string().min(1).max(10000),
   documentId: z.string().uuid().optional(),
-  mode: z.enum(['direct', 'socratic', 'guided']).optional(),
+  mode: z.enum(['direct', 'socratic', 'guided', 'mixed']).optional(),
 })
 
 /**
