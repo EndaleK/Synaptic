@@ -102,8 +102,8 @@ function getDefaultProvider(feature: string): ProviderType {
     'mindmap': 'deepseek',           // Cost-effective for concept extraction
     'podcast_script': 'deepseek',    // Cost-effective for script generation
     'podcast_tts': 'openai',         // OpenAI has best TTS
-    'flashcards': 'openai',          // Existing implementation
-    'chat': 'openai',                // Existing implementation
+    'flashcards': 'deepseek',        // 60-70% cheaper than OpenAI
+    'chat': 'deepseek',              // 60-70% cheaper than OpenAI
   };
 
   return defaults[feature] || 'openai';

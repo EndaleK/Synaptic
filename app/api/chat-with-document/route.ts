@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import OpenAI from "openai"
 import { auth } from "@clerk/nextjs/server"
 import { getUserProfile, getUserLearningProfile } from "@/lib/supabase/user-profile"
 import { personalizePrompt, createLearningProfile, type LearningProfile } from "@/lib/personalization/personalization-engine"
@@ -8,6 +7,7 @@ import { applyRateLimit, RateLimits } from "@/lib/rate-limit"
 import { logger } from "@/lib/logger"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { ChatMessageSchema, validateDocumentLength, validateContentSafety } from "@/lib/validation"
+import { getProviderForFeature } from "@/lib/ai"
 
 interface ChatRequest {
   message: string
@@ -62,19 +62,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if OpenAI API key is configured
-    if (!process.env.OPENAI_API_KEY) {
+    // Get AI provider for chat (DeepSeek primary, OpenAI fallback)
+    const provider = getProviderForFeature('chat')
+
+    if (!provider.isConfigured()) {
       return NextResponse.json({
-        response: `I notice you haven't configured an OpenAI API key yet. To enable real document chat functionality:
+        response: `I notice you haven't configured an AI provider yet. To enable real document chat functionality:
 
 1. Create a .env.local file in your project root
-2. Add your OpenAI API key: OPENAI_API_KEY=your_key_here
+2. Add at least one AI provider API key:
+   - DEEPSEEK_API_KEY=your_key_here (recommended - 70% cheaper)
+   - OR OPENAI_API_KEY=your_key_here
 3. Restart the development server
 
-For now, I can see you asked: "${message}" about "${fileName || 'your document'}", but I need the API key to provide intelligent responses based on the document content.`,
+For now, I can see you asked: "${message}" about "${fileName || 'your document'}", but I need an AI provider to provide intelligent responses based on the document content.`,
         timestamp: new Date().toISOString()
       })
     }
+
+    // Log provider selection for cost monitoring
+    const envProvider = process.env.CHAT_PROVIDER
+    logger.info('Selected AI provider for chat', {
+      userId,
+      provider: provider.name,
+      reason: envProvider
+        ? `Using ${provider.name} (configured via CHAT_PROVIDER environment variable)`
+        : `Using ${provider.name} for cost-effective chat (60-70% cheaper than OpenAI)`
+    })
 
     // Validate document content if provided
     if (documentContent) {
@@ -118,10 +132,6 @@ Please try uploading a text-based document (TXT, DOCX) or a PDF with selectable 
         timestamp: new Date().toISOString()
       })
     }
-
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
 
     // Fetch user learning profile for personalization
     let learningProfile: LearningProfile | null = null
@@ -248,16 +258,19 @@ User Question: ${message}
 Please answer this question based only on the information provided in the document above. If the document doesn't contain relevant information to answer the question, please let me know.`
 
     // Estimate cost before making API call
+    const modelName = provider.name === 'deepseek' ? 'deepseek-chat' : 'gpt-3.5-turbo'
     const promptText = systemPrompt + userPrompt
-    const costEstimate = estimateRequestCost('gpt-3.5-turbo', promptText, 1000)
+    const costEstimate = estimateRequestCost(modelName as any, promptText, 1000)
     logger.debug("Cost estimate for chat", {
       userId,
+      provider: provider.name,
+      model: modelName,
       ...costEstimate
     })
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
+    // Use provider.complete() instead of OpenAI SDK
+    const completion = await provider.complete(
+      [
         {
           role: "system",
           content: systemPrompt
@@ -267,25 +280,26 @@ Please answer this question based only on the information provided in the docume
           content: userPrompt
         }
       ],
-      temperature: 0.1, // Lower temperature for more focused, factual responses
-      max_tokens: 1000,
-    })
+      {
+        temperature: 0.1, // Lower temperature for more focused, factual responses
+        maxTokens: 1000,
+      }
+    )
 
-    const aiResponse = completion.choices[0]?.message?.content ||
+    const aiResponse = completion.content ||
       "I apologize, but I'm having trouble processing your question at the moment. Please try rephrasing your question or try again."
 
     // Track actual usage
-    const actualTokens = completion.usage
-    if (actualTokens) {
+    if (completion.usage) {
       trackUsage(
         userId,
-        'gpt-3.5-turbo',
-        actualTokens.prompt_tokens,
-        actualTokens.completion_tokens
+        modelName as any,
+        completion.usage.promptTokens,
+        completion.usage.completionTokens
       )
     } else {
       // Fallback to estimate if actual usage not available
-      trackUsage(userId, 'gpt-3.5-turbo', costEstimate.inputTokens, costEstimate.outputTokens)
+      trackUsage(userId, modelName as any, costEstimate.inputTokens, costEstimate.outputTokens)
     }
 
     const duration = Date.now() - startTime
@@ -305,22 +319,31 @@ Please answer this question based only on the information provided in the docume
 
   } catch (error: any) {
     const duration = Date.now() - startTime
+
+    // Get userId for error logging (may be undefined if auth failed)
+    let errorUserId = 'unknown'
+    try {
+      const { userId: authUserId } = await auth()
+      errorUserId = authUserId || 'unknown'
+    } catch {}
+
     logger.error("Chat API error", error, {
-      userId,
+      userId: errorUserId,
       duration: `${duration}ms`
     })
 
-    // Handle OpenAI specific errors
-    if (error.response) {
-      logger.error("OpenAI API error in chat", error, {
-        userId,
-        status: error.response.status,
-        data: error.response.data
+    // Handle AI provider errors
+    if (error.response || error.message?.includes('API')) {
+      logger.error("AI provider API error in chat", error, {
+        userId: errorUserId,
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
       })
 
       logger.api('POST', '/api/chat-with-document', 500, duration, {
-        userId,
-        error: 'OpenAI API error'
+        userId: errorUserId,
+        error: 'AI provider API error'
       })
 
       return NextResponse.json({
@@ -330,7 +353,7 @@ Please answer this question based only on the information provided in the docume
     }
 
     logger.api('POST', '/api/chat-with-document', 500, duration, {
-      userId,
+      userId: errorUserId,
       error: 'Unknown error'
     })
 
