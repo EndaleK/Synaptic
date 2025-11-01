@@ -232,15 +232,16 @@ export async function POST(request: NextRequest) {
     })
 
     // Track usage (use the selected provider's model for cost tracking)
-    const modelMap: Record<string, 'gpt-3.5-turbo' | 'claude-3-5-sonnet' | 'gemini-1.5-pro'> = {
+    const modelMap: Record<string, 'gpt-3.5-turbo' | 'claude-3-5-sonnet' | 'gemini-1.5-pro' | 'deepseek-chat'> = {
+      'deepseek': 'deepseek-chat',
       'openai': 'gpt-3.5-turbo',
       'claude': 'claude-3-5-sonnet',
       'gemini': 'gemini-1.5-pro'
     }
 
     const modelForCost = modelMap[result.provider] || 'gpt-3.5-turbo'
-    const costEstimate = estimateRequestCost(modelForCost, textContent, 2000)
-    trackUsage(userId, modelForCost, costEstimate.inputTokens, costEstimate.outputTokens)
+    const costEstimate = estimateRequestCost(modelForCost as any, textContent, 2000)
+    trackUsage(userId, modelForCost as any, costEstimate.inputTokens, costEstimate.outputTokens)
 
     // Increment usage count for subscription tier limits
     await incrementUsage(userId, 'flashcards')

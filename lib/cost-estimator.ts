@@ -12,6 +12,11 @@ import { logger } from './logger'
  * Prices are per 1M tokens
  */
 const PRICING = {
+  // DeepSeek Models (MOST COST-EFFECTIVE!)
+  'deepseek-chat': {
+    input: 0.14,  // $0.14 per 1M input tokens (10x cheaper than GPT-3.5!)
+    output: 0.28, // $0.28 per 1M output tokens (5x cheaper than GPT-3.5!)
+  },
   // OpenAI Models
   'gpt-4o-mini': {
     input: 0.15,  // $0.15 per 1M input tokens

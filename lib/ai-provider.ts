@@ -18,8 +18,9 @@ import { Flashcard } from './types'
 import { generateFlashcards } from './openai'
 import { generateFlashcardsWithClaude, chatWithClaude, generateMindMapWithClaude } from './anthropic'
 import { generateFlashcardsWithGemini, chatWithGemini } from './gemini'
+import { generateFlashcardsWithDeepSeek, chatWithDeepSeek } from './deepseek'
 
-export type AIProvider = 'openai' | 'claude' | 'gemini'
+export type AIProvider = 'openai' | 'claude' | 'gemini' | 'deepseek'
 export type OperationType = 'flashcards' | 'chat' | 'mindmap' | 'podcast'
 
 export interface ProviderSelection {
@@ -30,11 +31,13 @@ export interface ProviderSelection {
 
 /**
  * Context window limits (in characters, approximate)
+ * - DeepSeek: ~100K chars (similar to GPT-3.5)
  * - GPT-3.5: ~100K chars (25K tokens * 4 chars/token)
  * - Claude 3.5 Sonnet: ~800K chars (200K tokens * 4 chars/token)
  * - Gemini 1.5 Pro: ~8M chars (2M tokens * 4 chars/token)
  */
 const CONTEXT_LIMITS = {
+  deepseek: 100000, // 100K chars
   openai: 100000, // 100K chars
   claude: 800000, // 800K chars
   gemini: 8000000, // 8M chars
@@ -44,6 +47,7 @@ const CONTEXT_LIMITS = {
  * Cost per million tokens (approximate USD)
  */
 const COST_PER_MILLION = {
+  deepseek: { input: 0.14, output: 0.28 }, // DeepSeek - 10x cheaper!
   openai: { input: 0.5, output: 1.5 }, // GPT-3.5-turbo
   claude: { input: 3.0, output: 15.0 }, // Claude 3.5 Sonnet
   gemini: { input: 7.0, output: 21.0 }, // Gemini 1.5 Pro
@@ -101,11 +105,30 @@ export function selectAIProvider(
     }
   }
 
-  // For small documents, use GPT-3.5 (fast and cheap)
+  // For small documents, use DeepSeek (10x cheaper than OpenAI!)
+  // Check if DeepSeek is available
+  if (process.env.DEEPSEEK_API_KEY) {
+    const estimatedCost = (estimatedTokens / 1000000) * COST_PER_MILLION.deepseek.input +
+                         (2000 / 1000000) * COST_PER_MILLION.deepseek.output
+
+    logger.info('Selected DeepSeek for small document', {
+      textLength,
+      estimatedTokens,
+      estimatedCost: `$${estimatedCost.toFixed(4)}`,
+    })
+
+    return {
+      provider: 'deepseek',
+      reason: `Document size (${Math.round(textLength / 1000)}K chars) is optimal for DeepSeek (10x cheaper than GPT-3.5, same quality).`,
+      estimatedCost,
+    }
+  }
+
+  // Fallback to OpenAI if DeepSeek not available
   const estimatedCost = (estimatedTokens / 1000000) * COST_PER_MILLION.openai.input +
                        (2000 / 1000000) * COST_PER_MILLION.openai.output
 
-  logger.info('Selected OpenAI for small document', {
+  logger.info('Selected OpenAI for small document (DeepSeek not available)', {
     textLength,
     estimatedTokens,
     estimatedCost: `$${estimatedCost.toFixed(4)}`,
@@ -113,7 +136,7 @@ export function selectAIProvider(
 
   return {
     provider: 'openai',
-    reason: `Document size (${Math.round(textLength / 1000)}K chars) is optimal for GPT-3.5-turbo (fast and cost-effective).`,
+    reason: `Document size (${Math.round(textLength / 1000)}K chars) is optimal for GPT-3.5-turbo (DeepSeek not configured).`,
     estimatedCost,
   }
 }
@@ -135,7 +158,13 @@ export async function generateFlashcardsAuto(
   let rawFlashcards: any[]
 
   try {
-    if (selection.provider === 'gemini') {
+    if (selection.provider === 'deepseek') {
+      // Calculate target cards based on content
+      const wordCount = text.split(/\s+/).length
+      const targetCards = Math.max(5, Math.min(Math.floor(wordCount / 250), 50))
+
+      rawFlashcards = await generateFlashcardsWithDeepSeek(text, targetCards)
+    } else if (selection.provider === 'gemini') {
       // Calculate target cards based on content
       const wordCount = text.split(/\s+/).length
       const targetCards = Math.max(5, Math.min(Math.floor(wordCount / 250), 50))
@@ -174,10 +203,15 @@ export async function generateFlashcardsAuto(
 
     // Fallback to OpenAI if selected provider fails
     if (selection.provider !== 'openai') {
-      return {
-        flashcards: await generateFlashcards(text, options),
-        provider: 'openai',
-        providerReason: `Fallback to OpenAI after ${selection.provider} failure`,
+      try {
+        return {
+          flashcards: await generateFlashcards(text, options),
+          provider: 'openai',
+          providerReason: `Fallback to OpenAI after ${selection.provider} failure`,
+        }
+      } catch (fallbackError) {
+        logger.error('OpenAI fallback also failed', fallbackError)
+        throw new Error(`Both ${selection.provider} and OpenAI fallback failed. Please check API keys.`)
       }
     }
 
