@@ -25,7 +25,32 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { profile, error } = await getUserProfile(userId)
+    let { profile, error } = await getUserProfile(userId)
+
+    // If profile doesn't exist, create it automatically
+    if (!profile && !error) {
+      const user = await currentUser()
+      if (user) {
+        const { profile: newProfile, error: createError } = await createUserProfile({
+          clerk_user_id: userId,
+          email: user.emailAddresses[0]?.emailAddress || '',
+          full_name: user.fullName ||
+                     `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+                     user.username ||
+                     undefined
+        })
+
+        if (createError) {
+          console.error('Auto-create profile failed:', createError)
+          return NextResponse.json(
+            { error: `Failed to create profile: ${createError}` },
+            { status: 500 }
+          )
+        }
+
+        profile = newProfile
+      }
+    }
 
     if (error) {
       return NextResponse.json(
@@ -34,7 +59,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // If profile doesn't exist, return null (not an error)
     return NextResponse.json({ profile })
   } catch (error) {
     console.error('GET /api/user/profile error:', error)
