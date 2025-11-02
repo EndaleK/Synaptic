@@ -244,7 +244,14 @@ export default function DashboardPage() {
       case "home":
         return (
           <DashboardHome
-            onModeSelect={(mode) => setActiveMode(mode as any)}
+            onModeSelect={(mode) => {
+              // Redirect to dedicated Writer page
+              if (mode === 'writer') {
+                router.push('/dashboard/writer')
+              } else {
+                setActiveMode(mode as any)
+              }
+            }}
             onOpenAssessment={() => setShowAssessment(true)}
           />
         )
