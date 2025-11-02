@@ -69,6 +69,7 @@ export default function WritingEditor({
       })
     ],
     content: initialContent,
+    immediatelyRender: false, // Fix SSR hydration mismatch
     editorProps: {
       attributes: {
         class: 'prose prose-lg max-w-none focus:outline-none min-h-[500px] px-8 py-6'
