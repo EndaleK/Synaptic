@@ -162,9 +162,30 @@ export async function POST(request: NextRequest) {
       message: uploadEstimate.message
     })
 
+    // Get user profile ID first (documents.user_id references user_profiles.id, not clerk_user_id)
+    const supabase = await import('@/lib/supabase/server').then(m => m.createClient())
+    const client = await supabase
+
+    const { data: profile, error: profileError } = await client
+      .from('user_profiles')
+      .select('id')
+      .eq('clerk_user_id', userId)
+      .single()
+
+    if (profileError || !profile) {
+      logger.error('User profile not found', profileError, { userId })
+      return NextResponse.json(
+        { error: 'User profile not found. Please ensure your account is set up correctly.' },
+        { status: 404 }
+      )
+    }
+
+    const userProfileId = profile.id
+    logger.debug('Found user profile ID', { userId, userProfileId })
+
     // Step 1: Create document record with pending status
     const documentData: DocumentInsert = {
-      user_id: userId,
+      user_id: userProfileId, // Use Supabase UUID, not Clerk ID
       file_name: file.name,
       file_type: file.type,
       file_size: file.size,
@@ -320,9 +341,6 @@ export async function POST(request: NextRequest) {
     logger.debug('Document text extracted and validated', { userId, documentId, textLength: extractedText.length })
 
     // Step 4: Update document with storage path and extracted text
-    const supabase = await import('@/lib/supabase/server').then(m => m.createClient())
-    const client = await supabase
-
     const { error: updateError } = await client
       .from('documents')
       .update({
