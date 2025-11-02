@@ -24,6 +24,9 @@ export default function CitationManager({
   const [isAddingNew, setIsAddingNew] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [isFetchingMetadata, setIsFetchingMetadata] = useState(false)
+  const [doiInput, setDoiInput] = useState('')
+  const [urlInput, setUrlInput] = useState('')
   const [newCitation, setNewCitation] = useState<Omit<Citation, 'id'>>({
     author: '',
     title: '',
@@ -63,6 +66,56 @@ export default function CitationManager({
     }
   }
 
+  const handleFetchMetadata = async () => {
+    if (!doiInput && !urlInput) {
+      alert('Please enter a DOI or URL')
+      return
+    }
+
+    setIsFetchingMetadata(true)
+
+    try {
+      const response = await fetch('/api/citations/fetch-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          doi: doiInput || undefined,
+          url: urlInput || undefined
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.details || 'Failed to fetch citation metadata')
+      }
+
+      const { citation } = await response.json()
+
+      // Auto-fill the form with fetched data
+      setNewCitation({
+        author: citation.author || '',
+        title: citation.title || '',
+        publication_date: citation.publication_date || '',
+        publisher: citation.publisher || '',
+        url: citation.url || urlInput || '',
+        doi: citation.doi || doiInput || '',
+        pages: citation.pages || '',
+        access_date: citation.access_date || new Date().toISOString().split('T')[0]
+      })
+
+      // Clear inputs
+      setDoiInput('')
+      setUrlInput('')
+
+      alert('Citation metadata fetched successfully! Review and save.')
+    } catch (error: any) {
+      console.error('Citation fetch error:', error)
+      alert(error.message || 'Failed to fetch citation metadata')
+    } finally {
+      setIsFetchingMetadata(false)
+    }
+  }
+
   const handleAddCitation = () => {
     if (!newCitation.author || !newCitation.title) {
       alert('Author and Title are required')
@@ -80,6 +133,8 @@ export default function CitationManager({
       pages: '',
       access_date: ''
     })
+    setDoiInput('')
+    setUrlInput('')
     setIsAddingNew(false)
   }
 
@@ -146,6 +201,58 @@ export default function CitationManager({
         {isAddingNew && (
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg border-2 border-accent-primary/30 p-4">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-3">New Citation</h3>
+
+            {/* Quick Add from DOI/URL */}
+            <div className="mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Quick Add from DOI or URL
+              </p>
+              <div className="space-y-2">
+                <div>
+                  <input
+                    type="text"
+                    value={doiInput}
+                    onChange={(e) => setDoiInput(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary focus:border-transparent"
+                    placeholder="Enter DOI (e.g., 10.1000/xyz123)"
+                    disabled={isFetchingMetadata || !!urlInput}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
+                  <span className="text-xs text-gray-500 dark:text-gray-400">OR</span>
+                  <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
+                </div>
+                <div>
+                  <input
+                    type="url"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary focus:border-transparent"
+                    placeholder="Enter article URL"
+                    disabled={isFetchingMetadata || !!doiInput}
+                  />
+                </div>
+                <button
+                  onClick={handleFetchMetadata}
+                  disabled={isFetchingMetadata || (!doiInput && !urlInput)}
+                  className="w-full py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isFetchingMetadata ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Fetching...
+                    </>
+                  ) : (
+                    'Auto-Fill Citation'
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 text-center">
+              Or manually enter citation details below
+            </p>
 
             <div className="space-y-3">
               <div>
