@@ -13,9 +13,11 @@ import {
   Redo,
   Save,
   FileDown,
-  Sparkles
+  Sparkles,
+  Zap
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useRealTimeAnalysis } from './WritingEditor/useRealTimeAnalysis'
 import type { WritingType, CitationStyle, WritingSuggestion } from '@/lib/supabase/types'
 
 interface WritingEditorProps {
@@ -43,6 +45,7 @@ export default function WritingEditor({
   const [title, setTitle] = useState(initialTitle)
   const [isSaving, setIsSaving] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [realTimeEnabled, setRealTimeEnabled] = useState(true)
 
   const editor = useEditor({
     extensions: [
@@ -73,6 +76,21 @@ export default function WritingEditor({
 
   // Get character count
   const characterCount = editor?.storage.characterCount.characters() || 0
+
+  // Real-time analysis hook
+  const {
+    suggestions: realTimeSuggestions,
+    isAnalyzing: isRealTimeAnalyzing,
+    triggerAnalysis
+  } = useRealTimeAnalysis({
+    content: editor?.getText() || '',
+    writingType,
+    citationStyle,
+    enabled: realTimeEnabled
+  })
+
+  // Combine manual suggestions (from Analyze button) with real-time suggestions
+  const allSuggestions = realTimeEnabled ? realTimeSuggestions : suggestions
 
   const handleSave = async () => {
     if (!editor || !onSave) return
@@ -123,13 +141,26 @@ export default function WritingEditor({
           {/* Actions */}
           <div className="flex items-center gap-2">
             <button
-              onClick={handleAnalyze}
+              onClick={() => setRealTimeEnabled(!realTimeEnabled)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all ${
+                realTimeEnabled
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+              title={realTimeEnabled ? 'Real-time analysis ON' : 'Real-time analysis OFF'}
+            >
+              <Zap className={`w-4 h-4 ${isRealTimeAnalyzing ? 'animate-pulse' : ''}`} />
+              {realTimeEnabled ? 'Live' : 'Off'}
+            </button>
+
+            <button
+              onClick={realTimeEnabled ? triggerAnalysis : handleAnalyze}
               disabled={isAnalyzing || wordCount === 0}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50"
-              title="Analyze with AI"
+              title={realTimeEnabled ? "Re-analyze now" : "Analyze with AI"}
             >
-              <Sparkles className={`w-4 h-4 ${isAnalyzing ? 'animate-spin' : ''}`} />
-              {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+              <Sparkles className={`w-4 h-4 ${isAnalyzing || isRealTimeAnalyzing ? 'animate-spin' : ''}`} />
+              {isAnalyzing || isRealTimeAnalyzing ? 'Analyzing...' : 'Analyze'}
             </button>
 
             <button
@@ -245,9 +276,9 @@ export default function WritingEditor({
       </div>
 
       {/* Suggestions Badge */}
-      {suggestions.length > 0 && (
+      {allSuggestions.length > 0 && (
         <div className="absolute top-4 right-4 px-3 py-1 bg-red-500 text-white rounded-full text-sm font-bold">
-          {suggestions.length} suggestions
+          {allSuggestions.length} suggestions
         </div>
       )}
     </div>
