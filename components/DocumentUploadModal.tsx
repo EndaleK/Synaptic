@@ -11,6 +11,17 @@ interface DocumentUploadModalProps {
 
 type UploadTab = 'file' | 'url'
 
+// Chunk size for large file uploads (10MB)
+const CHUNK_SIZE = 10 * 1024 * 1024
+// Threshold for using chunked upload (50MB)
+const CHUNKED_UPLOAD_THRESHOLD = 50 * 1024 * 1024
+
+interface UploadProgress {
+  uploadedChunks: number
+  totalChunks: number
+  percentage: number
+}
+
 export default function DocumentUploadModal({
   isOpen,
   onClose,
@@ -21,6 +32,7 @@ export default function DocumentUploadModal({
   const [url, setUrl] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -71,13 +83,57 @@ export default function DocumentUploadModal({
     }
   }
 
+  /**
+   * Upload file using chunked upload for large files (>50MB)
+   * or regular upload for smaller files (≤50MB)
+   */
   const handleUpload = async () => {
     if (!file) return
 
     setIsUploading(true)
     setError(null)
+    setUploadProgress(null)
 
-    // Create abort controller for timeout handling
+    try {
+      // Determine upload strategy based on file size
+      const useLargeFileUpload = file.size > CHUNKED_UPLOAD_THRESHOLD
+
+      if (useLargeFileUpload) {
+        // Use chunked upload for large files (>50MB)
+        await uploadLargeFile(file)
+      } else {
+        // Use regular upload for small files (≤50MB)
+        await uploadSmallFile(file)
+      }
+
+      // Success - close modal and refresh documents
+      onSuccess()
+      handleClose()
+    } catch (err) {
+      console.error('Upload error:', err)
+
+      // Provide specific error messages based on error type
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          setError('Upload timed out after 5 minutes. Please try a smaller file or check your internet connection.')
+        } else if (err.message === 'Failed to fetch') {
+          setError('Network error. Please check if the server is running and try again.')
+        } else {
+          setError(err.message)
+        }
+      } else {
+        setError('Failed to upload document. Please try again.')
+      }
+    } finally {
+      setIsUploading(false)
+      setUploadProgress(null)
+    }
+  }
+
+  /**
+   * Upload small files (≤50MB) to Supabase Storage via /api/documents
+   */
+  const uploadSmallFile = async (file: File) => {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 300000) // 5 minute timeout
 
@@ -97,28 +153,62 @@ export default function DocumentUploadModal({
         const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to upload document')
       }
-
-      // Success - close modal and refresh documents
-      onSuccess()
-      handleClose()
     } catch (err) {
       clearTimeout(timeout)
-      console.error('Upload error:', err)
+      throw err
+    }
+  }
 
-      // Provide specific error messages based on error type
-      if (err instanceof Error) {
-        if (err.name === 'AbortError') {
-          setError('Upload timed out after 5 minutes. Please try a smaller file or check your internet connection.')
-        } else if (err.message === 'Failed to fetch') {
-          setError('Network error. Please check if the server is running at http://localhost:3000 and try again.')
-        } else {
-          setError(err.message)
-        }
-      } else {
-        setError('Failed to upload document. Please try again.')
+  /**
+   * Upload large files (>50MB) to Cloudflare R2 via /api/upload-large-document
+   * Uses chunked upload with progress tracking
+   */
+  const uploadLargeFile = async (file: File) => {
+    const fileSize = file.size
+    const totalChunks = Math.ceil(fileSize / CHUNK_SIZE)
+
+    // Initialize progress
+    setUploadProgress({
+      uploadedChunks: 0,
+      totalChunks,
+      percentage: 0,
+    })
+
+    let uploadedChunks = 0
+
+    // Upload chunks sequentially
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const start = chunkIndex * CHUNK_SIZE
+      const end = Math.min(start + CHUNK_SIZE, fileSize)
+      const chunk = file.slice(start, end)
+
+      // Create form data for this chunk
+      const formData = new FormData()
+      formData.append('file', chunk)
+      formData.append('chunkIndex', chunkIndex.toString())
+      formData.append('totalChunks', totalChunks.toString())
+      formData.append('fileName', file.name)
+
+      // Upload chunk
+      const response = await fetch('/api/upload-large-document', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Upload failed')
       }
-    } finally {
-      setIsUploading(false)
+
+      uploadedChunks++
+      const percentage = Math.round((uploadedChunks / totalChunks) * 100)
+
+      // Update progress
+      setUploadProgress({
+        uploadedChunks,
+        totalChunks,
+        percentage,
+      })
     }
   }
 
@@ -290,11 +380,39 @@ export default function DocumentUploadModal({
                 )}
               </div>
 
+              {/* Upload Progress */}
+              {uploadProgress && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Uploading chunk {uploadProgress.uploadedChunks}/{uploadProgress.totalChunks}
+                      </span>
+                      <span className="font-semibold text-blue-600 dark:text-blue-400">
+                        {uploadProgress.percentage}%
+                      </span>
+                    </div>
+                    {/* Progress Bar */}
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                      <div
+                        className="bg-gradient-to-r from-blue-500 to-purple-500 h-2.5 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress.percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Info */}
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <p className="text-sm text-blue-700 dark:text-blue-400">
                   After uploading, you'll be able to choose how to study this document: generate flashcards, chat with it, create a podcast, or build a mind map.
                 </p>
+                {file && file.size > CHUNKED_UPLOAD_THRESHOLD && (
+                  <p className="text-sm text-blue-700 dark:text-blue-400 mt-2">
+                    <strong>Large file detected ({formatFileSize(file.size)}):</strong> This will use chunked upload to Cloudflare R2 storage and ChromaDB vector indexing for optimal performance.
+                  </p>
+                )}
               </div>
             </>
           )}
