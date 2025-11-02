@@ -161,6 +161,45 @@ export async function POST(request: NextRequest) {
 
         console.log(`📄 Extracted ${extractedText.length} characters from ${pageCount} pages`)
 
+        // Check if PDF is scanned (no extractable text)
+        if (extractedText.length === 0) {
+          console.warn(`⚠️ No text extracted from PDF. This appears to be a scanned document.`)
+
+          // Save to database with warning status
+          const supabase = await createClient()
+          const { data: document, error: dbError } = await supabase
+            .from('documents')
+            .insert({
+              clerk_user_id: userId,
+              file_name: fileName,
+              file_size: completeFileBuffer.length,
+              file_type: file.type || 'application/pdf',
+              r2_file_key: r2FileKey,
+              extracted_content: '',
+              page_count: pageCount,
+              chunk_count: 0,
+              processing_status: 'failed',
+              error_message: 'Scanned PDF detected - no extractable text. OCR processing required.',
+            })
+            .select()
+            .single()
+
+          if (dbError) {
+            console.error('Supabase insert error:', dbError)
+          }
+
+          return NextResponse.json(
+            {
+              error: 'Scanned PDF detected',
+              details: 'This PDF appears to contain scanned images rather than text. The document has been uploaded to storage but cannot be indexed for search. OCR (Optical Character Recognition) would be required to extract text from the images.',
+              pageCount,
+              r2Url,
+              suggestion: 'Please use a PDF with selectable text, or consider using an OCR service to convert this document first.',
+            },
+            { status: 422 } // Unprocessable Entity
+          )
+        }
+
         // Index in vector database for RAG
         const { indexDocument } = await import('@/lib/vector-store')
         const { chunks: vectorChunks } = await indexDocument(
