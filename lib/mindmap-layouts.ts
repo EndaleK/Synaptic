@@ -335,38 +335,33 @@ function layoutFlowchart(
 }
 
 /**
- * Timeline Layout - IMPROVED
- * Clean professional timeline with extracted dates and polished formatting
+ * Timeline Layout - REDESIGNED
+ * Modern single-track horizontal timeline with clear chronological progression
+ * Based on industry best practices and user research
  */
 function layoutTimeline(
   mindMapData: MindMapData,
   template: VisualizationTemplate
 ): ReactFlowMindMap {
   const { nodes: mindMapNodes, edges: mindMapEdges } = mindMapData;
-  const { timelineSpacing = 250 } = template.layout;
+  const HORIZONTAL_SPACING = 350; // Increased for better clarity
+  const CARD_Y_POSITION = 0; // Single horizontal track
 
   const reactFlowNodes: Node[] = [];
   const reactFlowEdges: Edge[] = [];
 
   // Helper: Extract date/year from text
   const extractDate = (text: string): { date: string; cleanLabel: string } => {
-    // Patterns for dates and years
     const patterns = [
-      // Full dates: "January 1, 2020", "1 Jan 2020", "2020-01-01"
       /(\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b)/i,
       /(\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b)/i,
       /(\b\d{4}-\d{2}-\d{2}\b)/,
       /(\b\d{2}\/\d{2}\/\d{4}\b)/,
-      // Year ranges: "1914-1918", "1960s-1970s"
       /(\b\d{4}\s*[-–—]\s*\d{4}\b)/,
       /(\b\d{4}s?\s*[-–—]\s*\d{4}s?\b)/,
-      // Single years: "2020", "1945"
       /(\b(?:19|20)\d{2}\b)/,
-      // Decades: "1960s", "1920's"
       /(\b(?:19|20)\d{0}s\b)/,
-      // Centuries: "21st century", "19th Century"
       /(\b\d{1,2}(?:st|nd|rd|th)\s+[Cc]entury\b)/,
-      // Eras: "2000 BCE", "500 AD"
       /(\b\d+\s+(?:BCE|CE|BC|AD)\b)/i,
     ];
 
@@ -375,12 +370,10 @@ function layoutTimeline(
       if (match) {
         const date = match[0].trim();
         const cleanLabel = text.replace(date, '').trim();
-        // Remove leading/trailing punctuation
         const finalLabel = cleanLabel.replace(/^[:\-–—,.\s]+|[:\-–—,.\s]+$/g, '');
         return { date, cleanLabel: finalLabel || text };
       }
     }
-
     return { date: '', cleanLabel: text };
   };
 
@@ -388,55 +381,83 @@ function layoutTimeline(
   const sortedNodes = [...mindMapNodes].sort((a, b) => a.level - b.level);
   const totalNodes = sortedNodes.length;
 
-  // Color gradient from purple to pink based on chronology
-  const getTimelineColor = (index: number, total: number) => {
+  // Synaptic brand color progression: Purple (#7B3FF2) → Pink (#E91E8C)
+  const getSynapticGradientColors = (index: number, total: number) => {
     const ratio = index / Math.max(total - 1, 1);
-    // Gradient from purple -> violet -> pink
-    if (ratio < 0.5) {
-      return `hsl(${270 - ratio * 40}, 70%, ${55 + ratio * 10}%)`;
-    } else {
-      return `hsl(${250 - ratio * 40}, 65%, ${60 + (ratio - 0.5) * 15}%)`;
-    }
+
+    // Interpolate between purple and pink
+    const startColor = { r: 123, g: 63, b: 242 }; // #7B3FF2
+    const endColor = { r: 233, g: 30, b: 140 };   // #E91E8C
+
+    const r = Math.round(startColor.r + (endColor.r - startColor.r) * ratio);
+    const g = Math.round(startColor.g + (endColor.g - startColor.g) * ratio);
+    const b = Math.round(startColor.b + (endColor.b - startColor.b) * ratio);
+
+    const mainColor = `rgb(${r}, ${g}, ${b})`;
+
+    // Darker version for borders
+    const borderR = Math.round(r * 0.8);
+    const borderG = Math.round(g * 0.8);
+    const borderB = Math.round(b * 0.8);
+    const borderColor = `rgb(${borderR}, ${borderG}, ${borderB})`;
+
+    return { mainColor, borderColor };
   };
 
-  const getBorderColor = (index: number, total: number) => {
-    const ratio = index / Math.max(total - 1, 1);
-    if (ratio < 0.5) {
-      return `hsl(${270 - ratio * 40}, 70%, ${40 + ratio * 5}%)`;
-    } else {
-      return `hsl(${250 - ratio * 40}, 65%, ${45 + (ratio - 0.5) * 10}%)`;
-    }
-  };
-
-  // Layout nodes with alternating top/bottom pattern
+  // Layout nodes on single horizontal track
   sortedNodes.forEach((node, index) => {
-    const x = index * timelineSpacing;
-    const isAbove = index % 2 === 0;
-    const y = isAbove ? -220 : 220; // Alternate above/below the timeline axis
-
-    const bgColor = getTimelineColor(index, totalNodes);
-    const borderColor = getBorderColor(index, totalNodes);
+    const x = index * HORIZONTAL_SPACING;
+    const { mainColor, borderColor } = getSynapticGradientColors(index, totalNodes);
 
     // Extract date and clean label
     const { date, cleanLabel } = extractDate(node.label);
 
-    // Format the label with date prominently displayed
-    let displayLabel = '';
+    // Create prominent date badge above card
     if (date) {
-      // Date found - show it prominently at top
-      displayLabel = `━━━━━━━━━━━━\n${date}\n━━━━━━━━━━━━\n${cleanLabel}`;
-    } else {
-      // No date - just show the label
-      displayLabel = cleanLabel;
+      reactFlowNodes.push({
+        id: `${node.id}_date`,
+        type: 'default',
+        position: { x: x + 25, y: -150 },
+        data: { label: date },
+        style: {
+          background: `linear-gradient(135deg, ${mainColor} 0%, ${borderColor} 100%)`,
+          color: 'white',
+          border: `3px solid ${borderColor}`,
+          borderRadius: '12px',
+          padding: '12px 20px',
+          fontSize: '16px',
+          fontWeight: '800',
+          textAlign: 'center',
+          boxShadow: `0 8px 24px ${borderColor}80`,
+          letterSpacing: '0.5px',
+          minWidth: '150px',
+        },
+        draggable: false,
+        selectable: false,
+      });
+
+      // Connection from date to card
+      reactFlowEdges.push({
+        id: `${node.id}_date_connector`,
+        source: `${node.id}_date`,
+        target: node.id,
+        type: 'straight',
+        animated: false,
+        style: {
+          stroke: borderColor,
+          strokeWidth: 2,
+          strokeDasharray: '5,5',
+        },
+      });
     }
 
-    // Create the main node (event)
+    // Create main event card
     reactFlowNodes.push({
       id: node.id,
       type: 'default',
-      position: { x, y },
+      position: { x, y: CARD_Y_POSITION },
       data: {
-        label: displayLabel,
+        label: cleanLabel,
         description: node.description,
         level: node.level,
         category: node.category,
@@ -444,113 +465,84 @@ function layoutTimeline(
         eventNumber: index + 1,
       },
       style: {
-        background: `linear-gradient(135deg, ${bgColor} 0%, ${borderColor} 100%)`,
+        background: `linear-gradient(135deg, ${mainColor} 0%, ${borderColor} 100%)`,
         color: 'white',
-        border: `3px solid ${borderColor}`,
-        borderRadius: '12px',
-        padding: '18px 22px',
-        minWidth: '200px',
-        maxWidth: '280px',
-        fontSize: '12px',
-        fontWeight: '500',
-        lineHeight: '1.4',
-        boxShadow: `0 8px 24px ${borderColor}50`,
-        position: 'relative',
-        whiteSpace: 'pre-line',
-        textAlign: 'center',
+        border: `4px solid ${borderColor}`,
+        borderRadius: '16px',
+        padding: '24px 28px',
+        minWidth: '280px',
+        maxWidth: '320px',
+        fontSize: '16px',
+        fontWeight: '600',
+        lineHeight: '1.6',
+        boxShadow: `0 12px 32px ${borderColor}60, 0 4px 12px ${borderColor}40`,
+        textAlign: 'left',
+        whiteSpace: 'normal',
+        wordWrap: 'break-word',
+        transition: 'all 0.3s ease',
       },
-      sourcePosition: isAbove ? Position.Bottom : Position.Top,
-      targetPosition: isAbove ? Position.Bottom : Position.Top,
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
     });
 
-    // Create timeline axis marker with date label
-    const markerLabel = date || (index + 1).toString();
+    // Create sequence number badge
     reactFlowNodes.push({
-      id: `${node.id}_marker`,
+      id: `${node.id}_number`,
       type: 'default',
-      position: { x: x + 80, y: -35 }, // Centered on timeline axis
-      data: {
-        label: markerLabel,
-      },
+      position: { x: x - 30, y: CARD_Y_POSITION - 20 },
+      data: { label: (index + 1).toString() },
       style: {
-        background: `linear-gradient(135deg, ${bgColor} 0%, ${borderColor} 100%)`,
+        background: borderColor,
         color: 'white',
-        border: `3px solid ${borderColor}`,
-        borderRadius: date ? '8px' : '50%', // Rounded box for dates, circle for numbers
-        padding: date ? '6px 12px' : '8px',
-        minWidth: date ? 'auto' : '40px',
-        minHeight: date ? 'auto' : '40px',
-        fontSize: date ? '11px' : '14px',
-        fontWeight: '800',
-        textAlign: 'center',
-        boxShadow: `0 4px 16px ${borderColor}70`,
+        border: `3px solid ${mainColor}`,
+        borderRadius: '50%',
+        width: '48px',
+        height: '48px',
+        fontSize: '18px',
+        fontWeight: '900',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 10,
-        letterSpacing: '0.3px',
+        boxShadow: `0 6px 20px ${borderColor}70`,
+        zIndex: 100,
       },
       draggable: false,
       selectable: false,
     });
-
-    // Create connector line from event to timeline marker
-    reactFlowEdges.push({
-      id: `${node.id}_connector`,
-      source: node.id,
-      target: `${node.id}_marker`,
-      type: 'straight',
-      animated: false,
-      style: {
-        stroke: borderColor,
-        strokeWidth: 2.5,
-        strokeDasharray: '4,4',
-      },
-      markerEnd: {
-        type: 'arrowclosed' as any,
-        color: borderColor,
-        width: 15,
-        height: 15,
-      },
-    });
   });
 
-  // Create horizontal timeline axis line (visual representation)
+  // Create clean horizontal timeline axis with arrows
   for (let i = 0; i < sortedNodes.length - 1; i++) {
-    const sourceColor = getBorderColor(i, totalNodes);
-    const targetColor = getBorderColor(i + 1, totalNodes);
+    const { borderColor: sourceColor } = getSynapticGradientColors(i, totalNodes);
+    const { borderColor: targetColor } = getSynapticGradientColors(i + 1, totalNodes);
 
     reactFlowEdges.push({
       id: `timeline_axis_${i}`,
-      source: `${sortedNodes[i].id}_marker`,
-      target: `${sortedNodes[i + 1].id}_marker`,
-      type: 'straight',
+      source: sortedNodes[i].id,
+      target: sortedNodes[i + 1].id,
+      type: 'smoothstep',
       animated: true,
       style: {
         stroke: sourceColor,
-        strokeWidth: 5,
+        strokeWidth: 6,
       },
       markerEnd: {
         type: 'arrowclosed' as any,
         color: targetColor,
-        width: 20,
-        height: 20,
+        width: 28,
+        height: 28,
       },
     });
   }
 
-  // Create relationship edges between events (if any)
+  // Create relationship edges (if any)
   mindMapEdges.forEach((edge) => {
-    // Skip if it's a connector edge
     if (edge.id.includes('_connector') || edge.id.includes('timeline_axis')) return;
 
     const sourceNode = sortedNodes.find(n => n.id === edge.from);
     const targetNode = sortedNodes.find(n => n.id === edge.to);
 
     if (sourceNode && targetNode) {
-      const sourceIndex = sortedNodes.indexOf(sourceNode);
-      const targetIndex = sortedNodes.indexOf(targetNode);
-
       reactFlowEdges.push({
         id: edge.id,
         source: edge.from,
@@ -559,20 +551,20 @@ function layoutTimeline(
         label: edge.relationship,
         animated: false,
         style: {
-          stroke: '#9A7B64', // Warm copper for timeline relationships
+          stroke: '#FF6B35', // Orange accent for relationships
           strokeWidth: 3,
           strokeDasharray: '8,4',
         },
         markerEnd: {
           type: 'arrowclosed' as any,
-          color: '#9A7B64',
-          width: 22,
-          height: 22,
+          color: '#FF6B35',
+          width: 20,
+          height: 20,
         },
         labelStyle: {
           fill: '#1f2937',
           fontWeight: 700,
-          fontSize: 14,
+          fontSize: 13,
           padding: '4px 8px',
         },
         labelBgStyle: {
