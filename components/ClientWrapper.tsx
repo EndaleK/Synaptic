@@ -1,6 +1,7 @@
 "use client"
 
 import dynamic from "next/dynamic"
+import { usePathname } from "next/navigation"
 import { ToastProvider } from "@/components/ToastContainer"
 import KeyboardShortcutsModal, { useKeyboardShortcuts } from "@/components/KeyboardShortcuts"
 import QuickActionButton from "@/components/QuickActionButton"
@@ -13,13 +14,17 @@ const PDFWorkerInitializer = dynamic(() => import("@/components/PDFWorkerInitial
 
 function ClientWrapperContent({ children }: { children: React.ReactNode }) {
   const shortcuts = useKeyboardShortcuts()
+  const pathname = usePathname()
+
+  // Only show QuickActionButton on dashboard pages
+  const showQuickAction = pathname?.startsWith('/dashboard')
 
   return (
     <>
       <AccentColorInitializer />
       <PDFWorkerInitializer />
       {children}
-      <QuickActionButton />
+      {showQuickAction && <QuickActionButton />}
       <KeyboardShortcutsModal isOpen={shortcuts.isOpen} onClose={shortcuts.close} />
     </>
   )

@@ -1,9 +1,14 @@
 // Generic Web Page Importer (using Mozilla Readability)
 
 import { Readability } from '@mozilla/readability'
-import { JSDOM } from 'jsdom'
 import TurndownService from 'turndown'
 import type { WebImportProvider, ExtractedContent, ContentMetadata } from './types'
+
+// Dynamic import for JSDOM to avoid ESM/CommonJS issues during build
+async function getJSDOM() {
+  const { JSDOM } = await import('jsdom')
+  return JSDOM
+}
 
 export class WebPageImporter implements WebImportProvider {
   name = 'WebPageImporter'
@@ -39,6 +44,7 @@ export class WebPageImporter implements WebImportProvider {
       }
 
       const html = await response.text()
+      const JSDOM = await getJSDOM()
       const dom = new JSDOM(html, { url })
       const document = dom.window.document
 
@@ -105,6 +111,7 @@ export class WebPageImporter implements WebImportProvider {
       }
 
       const html = await response.text()
+      const JSDOM = await getJSDOM()
       const dom = new JSDOM(html, { url })
       const document = dom.window.document
 

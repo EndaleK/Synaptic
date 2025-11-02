@@ -202,7 +202,7 @@ export default function WritingEditor({
             <button
               onClick={realTimeEnabled ? triggerAnalysis : handleAnalyze}
               disabled={isAnalyzing || wordCount === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50"
               title={realTimeEnabled ? "Re-analyze now" : "Analyze with AI"}
             >
               <Sparkles className={`w-4 h-4 ${isAnalyzing || isRealTimeAnalyzing ? 'animate-spin' : ''}`} />

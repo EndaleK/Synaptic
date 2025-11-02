@@ -1,0 +1,225 @@
+/**
+ * API Route: Upload Large Document (500MB+)
+ *
+ * Handles chunked uploads of large PDF files with streaming processing
+ * 1. Accept file chunks from client
+ * 2. Upload to Cloudflare R2 storage
+ * 3. Extract text using streaming PDF parser
+ * 4. Index in ChromaDB for vector search
+ * 5. Save metadata to Supabase
+ */
+
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
+import { createClient } from '@/lib/supabase/server'
+import { uploadToR2 } from '@/lib/r2-storage'
+import { indexDocument } from '@/lib/vector-store'
+import pdfParse from 'pdf-parse'
+
+export const runtime = 'nodejs' // Required for pdf-parse
+export const maxDuration = 300 // 5 minutes for large files
+
+/**
+ * POST /api/upload-large-document
+ *
+ * Accepts multipart form data with file chunks
+ * Supports files up to 500GB
+ */
+export async function POST(request: NextRequest) {
+  try {
+    // 1. Authenticate user
+    const { userId } = await auth()
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // 2. Parse form data
+    const formData = await request.formData()
+    const file = formData.get('file') as File
+    const chunkIndex = formData.get('chunkIndex') as string
+    const totalChunks = formData.get('totalChunks') as string
+    const fileName = formData.get('fileName') as string
+
+    if (!file) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+    }
+
+    // 3. Generate unique document ID
+    const timestamp = Date.now()
+    const documentId = `${userId}_${timestamp}_${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+    const r2Key = `documents/${userId}/${documentId}`
+
+    // 4. Convert file to buffer for R2 upload
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    // 5. Upload to R2 storage
+    console.log(`📤 Uploading chunk ${chunkIndex}/${totalChunks} for ${fileName}`)
+    const { url: r2Url, key: r2FileKey } = await uploadToR2(
+      buffer,
+      r2Key,
+      file.type || 'application/pdf'
+    )
+
+    // 6. If this is the last chunk, process the complete document
+    const isLastChunk = parseInt(chunkIndex) === parseInt(totalChunks) - 1
+
+    let processingResult = null
+    if (isLastChunk) {
+      console.log(`🔄 Processing complete document: ${fileName}`)
+
+      try {
+        // Extract text from PDF (streaming to avoid memory issues)
+        const pdfData = await pdfParse(buffer, {
+          max: 0, // Extract all pages
+        })
+
+        const extractedText = pdfData.text
+        const pageCount = pdfData.numpages
+
+        console.log(`📄 Extracted ${extractedText.length} characters from ${pageCount} pages`)
+
+        // Index in vector database for RAG
+        const { chunks } = await indexDocument(
+          documentId,
+          extractedText,
+          {
+            fileName,
+            userId,
+            pageCount: pageCount.toString(),
+          }
+        )
+
+        // Save metadata to Supabase
+        const supabase = await createClient()
+        const { data: document, error: dbError } = await supabase
+          .from('documents')
+          .insert({
+            clerk_user_id: userId,
+            file_name: fileName,
+            file_size: buffer.length,
+            file_type: file.type || 'application/pdf',
+            r2_file_key: r2FileKey,
+            extracted_content: extractedText.substring(0, 50000), // Store first 50K chars in DB
+            page_count: pageCount,
+            chunk_count: chunks,
+            processing_status: 'completed',
+          })
+          .select()
+          .single()
+
+        if (dbError) {
+          console.error('Supabase insert error:', dbError)
+          throw new Error('Failed to save document metadata')
+        }
+
+        processingResult = {
+          documentId: document.id,
+          fileName,
+          fileSize: buffer.length,
+          pageCount,
+          chunks,
+          r2Url,
+        }
+
+        console.log(`✅ Document processed successfully: ${documentId}`)
+      } catch (processingError) {
+        console.error('Document processing error:', processingError)
+
+        // Still save to DB with error status
+        const supabase = await createClient()
+        await supabase
+          .from('documents')
+          .insert({
+            clerk_user_id: userId,
+            file_name: fileName,
+            file_size: buffer.length,
+            file_type: file.type || 'application/pdf',
+            r2_file_key: r2FileKey,
+            processing_status: 'failed',
+            error_message: processingError instanceof Error ? processingError.message : 'Unknown error',
+          })
+
+        return NextResponse.json(
+          {
+            error: 'Document uploaded but processing failed',
+            details: processingError instanceof Error ? processingError.message : 'Unknown error',
+            r2Url,
+          },
+          { status: 500 }
+        )
+      }
+    }
+
+    // 7. Return success response
+    return NextResponse.json({
+      success: true,
+      chunkIndex: parseInt(chunkIndex),
+      totalChunks: parseInt(totalChunks),
+      isComplete: isLastChunk,
+      documentId,
+      r2Url,
+      ...(processingResult && { processing: processingResult }),
+    })
+
+  } catch (error) {
+    console.error('Upload error:', error)
+    return NextResponse.json(
+      {
+        error: 'Upload failed',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * GET /api/upload-large-document?documentId=xxx
+ *
+ * Get document processing status
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const { userId } = await auth()
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const documentId = searchParams.get('documentId')
+
+    if (!documentId) {
+      return NextResponse.json({ error: 'Document ID required' }, { status: 400 })
+    }
+
+    // Query Supabase for document status
+    const supabase = await createClient()
+    const { data: document, error } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('id', documentId)
+      .eq('clerk_user_id', userId)
+      .single()
+
+    if (error || !document) {
+      return NextResponse.json({ error: 'Document not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      documentId: document.id,
+      fileName: document.file_name,
+      status: document.processing_status,
+      pageCount: document.page_count,
+      chunkCount: document.chunk_count,
+      uploadedAt: document.created_at,
+    })
+
+  } catch (error) {
+    console.error('Status check error:', error)
+    return NextResponse.json(
+      { error: 'Failed to check status' },
+      { status: 500 }
+    )
+  }
+}

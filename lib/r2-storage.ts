@@ -1,0 +1,164 @@
+/**
+ * Cloudflare R2 Storage Utilities
+ *
+ * Provides file upload, download, and deletion for large PDFs (500MB+)
+ * Uses AWS S3-compatible API with zero egress fees
+ */
+
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3'
+import { Upload } from '@aws-sdk/lib-storage'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+
+// Initialize R2 client (S3-compatible)
+const r2Client = new S3Client({
+  region: 'auto', // Cloudflare R2 uses 'auto' region
+  endpoint: process.env.R2_ENDPOINT, // e.g., https://<account-id>.r2.cloudflarestorage.com
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+  },
+})
+
+const BUCKET_NAME = process.env.R2_BUCKET_NAME || 'synaptic-documents'
+
+/**
+ * Upload a file to R2 storage
+ * Supports files up to 500GB with automatic multipart upload
+ */
+export async function uploadToR2(
+  file: Buffer | ReadableStream,
+  key: string,
+  contentType: string = 'application/pdf'
+): Promise<{ url: string; key: string }> {
+  try {
+    // Use Upload for automatic multipart handling (files > 5MB)
+    const upload = new Upload({
+      client: r2Client,
+      params: {
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: file,
+        ContentType: contentType,
+      },
+    })
+
+    await upload.done()
+
+    // Return the public URL (if bucket is configured for public access)
+    // Or return the key for later retrieval via signed URLs
+    const url = `${process.env.R2_PUBLIC_URL}/${key}`
+
+    return { url, key }
+  } catch (error) {
+    console.error('R2 upload error:', error)
+    throw new Error('Failed to upload file to R2 storage')
+  }
+}
+
+/**
+ * Get a signed URL for downloading a file from R2
+ * URL expires after specified seconds (default 1 hour)
+ */
+export async function getR2SignedUrl(
+  key: string,
+  expiresIn: number = 3600
+): Promise<string> {
+  try {
+    const command = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+    })
+
+    const signedUrl = await getSignedUrl(r2Client, command, { expiresIn })
+    return signedUrl
+  } catch (error) {
+    console.error('R2 signed URL error:', error)
+    throw new Error('Failed to generate download URL')
+  }
+}
+
+/**
+ * Download a file from R2 as a stream
+ * Memory-efficient for large files
+ */
+export async function downloadFromR2(key: string): Promise<ReadableStream> {
+  try {
+    const command = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+    })
+
+    const response = await r2Client.send(command)
+
+    if (!response.Body) {
+      throw new Error('No file content received from R2')
+    }
+
+    // Convert SDK stream to web ReadableStream
+    return response.Body.transformToWebStream()
+  } catch (error) {
+    console.error('R2 download error:', error)
+    throw new Error('Failed to download file from R2')
+  }
+}
+
+/**
+ * Delete a file from R2 storage
+ */
+export async function deleteFromR2(key: string): Promise<void> {
+  try {
+    const command = new DeleteObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+    })
+
+    await r2Client.send(command)
+  } catch (error) {
+    console.error('R2 delete error:', error)
+    throw new Error('Failed to delete file from R2')
+  }
+}
+
+/**
+ * Check if a file exists in R2
+ */
+export async function fileExistsInR2(key: string): Promise<boolean> {
+  try {
+    const command = new HeadObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+    })
+
+    await r2Client.send(command)
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
+/**
+ * Get file metadata from R2
+ */
+export async function getR2FileMetadata(key: string): Promise<{
+  size: number
+  contentType: string
+  lastModified: Date
+}> {
+  try {
+    const command = new HeadObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+    })
+
+    const response = await r2Client.send(command)
+
+    return {
+      size: response.ContentLength || 0,
+      contentType: response.ContentType || 'application/octet-stream',
+      lastModified: response.LastModified || new Date(),
+    }
+  } catch (error) {
+    console.error('R2 metadata error:', error)
+    throw new Error('Failed to get file metadata from R2')
+  }
+}

@@ -10,6 +10,11 @@ import { applyRateLimit, RateLimits } from "@/lib/rate-limit"
 import { logger } from "@/lib/logger"
 import { URLImportSchema, validateDocumentLength, validateContentSafety, validateImportURL } from "@/lib/validation"
 
+// Force this route to be server-side only (not Edge runtime)
+// JSDOM and other Node.js dependencies require server runtime
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 interface ImportRequest {
   url: string
 }

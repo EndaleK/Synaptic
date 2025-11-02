@@ -3,11 +3,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import WritingEditor from '@/components/WritingEditor'
 import CitationManager from '@/components/CitationManager'
-import WritingSuggestionPanel from '@/components/WritingSuggestionPanel'
+import FloatingSuggestionBadge from '@/components/FloatingSuggestionBadge'
 import EssaySidebar from '@/components/EssaySidebar'
-import EssayUploader from '@/components/EssayUploader'
+import UploadModal from '@/components/UploadModal'
 import type { WritingType, CitationStyle, WritingSuggestion, Citation, Essay } from '@/lib/supabase/types'
-import { BookOpen, Settings, Upload, X } from 'lucide-react'
+import { Menu, Settings } from 'lucide-react'
 
 export default function WriterPage() {
   const [writingType, setWritingType] = useState<WritingType>('academic')
@@ -15,7 +15,8 @@ export default function WriterPage() {
   const [suggestions, setSuggestions] = useState<WritingSuggestion[]>([])
   const [citations, setCitations] = useState<Citation[]>([])
   const [showSettings, setShowSettings] = useState(false)
-  const [showUploader, setShowUploader] = useState(false)
+  const [showUploadModal, setShowUploadModal] = useState(false)
+  const [showSidebar, setShowSidebar] = useState(false)
   const [currentEssay, setCurrentEssay] = useState<Essay | null>(null)
   const [essayContent, setEssayContent] = useState('')
   const [essayTitle, setEssayTitle] = useState('Untitled Essay')
@@ -69,7 +70,7 @@ export default function WriterPage() {
     setCurrentEssay(uploadedEssay)
     setEssayContent(content)
     setEssayTitle(title)
-    setShowUploader(false)
+    setShowUploadModal(false)
     setHasUnsavedChanges(false)
 
     // Refresh sidebar to show new essay
@@ -137,66 +138,65 @@ export default function WriterPage() {
   }, [currentEssay])
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">
+    <div className="flex h-screen bg-gradient-to-br from-blue-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-blue-900/10 dark:to-green-900/10">
       {/* Essay Sidebar */}
       <EssaySidebar
+        isOpen={showSidebar}
+        onToggle={() => setShowSidebar(!showSidebar)}
         currentEssayId={currentEssay?.id}
         onEssaySelect={handleEssaySelect}
         onEssayDelete={handleEssayDelete}
       />
 
+      {/* Upload Modal */}
+      <UploadModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onUploadSuccess={handleUploadSuccess}
+        onUploadError={(error) => alert(error)}
+      />
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
+        {/* Header - Clean & Minimal */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl shadow-lg">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
+              <button
+                onClick={() => setShowSidebar(!showSidebar)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                title="Toggle essay list"
+              >
+                <Menu className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              </button>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
-                  AI Writing Assistant
+                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  {currentEssay ? currentEssay.title : 'New Essay'}
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {currentEssay ? `Editing: ${currentEssay.title}` : 'Upload or select an essay to begin'}
-                  {hasUnsavedChanges && <span className="ml-2 text-orange-500">(Unsaved changes)</span>}
-                </p>
+                {hasUnsavedChanges && (
+                  <p className="text-xs text-orange-600 dark:text-orange-400">Unsaved changes</p>
+                )}
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowUploader(!showUploader)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg hover:opacity-90 transition-all"
+                onClick={() => setShowUploadModal(true)}
+                className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
               >
-                {showUploader ? <X className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
-                {showUploader ? 'Cancel' : 'Upload Essay'}
+                Upload
               </button>
 
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                title="Settings"
               >
-                <Settings className="w-4 h-4" />
-                Settings
+                <Settings className="w-5 h-5 text-gray-700 dark:text-gray-300" />
               </button>
             </div>
           </div>
         </div>
-
-        {/* Upload Panel */}
-        {showUploader && (
-          <div className="p-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-              Upload Essay
-            </h3>
-            <EssayUploader
-              onUploadSuccess={handleUploadSuccess}
-              onUploadError={(error) => alert(error)}
-            />
-          </div>
-        )}
 
         {/* Settings Panel */}
         {showSettings && (
@@ -212,7 +212,7 @@ export default function WriterPage() {
                 <select
                   value={writingType}
                   onChange={(e) => setWritingType(e.target.value as WritingType)}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-accent-primary focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="academic">Academic</option>
                   <option value="professional">Professional</option>
@@ -227,7 +227,7 @@ export default function WriterPage() {
                 <select
                   value={citationStyle}
                   onChange={(e) => setCitationStyle(e.target.value as CitationStyle)}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-accent-primary focus:border-transparent"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="APA">APA</option>
                   <option value="MLA">MLA</option>
@@ -241,53 +241,34 @@ export default function WriterPage() {
           </div>
         )}
 
-        {/* Main Content Grid */}
+        {/* Main Content - Distraction-Free Editor */}
         <div className="flex-1 overflow-auto p-6">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column: Editor (2/3 width) */}
-            <div className="lg:col-span-2 space-y-6">
-              <WritingEditor
-                initialContent={essayContent}
-                initialTitle={essayTitle}
-                writingType={writingType}
-                citationStyle={citationStyle}
-                onSave={handleSave}
-                onAnalyze={handleAnalyze}
-                onExport={handleExport}
-                onContentChange={handleContentChange}
-                suggestions={suggestions}
-              />
-            </div>
-
-            {/* Right Column: Suggestions & Citations (1/3 width) */}
-            <div className="space-y-6">
-              {/* Suggestions Panel */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg p-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  Writing Suggestions
-                </h3>
-                <WritingSuggestionPanel
-                  suggestions={suggestions}
-                  onApplySuggestion={(suggestion) => {
-                    console.log('Applying suggestion:', suggestion)
-                    // TODO: Implement suggestion application
-                  }}
-                  onDismissSuggestion={(suggestionId) => {
-                    setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
-                  }}
-                />
-              </div>
-
-              {/* Citation Manager */}
-              <CitationManager
-                citations={citations}
-                citationStyle={citationStyle}
-                onCitationsChange={setCitations}
-              />
-            </div>
+          <div className="max-w-5xl mx-auto">
+            <WritingEditor
+              initialContent={essayContent}
+              initialTitle={essayTitle}
+              writingType={writingType}
+              citationStyle={citationStyle}
+              onSave={handleSave}
+              onAnalyze={handleAnalyze}
+              onExport={handleExport}
+              onContentChange={handleContentChange}
+              suggestions={suggestions}
+            />
           </div>
         </div>
+
+        {/* Floating Suggestion Badge (Grammarly-style) */}
+        <FloatingSuggestionBadge
+          suggestions={suggestions}
+          onApplySuggestion={(suggestion) => {
+            console.log('Applying suggestion:', suggestion)
+            // TODO: Implement suggestion application
+          }}
+          onDismissSuggestion={(suggestionId) => {
+            setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
+          }}
+        />
       </div>
     </div>
   )
