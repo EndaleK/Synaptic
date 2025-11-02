@@ -164,9 +164,8 @@ export async function POST(request: NextRequest) {
 
     // Get user profile ID first (documents.user_id references user_profiles.id, not clerk_user_id)
     const supabase = await import('@/lib/supabase/server').then(m => m.createClient())
-    const client = await supabase
 
-    const { data: profile, error: profileError } = await client
+    const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('id')
       .eq('clerk_user_id', userId)
@@ -341,7 +340,7 @@ export async function POST(request: NextRequest) {
     logger.debug('Document text extracted and validated', { userId, documentId, textLength: extractedText.length })
 
     // Step 4: Update document with storage path and extracted text
-    const { error: updateError } = await client
+    const { error: updateError } = await supabase
       .from('documents')
       .update({
         storage_path: storagePath,
