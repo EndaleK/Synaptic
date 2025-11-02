@@ -87,10 +87,16 @@ export async function POST(request: NextRequest) {
       console.log(`🔄 Processing complete document: ${fileName}`)
 
       try {
+        // Download the complete file from R2
+        const { downloadFromR2AsBuffer } = await import('@/lib/r2-storage')
+        console.log(`📥 Downloading complete file from R2: ${r2FileKey}`)
+        const completeFileBuffer = await downloadFromR2AsBuffer(r2FileKey)
+        console.log(`✅ Downloaded ${completeFileBuffer.length} bytes from R2`)
+
         // Dynamically import pdf2json (avoids webpack bundling issues)
         const { default: PDFParser } = await import('pdf2json')
 
-        // Extract text from PDF buffer
+        // Extract text from complete PDF buffer
         const pdfData: any = await new Promise((resolve, reject) => {
           const pdfParser = new PDFParser()
 
@@ -102,7 +108,7 @@ export async function POST(request: NextRequest) {
             resolve(pdfData)
           })
 
-          pdfParser.parseBuffer(buffer)
+          pdfParser.parseBuffer(completeFileBuffer)
         })
 
         // Extract text from parsed PDF data
