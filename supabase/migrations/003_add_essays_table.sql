@@ -7,7 +7,7 @@
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS essays (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   document_id UUID REFERENCES documents(id) ON DELETE SET NULL, -- Optional source document
   title TEXT NOT NULL,
   content TEXT NOT NULL DEFAULT '',
