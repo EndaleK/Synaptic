@@ -87,16 +87,14 @@ export async function POST(request: NextRequest) {
       console.log(`🔄 Processing complete document: ${fileName}`)
 
       try {
-        // Dynamically import pdf-parse
-        const pdfParse = (await import('pdf-parse')).default
+        // Dynamically import the server PDF parser (avoids webpack bundling issues)
+        const { parsePDF } = await import('@/lib/server-pdf-parser')
 
         // Extract text from PDF (streaming to avoid memory issues)
-        const pdfData = await pdfParse(buffer, {
-          max: 0, // Extract all pages
-        })
+        const pdfData = await parsePDF(buffer)
 
         const extractedText = pdfData.text
-        const pageCount = pdfData.numpages
+        const pageCount = pdfData.pageCount
 
         console.log(`📄 Extracted ${extractedText.length} characters from ${pageCount} pages`)
 
