@@ -1,0 +1,158 @@
+/**
+ * CSS Styles for Writing Suggestions Decorations
+ * Provides visual feedback for grammar, spelling, structure, tone, citation, and clarity issues
+ */
+
+/* Base writing suggestion decoration */
+.writing-suggestion {
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.writing-suggestion:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Type-specific underline styles (like MS Word / Google Docs) */
+
+/* Grammar errors - Red wavy underline */
+.grammar-issue {
+  background-image: linear-gradient(to right, #ef4444 50%, transparent 50%);
+  background-size: 4px 2px;
+  background-repeat: repeat-x;
+  background-position: 0 100%;
+  padding-bottom: 2px;
+}
+
+/* Spelling errors - Red wavy underline (more pronounced) */
+.spelling-issue {
+  background-image: repeating-linear-gradient(
+    135deg,
+    #ef4444 0px,
+    #ef4444 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  background-size: 4px 4px;
+  background-repeat: repeat-x;
+  background-position: 0 100%;
+  padding-bottom: 3px;
+}
+
+/* Structure issues - Blue underline */
+.structure-issue {
+  border-bottom: 2px solid #3b82f6;
+  padding-bottom: 1px;
+}
+
+/* Tone issues - Purple underline */
+.tone-issue {
+  border-bottom: 2px dashed #a855f7;
+  padding-bottom: 1px;
+}
+
+/* Citation needs - Yellow/Orange highlight */
+.citation-issue {
+  background-color: rgba(251, 191, 36, 0.3);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* Clarity issues - Green wavy underline */
+.clarity-issue {
+  background-image: linear-gradient(to right, #10b981 50%, transparent 50%);
+  background-size: 4px 2px;
+  background-repeat: repeat-x;
+  background-position: 0 100%;
+  padding-bottom: 2px;
+}
+
+/* Severity-based opacity and emphasis */
+.severity-error {
+  opacity: 1;
+  font-weight: inherit;
+}
+
+.severity-warning {
+  opacity: 0.85;
+}
+
+.severity-suggestion {
+  opacity: 0.7;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .writing-suggestion:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+
+  /* Adjust colors for better visibility in dark mode */
+  .grammar-issue {
+    background-image: linear-gradient(to right, #f87171 50%, transparent 50%);
+  }
+
+  .spelling-issue {
+    background-image: repeating-linear-gradient(
+      135deg,
+      #f87171 0px,
+      #f87171 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+
+  .structure-issue {
+    border-bottom-color: #60a5fa;
+  }
+
+  .tone-issue {
+    border-bottom-color: #c084fc;
+  }
+
+  .citation-issue {
+    background-color: rgba(251, 191, 36, 0.25);
+  }
+
+  .clarity-issue {
+    background-image: linear-gradient(to right, #34d399 50%, transparent 50%);
+  }
+}
+
+/* Tooltip/popover for suggestion details (optional enhancement) */
+.writing-suggestion-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  margin-bottom: 4px;
+}
+
+.writing-suggestion:hover .writing-suggestion-tooltip {
+  opacity: 1;
+}
+
+/* Animation for new suggestions appearing */
+@keyframes suggestionFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.writing-suggestion {
+  animation: suggestionFadeIn 0.3s ease-in;
+}

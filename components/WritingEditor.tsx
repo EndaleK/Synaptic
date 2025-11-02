@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRealTimeAnalysis } from './WritingEditor/useRealTimeAnalysis'
+import { WritingSuggestionsExtension } from './WritingEditor/WritingSuggestionsExtension'
+import './WritingEditor/writing-suggestions.css'
 import type { WritingType, CitationStyle, WritingSuggestion } from '@/lib/supabase/types'
 
 interface WritingEditorProps {
@@ -46,6 +48,7 @@ export default function WritingEditor({
   const [isSaving, setIsSaving] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [realTimeEnabled, setRealTimeEnabled] = useState(true)
+  const [selectedSuggestion, setSelectedSuggestion] = useState<WritingSuggestion | null>(null)
 
   const editor = useEditor({
     extensions: [
@@ -57,7 +60,13 @@ export default function WritingEditor({
       Placeholder.configure({
         placeholder: 'Start writing your essay...'
       }),
-      CharacterCount
+      CharacterCount,
+      WritingSuggestionsExtension.configure({
+        suggestions: [],
+        onSuggestionClick: (suggestion) => {
+          setSelectedSuggestion(suggestion)
+        }
+      })
     ],
     content: initialContent,
     editorProps: {
@@ -91,6 +100,21 @@ export default function WritingEditor({
 
   // Combine manual suggestions (from Analyze button) with real-time suggestions
   const allSuggestions = realTimeEnabled ? realTimeSuggestions : suggestions
+
+  // Update extension configuration when suggestions change
+  useEffect(() => {
+    if (editor && allSuggestions) {
+      const extension = editor.extensionManager.extensions.find(
+        (ext) => ext.name === 'writingSuggestions'
+      )
+
+      if (extension) {
+        extension.options.suggestions = allSuggestions
+        // Force editor to re-render decorations
+        editor.view.dispatch(editor.state.tr)
+      }
+    }
+  }, [allSuggestions, editor])
 
   const handleSave = async () => {
     if (!editor || !onSave) return
