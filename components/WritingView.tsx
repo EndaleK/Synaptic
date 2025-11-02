@@ -50,10 +50,8 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
       if (!profile || profileError) {
         // Profile should have been created by middleware
-        // If it doesn't exist, refresh the page to trigger middleware again
-        console.error('User profile not found, refreshing page...', profileError)
-        window.location.reload()
-        return
+        console.error('User profile not found:', profileError)
+        throw new Error('User profile not found. Please check the USER_PROFILE_TROUBLESHOOTING.md file for setup instructions.')
       }
 
       const { data, error } = await supabase
@@ -89,10 +87,8 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
       if (!profile || profileError) {
         // Profile should have been created by middleware
-        // If it doesn't exist, refresh the page to trigger middleware again
-        console.error('User profile not found, refreshing page...', profileError)
-        window.location.reload()
-        return
+        console.error('User profile not found:', profileError)
+        throw new Error('User profile not found. Please check the USER_PROFILE_TROUBLESHOOTING.md file for setup instructions.')
       }
 
       // Create new essay
