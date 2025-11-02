@@ -9,4 +9,4 @@ ADD COLUMN IF NOT EXISTS sections JSONB DEFAULT '{"sections":[],"totalSections":
 CREATE INDEX IF NOT EXISTS idx_documents_sections ON documents USING GIN (sections);
 
 -- Add comment explaining the sections column structure
-COMMENT ON COLUMN documents.sections IS 'Hierarchical document structure with sections extracted from markdown headings or arXiv patterns. Format: {sections: DocumentSection[], totalSections: number, maxDepth: number}';
+COMMENT ON COLUMN documents.sections IS 'Hierarchical document structure with sections extracted from markdown headings or arXiv patterns. Format: sections array, totalSections count, maxDepth number';
