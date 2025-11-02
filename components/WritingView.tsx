@@ -42,14 +42,28 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       const supabase = createClient()
 
       // Get user profile to get user_id
-      const { data: profile } = await supabase
+      let { data: profile } = await supabase
         .from('user_profiles')
         .select('id')
         .eq('clerk_user_id', user.id)
         .single()
 
       if (!profile) {
-        throw new Error('User profile not found')
+        // Profile doesn't exist, create it
+        const { data: newProfile, error: createError } = await supabase
+          .from('user_profiles')
+          .insert({
+            clerk_user_id: user.id,
+            email: user.emailAddresses[0]?.emailAddress || '',
+            full_name: user.fullName || user.firstName || ''
+          })
+          .select('id')
+          .single()
+
+        if (createError) {
+          throw new Error('Failed to create user profile')
+        }
+        profile = newProfile
       }
 
       const { data, error } = await supabase
@@ -76,15 +90,29 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       setIsLoading(true)
       const supabase = createClient()
 
-      // Get user profile
-      const { data: profile } = await supabase
+      // Get or create user profile
+      let { data: profile } = await supabase
         .from('user_profiles')
         .select('id')
         .eq('clerk_user_id', user.id)
         .single()
 
       if (!profile) {
-        throw new Error('User profile not found')
+        // Profile doesn't exist, create it
+        const { data: newProfile, error: createError } = await supabase
+          .from('user_profiles')
+          .insert({
+            clerk_user_id: user.id,
+            email: user.emailAddresses[0]?.emailAddress || '',
+            full_name: user.fullName || user.firstName || ''
+          })
+          .select('id')
+          .single()
+
+        if (createError) {
+          throw new Error('Failed to create user profile')
+        }
+        profile = newProfile
       }
 
       // Create new essay
