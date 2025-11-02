@@ -87,14 +87,48 @@ export async function POST(request: NextRequest) {
       console.log(`🔄 Processing complete document: ${fileName}`)
 
       try {
-        // Dynamically import the server PDF parser (avoids webpack bundling issues)
-        const { parsePDF } = await import('@/lib/server-pdf-parser')
+        // Dynamically import pdf2json (avoids webpack bundling issues)
+        const { default: PDFParser } = await import('pdf2json')
 
-        // Extract text from PDF (streaming to avoid memory issues)
-        const pdfData = await parsePDF(buffer)
+        // Extract text from PDF buffer
+        const pdfData: any = await new Promise((resolve, reject) => {
+          const pdfParser = new PDFParser()
 
-        const extractedText = pdfData.text
-        const pageCount = pdfData.pageCount
+          pdfParser.on("pdfParser_dataError", (errData: any) => {
+            reject(new Error(errData.parserError?.message || 'PDF parsing failed'))
+          })
+
+          pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+            resolve(pdfData)
+          })
+
+          pdfParser.parseBuffer(buffer)
+        })
+
+        // Extract text from parsed PDF data
+        let extractedText = ''
+        let pageCount = 0
+
+        if (pdfData && pdfData.Pages) {
+          pageCount = pdfData.Pages.length
+
+          pdfData.Pages.forEach((page: any) => {
+            if (page.Texts) {
+              page.Texts.forEach((textItem: any) => {
+                if (textItem.R) {
+                  textItem.R.forEach((run: any) => {
+                    if (run.T) {
+                      extractedText += decodeURIComponent(run.T) + ' '
+                    }
+                  })
+                }
+              })
+            }
+            extractedText += '\n'
+          })
+        }
+
+        extractedText = extractedText.trim()
 
         console.log(`📄 Extracted ${extractedText.length} characters from ${pageCount} pages`)
 
