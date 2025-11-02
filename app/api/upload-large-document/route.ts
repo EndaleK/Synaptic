@@ -170,16 +170,20 @@ export async function POST(request: NextRequest) {
           const { data: document, error: dbError } = await supabase
             .from('documents')
             .insert({
-              clerk_user_id: userId,
+              user_id: userId,
               file_name: fileName,
               file_size: completeFileBuffer.length,
               file_type: file.type || 'application/pdf',
-              r2_file_key: r2FileKey,
-              extracted_content: '',
-              page_count: pageCount,
-              chunk_count: 0,
+              storage_path: r2FileKey,
+              extracted_text: '',
               processing_status: 'failed',
               error_message: 'Scanned PDF detected - no extractable text. OCR processing required.',
+              metadata: {
+                r2_url: r2Url,
+                page_count: pageCount,
+                chunk_count: 0,
+                is_scanned: true,
+              },
             })
             .select()
             .single()
@@ -219,15 +223,19 @@ export async function POST(request: NextRequest) {
         const { data: document, error: dbError } = await supabase
           .from('documents')
           .insert({
-            clerk_user_id: userId,
+            user_id: userId,
             file_name: fileName,
             file_size: completeFileBuffer.length,
             file_type: file.type || 'application/pdf',
-            r2_file_key: r2FileKey,
-            extracted_content: extractedText.substring(0, 50000), // Store first 50K chars in DB
-            page_count: pageCount,
-            chunk_count: vectorChunks,
+            storage_path: r2FileKey,
+            extracted_text: extractedText.substring(0, 50000), // Store first 50K chars in DB
             processing_status: 'completed',
+            metadata: {
+              r2_url: r2Url,
+              page_count: pageCount,
+              chunk_count: vectorChunks,
+              document_id: documentId,
+            },
           })
           .select()
           .single()
@@ -258,13 +266,16 @@ export async function POST(request: NextRequest) {
         await supabase
           .from('documents')
           .insert({
-            clerk_user_id: userId,
+            user_id: userId,
             file_name: fileName,
             file_size: 0, // Don't have complete buffer in error case
             file_type: file.type || 'application/pdf',
-            r2_file_key: r2FileKey,
+            storage_path: r2FileKey || '',
             processing_status: 'failed',
             error_message: processingError instanceof Error ? processingError.message : 'Unknown error',
+            metadata: {
+              r2_url: r2Url || '',
+            },
           })
 
         return NextResponse.json(
