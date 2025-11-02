@@ -33,7 +33,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 2. Parse form data
+    // 2. Check if R2 and ChromaDB are configured
+    if (!process.env.R2_ENDPOINT || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
+      return NextResponse.json({
+        error: 'Large file upload not configured',
+        details: 'Cloudflare R2 storage is not configured. Please set R2_ENDPOINT, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY environment variables. See docs/LARGE_PDF_SETUP.md for setup instructions.',
+        setupRequired: true
+      }, { status: 503 })
+    }
+
+    if (!process.env.CHROMA_URL) {
+      return NextResponse.json({
+        error: 'Large file upload not configured',
+        details: 'ChromaDB is not configured. Please set CHROMA_URL environment variable and ensure ChromaDB is running. See docs/LARGE_PDF_SETUP.md for setup instructions.',
+        setupRequired: true
+      }, { status: 503 })
+    }
+
+    // 3. Parse form data
     const formData = await request.formData()
     const file = formData.get('file') as File
     const chunkIndex = formData.get('chunkIndex') as string

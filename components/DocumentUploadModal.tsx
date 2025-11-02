@@ -196,7 +196,13 @@ export default function DocumentUploadModal({
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+
+        // If it's a setup error, show detailed message
+        if (errorData.setupRequired) {
+          throw new Error(`${errorData.error}\n\n${errorData.details}`)
+        }
+
         throw new Error(errorData.error || 'Upload failed')
       }
 
