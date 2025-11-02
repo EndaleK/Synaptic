@@ -397,11 +397,24 @@ export async function GET(request: NextRequest) {
 
     // Query Supabase for document status
     const supabase = await createClient()
+
+    // Get user profile ID first
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('clerk_user_id', userId)
+      .single()
+
+    if (!profile) {
+      return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
+    }
+
+    // Query document by ID and verify ownership
     const { data: document, error } = await supabase
       .from('documents')
       .select('*')
       .eq('id', documentId)
-      .eq('clerk_user_id', userId)
+      .eq('user_id', profile.id)
       .single()
 
     if (error || !document) {
@@ -412,8 +425,8 @@ export async function GET(request: NextRequest) {
       documentId: document.id,
       fileName: document.file_name,
       status: document.processing_status,
-      pageCount: document.page_count,
-      chunkCount: document.chunk_count,
+      errorMessage: document.error_message,
+      metadata: document.metadata,
       uploadedAt: document.created_at,
     })
 
