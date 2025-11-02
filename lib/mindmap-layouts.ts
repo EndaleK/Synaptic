@@ -58,7 +58,7 @@ function layoutHierarchical(
     nodesByLevel.get(node.level)!.push(node);
   });
 
-  // Layout nodes level by level
+  // Layout nodes level by level with depth-based styling
   mindMapNodes.forEach((node) => {
     const nodesAtLevel = nodesByLevel.get(node.level) || [];
     const indexAtLevel = nodesAtLevel.indexOf(node);
@@ -67,6 +67,13 @@ function layoutHierarchical(
     // Calculate position
     const x = node.level * nodeSpacing.horizontal;
     const y = (indexAtLevel - (totalAtLevel - 1) / 2) * nodeSpacing.vertical;
+
+    // Method 1: Hierarchical depth styling
+    // Progressively smaller nodes as depth increases (textbook structure)
+    const fontSize = Math.max(12, 18 - node.level * 2); // 18px → 16px → 14px → 12px
+    const padding = Math.max(12, 20 - node.level * 2); // 20px → 18px → 16px → 14px → 12px
+    const minWidth = Math.max(160, 250 - node.level * 20); // 250px → 230px → 210px → 190px
+    const borderRadius = Math.max(12, 24 - node.level * 3); // 24px → 21px → 18px → 15px → 12px
 
     // Create ReactFlow node
     reactFlowNodes.push({
@@ -83,23 +90,28 @@ function layoutHierarchical(
         background: getColorForCategory(node.category || 'concept', template),
         color: 'white',
         border: `3px solid ${getColorForLevel(node.level)}`,
-        borderRadius: node.level === 0 ? '24px' : '16px',
-        padding: node.level === 0 ? '20px' : '16px',
-        minWidth: node.level === 0 ? '250px' : '200px',
-        fontSize: node.level === 0 ? '18px' : '14px',
-        fontWeight: node.level === 0 ? 'bold' : 'normal',
+        borderRadius: `${borderRadius}px`,
+        padding: `${padding}px`,
+        minWidth: `${minWidth}px`,
+        fontSize: `${fontSize}px`,
+        fontWeight: node.level === 0 ? 'bold' : node.level === 1 ? '600' : 'normal',
         boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        transition: 'all 0.2s ease',
       },
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
     });
   });
 
-  // Create edges with enhanced visibility
+  // Create edges with enhanced visibility and depth-based styling
   mindMapEdges.forEach((edge) => {
     const sourceNode = mindMapNodes.find(n => n.id === edge.from);
     const targetNode = mindMapNodes.find(n => n.id === edge.to);
     const isCrossLink = sourceNode && targetNode && Math.abs(sourceNode.level - targetNode.level) > 1;
+
+    // Method 1: Line thickness decreases with depth (textbook hierarchy)
+    const sourceLevel = sourceNode?.level || 0;
+    const strokeWidth = isCrossLink ? 3 : Math.max(2, 5 - sourceLevel * 0.5); // 5px → 4.5px → 4px → 3.5px → 3px → 2.5px → 2px
 
     reactFlowEdges.push({
       id: edge.id,
@@ -109,20 +121,20 @@ function layoutHierarchical(
       label: edge.relationship,
       animated: !isCrossLink,
       style: {
-        stroke: isCrossLink ? '#9A7B64' : '#64748B', // Warm copper for cross-links, slate for hierarchy
-        strokeWidth: isCrossLink ? 3 : 4,
+        stroke: isCrossLink ? '#FF6B35' : '#64748B', // Method 3: Orange accent for cross-links (improved contrast)
+        strokeWidth: strokeWidth,
         strokeDasharray: isCrossLink ? '8,4' : undefined,
       },
       markerEnd: {
         type: 'arrowclosed' as any,
-        color: isCrossLink ? '#9A7B64' : '#64748B',
-        width: 22,
-        height: 22,
+        color: isCrossLink ? '#FF6B35' : '#64748B',
+        width: 20,
+        height: 20,
       },
       labelStyle: {
         fill: '#1f2937',
         fontWeight: 700,
-        fontSize: 14,
+        fontSize: 13,
         padding: '4px 8px',
       },
       labelBgStyle: {
@@ -581,27 +593,35 @@ function layoutTimeline(
 }
 
 /**
- * Helper: Get color for node category (muted professional palette)
+ * Helper: Get color for node category (vibrant pastel palette)
+ * Bright, cheerful colors with good contrast for white text
  */
 function getColorForCategory(category: string, template: VisualizationTemplate): string {
   const colorMap: Record<string, string> = {
-    concept: '#64748B',    // Slate
-    process: '#6B7280',    // Gray
-    example: '#78716C',    // Stone
-    definition: '#8B7FB8', // Lavender
-    principle: '#9F7AEA',  // Soft Purple
-    data: '#A16E5E',       // Terracotta
-    technique: '#5B8A9F',  // Ocean Blue
-    outcome: '#9A7B64',    // Warm Copper
+    concept: '#7C9DD8',    // Pastel Blue - Abstract ideas
+    principle: '#A78BFA',  // Pastel Purple - Rules/Laws
+    process: '#6EE7B7',    // Pastel Mint - Procedures
+    technique: '#FCD34D',  // Pastel Yellow - Skills/Tools
+    example: '#F9A8D4',    // Pastel Pink - Illustrations
+    data: '#93C5FD',       // Pastel Sky Blue - Facts/Metrics
+    definition: '#C4B5FD', // Pastel Lavender - Terminology
+    outcome: '#FCA5A5',    // Pastel Coral - Results/Benefits
   };
 
   return colorMap[category] || template.style.nodeColors[0];
 }
 
 /**
- * Helper: Get border color based on level (muted palette)
+ * Helper: Get border color based on level (vibrant pastel borders)
+ * Progressive depth with cheerful pastel accent colors
  */
 function getColorForLevel(level: number): string {
-  const colors = ['#64748B', '#8B7FB8', '#9F7AEA', '#9A7B64', '#5B8A9F'];
+  const colors = [
+    '#6366F1', // Level 0 (Root): Vibrant Indigo
+    '#8B5CF6', // Level 1: Vibrant Purple
+    '#EC4899', // Level 2: Vibrant Pink
+    '#F59E0B', // Level 3: Vibrant Amber
+    '#10B981', // Level 4+: Vibrant Emerald
+  ];
   return colors[Math.min(level, colors.length - 1)];
 }

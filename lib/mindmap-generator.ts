@@ -99,17 +99,21 @@ HIERARCHICAL STRUCTURE:
 - **Level 3** (Details): 2-4 specific points (examples, applications)
 - **Level 4** (Optional): Granular supporting details
 
-NODE LABELING (Critical for Readability):
+NODE LABELING (Critical for Readability & Cognitive Load Reduction):
 - Root: Clear, inclusive concept (e.g., "Safety Protocol Implementation")
 - Level 1: Broad categories (e.g., "Heat-Related Hazards", "Emergency Procedures")
 - Levels 2-4: Specific terms/concepts (e.g., "Heat Exhaustion Symptoms", "Buddy System Protocol")
 - Use NOUNS or NOUN PHRASES (not sentences)
-- Keep concise (1-6 words) for visual clarity
+- Keep VERY concise: Maximum 6 words per label (4 words ideal for deeper levels)
+- Research shows: Brief keywords reduce cognitive load and improve comprehension
+- Save detailed explanations for descriptions, not labels
 
-DESCRIPTION GUIDELINES:
-- Provide context and details beyond the label
-- Include specific examples, data, or applications
-- Help users understand WHY this concept matters
+DESCRIPTION GUIDELINES (Cognitive Load Management):
+- Labels are BRIEF KEYWORDS - descriptions hold the rich detail
+- Provide comprehensive context and explanations in descriptions
+- Include specific examples, data, applications, and connections
+- Help users understand WHY this concept matters and HOW it relates to others
+- This separation (brief label + rich description) reduces visual clutter while preserving depth
 
 CATEGORY ASSIGNMENT (for color coding):
 - **concept**: Abstract ideas, theories, frameworks

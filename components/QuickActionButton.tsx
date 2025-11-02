@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Upload, BookOpen, MessageSquare, X, Mic, Network } from "lucide-react"
+import { Plus, Upload, BookOpen, MessageSquare, X, Mic, Network, PenLine } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
@@ -39,6 +39,15 @@ export default function QuickActionButton({ className }: QuickActionButtonProps)
       action: () => {
         setIsOpen(false)
         router.push('/dashboard?mode=chat')
+      }
+    },
+    {
+      icon: PenLine,
+      label: "Write Essay",
+      color: "from-accent-primary to-accent-secondary",
+      action: () => {
+        setIsOpen(false)
+        router.push('/dashboard/writer')
       }
     },
     {

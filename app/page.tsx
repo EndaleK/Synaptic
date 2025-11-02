@@ -18,36 +18,31 @@ export default function LandingPage() {
           <div className="relative aspect-[1155/678] w-[36.125rem] bg-gradient-to-tr from-gray-200 to-gray-400 dark:from-gray-800 dark:to-gray-600 opacity-30" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
           <div className="text-center max-w-5xl mx-auto">
             {/* Brand Logo */}
-            <div className="mb-10 flex justify-center">
+            <div className="mb-2 flex justify-center">
               <img
                 src="/logo-full.png"
                 alt="Synaptic - Study Smarter"
-                width={220}
-                height={220}
-                className="object-contain w-[160px] h-[160px] sm:w-[200px] sm:h-[200px] md:w-[220px] md:h-[220px]"
+                width={495}
+                height={495}
+                className="object-contain w-[360px] h-[360px] sm:w-[450px] sm:h-[450px] md:w-[495px] md:h-[495px]"
               />
             </div>
 
             {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-black dark:text-white mb-6 leading-tight tracking-tight">
-              Transform Documents Into
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-orange">
-                Knowledge
-              </span>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-black dark:text-white mb-4 leading-tight tracking-tight">
+              Learning That <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-orange">Adapts to You</span>
             </h1>
 
             {/* Subheadline */}
-            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-12 max-w-3xl mx-auto leading-relaxed">
-              AI-powered flashcards, podcasts, and mind maps tailored to your learning style.
-              Study smarter with intelligent, personalized content.
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto leading-relaxed">
+              Study smarter, write better, learn faster. AI-powered flashcards, podcasts, mind maps, essay assistant, and adaptive tutoring personalized to your learning style.
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-10">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
               <Link
                 href={isSignedIn ? "/dashboard" : "/sign-in"}
                 className="group px-8 py-4 bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-orange text-white rounded-xl font-semibold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2 min-w-[220px] justify-center"
@@ -341,7 +336,7 @@ export default function LandingPage() {
 
               {/* Subheadline with social proof */}
               <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
-                Join <span className="font-bold text-purple-600 dark:text-purple-400">10,000+</span> learners who study smarter with AI
+                Join and study smarter with AI
               </p>
 
               {/* Primary CTA Button */}
@@ -368,7 +363,7 @@ export default function LandingPage() {
               </div>
 
               {/* Trust Indicators */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-gray-600 dark:text-gray-400 mb-8">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
                   <span className="font-medium">No credit card required</span>
@@ -382,34 +377,6 @@ export default function LandingPage() {
                   <span className="font-medium">Cancel anytime</span>
                 </div>
               </div>
-
-              {/* Stats/Social Proof Bar */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-gray-200 dark:border-gray-700">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 mb-1">
-                    10,000+
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                    Active Learners
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 mb-1">
-                    4.9★
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                    Average Rating
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 mb-1">
-                    100%
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                    Free Forever Plan
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -419,7 +386,7 @@ export default function LandingPage() {
       <footer className="py-6 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-            © 2025 Synaptic. All rights reserved.
+            © 2025 Synaptic.ካንእ All rights reserved
           </p>
         </div>
       </footer>

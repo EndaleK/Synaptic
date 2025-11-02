@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { UserButton, useUser } from "@clerk/nextjs"
-import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp } from "lucide-react"
+import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useUIStore } from "@/lib/store/useStore"
 import { useToast } from "@/components/ToastContainer"
@@ -74,6 +74,7 @@ export default function DashboardLayout({
     { name: "Chat", id: "chat", icon: MessageSquare, comingSoon: false },
     { name: "Podcast", id: "podcast", icon: Mic, comingSoon: false },
     { name: "Mind Map", id: "mindmap", icon: Network, comingSoon: false },
+    { name: "Write", id: "writer", icon: PenTool, comingSoon: false },
   ]
 
   const studyTools = [
@@ -88,6 +89,14 @@ export default function DashboardLayout({
       toast.info('This mode is coming soon! Stay tuned.')
       return
     }
+
+    // Special handling for Writer mode - redirect to dedicated page
+    if (modeId === 'writer') {
+      router.push('/dashboard/writer')
+      setSidebarOpen(false)
+      return
+    }
+
     setActiveMode(modeId as any)
     setSidebarOpen(false)
     // Navigate to dashboard if not already there
@@ -115,19 +124,25 @@ export default function DashboardLayout({
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center group">
+            <Link href="/dashboard" className="flex items-center gap-3 group">
               {!sidebarCollapsed ? (
-                <img
-                  src="/logo-dashboard.svg"
-                  alt="Synaptic - Study Smarter"
-                  className="h-20 w-auto flex-shrink-0"
-                />
+                <>
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold text-lg">S</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400">
+                      Synaptic
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Study Smarter
+                    </span>
+                  </div>
+                </>
               ) : (
-                <img
-                  src="/logo-icon.svg"
-                  alt="Synaptic"
-                  className="w-16 h-16"
-                />
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">S</span>
+                </div>
               )}
             </Link>
             {/* Collapse button - desktop only */}
