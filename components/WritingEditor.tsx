@@ -32,6 +32,7 @@ interface WritingEditorProps {
   onAnalyze?: (content: string) => void
   onExport?: (format: 'pdf' | 'docx') => void
   suggestions?: WritingSuggestion[]
+  onContentChange?: (content: string, title: string) => void
 }
 
 export default function WritingEditor({
@@ -42,13 +43,15 @@ export default function WritingEditor({
   onSave,
   onAnalyze,
   onExport,
-  suggestions = []
+  suggestions = [],
+  onContentChange
 }: WritingEditorProps) {
   const [title, setTitle] = useState(initialTitle)
   const [isSaving, setIsSaving] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [realTimeEnabled, setRealTimeEnabled] = useState(true)
   const [selectedSuggestion, setSelectedSuggestion] = useState<WritingSuggestion | null>(null)
+  const [hasLoadedContent, setHasLoadedContent] = useState(false)
 
   const editor = useEditor({
     extensions: [
@@ -76,9 +79,27 @@ export default function WritingEditor({
       }
     },
     onUpdate: ({ editor }) => {
-      // Auto-save could be triggered here with debouncing
+      // Notify parent of content changes
+      if (onContentChange && hasLoadedContent) {
+        onContentChange(editor.getHTML(), title)
+      }
     }
   })
+
+  // Load initial content when it changes (e.g., when a new essay is selected)
+  useEffect(() => {
+    if (editor && initialContent && initialContent !== editor.getHTML()) {
+      editor.commands.setContent(initialContent)
+      setHasLoadedContent(true)
+    }
+  }, [editor, initialContent])
+
+  // Update title when it changes from props
+  useEffect(() => {
+    if (initialTitle !== title && initialTitle !== 'Untitled Essay') {
+      setTitle(initialTitle)
+    }
+  }, [initialTitle])
 
   // Calculate reading time (average 200 words per minute)
   const wordCount = editor?.storage.characterCount.words() || 0
