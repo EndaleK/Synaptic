@@ -7,22 +7,16 @@
  * - Supports flashcard generation, chat, podcast, and mind map features
  */
 
-import { ChromaClient, Collection, OpenAIEmbeddingFunction } from 'chromadb'
+import { ChromaClient, Collection } from 'chromadb'
 import { OpenAIEmbeddings } from '@langchain/openai'
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters'
 
-// Initialize ChromaDB client
+// Initialize ChromaDB client (no embedding function - we'll use OpenAI directly)
 const chromaClient = new ChromaClient({
   path: process.env.CHROMA_URL || 'http://localhost:8000',
 })
 
-// Initialize OpenAI embeddings for ChromaDB (avoids default-embed dependency)
-const chromaEmbedding = new OpenAIEmbeddingFunction({
-  openai_api_key: process.env.OPENAI_API_KEY || '',
-  openai_model: 'text-embedding-3-small',
-})
-
-// Initialize OpenAI embeddings for LangChain (same model for consistency)
+// Initialize OpenAI embeddings for all embedding operations
 const embeddings = new OpenAIEmbeddings({
   openAIApiKey: process.env.OPENAI_API_KEY,
   modelName: 'text-embedding-3-small', // Cost-effective, 1536 dimensions
@@ -53,7 +47,6 @@ async function getOrCreateCollection(
     // Try to get existing collection
     const collection = await chromaClient.getCollection({
       name: collectionName,
-      embeddingFunction: chromaEmbedding,
     })
     return collection
   } catch (error) {
@@ -61,7 +54,6 @@ async function getOrCreateCollection(
     const collection = await chromaClient.createCollection({
       name: collectionName,
       metadata: { documentId },
-      embeddingFunction: chromaEmbedding,
     })
     return collection
   }
