@@ -114,17 +114,29 @@ export async function saveDocumentToDatabase(
  * Get all documents for a user (Server-Side)
  */
 export async function getUserDocuments(
-  userId: string,
+  clerkUserId: string,
   limit = 50,
   offset = 0
 ): Promise<{ documents: Document[]; error: string | null }> {
   try {
     const supabase = await createClient()
 
+    // Get user profile ID first (documents.user_id references user_profiles.id, not clerk_user_id)
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('clerk_user_id', clerkUserId)
+      .single()
+
+    if (profileError || !profile) {
+      console.error('User profile not found:', profileError)
+      return { documents: [], error: 'User profile not found' }
+    }
+
     const { data, error } = await supabase
       .from('documents')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
@@ -148,16 +160,28 @@ export async function getUserDocuments(
  */
 export async function getDocumentById(
   documentId: string,
-  userId: string
+  clerkUserId: string
 ): Promise<{ document: Document | null; error: string | null }> {
   try {
     const supabase = await createClient()
+
+    // Get user profile ID first (documents.user_id references user_profiles.id, not clerk_user_id)
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('clerk_user_id', clerkUserId)
+      .single()
+
+    if (profileError || !profile) {
+      console.error('User profile not found:', profileError)
+      return { document: null, error: 'User profile not found' }
+    }
 
     const { data, error } = await supabase
       .from('documents')
       .select('*')
       .eq('id', documentId)
-      .eq('user_id', userId)
+      .eq('user_id', profile.id)
       .single()
 
     if (error) {
@@ -180,11 +204,23 @@ export async function getDocumentById(
  */
 export async function deleteDocument(
   documentId: string,
-  userId: string,
+  clerkUserId: string,
   storagePath: string
 ): Promise<{ success: boolean; error: string | null }> {
   try {
     const supabase = await createClient()
+
+    // Get user profile ID first (documents.user_id references user_profiles.id, not clerk_user_id)
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('clerk_user_id', clerkUserId)
+      .single()
+
+    if (profileError || !profile) {
+      console.error('User profile not found:', profileError)
+      return { success: false, error: 'User profile not found' }
+    }
 
     // Delete from storage first
     if (storagePath) {
@@ -203,7 +239,7 @@ export async function deleteDocument(
       .from('documents')
       .delete()
       .eq('id', documentId)
-      .eq('user_id', userId)
+      .eq('user_id', profile.id)
 
     if (dbError) {
       console.error('Database delete error:', dbError)
