@@ -9,7 +9,6 @@ import { MindMapGenerationSchema } from "@/lib/validation"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
 import { analyzeDocumentComplexity } from "@/lib/document-complexity-analyzer"
-import { getUserProfile } from "@/lib/supabase/user-profile"
 
 export const maxDuration = 300 // 5 minutes max execution time for complex documents (Vercel Pro plan)
 
@@ -85,24 +84,11 @@ export async function POST(req: NextRequest) {
     // Initialize Supabase
     const supabase = await createClient()
 
-    // Get user profile to get the UUID for documents table lookup
-    const { profile } = await getUserProfile(userId)
-    if (!profile?.id) {
-      logger.error('User profile not found for mind map generation', null, { userId, documentId })
-      const duration = Date.now() - startTime
-      logger.api('POST', '/api/generate-mindmap', 404, duration, { userId, error: 'User profile not found' })
-      return NextResponse.json(
-        { error: "User profile not found. Please ensure your profile is set up." },
-        { status: 404 }
-      )
-    }
-
     // Fetch document
-    // Note: user_id in documents table is a UUID referencing user_profiles.id
+    // Note: user_id in documents table is TEXT (Clerk user ID)
     logger.debug('Attempting to fetch document', {
       userId,
       documentId,
-      profileId: profile.id,
       query: 'SELECT id, file_name, extracted_text, user_id FROM documents WHERE id = ? AND user_id = ?'
     })
 
@@ -110,7 +96,7 @@ export async function POST(req: NextRequest) {
       .from('documents')
       .select('id, file_name, extracted_text, user_id')
       .eq('id', documentId)
-      .eq('user_id', profile.id) // Use profile.id which is the UUID in documents.user_id
+      .eq('user_id', userId) // Use Clerk userId directly
       .single()
 
     if (docError || !document) {
@@ -118,7 +104,6 @@ export async function POST(req: NextRequest) {
       logger.error('Document fetch error for mind map generation', docError, {
         userId,
         documentId,
-        profileId: profile.id,
         errorCode: docError?.code,
         errorMessage: docError?.message,
         errorDetails: docError?.details,
@@ -136,8 +121,8 @@ export async function POST(req: NextRequest) {
         logger.error('Document exists but user mismatch', null, {
           documentId,
           documentUserId: anyDocument.user_id,
-          requestProfileId: profile.id,
-          userIdMatch: anyDocument.user_id === profile.id
+          requestUserId: userId,
+          userIdMatch: anyDocument.user_id === userId
         })
       } else {
         logger.error('Document does not exist in database', null, { documentId })
