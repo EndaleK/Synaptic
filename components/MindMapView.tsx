@@ -62,6 +62,9 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
     setIsGenerating(true)
     setError(null)
 
+    console.log('[MindMapView] Generating mind map for documentId:', documentId)
+    console.log('[MindMapView] Document name:', documentName)
+
     try {
       const response = await fetch('/api/generate-mindmap', {
         method: 'POST',
@@ -71,6 +74,8 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
           // No maxNodes or maxDepth - let API auto-detect
         })
       })
+
+      console.log('[MindMapView] API response status:', response.status)
 
       if (!response.ok) {
         const errorData = await response.json()
