@@ -30,29 +30,19 @@ export default function VideoView() {
       // Check if video already exists in database
       const supabase = createClient()
 
-      // Get or create user profile
-      let { data: profile } = await supabase
+      // Get user profile (created by middleware)
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('id')
         .eq('clerk_user_id', user.id)
         .single()
 
-      if (!profile) {
-        // Profile doesn't exist, create it
-        const { data: newProfile, error: createError } = await supabase
-          .from('user_profiles')
-          .insert({
-            clerk_user_id: user.id,
-            email: user.emailAddresses[0]?.emailAddress || '',
-            full_name: user.fullName || user.firstName || ''
-          })
-          .select('id')
-          .single()
-
-        if (createError) {
-          throw new Error('Failed to create user profile')
-        }
-        profile = newProfile
+      if (!profile || profileError) {
+        // Profile should have been created by middleware
+        // If it doesn't exist, refresh the page to trigger middleware again
+        console.error('User profile not found, refreshing page...', profileError)
+        window.location.reload()
+        return
       }
 
       // Check for existing video
