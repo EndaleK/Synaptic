@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
-import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar, Link2, Globe, CheckCircle2, ArrowRight, Brain, Clock, Bell, BarChart3, Target } from "lucide-react"
+import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar, Link2, Globe, CheckCircle2, ArrowRight, Brain, Clock, Bell, BarChart3, Target, PenTool, Youtube } from "lucide-react"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import LearningProfileBanner from "@/components/LearningProfileBanner"
 import SubscriptionStatus from "@/components/SubscriptionStatus"
@@ -47,7 +47,8 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       icon: BookOpen,
       description: "Transform documents into interactive flashcards",
       gradient: "from-accent-primary to-accent-secondary",
-      available: true
+      available: true,
+      premium: false
     },
     {
       id: "chat",
@@ -55,7 +56,8 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       icon: MessageSquare,
       description: "Ask questions about your documents with AI",
       gradient: "from-blue-500 to-cyan-500",
-      available: true
+      available: true,
+      premium: false
     },
     {
       id: "podcast",
@@ -63,7 +65,8 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       icon: Mic,
       description: "Generate AI-hosted podcast discussions",
       gradient: "from-green-500 to-emerald-500",
-      available: true
+      available: true,
+      premium: false
     },
     {
       id: "mindmap",
@@ -71,7 +74,26 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       icon: Network,
       description: "Visualize concepts and relationships interactively",
       gradient: "from-orange-500 to-red-500",
-      available: true
+      available: true,
+      premium: false
+    },
+    {
+      id: "writer",
+      name: "Writer",
+      icon: PenTool,
+      description: "AI-powered writing assistant with citations and grammar",
+      gradient: "from-pink-500 to-rose-500",
+      available: true,
+      premium: true
+    },
+    {
+      id: "video",
+      name: "Video",
+      icon: Youtube,
+      description: "Learn from YouTube videos with AI analysis",
+      gradient: "from-red-500 to-orange-500",
+      available: true,
+      premium: true
     }
   ]
 
@@ -232,6 +254,11 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                   {!mode.available && (
                     <span className="absolute top-3 md:top-4 right-3 md:right-4 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-semibold rounded-full">
                       Soon
+                    </span>
+                  )}
+                  {mode.premium && (
+                    <span className="absolute top-3 md:top-4 right-3 md:right-4 px-2 py-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-semibold rounded-full shadow-md">
+                      Premium
                     </span>
                   )}
                 </button>
