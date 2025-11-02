@@ -2,7 +2,7 @@
 import type { SectionStructure } from '@/lib/document-parser/section-detector'
 
 export type LearningStyle = 'visual' | 'auditory' | 'kinesthetic' | 'reading_writing' | 'mixed'
-export type PreferredMode = 'home' | 'flashcards' | 'chat' | 'podcast' | 'mindmap'
+export type PreferredMode = 'home' | 'flashcards' | 'chat' | 'podcast' | 'mindmap' | 'writer' | 'video'
 export type TeachingStylePreference = 'socratic' | 'direct' | 'mixed'
 export type SubscriptionTier = 'free' | 'premium' | 'enterprise'
 export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'past_due'
@@ -11,6 +11,16 @@ export type MessageType = 'user' | 'assistant'
 export type TeachingMode = 'direct' | 'socratic' | 'guided'
 export type Difficulty = 'easy' | 'medium' | 'hard'
 export type SourceType = 'arxiv' | 'youtube' | 'web' | 'medium' | 'pdf-url' | 'unknown'
+
+// Writing Assistant Types
+export type WritingType = 'academic' | 'professional' | 'creative'
+export type CitationStyle = 'APA' | 'MLA' | 'Chicago' | 'Harvard' | 'IEEE' | 'Vancouver'
+export type EssayStatus = 'draft' | 'reviewing' | 'final'
+export type SuggestionType = 'grammar' | 'spelling' | 'structure' | 'tone' | 'citation' | 'clarity'
+export type SuggestionSeverity = 'error' | 'warning' | 'suggestion'
+
+// Video Learning Types
+export type VideoProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
 export interface UserProfile {
   id: string
@@ -139,4 +149,93 @@ export interface UsageTracking {
   credits_used: number
   metadata?: Record<string, any>
   created_at: string
+}
+
+// ============================================================================
+// WRITING ASSISTANT INTERFACES
+// ============================================================================
+
+export interface WritingSuggestion {
+  id: string
+  type: SuggestionType
+  severity: SuggestionSeverity
+  message: string
+  start_position: number
+  end_position: number
+  replacement?: string
+  explanation?: string
+}
+
+export interface Citation {
+  id: string
+  document_id?: string
+  author: string
+  title: string
+  publication_date?: string
+  publisher?: string
+  url?: string
+  doi?: string
+  pages?: string
+  access_date?: string
+  custom_fields?: Record<string, string>
+}
+
+export interface EssayVersion {
+  version_number: number
+  content: string
+  timestamp: string
+  word_count: number
+}
+
+export interface Essay {
+  id: string
+  user_id: string
+  document_id?: string
+  title: string
+  content: string
+  writing_type: WritingType
+  citation_style?: CitationStyle
+  word_count: number
+  status: EssayStatus
+  ai_suggestions: WritingSuggestion[]
+  cited_sources: Citation[]
+  version_history: EssayVersion[]
+  created_at: string
+  updated_at: string
+}
+
+// ============================================================================
+// VIDEO LEARNING INTERFACES
+// ============================================================================
+
+export interface VideoKeyPoint {
+  timestamp: number
+  title: string
+  description: string
+  importance: 'high' | 'medium' | 'low'
+}
+
+export interface VideoTranscriptLine {
+  start_time: number
+  end_time: number
+  text: string
+}
+
+export interface Video {
+  id: string
+  user_id: string
+  video_url: string
+  video_id: string
+  title: string
+  channel_name?: string
+  duration_seconds: number
+  thumbnail_url?: string
+  transcript: VideoTranscriptLine[]
+  summary?: string
+  key_points: VideoKeyPoint[]
+  generated_flashcard_ids: string[]
+  processing_status: VideoProcessingStatus
+  error_message?: string
+  created_at: string
+  updated_at: string
 }
