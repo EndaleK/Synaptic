@@ -11,10 +11,12 @@ interface DocumentUploadModalProps {
 
 type UploadTab = 'file' | 'url'
 
-// Chunk size for large file uploads (10MB)
-const CHUNK_SIZE = 10 * 1024 * 1024
+// Chunk size for large file uploads (25MB - increased for fewer requests)
+const CHUNK_SIZE = 25 * 1024 * 1024
 // Threshold for using chunked upload (50MB)
 const CHUNKED_UPLOAD_THRESHOLD = 50 * 1024 * 1024
+// Number of parallel chunk uploads (increased for faster uploads)
+const PARALLEL_CHUNKS = 4
 
 interface UploadProgress {
   uploadedChunks: number
@@ -161,7 +163,7 @@ export default function DocumentUploadModal({
 
   /**
    * Upload large files (>50MB) to Cloudflare R2 via /api/upload-large-document
-   * Uses chunked upload with progress tracking
+   * Uses parallel chunked upload with progress tracking for faster uploads
    */
   const uploadLargeFile = async (file: File) => {
     const fileSize = file.size
@@ -175,9 +177,17 @@ export default function DocumentUploadModal({
     })
 
     let uploadedChunks = 0
+    const updateProgress = () => {
+      const percentage = Math.round((uploadedChunks / totalChunks) * 100)
+      setUploadProgress({
+        uploadedChunks,
+        totalChunks,
+        percentage,
+      })
+    }
 
-    // Upload chunks sequentially
-    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+    // Upload chunks in parallel batches for faster upload
+    const uploadChunk = async (chunkIndex: number): Promise<void> => {
       const start = chunkIndex * CHUNK_SIZE
       const end = Math.min(start + CHUNK_SIZE, fileSize)
       const chunk = file.slice(start, end)
@@ -206,15 +216,18 @@ export default function DocumentUploadModal({
         throw new Error(errorData.error || 'Upload failed')
       }
 
+      // Update progress atomically (increment then update UI)
       uploadedChunks++
-      const percentage = Math.round((uploadedChunks / totalChunks) * 100)
+      updateProgress()
+    }
 
-      // Update progress
-      setUploadProgress({
-        uploadedChunks,
-        totalChunks,
-        percentage,
-      })
+    // Upload chunks in parallel batches
+    for (let i = 0; i < totalChunks; i += PARALLEL_CHUNKS) {
+      const batch = []
+      for (let j = 0; j < PARALLEL_CHUNKS && i + j < totalChunks; j++) {
+        batch.push(uploadChunk(i + j))
+      }
+      await Promise.all(batch)
     }
   }
 
