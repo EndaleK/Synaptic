@@ -24,6 +24,16 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Helper function to ensure profile exists (calls API endpoint)
+  const ensureProfileExists = async () => {
+    const response = await fetch('/api/user/ensure-profile', { method: 'POST' })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to create user profile')
+    }
+    return await response.json()
+  }
+
   // Load essay from database
   useEffect(() => {
     if (essayId) {
@@ -39,9 +49,13 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
     try {
       setIsLoading(true)
+
+      // Ensure profile exists (creates it server-side if needed)
+      await ensureProfileExists()
+
       const supabase = createClient()
 
-      // Get user profile (created by middleware)
+      // Get user profile
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('id')
@@ -49,9 +63,8 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
         .single()
 
       if (!profile || profileError) {
-        // Profile should have been created by middleware
-        console.error('User profile not found:', profileError)
-        throw new Error('User profile not found. Please check the USER_PROFILE_TROUBLESHOOTING.md file for setup instructions.')
+        console.error('User profile not found after creation attempt:', profileError)
+        throw new Error('Failed to load user profile')
       }
 
       const { data, error } = await supabase
@@ -76,9 +89,13 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
     try {
       setIsLoading(true)
+
+      // Ensure profile exists (creates it server-side if needed)
+      await ensureProfileExists()
+
       const supabase = createClient()
 
-      // Get user profile (created by middleware)
+      // Get user profile
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('id')
@@ -86,9 +103,8 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
         .single()
 
       if (!profile || profileError) {
-        // Profile should have been created by middleware
-        console.error('User profile not found:', profileError)
-        throw new Error('User profile not found. Please check the USER_PROFILE_TROUBLESHOOTING.md file for setup instructions.')
+        console.error('User profile not found after creation attempt:', profileError)
+        throw new Error('Failed to load user profile')
       }
 
       // Create new essay

@@ -18,6 +18,16 @@ export default function VideoView() {
   const [error, setError] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
 
+  // Helper function to ensure profile exists (calls API endpoint)
+  const ensureProfileExists = async () => {
+    const response = await fetch('/api/user/ensure-profile', { method: 'POST' })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to create user profile')
+    }
+    return await response.json()
+  }
+
   const handleVideoSelect = async (videoId: string, videoUrl: string) => {
     if (!user) return
 
@@ -27,10 +37,13 @@ export default function VideoView() {
     setError(null)
 
     try {
+      // Ensure profile exists (creates it server-side if needed)
+      await ensureProfileExists()
+
       // Check if video already exists in database
       const supabase = createClient()
 
-      // Get user profile (created by middleware)
+      // Get user profile
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('id')
@@ -38,9 +51,8 @@ export default function VideoView() {
         .single()
 
       if (!profile || profileError) {
-        // Profile should have been created by middleware
-        console.error('User profile not found:', profileError)
-        throw new Error('User profile not found. Please check the USER_PROFILE_TROUBLESHOOTING.md file for setup instructions.')
+        console.error('User profile not found after creation attempt:', profileError)
+        throw new Error('Failed to load user profile')
       }
 
       // Check for existing video
