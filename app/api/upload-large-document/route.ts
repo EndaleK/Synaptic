@@ -12,9 +12,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
-import { uploadToR2 } from '@/lib/r2-storage'
-import { indexDocument } from '@/lib/vector-store'
-import pdfParse from 'pdf-parse'
 
 export const runtime = 'nodejs' // Required for pdf-parse
 export const maxDuration = 300 // 5 minutes for large files
@@ -70,7 +67,11 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    // 5. Upload to R2 storage
+    // 5. Dynamically import R2 and vector store modules
+    const { uploadToR2 } = await import('@/lib/r2-storage')
+    const { indexDocument } = await import('@/lib/vector-store')
+
+    // 6. Upload to R2 storage
     console.log(`📤 Uploading chunk ${chunkIndex}/${totalChunks} for ${fileName}`)
     const { url: r2Url, key: r2FileKey } = await uploadToR2(
       buffer,
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
       file.type || 'application/pdf'
     )
 
-    // 6. If this is the last chunk, process the complete document
+    // 7. If this is the last chunk, process the complete document
     const isLastChunk = parseInt(chunkIndex) === parseInt(totalChunks) - 1
 
     let processingResult = null
@@ -86,6 +87,9 @@ export async function POST(request: NextRequest) {
       console.log(`🔄 Processing complete document: ${fileName}`)
 
       try {
+        // Dynamically import pdf-parse
+        const pdfParse = (await import('pdf-parse')).default
+
         // Extract text from PDF (streaming to avoid memory issues)
         const pdfData = await pdfParse(buffer, {
           max: 0, // Extract all pages
