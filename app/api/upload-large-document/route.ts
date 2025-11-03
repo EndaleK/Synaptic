@@ -15,7 +15,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs' // Required for pdf-parse
-export const maxDuration = 600 // 10 minutes for large files (increased timeout)
+export const maxDuration = 300 // 5 minutes max for Vercel hobby plan
 
 // Temporary storage for chunks during upload (cleared after processing)
 const chunkStorage = new Map<string, Buffer[]>()
