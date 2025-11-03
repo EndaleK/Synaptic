@@ -31,11 +31,39 @@ OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 #### Vercel Deployment
+
+**CRITICAL**: The deployed version requires ALL of the following environment variables to function correctly:
+
 1. Go to your Vercel project settings
 2. Navigate to Environment Variables
-3. Add `LEMONFOX_API_KEY` with your API key
-4. Ensure `OPENAI_API_KEY` is also configured as fallback
-5. Redeploy your application
+3. Add the following required keys:
+
+```bash
+# TTS (Text-to-Speech) for Podcast Generation
+LEMONFOX_API_KEY=your_lemonfox_api_key_here   # Primary TTS provider (83% cheaper)
+OPENAI_API_KEY=your_openai_api_key_here       # Fallback TTS + Mind Map expansion
+
+# AI Providers for Script Generation
+DEEPSEEK_API_KEY=your_deepseek_api_key_here   # Cost-effective script generation (optional)
+ANTHROPIC_API_KEY=your_anthropic_api_key_here # For complex documents (optional)
+
+# Database and Authentication (should already be configured)
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_key
+CLERK_SECRET_KEY=your_clerk_secret
+```
+
+4. Redeploy your application after adding the variables
+
+**Important Notes**:
+- `LEMONFOX_API_KEY` is REQUIRED for podcast generation
+- `OPENAI_API_KEY` is REQUIRED for:
+  - TTS fallback when Lemonfox fails
+  - Mind map node expansion feature
+- At least one of `DEEPSEEK_API_KEY`, `OPENAI_API_KEY`, or `ANTHROPIC_API_KEY` is required for podcast script generation
+- Missing any of these will cause features to fail on deployment
 
 ### 3. Verify Configuration
 
@@ -103,7 +131,7 @@ Lemonfox.ai supports 8 languages with natural-sounding voices:
 - Reduce document size or target podcast duration
 - Verify API keys are configured correctly
 
-### Issue: "Unexpected end of JSON input" on deployed version
+### Issue: "Unexpected end of JSON input" on deployed version (Podcast Generation)
 **Causes**:
 1. Missing `LEMONFOX_API_KEY` in Vercel environment variables
 2. Missing `OPENAI_API_KEY` fallback in Vercel
@@ -114,6 +142,17 @@ Lemonfox.ai supports 8 languages with natural-sounding voices:
 2. Ensure `OPENAI_API_KEY` is also configured
 3. Redeploy the application
 4. Check Vercel logs for specific error messages
+
+### Issue: "Failed to Load Details" when expanding mind map nodes (Deployed Version Only)
+**Cause**: Missing `OPENAI_API_KEY` in Vercel environment variables. The mind map node expansion feature requires OpenAI API to generate detailed explanations.
+
+**Solution**:
+1. Go to Vercel project settings → Environment Variables
+2. Add `OPENAI_API_KEY` with your OpenAI API key
+3. Redeploy the application
+4. Check Vercel logs - you should see error message: "OpenAI API key not configured for mind map node expansion"
+
+**Note**: Mind map expansion uses OpenAI's GPT-4o model (not Lemonfox) to generate comprehensive explanations, quotes, and examples from source documents.
 
 ## Monitoring Usage
 
