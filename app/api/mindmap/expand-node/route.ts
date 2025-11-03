@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import OpenAI from 'openai'
 import { logger } from '@/lib/logger'
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '',
-})
+import { providerFactory } from '@/lib/ai'
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now()
@@ -45,21 +41,24 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if OpenAI API key is configured
-    if (!process.env.OPENAI_API_KEY) {
-      logger.error('OpenAI API key not configured for mind map node expansion', null, {
+    // Select AI provider: Try DeepSeek first (cost-effective), fallback to OpenAI
+    const selectedProvider = providerFactory.getProviderWithFallback('deepseek', 'openai')
+
+    // Check if any provider is configured
+    if (!selectedProvider.isConfigured()) {
+      logger.error('No AI provider configured for mind map node expansion', null, {
         userId,
         nodeId,
         environment: process.env.VERCEL ? 'Vercel' : 'Local',
-        suggestion: 'Add OPENAI_API_KEY to Vercel environment variables dashboard'
+        suggestion: 'Add DEEPSEEK_API_KEY or OPENAI_API_KEY to Vercel environment variables dashboard'
       })
       return NextResponse.json(
         {
           error: 'AI service not configured',
-          expandedExplanation: 'Mind map node expansion requires an OpenAI API key. Please add OPENAI_API_KEY to your environment variables in Vercel dashboard and redeploy.',
+          expandedExplanation: 'Mind map node expansion requires an AI provider. Please add DEEPSEEK_API_KEY or OPENAI_API_KEY to your environment variables in Vercel dashboard and redeploy.',
           quotes: [],
           examples: [],
-          configurationHelp: 'Visit your Vercel project settings → Environment Variables → Add OPENAI_API_KEY'
+          configurationHelp: 'Visit your Vercel project settings → Environment Variables → Add DEEPSEEK_API_KEY (preferred, cost-effective) or OPENAI_API_KEY'
         },
         { status: 500 }
       )
@@ -70,17 +69,18 @@ export async function POST(req: NextRequest) {
       ? documentText.substring(0, 16000) + '...'
       : documentText
 
-    logger.debug('Generating mind map node expansion with OpenAI', {
+    logger.debug(`Generating mind map node expansion with ${selectedProvider.name}`, {
       userId,
       nodeId,
       nodeLabel,
+      provider: selectedProvider.name,
       truncatedLength: truncatedText.length,
       originalLength: documentText.length
     })
 
-    // Generate detailed expansion using OpenAI
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+    // Generate detailed expansion using selected provider
+    const completion = await selectedProvider.createChatCompletion({
+      model: selectedProvider.name === 'deepseek' ? 'deepseek-chat' : 'gpt-4o',
       messages: [
         {
           role: 'system',
@@ -183,7 +183,7 @@ Format your response as JSON with this structure:
       {
         error: 'Failed to expand node details',
         message: error instanceof Error ? error.message : 'Unknown error',
-        help: 'Check Vercel logs for detailed error information. Ensure OPENAI_API_KEY is configured in environment variables.'
+        help: 'Check Vercel logs for detailed error information. Ensure DEEPSEEK_API_KEY or OPENAI_API_KEY is configured in environment variables.'
       },
       { status: 500 }
     )
