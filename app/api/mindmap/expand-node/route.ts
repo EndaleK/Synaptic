@@ -79,22 +79,17 @@ export async function POST(req: NextRequest) {
     })
 
     // Generate detailed expansion using selected provider
-    const completion = await selectedProvider.createChatCompletion({
-      model: selectedProvider.name === 'deepseek' ? 'deepseek-chat' : 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an educational assistant helping students understand concepts from their study materials.
+    const systemPrompt = `You are an educational assistant helping students understand concepts from their study materials.
 Your task is to expand on a specific concept from a mind map by:
 1. Providing a comprehensive explanation (2-3 paragraphs)
 2. Finding 2-3 relevant, direct quotes from the source material
 3. Creating 2-3 practical examples or applications
 
-Be thorough, educational, and engaging. Focus on helping the student deeply understand the concept.`
-        },
-        {
-          role: 'user',
-          content: `Source Document:
+Be thorough, educational, and engaging. Focus on helping the student deeply understand the concept.
+
+IMPORTANT: You must respond with ONLY valid JSON. No markdown, no code blocks, just pure JSON.`
+
+    const userPrompt = `Source Document:
 ${truncatedText}
 
 Mind Map Concept: "${nodeLabel}"
@@ -117,14 +112,19 @@ Format your response as JSON with this structure:
     ...
   ]
 }`
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 1500,
-      response_format: { type: 'json_object' }
-    })
 
-    const responseText = completion.choices[0]?.message?.content || '{}'
+    const completion = await selectedProvider.complete(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      {
+        temperature: 0.7,
+        maxTokens: 1500,
+      }
+    )
+
+    const responseText = completion.content || '{}'
     const parsedResponse = JSON.parse(responseText)
 
     // Validate response structure
