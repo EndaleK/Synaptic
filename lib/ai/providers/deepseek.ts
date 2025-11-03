@@ -43,9 +43,18 @@ export class DeepSeekProvider implements AIProvider {
       stream: false,
     });
 
+    // Add null check for completion object
+    if (!completion) {
+      throw new Error('DeepSeek API returned null response');
+    }
+
+    if (!completion.choices || completion.choices.length === 0) {
+      throw new Error('DeepSeek API returned no choices in response');
+    }
+
     const choice = completion.choices[0];
     if (!choice || !choice.message) {
-      throw new Error('No response from DeepSeek API');
+      throw new Error('No valid response from DeepSeek API');
     }
 
     return {

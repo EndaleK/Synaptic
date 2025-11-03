@@ -42,9 +42,18 @@ export class OpenAIProvider implements AIProvider {
       stream: false,
     });
 
+    // Add null check for completion object
+    if (!completion) {
+      throw new Error('OpenAI API returned null response');
+    }
+
+    if (!completion.choices || completion.choices.length === 0) {
+      throw new Error('OpenAI API returned no choices in response');
+    }
+
     const choice = completion.choices[0];
     if (!choice || !choice.message) {
-      throw new Error('No response from OpenAI API');
+      throw new Error('No valid response from OpenAI API');
     }
 
     return {
