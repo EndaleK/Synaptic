@@ -21,6 +21,15 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     const { userId } = await auth()
 
     if (!userId) {
+      // For API routes, return JSON error instead of redirect
+      if (req.nextUrl.pathname.startsWith('/api/')) {
+        return NextResponse.json(
+          { error: 'Unauthorized', message: 'Please sign in to access this resource' },
+          { status: 401 }
+        )
+      }
+
+      // For page routes, redirect to sign-in
       const signInUrl = new URL('/sign-in', req.url)
       signInUrl.searchParams.set('redirect_url', req.url)
       return NextResponse.redirect(signInUrl)

@@ -217,6 +217,35 @@ html.font-size-large {
   }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes zenModeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Typography utilities */
 .text-display-lg {
   font-size: var(--font-size-4xl);
@@ -382,6 +411,81 @@ html.font-size-large {
 
 .animate-in {
   animation: slide-in-from-bottom 0.5s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-fade-out {
+  animation: fadeOut 0.3s ease-out;
+}
+
+.animate-zen-in {
+  animation: zenModeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Focus Mode Styles */
+.focus-mode-dimmed {
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+}
+
+.focus-mode-active {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+/* Zen Mode Styles */
+.zen-mode {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--background);
+  overflow-y: auto;
+}
+
+.zen-mode .prose {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  font-size: 1.125rem;
+  line-height: 1.75;
+}
+
+/* Typewriter Mode */
+.typewriter-mode {
+  scroll-margin-top: 50vh;
+  scroll-padding-top: 50vh;
+}
+
+/* Typography Enhancements */
+.typography-serif {
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.typography-sans {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+}
+
+.typography-mono {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+}
+
+.line-height-comfortable {
+  line-height: 1.75;
+}
+
+.line-height-relaxed {
+  line-height: 2;
+}
+
+.line-height-loose {
+  line-height: 2.25;
 }
 
 /* Scroll behavior */

@@ -21,6 +21,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   const [studiedCards, setStudiedCards] = useState<Set<string>>(new Set())
   const [showExportMenu, setShowExportMenu] = useState(false)
   const exportMenuRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   // Mastery tracking state
   const [masteredCards, setMasteredCards] = useState<Set<string>>(new Set())
@@ -804,6 +805,43 @@ ${'='.repeat(50)}`).join('\n')}`
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // CRITICAL: Only capture keyboard shortcuts if this component is actually visible
+      if (!containerRef.current) return
+
+      // Check if component is visible in the DOM
+      const isVisible = containerRef.current.offsetParent !== null &&
+                       containerRef.current.getBoundingClientRect().height > 0
+
+      if (!isVisible) {
+        return // Component not visible, don't capture any keys
+      }
+
+      // Don't capture keyboard shortcuts if user is typing in an input/textarea/contenteditable
+      const target = e.target as HTMLElement
+
+      // Check if user is typing in any editable element
+      const isTyping =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable ||
+        target.closest('[contenteditable="true"]') ||
+        target.closest('[contenteditable]') ||
+        target.closest('.ProseMirror') || // TipTap editor
+        target.closest('.tiptap') ||       // TipTap editor alternative class
+        // Check if any parent is contenteditable
+        (() => {
+          let el = target
+          while (el && el !== document.body) {
+            if (el.isContentEditable) return true
+            el = el.parentElement as HTMLElement
+          }
+          return false
+        })()
+
+      if (isTyping) {
+        return // Let the user type normally
+      }
+
       switch (e.key) {
         case ' ':
         case 'Enter':
@@ -843,7 +881,7 @@ ${'='.repeat(50)}`).join('\n')}`
   }, [showExportMenu])
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div ref={containerRef} className="max-w-4xl mx-auto">
       {/* Header Section - Compact on Mobile */}
       <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden mb-3 md:mb-6">
         <div className="p-3 md:p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">

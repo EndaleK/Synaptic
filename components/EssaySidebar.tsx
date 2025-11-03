@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, FileText, Trash2, Calendar, FileEdit, Menu, X } from 'lucide-react'
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react'
+import { ChevronLeft, ChevronRight, FileText, Trash2, Calendar, FileEdit, Menu, X, Plus } from 'lucide-react'
 import type { Essay } from '@/lib/supabase/types'
 
 interface EssaySidebarProps {
@@ -10,17 +10,21 @@ interface EssaySidebarProps {
   currentEssayId?: string
   onEssaySelect: (essay: Essay) => void
   onEssayDelete?: (essayId: string) => void
-  onRefresh?: () => void
+  onNewEssay?: () => void
 }
 
-export default function EssaySidebar({
+export interface EssaySidebarRef {
+  onRefresh: () => void
+}
+
+const EssaySidebar = forwardRef<EssaySidebarRef, EssaySidebarProps>(({
   isOpen,
   onToggle,
   currentEssayId,
   onEssaySelect,
   onEssayDelete,
-  onRefresh
-}: EssaySidebarProps) {
+  onNewEssay
+}, ref) => {
   const [essays, setEssays] = useState<Essay[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -48,6 +52,11 @@ export default function EssaySidebar({
     }
   }
 
+  // Expose fetchEssays to parent via ref
+  useImperativeHandle(ref, () => ({
+    onRefresh: fetchEssays
+  }))
+
   const handleDelete = async (essayId: string, e: React.MouseEvent) => {
     e.stopPropagation() // Prevent essay selection
 
@@ -71,7 +80,6 @@ export default function EssaySidebar({
 
       // Notify parent component
       onEssayDelete?.(essayId)
-      onRefresh?.()
 
       alert('Essay deleted successfully')
     } catch (error) {
@@ -104,30 +112,49 @@ export default function EssaySidebar({
     return text.split(/\s+/).filter(word => word.length > 0).length
   }
 
-  if (!isOpen) return null
-
   return (
     <React.Fragment>
-      {/* Backdrop - only on mobile */}
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-200"
-        onClick={onToggle}
-      />
+      {/* Backdrop - only on mobile, transparent */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden animate-in fade-in duration-200"
+          onClick={onToggle}
+        />
+      )}
 
-      {/* Sidebar - slides in from left */}
-      <div className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col z-50 shadow-2xl transform transition-transform duration-200 ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      {/* Sidebar - responsive positioning */}
+      <div className={`
+        fixed lg:relative
+        top-0 left-0
+        h-full w-80
+        bg-white dark:bg-gray-800
+        border-r border-gray-200 dark:border-gray-700
+        flex flex-col
+        z-50 lg:z-auto
+        shadow-2xl lg:shadow-none
+        transform lg:transform-none
+        transition-transform duration-300 ease-in-out
+        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
       {/* Header */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">My Essays</h3>
-        <button
-          onClick={onToggle}
-          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          title="Close sidebar"
-        >
-          <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-        </button>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Your Documents</h3>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onNewEssay}
+            className="p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors text-blue-600 dark:text-blue-400"
+            title="New essay"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+          <button
+            onClick={onToggle}
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors lg:hidden"
+            title="Close sidebar"
+          >
+            <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          </button>
+        </div>
       </div>
 
       {/* Essays List */}
@@ -219,4 +246,8 @@ export default function EssaySidebar({
     </div>
     </React.Fragment>
   )
-}
+})
+
+EssaySidebar.displayName = 'EssaySidebar'
+
+export default EssaySidebar
