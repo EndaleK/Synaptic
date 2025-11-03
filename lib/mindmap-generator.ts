@@ -47,7 +47,7 @@ export async function generateMindMap(
 ): Promise<MindMapData> {
   const {
     text,
-    maxNodes = 36,
+    maxNodes = 20,
     maxDepth = 4,
     provider: customProvider,
     template: userTemplate
@@ -66,8 +66,8 @@ export async function generateMindMap(
   let selectedTemplate: TemplateType = userTemplate || 'hierarchical' // Default to hierarchical if not specified
   let templateSelectionMode: 'user' | 'ai-auto' = userTemplate ? 'user' : 'ai-auto'
 
-  // Truncate if necessary
-  const maxChars = 48000
+  // Truncate if necessary (reduced for faster processing)
+  const maxChars = 24000
   let processedText = text
   if (text.length > maxChars) {
     processedText = text.substring(0, maxChars)
@@ -215,7 +215,7 @@ Create a clear, well-structured mind map with ${maxNodes} nodes organized in ${m
       ],
       {
         temperature: 0.5, // Balanced between creativity and structure
-        maxTokens: 8000, // Increased to prevent JSON truncation
+        maxTokens: 3000, // Optimized for faster generation while maintaining quality
       }
     )
 
