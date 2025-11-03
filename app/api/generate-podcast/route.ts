@@ -91,12 +91,29 @@ export async function POST(req: NextRequest) {
     // Initialize Supabase
     const supabase = await createClient()
 
-    // Fetch document (use userId directly - documents.user_id is TEXT Clerk ID)
+    // Get user profile ID first (documents.user_id references user_profiles.id, not clerk_user_id)
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('clerk_user_id', userId)
+      .single()
+
+    if (profileError || !profile) {
+      logger.error('User profile not found for podcast generation', profileError, { userId })
+      const duration = Date.now() - startTime
+      logger.api('POST', '/api/generate-podcast', 404, duration, { userId, error: 'User profile not found' })
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 404 }
+      )
+    }
+
+    // Fetch document using Supabase UUID
     const { data: document, error: docError} = await supabase
       .from('documents')
       .select('id, file_name, extracted_text, user_id')
       .eq('id', documentId)
-      .eq('user_id', userId)
+      .eq('user_id', profile.id)
       .single()
 
     if (docError || !document) {

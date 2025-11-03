@@ -84,11 +84,28 @@ export async function POST(req: NextRequest) {
     // Initialize Supabase
     const supabase = await createClient()
 
-    // Fetch document
-    // Note: user_id in documents table is TEXT (Clerk user ID)
+    // Get user profile ID first (documents.user_id references user_profiles.id, not clerk_user_id)
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('clerk_user_id', userId)
+      .single()
+
+    if (profileError || !profile) {
+      logger.error('User profile not found for mind map generation', profileError, { userId })
+      const duration = Date.now() - startTime
+      logger.api('POST', '/api/generate-mindmap', 404, duration, { userId, error: 'User profile not found' })
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 404 }
+      )
+    }
+
+    // Fetch document using Supabase UUID
     logger.debug('Attempting to fetch document', {
       userId,
       documentId,
+      userProfileId: profile.id,
       query: 'SELECT id, file_name, extracted_text, user_id FROM documents WHERE id = ? AND user_id = ?'
     })
 
@@ -96,7 +113,7 @@ export async function POST(req: NextRequest) {
       .from('documents')
       .select('id, file_name, extracted_text, user_id')
       .eq('id', documentId)
-      .eq('user_id', userId) // Use Clerk userId directly
+      .eq('user_id', profile.id)
       .single()
 
     if (docError || !document) {
@@ -104,6 +121,7 @@ export async function POST(req: NextRequest) {
       logger.error('Document fetch error for mind map generation', docError, {
         userId,
         documentId,
+        userProfileId: profile.id,
         errorCode: docError?.code,
         errorMessage: docError?.message,
         errorDetails: docError?.details,
@@ -121,8 +139,8 @@ export async function POST(req: NextRequest) {
         logger.error('Document exists but user mismatch', null, {
           documentId,
           documentUserId: anyDocument.user_id,
-          requestUserId: userId,
-          userIdMatch: anyDocument.user_id === userId
+          requestUserProfileId: profile.id,
+          userIdMatch: anyDocument.user_id === profile.id
         })
       } else {
         logger.error('Document does not exist in database', null, { documentId })
