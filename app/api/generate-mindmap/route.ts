@@ -308,13 +308,12 @@ export async function POST(req: NextRequest) {
       edgeCount: mindMapData.edges.length
     })
 
-    // Save to database using Clerk user ID directly
-    // Note: Documents table uses user_id as TEXT (Clerk ID), not UUID reference
+    // Save to database using Supabase UUID
     let mindMap = null
     const { data: savedMindMap, error: dbError } = await supabase
       .from('mindmaps')
       .insert({
-        user_id: userId, // Use Clerk user ID directly (TEXT type)
+        user_id: profile.id, // Use Supabase UUID, not Clerk ID
         document_id: documentId,
         title: mindMapData.title,
         nodes: mindMapData.nodes,
@@ -353,7 +352,7 @@ export async function POST(req: NextRequest) {
     await incrementUsage(userId, 'mindmaps')
 
     await supabase.from('usage_tracking').insert({
-      user_id: userId,
+      user_id: profile.id, // Use Supabase UUID, not Clerk ID
       action_type: 'mindmap_generation',
       tokens_used: totalTokens,
       metadata: {

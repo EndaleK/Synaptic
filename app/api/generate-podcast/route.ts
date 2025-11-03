@@ -275,7 +275,7 @@ export async function POST(req: NextRequest) {
     const { data: podcast, error: dbError } = await supabase
       .from('podcasts')
       .insert({
-        user_id: userId,
+        user_id: profile.id, // Use Supabase UUID, not Clerk ID
         document_id: documentId,
         title: script.title,
         script: JSON.stringify(script.lines),
@@ -303,7 +303,7 @@ export async function POST(req: NextRequest) {
     await incrementUsage(userId, 'podcasts')
 
     await supabase.from('usage_tracking').insert({
-      user_id: userId,
+      user_id: profile.id, // Use Supabase UUID, not Clerk ID
       action_type: 'podcast_generation',
       tokens_used: totalCharacters,
       metadata: {
