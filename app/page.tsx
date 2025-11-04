@@ -38,7 +38,7 @@ export default function LandingPage() {
 
             {/* Subheadline */}
             <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Study smarter, write better, learn faster. AI-powered flashcards, podcasts, mind maps, essay assistant, and adaptive tutoring personalized to your learning style.
+              Study smarter, write better, learn faster. Synaptic-powered flashcards, podcasts, mind maps, essay assistant, and adaptive tutoring personalized to your learning style.
             </p>
 
             {/* CTA Buttons */}
@@ -75,7 +75,7 @@ export default function LandingPage() {
               Everything You Need to Learn
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Multiple learning modes powered by AI, all tailored to your learning style
+              Multiple learning modes powered by intelligent technology, all tailored to your learning style
             </p>
           </div>
 
@@ -90,7 +90,7 @@ export default function LandingPage() {
                 Smart Flashcards
               </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                AI automatically extracts key concepts from your documents and generates
+                Synaptic automatically extracts key concepts from your documents and generates
                 interactive flashcards with spaced repetition.
               </p>
             </div>
@@ -104,7 +104,7 @@ export default function LandingPage() {
                 Socratic Teaching
               </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Chat with your documents through guided dialogue. AI asks questions
+                Chat with your documents through guided dialogue. Synaptic's adaptive engine asks questions
                 to deepen understanding instead of giving direct answers.
               </p>
             </div>
@@ -118,7 +118,7 @@ export default function LandingPage() {
                 Audio Learning
               </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Convert documents into AI-narrated podcasts. Learn while commuting,
+                Convert documents into intelligently-narrated podcasts. Learn while commuting,
                 exercising, or doing chores. <span className="text-sm bg-black/10 dark:bg-white/10 px-2 py-1 rounded">Coming Soon</span>
               </p>
             </div>
@@ -143,7 +143,7 @@ export default function LandingPage() {
                 <Brain className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
-                Adaptive AI
+                Adaptive Intelligence
               </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                 Take a quick quiz to discover your learning style. The platform
@@ -160,7 +160,7 @@ export default function LandingPage() {
                 Any Document
               </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Upload PDFs, DOCX, TXT, or paste text directly. AI handles the rest,
+                Upload PDFs, DOCX, TXT, or paste text directly. Synaptic handles the rest,
                 extracting knowledge from any format.
               </p>
             </div>
@@ -285,7 +285,7 @@ export default function LandingPage() {
                     Learn Your Way
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
-                    Choose your preferred mode and let AI guide you to mastery
+                    Choose your preferred mode and let Synaptic guide you to mastery
                   </p>
                   <p className="text-sm font-semibold text-purple-600 dark:text-purple-400">
                     🎯 Personalized to you
@@ -336,7 +336,7 @@ export default function LandingPage() {
 
               {/* Subheadline with social proof */}
               <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
-                Join and study smarter with AI
+                Join and study smarter with Synaptic
               </p>
 
               {/* Primary CTA Button */}

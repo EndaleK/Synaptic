@@ -85,7 +85,9 @@ export default function WritingEditor({
       Placeholder.configure({
         placeholder: 'Start writing your essay...'
       }),
-      CharacterCount,
+      CharacterCount.configure({
+        mode: 'textSize', // Count all characters including spaces
+      }),
       WritingSuggestionsExtension.configure({
         suggestions: [],
         onSuggestionClick: (suggestion) => {
@@ -139,6 +141,20 @@ export default function WritingEditor({
   // Keyboard shortcuts for writing modes
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't process shortcuts if user is typing in an editable element
+      const target = e.target as HTMLElement
+      const isTyping = target.tagName === 'INPUT' ||
+                      target.tagName === 'TEXTAREA' ||
+                      target.isContentEditable ||
+                      target.closest('[contenteditable]') ||
+                      target.closest('.ProseMirror') ||
+                      target.closest('.tiptap')
+
+      // For regular typing (non-modifier keys), let the editor handle it
+      if (isTyping && !e.metaKey && !e.ctrlKey) {
+        return
+      }
+
       const isMod = e.metaKey || e.ctrlKey
 
       // Cmd/Ctrl+Shift+F: Zen Mode

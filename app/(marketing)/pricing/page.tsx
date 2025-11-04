@@ -53,11 +53,11 @@ export default function PricingPage() {
     {
       name: "Free",
       price: "$0",
-      description: "Perfect for trying out AI learning",
+      description: "Perfect for trying out Synaptic",
       features: [
         "10 documents per month",
         "Smart flashcard generation",
-        "Document chat with AI",
+        "Document chat with intelligent tutoring",
         "Basic learning style assessment",
         "Export flashcards as JSON",
         "Community support",
@@ -75,11 +75,11 @@ export default function PricingPage() {
       features: [
         "Unlimited documents",
         "All Free features",
-        "Podcast generation with AI voice",
+        "Podcast generation with natural voice synthesis",
         "Interactive mind maps",
         "Advanced Socratic teaching mode",
         "Spaced repetition algorithm",
-        "Priority AI processing",
+        "Priority Synaptic processing",
         "Export to multiple formats",
         "Priority email support",
         "Early access to new features",
