@@ -371,7 +371,7 @@ export default function DashboardLayout({
               {sidebarCollapsed ? (
                 <p>©</p>
               ) : (
-                <p>© 2025 Synaptic</p>
+                <p>© 2025 Synaptic. All rights reserved.</p>
               )}
             </div>
           </div>
