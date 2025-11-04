@@ -169,7 +169,7 @@ export default function MarketingLayout({
                 Transform your documents into personalized learning experiences. Powered by AI to adapt to your unique learning style.
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-500">
-                © 2025 Synaptic. All rights reserved.
+                © 2025 Synaptic. All rights reserved. ካንእ
               </p>
             </div>
 
