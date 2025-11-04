@@ -119,7 +119,7 @@ export default function LandingPage() {
               </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                 Convert documents into intelligently-narrated podcasts. Learn while commuting,
-                exercising, or doing chores. <span className="text-sm bg-black/10 dark:bg-white/10 px-2 py-1 rounded">Coming Soon</span>
+                exercising, or doing chores.
               </p>
             </div>
 
@@ -133,7 +133,7 @@ export default function LandingPage() {
               </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                 Visualize concepts and their relationships as interactive mind maps.
-                See the big picture at a glance. <span className="text-sm bg-black/10 dark:bg-white/10 px-2 py-1 rounded">Coming Soon</span>
+                See the big picture at a glance.
               </p>
             </div>
 
