@@ -92,6 +92,8 @@ export async function POST(request: NextRequest) {
       console.log(`🔄 Processing complete document: ${fileName}`)
 
       try {
+        console.log(`[DEBUG] Step 1: Getting user profile for userId: ${userId}`)
+
         // Get user profile ID from user_profiles table
         const supabase = await createClient()
         const { data: profile, error: profileError } = await supabase
@@ -101,16 +103,19 @@ export async function POST(request: NextRequest) {
           .single()
 
         if (profileError || !profile) {
-          console.error('Failed to get user profile:', profileError)
-          throw new Error('User profile not found. Please ensure your account is set up correctly.')
+          console.error('[ERROR] Failed to get user profile:', profileError)
+          console.error('[ERROR] Profile data:', profile)
+          throw new Error(`User profile not found: ${profileError?.message || 'No profile data'}. Please ensure your account is set up correctly.`)
         }
 
         const userProfileId = profile.id
-        console.log(`✅ Found user profile ID: ${userProfileId}`)
+        console.log(`[DEBUG] ✅ Found user profile ID: ${userProfileId}`)
+
+        console.log(`[DEBUG] Step 2: Concatenating ${chunks.length} chunks`)
 
         // Concatenate all chunks into complete buffer
         const completeFileBuffer = Buffer.concat(chunks)
-        console.log(`✅ Assembled ${completeFileBuffer.length} bytes from ${totalChunks} chunks`)
+        console.log(`[DEBUG] ✅ Assembled ${completeFileBuffer.length} bytes from ${totalChunks} chunks`)
 
         // Clear chunk storage to free memory
         chunkStorage.delete(chunkKey)
@@ -121,9 +126,12 @@ export async function POST(request: NextRequest) {
         const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
         r2FileKey = `documents/${userId}/${documentId}`
 
+        console.log(`[DEBUG] Step 3: Uploading to storage (hasR2: ${hasR2})`)
+
         // Upload complete file to storage (R2 if available, otherwise Supabase)
         if (hasR2) {
           // Use Cloudflare R2 storage
+          console.log(`[DEBUG] Uploading to R2: ${r2FileKey}`)
           const { uploadToR2 } = await import('@/lib/r2-storage')
           const uploadResult = await uploadToR2(
             completeFileBuffer,
@@ -131,10 +139,11 @@ export async function POST(request: NextRequest) {
             file.type || 'application/pdf'
           )
           r2Url = uploadResult.url
-          console.log(`☁️ Uploaded complete file to R2: ${r2FileKey}`)
+          console.log(`[DEBUG] ☁️ Uploaded complete file to R2: ${r2FileKey}`)
         } else {
           // Fall back to Supabase Storage (upload Buffer directly, no File object needed)
           const supabaseFilePath = `${userProfileId}/${timestamp}-${sanitizedFileName}`
+          console.log(`[DEBUG] Uploading to Supabase Storage: ${supabaseFilePath} (${completeFileBuffer.length} bytes)`)
 
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('documents')
@@ -145,9 +154,12 @@ export async function POST(request: NextRequest) {
             })
 
           if (uploadError) {
-            console.error('Supabase Storage upload error:', uploadError)
+            console.error('[ERROR] Supabase Storage upload error:', uploadError)
+            console.error('[ERROR] Upload details:', { supabaseFilePath, fileSize: completeFileBuffer.length, contentType: file.type })
             throw new Error(`Failed to upload to storage: ${uploadError.message}`)
           }
+
+          console.log(`[DEBUG] Upload successful, getting public URL`)
 
           // Get public URL
           const { data: { publicUrl } } = supabase.storage
@@ -156,8 +168,10 @@ export async function POST(request: NextRequest) {
 
           r2Url = publicUrl
           r2FileKey = supabaseFilePath
-          console.log(`☁️ Uploaded complete file to Supabase Storage: ${r2FileKey}`)
+          console.log(`[DEBUG] ☁️ Uploaded complete file to Supabase Storage: ${r2FileKey}, URL: ${publicUrl}`)
         }
+
+        console.log(`[DEBUG] Step 4: Saving document metadata to database`)
 
         // Save metadata to Supabase FIRST with 'processing' status
         // This allows user to see document immediately in UI
@@ -180,11 +194,12 @@ export async function POST(request: NextRequest) {
           .single()
 
         if (dbError) {
-          console.error('Supabase insert error:', dbError)
-          throw new Error('Failed to save document metadata')
+          console.error('[ERROR] Supabase insert error:', dbError)
+          console.error('[ERROR] Insert details:', { userProfileId, fileName, fileSize: completeFileBuffer.length, r2FileKey })
+          throw new Error(`Failed to save document metadata: ${dbError.message}`)
         }
 
-        console.log(`✅ Document metadata saved: ${document.id}`)
+        console.log(`[DEBUG] ✅ Document metadata saved: ${document.id}`)
 
         // NOTE: PDF text extraction happens CLIENT-SIDE using pdf.js in browser
         // The client will call /api/documents/update-text after extraction completes
