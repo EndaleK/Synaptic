@@ -23,11 +23,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Try multiple CDN sources with timeout (use correct version)
+    // Try multiple CDN sources with timeout (must match client pdfjs-dist version 5.3.31)
     const workerSources = [
-      'https://unpkg.com/pdfjs-dist@2.16.105/build/pdf.worker.min.js',
-      'https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.worker.min.js',
-      'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js',
+      'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.3.31/build/pdf.worker.min.js',
+      'https://unpkg.com/pdfjs-dist@5.3.31/build/pdf.worker.min.js',
+      'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.3.31/build/pdf.worker.mjs',
       'https://mozilla.github.io/pdf.js/build/pdf.worker.min.js'
     ]
     
