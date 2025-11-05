@@ -234,6 +234,7 @@ export async function POST(request: NextRequest) {
         }
 
         console.log(`✅ Document uploaded successfully: ${document.id}. Processing in background.`)
+        console.log(`[DEBUG] processingResult created:`, JSON.stringify(processingResult))
       } catch (processingError) {
         console.error('Document processing error:', processingError)
 
@@ -278,7 +279,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Return success response for chunk upload
-    return NextResponse.json({
+    const response = {
       success: true,
       chunkIndex: currentChunkIndex,
       totalChunks: parseInt(totalChunks),
@@ -289,7 +290,11 @@ export async function POST(request: NextRequest) {
         processing: processingResult,
         documentId: processingResult.documentId  // Expose at top level for easier client access
       }),
-    })
+    }
+
+    console.log(`[DEBUG] Sending response for chunk ${currentChunkIndex + 1}/${totalChunks}:`, JSON.stringify(response))
+
+    return NextResponse.json(response)
 
   } catch (error) {
     console.error('Upload error:', error)
