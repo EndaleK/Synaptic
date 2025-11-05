@@ -18,11 +18,22 @@ import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs' // Required for pdf-parse and Buffer operations
-export const maxDuration = 300 // 5 minutes max for Vercel hobby plan (300s)
+export const maxDuration = 300 // 5 minutes max (requires Vercel Pro plan)
 // Note: Vercel enforces 4.5MB max body size at edge level (cannot be changed)
 
+// Upload session tracking to handle parallel chunk uploads
+interface UploadSession {
+  chunks: Buffer[]
+  documentId: string
+  fileName: string
+  userId: string
+  userProfileId?: string  // Cached after first lookup
+  timestamp: number
+  totalChunks: number
+}
+
 // Temporary storage for chunks during upload (cleared after processing)
-const chunkStorage = new Map<string, Buffer[]>()
+const chunkStorage = new Map<string, UploadSession>()
 
 /**
  * POST /api/upload-large-document
@@ -60,33 +71,50 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // 3. Generate unique document ID (use timestamp from first chunk only)
-    // Use fileName + userId as consistent key across all chunks
+    // 3. Generate unique session key (consistent across all chunks for this upload)
     const chunkKey = `${userId}_${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`
 
     // 4. Convert chunk to buffer
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    // 5. Store chunk in memory
+    // 5. Initialize or retrieve upload session
     const currentChunkIndex = parseInt(chunkIndex)
+    let session: UploadSession
+
     if (!chunkStorage.has(chunkKey)) {
+      // First chunk: Create new upload session with pre-generated documentId
+      const timestamp = Date.now()
+      const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
+      const documentId = `${userId}_${timestamp}_${sanitizedFileName}`
+
+      session = {
+        chunks: [],
+        documentId,
+        fileName,
+        userId,
+        timestamp,
+        totalChunks: parseInt(totalChunks)
+      }
+
+      chunkStorage.set(chunkKey, session)
       console.log(`🆕 Starting new upload session for ${fileName}`)
-      chunkStorage.set(chunkKey, [])
+      console.log(`📋 Pre-generated document ID: ${documentId}`)
+    } else {
+      session = chunkStorage.get(chunkKey)!
     }
 
     // Store chunk at correct index position
-    const chunks = chunkStorage.get(chunkKey)!
-    chunks[currentChunkIndex] = buffer
+    session.chunks[currentChunkIndex] = buffer
 
     console.log(`📤 Received chunk ${parseInt(chunkIndex) + 1}/${totalChunks} for ${fileName} (${buffer.length} bytes)`)
 
     // 6. Check if ALL chunks have been received (not just if this is the last chunk)
     // Chunks can arrive out of order due to parallel uploads
-    const receivedChunks = chunks.filter(chunk => chunk !== undefined).length
-    const allChunksReceived = receivedChunks === parseInt(totalChunks)
+    const receivedChunks = session.chunks.filter(chunk => chunk !== undefined).length
+    const allChunksReceived = receivedChunks === session.totalChunks
 
-    console.log(`📊 Progress: ${receivedChunks}/${totalChunks} chunks received`)
+    console.log(`📊 Progress: ${receivedChunks}/${session.totalChunks} chunks received for session ${session.documentId}`)
 
     let processingResult = null
     let r2Url = ''
@@ -96,31 +124,58 @@ export async function POST(request: NextRequest) {
       console.log(`🔄 All chunks received! Processing complete document: ${fileName}`)
 
       try {
-        console.log(`[DEBUG] Step 1: Getting user profile for userId: ${userId}`)
-
-        // Get user profile ID from user_profiles table
+        // Get or create user profile (with caching in session)
         const supabase = await createClient()
-        const { data: profile, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('id')
-          .eq('clerk_user_id', userId)
-          .single()
+        let userProfileId: string
 
-        if (profileError || !profile) {
-          console.error('[ERROR] Failed to get user profile:', profileError)
-          console.error('[ERROR] Profile data:', profile)
-          throw new Error(`User profile not found: ${profileError?.message || 'No profile data'}. Please ensure your account is set up correctly.`)
+        if (session.userProfileId) {
+          // Use cached profile ID from earlier chunk
+          userProfileId = session.userProfileId
+          console.log(`[DEBUG] ✅ Using cached user profile ID: ${userProfileId}`)
+        } else {
+          console.log(`[DEBUG] Step 1: Getting user profile for userId: ${userId}`)
+
+          const { data: profile, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('id')
+            .eq('clerk_user_id', userId)
+            .single()
+
+          if (profileError || !profile) {
+            console.warn('[WARN] User profile not found, attempting auto-creation:', profileError?.message)
+
+            // Auto-create user profile (fallback from middleware)
+            const { data: newProfile, error: createError } = await supabase
+              .from('user_profiles')
+              .insert({
+                clerk_user_id: userId,
+                learning_style: 'not_assessed'
+              })
+              .select()
+              .single()
+
+            if (createError || !newProfile) {
+              console.error('[ERROR] Failed to create user profile:', createError)
+              throw new Error(`Failed to create user profile: ${createError?.message || 'Unknown error'}. Please try refreshing the page.`)
+            }
+
+            userProfileId = newProfile.id
+            console.log(`[DEBUG] ✅ Auto-created user profile ID: ${userProfileId}`)
+          } else {
+            userProfileId = profile.id
+            console.log(`[DEBUG] ✅ Found user profile ID: ${userProfileId}`)
+          }
+
+          // Cache profile ID in session for subsequent chunks
+          session.userProfileId = userProfileId
         }
 
-        const userProfileId = profile.id
-        console.log(`[DEBUG] ✅ Found user profile ID: ${userProfileId}`)
-
-        console.log(`[DEBUG] Step 2: Validating and concatenating ${chunks.length} chunks (expected: ${totalChunks})`)
+        console.log(`[DEBUG] Step 2: Validating and concatenating ${session.chunks.length} chunks (expected: ${session.totalChunks})`)
 
         // Validate all chunks are present (no undefined/sparse array values)
         const missingChunks: number[] = []
-        for (let i = 0; i < totalChunks; i++) {
-          if (!chunks[i]) {
+        for (let i = 0; i < session.totalChunks; i++) {
+          if (!session.chunks[i]) {
             missingChunks.push(i)
           }
         }
@@ -131,17 +186,17 @@ export async function POST(request: NextRequest) {
         }
 
         // Concatenate all chunks into complete buffer
-        const completeFileBuffer = Buffer.concat(chunks)
-        console.log(`[DEBUG] ✅ Assembled ${completeFileBuffer.length} bytes from ${totalChunks} chunks`)
+        const completeFileBuffer = Buffer.concat(session.chunks)
+        console.log(`[DEBUG] ✅ Assembled ${completeFileBuffer.length} bytes from ${session.totalChunks} chunks`)
 
         // Clear chunk storage to free memory
         chunkStorage.delete(chunkKey)
 
-        // Generate final document ID with timestamp
-        const timestamp = Date.now()
-        const documentId = `${userId}_${timestamp}_${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`
-        const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
+        // Use pre-generated document ID from session (created when first chunk arrived)
+        const documentId = session.documentId
+        const sanitizedFileName = session.fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
         r2FileKey = `documents/${userId}/${documentId}`
+        console.log(`[DEBUG] Using session document ID: ${documentId}`)
 
         console.log(`[DEBUG] Step 3: Uploading to storage (hasR2: ${hasR2})`)
 
@@ -279,12 +334,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Return success response for chunk upload
+    // CRITICAL: Always include documentId from session (fixes race condition)
     const response: any = {
       success: true,
       chunkIndex: currentChunkIndex,
-      totalChunks: parseInt(totalChunks),
+      totalChunks: session.totalChunks,
       isComplete: allChunksReceived,
-      message: allChunksReceived ? 'Document processed successfully' : `Chunk ${currentChunkIndex + 1}/${totalChunks} received (${receivedChunks}/${totalChunks} total)`,
+      documentId: session.documentId,  // ✅ ALWAYS included from session (available from first chunk)
+      message: allChunksReceived ? 'Document processed successfully' : `Chunk ${currentChunkIndex + 1}/${session.totalChunks} received (${receivedChunks}/${session.totalChunks} total)`,
     }
 
     // Add optional fields
@@ -294,19 +351,10 @@ export async function POST(request: NextRequest) {
 
     if (processingResult) {
       response.processing = processingResult
-      response.documentId = processingResult.documentId  // Expose at top level for easier client access
-      console.log(`[DEBUG] Added processingResult to response: documentId=${processingResult.documentId}`)
-    } else if (allChunksReceived) {
-      console.error(`[CRITICAL ERROR] All chunks received but processingResult is null!`)
-      console.error(`[DEBUG] Variables at this point:`, {
-        allChunksReceived,
-        processingResult,
-        r2Url,
-        r2FileKey,
-      })
+      console.log(`[DEBUG] ✅ Document fully processed: ${session.documentId}`)
     }
 
-    console.log(`[DEBUG] Sending response for chunk ${currentChunkIndex + 1}/${totalChunks}:`, JSON.stringify(response))
+    console.log(`[DEBUG] Sending response for chunk ${currentChunkIndex + 1}/${session.totalChunks}: documentId=${session.documentId}, isComplete=${allChunksReceived}`)
 
     return NextResponse.json(response)
 
