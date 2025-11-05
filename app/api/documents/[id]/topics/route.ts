@@ -113,17 +113,19 @@ Guidelines:
 
 JSON Response:`
 
-    const response = await aiProvider.complete({
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3, // Lower temperature for more consistent structure
-      max_tokens: 2000
-    })
+    const response = await aiProvider.complete(
+      [{ role: 'user', content: prompt }],
+      {
+        temperature: 0.3, // Lower temperature for more consistent structure
+        maxTokens: 2000
+      }
+    )
 
     // 6. Parse AI response
     let topics: any[] = []
     try {
       // Extract JSON from response (handle cases where AI adds markdown code blocks)
-      let jsonText = response.text.trim()
+      let jsonText = response.content.trim()
 
       // Remove markdown code blocks if present
       if (jsonText.startsWith('```json')) {
@@ -151,7 +153,7 @@ JSON Response:`
       console.log(`✅ Detected ${topics.length} topics`)
     } catch (parseError) {
       console.error('Error parsing AI response:', parseError)
-      console.error('AI Response:', response.text)
+      console.error('AI Response:', response.content)
 
       // Return empty array if parsing fails
       return NextResponse.json({
