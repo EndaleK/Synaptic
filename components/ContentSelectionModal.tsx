@@ -101,8 +101,8 @@ export default function ContentSelectionModal({
       // Close modal
       onClose()
 
-      // Navigate to dashboard with appropriate mode
-      router.push(`/dashboard?mode=${generationType}`)
+      // Navigate to dashboard with appropriate mode and documentId
+      router.push(`/dashboard?mode=${generationType}&documentId=${document.id}`)
 
       // Show success message (could add toast notification here)
     } catch (err) {

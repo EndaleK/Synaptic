@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import dynamic from "next/dynamic"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useUser } from "@clerk/nextjs"
 import DocumentUpload from "@/components/DocumentUpload"
 import FlashcardDisplay from "@/components/FlashcardDisplay"
@@ -73,6 +73,36 @@ export default function DashboardPage() {
     setUserProfile
   } = useUserStore()
   const { currentDocument } = useDocumentStore()
+  const searchParams = useSearchParams()
+
+  // Load flashcards from URL params after generation
+  useEffect(() => {
+    const mode = searchParams.get('mode')
+    const documentId = searchParams.get('documentId')
+
+    if (mode === 'flashcards' && documentId && flashcards.length === 0 && !isLoading) {
+      console.log('📥 Loading flashcards for document:', documentId)
+      setIsLoading(true)
+
+      fetch(`/api/flashcards?documentId=${documentId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.flashcards && data.flashcards.length > 0) {
+            console.log(`✅ Loaded ${data.flashcards.length} flashcards`)
+            setFlashcards(data.flashcards)
+            setActiveMode('flashcards')
+          } else {
+            console.log('ℹ️ No flashcards found for this document')
+          }
+        })
+        .catch(error => {
+          console.error('Error loading flashcards:', error)
+        })
+        .finally(() => {
+          setIsLoading(false)
+        })
+    }
+  }, [searchParams, flashcards.length, isLoading, setActiveMode, setFlashcards])
 
   // Check if user needs to take assessment
   useEffect(() => {
