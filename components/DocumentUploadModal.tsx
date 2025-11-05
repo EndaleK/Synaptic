@@ -7,7 +7,8 @@ import * as pdfjsLib from 'pdfjs-dist'
 // Configure PDF.js worker (v5.3.31)
 // Using CDN for speed (user's preference)
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@5.3.31/build/pdf.worker.min.mjs`
+  // Use .js extension, not .mjs - critical for version 5.x
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@5.3.31/build/pdf.worker.min.js`
 
   // Log worker configuration for debugging
   console.log('📄 PDF.js worker configured:', pdfjsLib.GlobalWorkerOptions.workerSrc)
