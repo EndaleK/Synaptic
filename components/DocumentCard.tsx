@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { FileText, File, FileType, Trash2, Download, Loader2, CheckCircle2, AlertCircle, ChevronDown } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { FileText, File, FileType, Trash2, Download, Loader2, CheckCircle2, AlertCircle, ChevronDown, Eye } from "lucide-react"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { cn } from "@/lib/utils"
 import { useUIStore } from "@/lib/store/useStore"
@@ -13,6 +14,7 @@ interface DocumentCardProps {
 }
 
 export default function DocumentCard({ document, onSelectMode, onDelete }: DocumentCardProps) {
+  const router = useRouter()
   const [showModeSelector, setShowModeSelector] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [lastUsedMode, setLastUsedMode] = useState<PreferredMode>('flashcards')
@@ -234,6 +236,16 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
 
       {/* Actions */}
       <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+        {document.file_type === 'application/pdf' && (
+          <button
+            onClick={() => router.push(`/dashboard/documents/${document.id}`)}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-accent-primary hover:text-accent-secondary hover:bg-accent-primary/10 rounded-lg transition-colors"
+            title="View PDF"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            View PDF
+          </button>
+        )}
         {document.storage_path && (
           <button
             className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
