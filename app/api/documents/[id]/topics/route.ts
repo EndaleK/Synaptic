@@ -7,11 +7,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAIProvider } from '@/lib/ai'
+import { getProviderForFeature } from '@/lib/ai'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 1. Authenticate user
@@ -20,7 +20,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const documentId = params.id
+    const { id: documentId } = await params
 
     // 2. Fetch document from database
     const supabase = await createClient()
@@ -71,7 +71,7 @@ export async function GET(
       ? document.extracted_text.substring(0, maxChars)
       : document.extracted_text
 
-    const aiProvider = getAIProvider('chat') // Use chat provider for topic detection
+    const aiProvider = getProviderForFeature('chat') // Use chat provider for topic detection
 
     const prompt = `You are analyzing a document to extract its main topics, sections, or chapters.
 
