@@ -32,10 +32,18 @@ export default function DocumentDetailPage() {
         setDocument(data.document)
 
         // Get the PDF URL from storage
-        if (data.document.storage_path) {
+        // Priority 1: Use R2 URL from metadata if available
+        // Priority 2: Construct Supabase Storage public URL
+        if (data.document.metadata?.r2_url) {
+          console.log('📄 Using R2 URL:', data.document.metadata.r2_url)
+          setPdfUrl(data.document.metadata.r2_url)
+        } else if (data.document.storage_path) {
           // For Supabase Storage, construct the public URL
           const storageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/documents/${data.document.storage_path}`
+          console.log('📄 Using Supabase Storage URL:', storageUrl)
           setPdfUrl(storageUrl)
+        } else {
+          console.error('❌ No storage path or R2 URL found for document')
         }
       } catch (err) {
         console.error('Error fetching document:', err)
