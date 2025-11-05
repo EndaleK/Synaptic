@@ -342,42 +342,67 @@ export default function DocumentUploadModal({
     }
 
     // Upload chunks in parallel batches for faster upload
-    const uploadChunk = async (chunkIndex: number): Promise<any> => {
+    const uploadChunk = async (chunkIndex: number, retryCount = 0): Promise<any> => {
+      const MAX_RETRIES = 3
       const start = chunkIndex * CHUNK_SIZE
       const end = Math.min(start + CHUNK_SIZE, fileSize)
       const chunk = file.slice(start, end)
 
-      // Create form data for this chunk
-      const formData = new FormData()
-      formData.append('file', chunk)
-      formData.append('chunkIndex', chunkIndex.toString())
-      formData.append('totalChunks', totalChunks.toString())
-      formData.append('fileName', file.name)
+      try {
+        // Create form data for this chunk
+        const formData = new FormData()
+        formData.append('file', chunk)
+        formData.append('chunkIndex', chunkIndex.toString())
+        formData.append('totalChunks', totalChunks.toString())
+        formData.append('fileName', file.name)
 
-      // Upload chunk
-      const response = await fetch('/api/upload-large-document', {
-        method: 'POST',
-        body: formData,
-      })
+        console.log(`📤 Uploading chunk ${chunkIndex + 1}/${totalChunks} (attempt ${retryCount + 1})`)
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+        // Upload chunk with 60s timeout per chunk
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 60000)
 
-        // If it's a setup error, show detailed message
-        if (errorData.setupRequired) {
-          throw new Error(`${errorData.error}\n\n${errorData.details}`)
+        const response = await fetch('/api/upload-large-document', {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal,
+        })
+
+        clearTimeout(timeout)
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+
+          // If it's a setup error, show detailed message
+          if (errorData.setupRequired) {
+            throw new Error(`${errorData.error}\n\n${errorData.details}`)
+          }
+
+          throw new Error(errorData.error || 'Upload failed')
         }
 
-        throw new Error(errorData.error || 'Upload failed')
+        const data = await response.json()
+        console.log(`✅ Chunk ${chunkIndex + 1}/${totalChunks} uploaded successfully`)
+
+        // Update progress atomically (increment then update UI)
+        uploadedChunks++
+        updateProgress()
+
+        return data
+
+      } catch (error) {
+        console.error(`❌ Chunk ${chunkIndex + 1} failed:`, error)
+
+        // Retry on failure (network issues, timeouts)
+        if (retryCount < MAX_RETRIES) {
+          console.log(`🔄 Retrying chunk ${chunkIndex + 1} (attempt ${retryCount + 2}/${MAX_RETRIES + 1})`)
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))) // Exponential backoff
+          return uploadChunk(chunkIndex, retryCount + 1)
+        }
+
+        // Max retries exceeded
+        throw new Error(`Failed to upload chunk ${chunkIndex + 1} after ${MAX_RETRIES + 1} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
-
-      const data = await response.json()
-
-      // Update progress atomically (increment then update UI)
-      uploadedChunks++
-      updateProgress()
-
-      return data
     }
 
     // Upload chunks in parallel batches

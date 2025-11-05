@@ -111,7 +111,20 @@ export async function POST(request: NextRequest) {
         const userProfileId = profile.id
         console.log(`[DEBUG] ✅ Found user profile ID: ${userProfileId}`)
 
-        console.log(`[DEBUG] Step 2: Concatenating ${chunks.length} chunks`)
+        console.log(`[DEBUG] Step 2: Validating and concatenating ${chunks.length} chunks (expected: ${totalChunks})`)
+
+        // Validate all chunks are present (no undefined/sparse array values)
+        const missingChunks: number[] = []
+        for (let i = 0; i < totalChunks; i++) {
+          if (!chunks[i]) {
+            missingChunks.push(i)
+          }
+        }
+
+        if (missingChunks.length > 0) {
+          console.error(`[ERROR] Missing chunks detected:`, missingChunks)
+          throw new Error(`Upload incomplete: missing chunks ${missingChunks.join(', ')}. Please try uploading again.`)
+        }
 
         // Concatenate all chunks into complete buffer
         const completeFileBuffer = Buffer.concat(chunks)
