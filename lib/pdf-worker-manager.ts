@@ -27,15 +27,16 @@ class PDFWorkerManager {
 
   private async loadPdfJs(): Promise<any> {
     if (this.pdfjs) return this.pdfjs
-    
+
     if (typeof window === 'undefined') {
       throw new Error('PDF.js can only be loaded in browser environment')
     }
 
     try {
-      const { pdfjs } = await import('react-pdf')
-      this.pdfjs = pdfjs
-      return pdfjs
+      // Import pdfjs-dist directly instead of through react-pdf to avoid bundling issues
+      const pdfjsLib = await import('pdfjs-dist')
+      this.pdfjs = pdfjsLib
+      return pdfjsLib
     } catch (error) {
       console.error('Failed to load PDF.js:', error)
       throw error
