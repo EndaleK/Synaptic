@@ -38,21 +38,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 2. Check if R2 and ChromaDB are configured
-    if (!process.env.R2_ENDPOINT || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
-      return NextResponse.json({
-        error: 'Large file upload not configured',
-        details: 'Cloudflare R2 storage is not configured. Please set R2_ENDPOINT, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY environment variables. See docs/LARGE_PDF_SETUP.md for setup instructions.',
-        setupRequired: true
-      }, { status: 503 })
-    }
+    // 2. Check storage configuration (R2 is optional, will fall back to Supabase)
+    const hasR2 = !!(process.env.R2_ENDPOINT && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY)
+    const hasChromaDB = !!process.env.CHROMA_URL
 
-    if (!process.env.CHROMA_URL) {
-      return NextResponse.json({
-        error: 'Large file upload not configured',
-        details: 'ChromaDB is not configured. Please set CHROMA_URL environment variable and ensure ChromaDB is running. See docs/LARGE_PDF_SETUP.md for setup instructions.',
-        setupRequired: true
-      }, { status: 503 })
+    if (!hasR2) {
+      console.log('ℹ️  R2 not configured, will use Supabase Storage as fallback')
+    }
+    if (!hasChromaDB) {
+      console.log('ℹ️  ChromaDB not configured, will skip vector indexing')
     }
 
     // 3. Parse form data
@@ -126,15 +120,30 @@ export async function POST(request: NextRequest) {
         const documentId = `${userId}_${timestamp}_${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`
         r2FileKey = `documents/${userId}/${documentId}`
 
-        // Upload complete file to R2 storage
-        const { uploadToR2 } = await import('@/lib/r2-storage')
-        const uploadResult = await uploadToR2(
-          completeFileBuffer,
-          r2FileKey,
-          file.type || 'application/pdf'
-        )
-        r2Url = uploadResult.url
-        console.log(`☁️ Uploaded complete file to R2: ${r2FileKey}`)
+        // Upload complete file to storage (R2 if available, otherwise Supabase)
+        if (hasR2) {
+          // Use Cloudflare R2 storage
+          const { uploadToR2 } = await import('@/lib/r2-storage')
+          const uploadResult = await uploadToR2(
+            completeFileBuffer,
+            r2FileKey,
+            file.type || 'application/pdf'
+          )
+          r2Url = uploadResult.url
+          console.log(`☁️ Uploaded complete file to R2: ${r2FileKey}`)
+        } else {
+          // Fall back to Supabase Storage
+          const fileBlob = new Blob([completeFileBuffer], { type: file.type || 'application/pdf' })
+          const { uploadDocumentToStorage } = await import('@/lib/supabase/documents-server')
+
+          // Create File object from Blob
+          const fileToUpload = new File([fileBlob], fileName, { type: file.type || 'application/pdf' })
+
+          const uploadResult = await uploadDocumentToStorage(fileToUpload, userProfileId)
+          r2Url = uploadResult.publicUrl || ''
+          r2FileKey = uploadResult.path
+          console.log(`☁️ Uploaded complete file to Supabase Storage: ${r2FileKey}`)
+        }
 
         // Save metadata to Supabase FIRST with 'processing' status
         // This allows user to see document immediately in UI
@@ -251,21 +260,27 @@ export async function POST(request: NextRequest) {
               })
               .eq('id', document.id)
 
-            console.log(`🔍 Starting vector indexing for ${document.id}`)
+            // Index in vector database (optional, only if ChromaDB is configured)
+            let vectorChunks = 0
+            if (hasChromaDB) {
+              console.log(`🔍 Starting vector indexing for ${document.id}`)
 
-            // Index in vector database
-            const { indexDocument } = await import('@/lib/vector-store')
-            const { chunks: vectorChunks } = await indexDocument(
-              documentId,
-              extractedText,
-              {
-                fileName,
-                userId,
-                pageCount: pageCount.toString(),
-              }
-            )
+              const { indexDocument } = await import('@/lib/vector-store')
+              const { chunks } = await indexDocument(
+                documentId,
+                extractedText,
+                {
+                  fileName,
+                  userId,
+                  pageCount: pageCount.toString(),
+                }
+              )
+              vectorChunks = chunks
 
-            console.log(`🔍 Indexed ${vectorChunks} chunks in ChromaDB for ${documentId}`)
+              console.log(`🔍 Indexed ${vectorChunks} chunks in ChromaDB for ${documentId}`)
+            } else {
+              console.log(`ℹ️  Skipping vector indexing (ChromaDB not configured)`)
+            }
 
             // Update document with final status
             const { error: updateError } = await supabase
