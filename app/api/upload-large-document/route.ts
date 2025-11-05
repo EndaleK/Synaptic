@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
         // Generate final document ID with timestamp
         const timestamp = Date.now()
         const documentId = `${userId}_${timestamp}_${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+        const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
         r2FileKey = `documents/${userId}/${documentId}`
 
         // Upload complete file to storage (R2 if available, otherwise Supabase)
@@ -132,16 +133,29 @@ export async function POST(request: NextRequest) {
           r2Url = uploadResult.url
           console.log(`☁️ Uploaded complete file to R2: ${r2FileKey}`)
         } else {
-          // Fall back to Supabase Storage
-          const fileBlob = new Blob([completeFileBuffer], { type: file.type || 'application/pdf' })
-          const { uploadDocumentToStorage } = await import('@/lib/supabase/documents-server')
+          // Fall back to Supabase Storage (upload Buffer directly, no File object needed)
+          const supabaseFilePath = `${userProfileId}/${timestamp}-${sanitizedFileName}`
 
-          // Create File object from Blob
-          const fileToUpload = new File([fileBlob], fileName, { type: file.type || 'application/pdf' })
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('documents')
+            .upload(supabaseFilePath, completeFileBuffer, {
+              cacheControl: '3600',
+              upsert: false,
+              contentType: file.type || 'application/pdf'
+            })
 
-          const uploadResult = await uploadDocumentToStorage(fileToUpload, userProfileId)
-          r2Url = uploadResult.publicUrl || ''
-          r2FileKey = uploadResult.path
+          if (uploadError) {
+            console.error('Supabase Storage upload error:', uploadError)
+            throw new Error(`Failed to upload to storage: ${uploadError.message}`)
+          }
+
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('documents')
+            .getPublicUrl(supabaseFilePath)
+
+          r2Url = publicUrl
+          r2FileKey = supabaseFilePath
           console.log(`☁️ Uploaded complete file to Supabase Storage: ${r2FileKey}`)
         }
 
