@@ -2,6 +2,12 @@
 
 import { useState, useRef, ChangeEvent } from "react"
 import { X, Upload, FileText, Loader2, Link as LinkIcon } from "lucide-react"
+import * as pdfjsLib from 'pdfjs-dist'
+
+// Configure PDF.js worker
+if (typeof window !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+}
 
 interface DocumentUploadModalProps {
   isOpen: boolean
@@ -22,6 +28,7 @@ interface UploadProgress {
   uploadedChunks: number
   totalChunks: number
   percentage: number
+  status?: string // e.g., "Uploading...", "Extracting text from PDF..."
 }
 
 export default function DocumentUploadModal({
@@ -86,8 +93,82 @@ export default function DocumentUploadModal({
   }
 
   /**
+   * Extract text from PDF file using client-side PDF.js processing
+   * Sends extracted text to server after completion
+   */
+  const extractTextFromPDF = async (file: File, documentId: string): Promise<void> => {
+    try {
+      // Only process PDFs
+      if (file.type !== 'application/pdf') {
+        return
+      }
+
+      setUploadProgress({
+        uploadedChunks: 0,
+        totalChunks: 0,
+        percentage: 0,
+        status: 'Loading PDF...'
+      })
+
+      // Load PDF in browser
+      const arrayBuffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+
+      let extractedText = ''
+      const totalPages = pdf.numPages
+
+      // Extract text from each page
+      for (let i = 1; i <= totalPages; i++) {
+        const page = await pdf.getPage(i)
+        const textContent = await page.getTextContent()
+        const pageText = textContent.items.map((item: any) => item.str).join(' ')
+        extractedText += pageText + '\n\n'
+
+        // Update progress
+        const percentage = Math.round((i / totalPages) * 100)
+        setUploadProgress({
+          uploadedChunks: 0,
+          totalChunks: 0,
+          percentage,
+          status: `Extracting text... page ${i}/${totalPages}`
+        })
+      }
+
+      // Send extracted text to server
+      setUploadProgress({
+        uploadedChunks: 0,
+        totalChunks: 0,
+        percentage: 100,
+        status: 'Saving extracted text...'
+      })
+
+      const response = await fetch('/api/documents/update-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentId,
+          extractedText,
+          pageCount: totalPages
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save extracted text')
+      }
+
+      console.log(`✅ Successfully extracted ${extractedText.length} characters from ${totalPages} pages`)
+
+    } catch (error) {
+      console.error('Client-side PDF extraction failed:', error)
+      throw new Error(`PDF extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  /**
    * Upload file using chunked upload for large files (>50MB)
    * or regular upload for smaller files (≤50MB)
+   * For PDFs uploaded via chunked upload, extracts text client-side after upload
    */
   const handleUpload = async () => {
     if (!file) return
@@ -101,10 +182,15 @@ export default function DocumentUploadModal({
       const useLargeFileUpload = file.size > CHUNKED_UPLOAD_THRESHOLD
 
       if (useLargeFileUpload) {
-        // Use chunked upload for large files (>50MB)
-        await uploadLargeFile(file)
+        // Use chunked upload for large files (>5MB)
+        const documentId = await uploadLargeFile(file)
+
+        // Extract text from PDF client-side (if PDF and we have documentId)
+        if (documentId && file.type === 'application/pdf') {
+          await extractTextFromPDF(file, documentId)
+        }
       } else {
-        // Use regular upload for small files (≤50MB)
+        // Use regular upload for small files (≤5MB)
         await uploadSmallFile(file)
       }
 
@@ -164,8 +250,9 @@ export default function DocumentUploadModal({
   /**
    * Upload large files (>50MB) to Cloudflare R2 via /api/upload-large-document
    * Uses parallel chunked upload with progress tracking for faster uploads
+   * Returns documentId for subsequent processing
    */
-  const uploadLargeFile = async (file: File) => {
+  const uploadLargeFile = async (file: File): Promise<string | null> => {
     const fileSize = file.size
     const totalChunks = Math.ceil(fileSize / CHUNK_SIZE)
 
@@ -174,20 +261,24 @@ export default function DocumentUploadModal({
       uploadedChunks: 0,
       totalChunks,
       percentage: 0,
+      status: 'Uploading...'
     })
 
     let uploadedChunks = 0
+    let documentId: string | null = null
+
     const updateProgress = () => {
       const percentage = Math.round((uploadedChunks / totalChunks) * 100)
       setUploadProgress({
         uploadedChunks,
         totalChunks,
         percentage,
+        status: 'Uploading...'
       })
     }
 
     // Upload chunks in parallel batches for faster upload
-    const uploadChunk = async (chunkIndex: number): Promise<void> => {
+    const uploadChunk = async (chunkIndex: number): Promise<any> => {
       const start = chunkIndex * CHUNK_SIZE
       const end = Math.min(start + CHUNK_SIZE, fileSize)
       const chunk = file.slice(start, end)
@@ -216,9 +307,13 @@ export default function DocumentUploadModal({
         throw new Error(errorData.error || 'Upload failed')
       }
 
+      const data = await response.json()
+
       // Update progress atomically (increment then update UI)
       uploadedChunks++
       updateProgress()
+
+      return data
     }
 
     // Upload chunks in parallel batches
@@ -227,8 +322,17 @@ export default function DocumentUploadModal({
       for (let j = 0; j < PARALLEL_CHUNKS && i + j < totalChunks; j++) {
         batch.push(uploadChunk(i + j))
       }
-      await Promise.all(batch)
+      const results = await Promise.all(batch)
+
+      // Check if any result contains the documentId (from last chunk)
+      for (const result of results) {
+        if (result.processing?.documentId) {
+          documentId = result.processing.documentId
+        }
+      }
     }
+
+    return documentId
   }
 
   const handleImportFromUrl = async () => {
@@ -405,7 +509,7 @@ export default function DocumentUploadModal({
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">
-                        Uploading chunk {uploadProgress.uploadedChunks}/{uploadProgress.totalChunks}
+                        {uploadProgress.status || `Uploading chunk ${uploadProgress.uploadedChunks}/${uploadProgress.totalChunks}`}
                       </span>
                       <span className="font-semibold text-blue-600 dark:text-blue-400">
                         {uploadProgress.percentage}%
