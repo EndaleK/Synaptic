@@ -2,17 +2,8 @@
 
 import { useState, useRef, ChangeEvent } from "react"
 import { X, Upload, FileText, Loader2, Link as LinkIcon } from "lucide-react"
-import * as pdfjsLib from 'pdfjs-dist'
 
-// Configure PDF.js worker (v5.3.31)
-// Using CDN for speed (user's preference)
-if (typeof window !== 'undefined') {
-  // Use .js extension, not .mjs - critical for version 5.x
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@5.3.31/build/pdf.worker.min.js`
-
-  // Log worker configuration for debugging
-  console.log('📄 PDF.js worker configured:', pdfjsLib.GlobalWorkerOptions.workerSrc)
-}
+// Note: PDF.js is dynamically imported in extractTextFromPDF() to avoid webpack bundling issues
 
 interface DocumentUploadModalProps {
   isOpen: boolean
@@ -110,6 +101,22 @@ export default function DocumentUploadModal({
         console.log('⚠️ Skipping text extraction - not a PDF file')
         return
       }
+
+      setUploadProgress({
+        uploadedChunks: 0,
+        totalChunks: 0,
+        percentage: 0,
+        status: 'Loading PDF library...'
+      })
+
+      // Dynamically import PDF.js to avoid webpack bundling issues
+      console.log('📚 Importing PDF.js library...')
+      const pdfjsLib = await import('pdfjs-dist')
+
+      // Configure worker after import (v5.3.31)
+      // Use .js extension, not .mjs - critical for version 5.x
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@5.3.31/build/pdf.worker.min.js`
+      console.log('📄 PDF.js worker configured:', pdfjsLib.GlobalWorkerOptions.workerSrc)
 
       setUploadProgress({
         uploadedChunks: 0,
