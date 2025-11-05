@@ -230,21 +230,29 @@ export default function DocumentUploadModal({
     try {
       // Determine upload strategy based on file size
       const useLargeFileUpload = file.size > CHUNKED_UPLOAD_THRESHOLD
+      console.log(`📊 Upload strategy: ${useLargeFileUpload ? 'CHUNKED' : 'REGULAR'} (file size: ${(file.size / (1024 * 1024)).toFixed(2)} MB, threshold: ${(CHUNKED_UPLOAD_THRESHOLD / (1024 * 1024)).toFixed(2)} MB)`)
 
       if (useLargeFileUpload) {
         // Use chunked upload for large files (>5MB)
+        console.log(`🚀 Starting chunked upload for ${file.name}...`)
         const documentId = await uploadLargeFile(file)
+        console.log(`🔍 DEBUG: uploadLargeFile returned documentId:`, documentId)
 
         // Extract text from PDF client-side (if PDF and we have documentId)
         if (documentId && file.type === 'application/pdf') {
+          console.log(`🔍 DEBUG: Calling extractTextFromPDF with documentId: ${documentId}`)
           await extractTextFromPDF(file, documentId)
+        } else {
+          console.log(`⚠️ DEBUG: Skipping extraction - documentId: ${documentId}, fileType: ${file.type}`)
         }
       } else {
         // Use regular upload for small files (≤5MB)
+        console.log(`🚀 Starting regular upload for ${file.name}...`)
         await uploadSmallFile(file)
       }
 
       // Success - close modal and refresh documents
+      console.log(`✅ Upload complete! Calling onSuccess() and closing modal`)
       onSuccess()
       handleClose()
     } catch (err) {
@@ -416,12 +424,15 @@ export default function DocumentUploadModal({
 
       // Check if any result contains the documentId (from last chunk)
       for (const result of results) {
+        console.log(`🔍 DEBUG: Checking batch result:`, result)
         if (result.processing?.documentId) {
           documentId = result.processing.documentId
+          console.log(`🎯 DEBUG: Found documentId in batch result: ${documentId}`)
         }
       }
     }
 
+    console.log(`🔍 DEBUG: uploadLargeFile completing with documentId: ${documentId}`)
     return documentId
   }
 
