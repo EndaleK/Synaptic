@@ -124,13 +124,31 @@ export async function POST(request: NextRequest) {
       const tempStoragePath = `documents/${userId}/${userId}_${timestamp}_${sanitizedFileName}`
 
       console.log(`[DEBUG] Creating document record with "pending" status`)
+
+      // Detect file type with fallback to extension-based detection
+      let fileType = file.type
+      if (!fileType || fileType === 'application/octet-stream') {
+        // Fallback: Detect by file extension
+        if (fileName.toLowerCase().endsWith('.pdf')) {
+          fileType = 'application/pdf'
+        } else if (fileName.toLowerCase().endsWith('.docx')) {
+          fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        } else if (fileName.toLowerCase().endsWith('.doc')) {
+          fileType = 'application/msword'
+        } else if (fileName.toLowerCase().endsWith('.txt')) {
+          fileType = 'text/plain'
+        } else {
+          fileType = 'application/octet-stream'
+        }
+      }
+
       const { data: document, error: dbError } = await supabase
         .from('documents')
         .insert({
           user_id: userProfileId,
           file_name: fileName,
           file_size: 0, // Will be updated when all chunks received
-          file_type: file.type || 'application/pdf',
+          file_type: fileType,
           storage_path: tempStoragePath,
           extracted_text: '',
           processing_status: 'pending', // Status flow: pending → processing → completed

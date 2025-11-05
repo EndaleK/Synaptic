@@ -236,7 +236,7 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
 
       {/* Actions */}
       <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-        {document.file_type === 'application/pdf' && (
+        {(document.file_type.toLowerCase().includes('pdf') || document.file_name.toLowerCase().endsWith('.pdf')) && (
           <button
             onClick={() => router.push(`/dashboard/documents/${document.id}`)}
             className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-accent-primary hover:text-accent-secondary hover:bg-accent-primary/10 rounded-lg transition-colors"
