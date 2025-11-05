@@ -81,15 +81,19 @@ export async function POST(request: NextRequest) {
 
     console.log(`📤 Received chunk ${parseInt(chunkIndex) + 1}/${totalChunks} for ${fileName} (${buffer.length} bytes)`)
 
-    // 6. If this is the last chunk, process the complete document
-    const isLastChunk = currentChunkIndex === parseInt(totalChunks) - 1
+    // 6. Check if ALL chunks have been received (not just if this is the last chunk)
+    // Chunks can arrive out of order due to parallel uploads
+    const receivedChunks = chunks.filter(chunk => chunk !== undefined).length
+    const allChunksReceived = receivedChunks === parseInt(totalChunks)
+
+    console.log(`📊 Progress: ${receivedChunks}/${totalChunks} chunks received`)
 
     let processingResult = null
     let r2Url = ''
     let r2FileKey = ''
 
-    if (isLastChunk) {
-      console.log(`🔄 Processing complete document: ${fileName}`)
+    if (allChunksReceived) {
+      console.log(`🔄 All chunks received! Processing complete document: ${fileName}`)
 
       try {
         console.log(`[DEBUG] Step 1: Getting user profile for userId: ${userId}`)
@@ -278,8 +282,8 @@ export async function POST(request: NextRequest) {
       success: true,
       chunkIndex: currentChunkIndex,
       totalChunks: parseInt(totalChunks),
-      isComplete: isLastChunk,
-      message: isLastChunk ? 'Document processed successfully' : `Chunk ${currentChunkIndex + 1}/${totalChunks} received`,
+      isComplete: allChunksReceived,
+      message: allChunksReceived ? 'Document processed successfully' : `Chunk ${currentChunkIndex + 1}/${totalChunks} received (${receivedChunks}/${totalChunks} total)`,
       ...(r2Url && { r2Url }),
       ...(processingResult && { processing: processingResult }),
     })
