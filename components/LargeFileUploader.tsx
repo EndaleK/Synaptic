@@ -4,7 +4,7 @@
  * Large File Uploader Component
  *
  * Handles chunked uploads for files up to 500GB
- * - Splits files into 10MB chunks
+ * - Splits files into 4MB chunks (stays under Vercel's 4.5MB limit)
  * - Shows upload progress
  * - Automatically processes and indexes after upload
  * - Supports resume on failure (future enhancement)
@@ -14,7 +14,7 @@ import { useState, useCallback } from 'react'
 import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const CHUNK_SIZE = 10 * 1024 * 1024 // 10MB chunks
+const CHUNK_SIZE = 4 * 1024 * 1024 // 4MB chunks (stays under Vercel's 4.5MB limit)
 
 interface UploadProgress {
   fileName: string

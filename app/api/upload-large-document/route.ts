@@ -1,21 +1,25 @@
 /**
- * API Route: Upload Large Document (500MB+)
+ * API Route: Upload Large Document (Chunked Upload)
  *
  * Handles chunked uploads of large PDF files with streaming processing
- * 1. Accept file chunks from client
+ * 1. Accept file chunks from client (max 4MB per chunk to stay under Vercel's 4.5MB limit)
  * 2. Accumulate chunks in memory
- * 3. Upload to Cloudflare R2 storage (optional backup)
+ * 3. Upload to Cloudflare R2 storage (optional backup) or Supabase
  * 4. Extract text using PDF parser
- * 5. Index in ChromaDB for vector search
+ * 5. Index in ChromaDB for vector search (optional)
  * 6. Save metadata to Supabase
+ *
+ * IMPORTANT: Each chunk must be < 4.5MB due to Vercel's request body limit
+ * Client should send chunks of 4MB max to ensure compatibility
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 
-export const runtime = 'nodejs' // Required for pdf-parse
-export const maxDuration = 300 // 5 minutes max for Vercel hobby plan
+export const runtime = 'nodejs' // Required for pdf-parse and Buffer operations
+export const maxDuration = 300 // 5 minutes max for Vercel hobby plan (300s)
+// Note: Vercel enforces 4.5MB max body size at edge level (cannot be changed)
 
 // Temporary storage for chunks during upload (cleared after processing)
 const chunkStorage = new Map<string, Buffer[]>()

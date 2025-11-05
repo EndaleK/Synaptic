@@ -11,10 +11,10 @@ interface DocumentUploadModalProps {
 
 type UploadTab = 'file' | 'url'
 
-// Chunk size for large file uploads (25MB - increased for fewer requests)
-const CHUNK_SIZE = 25 * 1024 * 1024
-// Threshold for using chunked upload (50MB)
-const CHUNKED_UPLOAD_THRESHOLD = 50 * 1024 * 1024
+// Chunk size for large file uploads (4MB - stays under Vercel's 4.5MB limit)
+const CHUNK_SIZE = 4 * 1024 * 1024
+// Threshold for using chunked upload (5MB - triggers for textbooks)
+const CHUNKED_UPLOAD_THRESHOLD = 5 * 1024 * 1024
 // Number of parallel chunk uploads (increased for faster uploads)
 const PARALLEL_CHUNKS = 4
 

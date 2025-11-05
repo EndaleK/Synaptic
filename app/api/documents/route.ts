@@ -15,6 +15,11 @@ import { FileUploadSchema, validateDocumentLength, validateContentSafety } from 
 import { canUploadDocument, trackDocumentUpload } from '@/lib/usage-tracker'
 import { processFileParallel, shouldUseParallelProcessing, estimateUploadTime } from '@/lib/upload-optimizer'
 
+// Vercel limits: 4.5MB max request body size (cannot be changed)
+// For files > 5MB, use /api/upload-large-document (chunked upload)
+export const runtime = 'nodejs' // Required for Buffer and file operations
+export const maxDuration = 300 // 5 minutes max
+
 /**
  * GET /api/documents
  * Fetch all documents for authenticated user
