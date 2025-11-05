@@ -83,21 +83,84 @@ export async function POST(request: NextRequest) {
     let session: UploadSession
 
     if (!chunkStorage.has(chunkKey)) {
-      // First chunk: Create new upload session
-      // documentId will be set to actual UUID after database insertion
+      // First chunk: Create new upload session AND database record immediately
       const timestamp = Date.now()
+      const supabase = await createClient()
+
+      // Get or create user profile
+      console.log(`[DEBUG] First chunk - Getting user profile for userId: ${userId}`)
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('clerk_user_id', userId)
+        .single()
+
+      let userProfileId: string
+
+      if (profileError || !profile) {
+        console.warn('[WARN] User profile not found, attempting auto-creation:', profileError?.message)
+        const { data: newProfile, error: createError } = await supabase
+          .from('user_profiles')
+          .insert({
+            clerk_user_id: userId,
+            learning_style: 'not_assessed'
+          })
+          .select()
+          .single()
+
+        if (createError || !newProfile) {
+          console.error('[ERROR] Failed to create user profile:', createError)
+          throw new Error(`Failed to create user profile: ${createError?.message || 'Unknown error'}`)
+        }
+        userProfileId = newProfile.id
+        console.log(`[DEBUG] ✅ Auto-created user profile ID: ${userProfileId}`)
+      } else {
+        userProfileId = profile.id
+        console.log(`[DEBUG] ✅ Found user profile ID: ${userProfileId}`)
+      }
+
+      // Create document record immediately with "uploading" status
+      const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
+      const tempStoragePath = `documents/${userId}/${userId}_${timestamp}_${sanitizedFileName}`
+
+      console.log(`[DEBUG] Creating document record with "uploading" status`)
+      const { data: document, error: dbError } = await supabase
+        .from('documents')
+        .insert({
+          user_id: userProfileId,
+          file_name: fileName,
+          file_size: 0, // Will be updated when all chunks received
+          file_type: file.type || 'application/pdf',
+          storage_path: tempStoragePath,
+          extracted_text: '',
+          processing_status: 'uploading', // New status: uploading → processing → completed
+          metadata: {
+            total_chunks: parseInt(totalChunks),
+            received_chunks: 0
+          },
+        })
+        .select()
+        .single()
+
+      if (dbError || !document) {
+        console.error('[ERROR] Failed to create document record:', dbError)
+        throw new Error(`Failed to initialize upload: ${dbError?.message || 'Unknown error'}`)
+      }
+
+      console.log(`[DEBUG] ✅ Document created with UUID: ${document.id} (status: uploading)`)
 
       session = {
         chunks: [],
-        documentId: null,  // Will be set to UUID after document creation
+        documentId: document.id, // Set immediately!
         fileName,
         userId,
+        userProfileId, // Cache for later
         timestamp,
         totalChunks: parseInt(totalChunks)
       }
 
       chunkStorage.set(chunkKey, session)
-      console.log(`🆕 Starting new upload session for ${fileName}`)
+      console.log(`🆕 Upload session initialized for ${fileName} with documentId: ${document.id}`)
     } else {
       session = chunkStorage.get(chunkKey)!
     }
@@ -242,37 +305,34 @@ export async function POST(request: NextRequest) {
           console.log(`[DEBUG] ☁️ Uploaded complete file to Supabase Storage: ${r2FileKey}, URL: ${publicUrl}`)
         }
 
-        console.log(`[DEBUG] Step 4: Saving document metadata to database`)
+        console.log(`[DEBUG] Step 4: Updating document record with final metadata`)
 
-        // Save metadata to Supabase FIRST with 'processing' status
-        // This allows user to see document immediately in UI
+        // Update document record with final file info and change status to 'processing'
+        // Document was already created on first chunk with "uploading" status
         const { data: document, error: dbError } = await supabase
           .from('documents')
-          .insert({
-            user_id: userProfileId,
-            file_name: fileName,
+          .update({
             file_size: completeFileBuffer.length,
-            file_type: file.type || 'application/pdf',
             storage_path: r2FileKey,
-            extracted_text: '', // Will be updated after processing
-            processing_status: 'processing', // Will be updated when complete
+            processing_status: 'processing', // Change from "uploading" to "processing"
             metadata: {
               r2_url: r2Url,
+              total_chunks: session.totalChunks,
+              received_chunks: session.totalChunks
             },
           })
+          .eq('id', session.documentId!) // Update the document created on first chunk
           .select()
           .single()
 
-        if (dbError) {
-          console.error('[ERROR] Supabase insert error:', dbError)
-          console.error('[ERROR] Insert details:', { userProfileId, fileName, fileSize: completeFileBuffer.length, r2FileKey })
-          throw new Error(`Failed to save document metadata: ${dbError.message}`)
+        if (dbError || !document) {
+          console.error('[ERROR] Supabase update error:', dbError)
+          console.error('[ERROR] Update details:', { documentId: session.documentId, fileSize: completeFileBuffer.length, r2FileKey })
+          throw new Error(`Failed to update document metadata: ${dbError?.message || 'Unknown error'}`)
         }
 
-        // Store the actual UUID from database in session
-        session.documentId = document.id
-        console.log(`[DEBUG] ✅ Document created with UUID: ${document.id}`)
-        console.log(`[DEBUG] Updating session with documentId for subsequent chunks`)
+        console.log(`[DEBUG] ✅ Document ${document.id} updated with final metadata (status: processing)`)
+
 
         // NOTE: PDF text extraction happens CLIENT-SIDE using pdf.js in browser
         // The client will call /api/documents/update-text after extraction completes
