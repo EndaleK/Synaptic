@@ -2,13 +2,19 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import dynamic from "next/dynamic"
 import { Upload, RefreshCw } from "lucide-react"
 import DocumentList from "@/components/DocumentList"
-import DocumentUploadModal from "@/components/DocumentUploadModal"
 import Breadcrumb, { documentsBreadcrumb } from "@/components/Breadcrumb"
 import { useToast } from "@/components/ToastContainer"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { useDocumentStore, useUIStore } from "@/lib/store/useStore"
+
+// Dynamically import DocumentUploadModal to avoid SSR issues with PDF.js
+// PDF.js uses browser APIs (DOMMatrix) that don't exist in Node.js
+const DocumentUploadModal = dynamic(() => import("@/components/DocumentUploadModal"), {
+  ssr: false,
+})
 
 export default function DocumentsPage() {
   const router = useRouter()
