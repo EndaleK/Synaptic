@@ -119,11 +119,11 @@ export async function POST(request: NextRequest) {
         console.log(`[DEBUG] ✅ Found user profile ID: ${userProfileId}`)
       }
 
-      // Create document record immediately with "uploading" status
+      // Create document record immediately with "pending" status
       const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
       const tempStoragePath = `documents/${userId}/${userId}_${timestamp}_${sanitizedFileName}`
 
-      console.log(`[DEBUG] Creating document record with "uploading" status`)
+      console.log(`[DEBUG] Creating document record with "pending" status`)
       const { data: document, error: dbError } = await supabase
         .from('documents')
         .insert({
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
           file_type: file.type || 'application/pdf',
           storage_path: tempStoragePath,
           extracted_text: '',
-          processing_status: 'uploading', // New status: uploading → processing → completed
+          processing_status: 'pending', // Status flow: pending → processing → completed
           metadata: {
             total_chunks: parseInt(totalChunks),
             received_chunks: 0
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
         throw new Error(`Failed to initialize upload: ${dbError?.message || 'Unknown error'}`)
       }
 
-      console.log(`[DEBUG] ✅ Document created with UUID: ${document.id} (status: uploading)`)
+      console.log(`[DEBUG] ✅ Document created with UUID: ${document.id} (status: pending)`)
 
       session = {
         chunks: [],
@@ -308,13 +308,13 @@ export async function POST(request: NextRequest) {
         console.log(`[DEBUG] Step 4: Updating document record with final metadata`)
 
         // Update document record with final file info and change status to 'processing'
-        // Document was already created on first chunk with "uploading" status
+        // Document was already created on first chunk with "pending" status
         const { data: document, error: dbError } = await supabase
           .from('documents')
           .update({
             file_size: completeFileBuffer.length,
             storage_path: r2FileKey,
-            processing_status: 'processing', // Change from "uploading" to "processing"
+            processing_status: 'processing', // Change from "pending" to "processing"
             metadata: {
               r2_url: r2Url,
               total_chunks: session.totalChunks,
