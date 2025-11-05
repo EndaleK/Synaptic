@@ -24,7 +24,7 @@ export const maxDuration = 300 // 5 minutes max (requires Vercel Pro plan)
 // Upload session tracking to handle parallel chunk uploads
 interface UploadSession {
   chunks: Buffer[]
-  documentId: string
+  documentId: string | null  // UUID from database (set after document creation)
   fileName: string
   userId: string
   userProfileId?: string  // Cached after first lookup
@@ -83,14 +83,13 @@ export async function POST(request: NextRequest) {
     let session: UploadSession
 
     if (!chunkStorage.has(chunkKey)) {
-      // First chunk: Create new upload session with pre-generated documentId
+      // First chunk: Create new upload session
+      // documentId will be set to actual UUID after database insertion
       const timestamp = Date.now()
-      const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
-      const documentId = `${userId}_${timestamp}_${sanitizedFileName}`
 
       session = {
         chunks: [],
-        documentId,
+        documentId: null,  // Will be set to UUID after document creation
         fileName,
         userId,
         timestamp,
@@ -99,7 +98,6 @@ export async function POST(request: NextRequest) {
 
       chunkStorage.set(chunkKey, session)
       console.log(`🆕 Starting new upload session for ${fileName}`)
-      console.log(`📋 Pre-generated document ID: ${documentId}`)
     } else {
       session = chunkStorage.get(chunkKey)!
     }
@@ -114,7 +112,7 @@ export async function POST(request: NextRequest) {
     const receivedChunks = session.chunks.filter(chunk => chunk !== undefined).length
     const allChunksReceived = receivedChunks === session.totalChunks
 
-    console.log(`📊 Progress: ${receivedChunks}/${session.totalChunks} chunks received for session ${session.documentId}`)
+    console.log(`📊 Progress: ${receivedChunks}/${session.totalChunks} chunks received`)
 
     let processingResult = null
     let r2Url = ''
@@ -189,14 +187,15 @@ export async function POST(request: NextRequest) {
         const completeFileBuffer = Buffer.concat(session.chunks)
         console.log(`[DEBUG] ✅ Assembled ${completeFileBuffer.length} bytes from ${session.totalChunks} chunks`)
 
-        // Clear chunk storage to free memory
-        chunkStorage.delete(chunkKey)
+        // Clear chunks from memory but keep session for documentId access
+        session.chunks = []  // Free memory but keep session metadata
 
-        // Use pre-generated document ID from session (created when first chunk arrived)
-        const documentId = session.documentId
+        // Generate storage path (will use actual documentId from DB after insertion)
+        const timestamp = session.timestamp
         const sanitizedFileName = session.fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
-        r2FileKey = `documents/${userId}/${documentId}`
-        console.log(`[DEBUG] Using session document ID: ${documentId}`)
+        const tempKey = `${userId}_${timestamp}_${sanitizedFileName}`
+        r2FileKey = `documents/${userId}/${tempKey}`
+        console.log(`[DEBUG] Preparing to save document to storage`)
 
         console.log(`[DEBUG] Step 3: Uploading to storage (hasR2: ${hasR2})`)
 
@@ -259,7 +258,6 @@ export async function POST(request: NextRequest) {
             processing_status: 'processing', // Will be updated when complete
             metadata: {
               r2_url: r2Url,
-              document_id: documentId,
             },
           })
           .select()
@@ -271,7 +269,10 @@ export async function POST(request: NextRequest) {
           throw new Error(`Failed to save document metadata: ${dbError.message}`)
         }
 
-        console.log(`[DEBUG] ✅ Document metadata saved: ${document.id}`)
+        // Store the actual UUID from database in session
+        session.documentId = document.id
+        console.log(`[DEBUG] ✅ Document created with UUID: ${document.id}`)
+        console.log(`[DEBUG] Updating session with documentId for subsequent chunks`)
 
         // NOTE: PDF text extraction happens CLIENT-SIDE using pdf.js in browser
         // The client will call /api/documents/update-text after extraction completes
@@ -334,14 +335,17 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Return success response for chunk upload
-    // CRITICAL: Always include documentId from session (fixes race condition)
     const response: any = {
       success: true,
       chunkIndex: currentChunkIndex,
       totalChunks: session.totalChunks,
       isComplete: allChunksReceived,
-      documentId: session.documentId,  // ✅ ALWAYS included from session (available from first chunk)
       message: allChunksReceived ? 'Document processed successfully' : `Chunk ${currentChunkIndex + 1}/${session.totalChunks} received (${receivedChunks}/${session.totalChunks} total)`,
+    }
+
+    // Add documentId if available (will be null until document is created in DB)
+    if (session.documentId) {
+      response.documentId = session.documentId
     }
 
     // Add optional fields
@@ -354,7 +358,17 @@ export async function POST(request: NextRequest) {
       console.log(`[DEBUG] ✅ Document fully processed: ${session.documentId}`)
     }
 
-    console.log(`[DEBUG] Sending response for chunk ${currentChunkIndex + 1}/${session.totalChunks}: documentId=${session.documentId}, isComplete=${allChunksReceived}`)
+    console.log(`[DEBUG] Sending response for chunk ${currentChunkIndex + 1}/${session.totalChunks}: documentId=${session.documentId || 'pending'}, isComplete=${allChunksReceived}`)
+
+    // Clean up completed sessions after a delay to allow all chunks to access documentId
+    if (allChunksReceived && session.documentId) {
+      setTimeout(() => {
+        if (chunkStorage.has(chunkKey)) {
+          chunkStorage.delete(chunkKey)
+          console.log(`🧹 Cleaned up session for ${fileName}`)
+        }
+      }, 30000) // 30 seconds delay for cleanup
+    }
 
     return NextResponse.json(response)
 
