@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       documentId,
+      selection,
       format = 'deep-dive',
       customPrompt,
       targetDuration = 10,
@@ -136,11 +137,97 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    logger.debug('Document fetched successfully', {
+    // Extract text based on selection (full document, page range, or topic)
+    let textForPodcast = document.extracted_text
+    let selectionDescription = 'full document'
+
+    if (selection) {
+      if (selection.type === 'pages' && selection.pageRange) {
+        // PAGE RANGE MODE: Extract text from specific pages
+        const { start, end } = selection.pageRange
+        selectionDescription = `pages ${start}-${end}`
+
+        logger.info('Podcast generation with page range', {
+          userId,
+          documentId,
+          pageStart: start,
+          pageEnd: end,
+        })
+
+        // Extract text from document based on page metadata
+        const fullText = document.extracted_text || ''
+
+        // If document has page markers (from pdf-parse), extract specific pages
+        if (document.metadata?.pages && Array.isArray(document.metadata.pages)) {
+          const pages = document.metadata.pages.filter(
+            (p: any) => p.pageNumber >= start && p.pageNumber <= end
+          )
+          textForPodcast = pages.map((p: any) => p.text).join('\n\n')
+        } else {
+          // Fallback: Split by approximate page length
+          const avgPageLength = 3500
+          const startChar = (start - 1) * avgPageLength
+          const endChar = end * avgPageLength
+          textForPodcast = fullText.substring(startChar, Math.min(endChar, fullText.length))
+        }
+
+        if (!textForPodcast || textForPodcast.trim().length === 0) {
+          logger.warn('No content found in selected page range', { userId, documentId, start, end })
+          return NextResponse.json(
+            { error: 'No content found in selected page range' },
+            { status: 400 }
+          )
+        }
+
+      } else if (selection.type === 'topic' && selection.topic) {
+        // TOPIC MODE: Extract text from topic's page range
+        const topic = selection.topic
+        selectionDescription = `topic: ${topic.title}`
+
+        logger.info('Podcast generation with topic', {
+          userId,
+          documentId,
+          topic: topic.title,
+          pageRange: topic.pageRange,
+        })
+
+        // Use topic's page range to extract text
+        if (topic.pageRange) {
+          const { start, end } = topic.pageRange
+          const fullText = document.extracted_text || ''
+
+          // If document has page markers, use them
+          if (document.metadata?.pages && Array.isArray(document.metadata.pages)) {
+            const pages = document.metadata.pages.filter(
+              (p: any) => p.pageNumber >= start && p.pageNumber <= end
+            )
+            textForPodcast = pages.map((p: any) => p.text).join('\n\n')
+          } else {
+            // Fallback to approximate extraction
+            const avgPageLength = 3500
+            const startChar = (start - 1) * avgPageLength
+            const endChar = end * avgPageLength
+            textForPodcast = fullText.substring(startChar, Math.min(endChar, fullText.length))
+          }
+
+          if (!textForPodcast || textForPodcast.trim().length === 0) {
+            logger.warn('No content found for selected topic', { userId, documentId, topic: topic.title })
+            return NextResponse.json(
+              { error: 'No content found for selected topic' },
+              { status: 400 }
+            )
+          }
+        }
+      }
+    }
+
+    logger.debug('Document text prepared for podcast', {
       userId,
       documentId,
       fileName: document.file_name,
-      textLength: document.extracted_text.length
+      selectionType: selection?.type || 'full',
+      selectionDescription,
+      textLength: textForPodcast.length
     })
 
     // Fetch user learning profile for personalization
@@ -207,12 +294,24 @@ export async function POST(req: NextRequest) {
       ...costEstimate
     })
 
-    // Step 1: Generate podcast script with selected provider
-    logger.debug('Generating podcast script', { userId, documentId, format, language, provider: scriptProvider.name })
+    // Step 1: Generate podcast script with selected provider and selected text
+    logger.debug('Generating podcast script', {
+      userId,
+      documentId,
+      format,
+      language,
+      provider: scriptProvider.name,
+      selection: selectionDescription
+    })
+
     const script = await generatePodcastScript({
-      text: document.extracted_text,
+      text: textForPodcast,
       format: format as PodcastFormat,
-      customPrompt,
+      customPrompt: customPrompt
+        ? customPrompt
+        : selection
+        ? `Create a podcast covering ${selectionDescription} from the document.`
+        : undefined,
       targetDuration,
       language,
       ...personalizationOptions,
@@ -341,7 +440,8 @@ export async function POST(req: NextRequest) {
         duration: Math.ceil(totalDuration),
         fileSize: audioBuffer.length,
         transcript,
-        script: script.lines
+        script: script.lines,
+        selection: selectionDescription
       }
     })
 

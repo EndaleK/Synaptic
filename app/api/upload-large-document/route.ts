@@ -279,17 +279,31 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Return success response for chunk upload
-    const response = {
+    const response: any = {
       success: true,
       chunkIndex: currentChunkIndex,
       totalChunks: parseInt(totalChunks),
       isComplete: allChunksReceived,
       message: allChunksReceived ? 'Document processed successfully' : `Chunk ${currentChunkIndex + 1}/${totalChunks} received (${receivedChunks}/${totalChunks} total)`,
-      ...(r2Url && { r2Url }),
-      ...(processingResult && {
-        processing: processingResult,
-        documentId: processingResult.documentId  // Expose at top level for easier client access
-      }),
+    }
+
+    // Add optional fields
+    if (r2Url) {
+      response.r2Url = r2Url
+    }
+
+    if (processingResult) {
+      response.processing = processingResult
+      response.documentId = processingResult.documentId  // Expose at top level for easier client access
+      console.log(`[DEBUG] Added processingResult to response: documentId=${processingResult.documentId}`)
+    } else if (allChunksReceived) {
+      console.error(`[CRITICAL ERROR] All chunks received but processingResult is null!`)
+      console.error(`[DEBUG] Variables at this point:`, {
+        allChunksReceived,
+        processingResult,
+        r2Url,
+        r2FileKey,
+      })
     }
 
     console.log(`[DEBUG] Sending response for chunk ${currentChunkIndex + 1}/${totalChunks}:`, JSON.stringify(response))

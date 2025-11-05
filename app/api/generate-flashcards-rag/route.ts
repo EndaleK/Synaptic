@@ -26,7 +26,11 @@ export const maxDuration = 300 // 5 minutes for large document processing
  *
  * Body:
  * - documentId: string (ID from uploaded document)
- * - topic: string (optional - specific topic to focus on)
+ * - selection: object (optional - content selection)
+ *   - type: 'full' | 'pages' | 'topic'
+ *   - pageRange: { start: number, end: number } (for 'pages' type)
+ *   - topic: { id, title, description, pageRange } (for 'topic' type)
+ * - topic: string (optional - specific topic to focus on) [DEPRECATED: use selection instead]
  * - count: number (optional - number of flashcards to generate, default 15)
  */
 export async function POST(request: NextRequest) {
@@ -65,19 +69,30 @@ export async function POST(request: NextRequest) {
 
     // 4. Parse request body
     const body = await request.json()
-    const { documentId, topic, count = 15 } = body
+    const { documentId, selection, topic: legacyTopic, count = 15 } = body
 
     if (!documentId) {
       return NextResponse.json({ error: 'Document ID required' }, { status: 400 })
     }
 
-    // 5. Verify document ownership
+    // 5. Verify document ownership and get user profile
     const supabase = await createClient()
+
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('clerk_user_id', userId)
+      .single()
+
+    if (!profile) {
+      return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
+    }
+
     const { data: document, error: docError } = await supabase
       .from('documents')
       .select('*')
       .eq('id', documentId)
-      .eq('clerk_user_id', userId)
+      .eq('user_id', profile.id)
       .single()
 
     if (docError || !document) {
@@ -85,88 +100,157 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // 6. Check vector store status
-    const docStats = await getDocumentStats(documentId)
-    if (!docStats.exists || docStats.chunkCount === 0) {
-      logger.error('Document not indexed in vector store', { documentId })
-      return NextResponse.json(
-        { error: 'Document not yet indexed. Please wait for processing to complete.' },
-        { status: 400 }
-      )
-    }
+    // 6. Determine selection mode and extract relevant text
+    let combinedText = ''
+    let selectionDescription = ''
+    let usedVectorStore = false
 
-    logger.info('RAG flashcard generation started', {
-      userId,
-      documentId,
-      chunkCount: docStats.chunkCount,
-      topic: topic || 'general',
-    })
+    if (selection && selection.type === 'pages' && selection.pageRange) {
+      // PAGE RANGE MODE: Extract text from specific pages
+      const { start, end } = selection.pageRange
+      selectionDescription = `pages ${start}-${end}`
 
-    // 7. Retrieve relevant chunks using RAG
-    let relevantChunks: string[]
-
-    if (topic) {
-      // Topic-specific retrieval
-      const topicResults = await searchDocument(documentId, topic, 10)
-      relevantChunks = topicResults.map((r) => r.text)
-      logger.debug('Topic-based retrieval completed', {
+      logger.info('Flashcard generation with page range', {
         userId,
         documentId,
-        topic,
-        chunksRetrieved: relevantChunks.length,
+        pageStart: start,
+        pageEnd: end,
       })
-    } else {
-      // General retrieval - get diverse sections
-      // Query for different aspects to get comprehensive coverage
-      const queries = [
-        'main concepts and key ideas',
-        'important definitions and terminology',
-        'examples and applications',
-        'principles and theories',
-        'procedures and processes',
-      ]
 
-      const allResults = await Promise.all(
-        queries.map((query) => searchDocument(documentId, query, 3))
-      )
+      // Extract text from document.extracted_text based on page metadata
+      // For now, use simple heuristic: split by page markers if available
+      // TODO: Improve page extraction with actual page boundaries from PDF metadata
+      const fullText = document.extracted_text || ''
 
-      // Combine and deduplicate chunks
-      const uniqueChunks = new Map<number, string>()
-      allResults.forEach((results) => {
-        results.forEach((result) => {
-          uniqueChunks.set(result.chunkIndex, result.text)
+      // If document has page markers (from pdf-parse), extract specific pages
+      if (document.metadata?.pages && Array.isArray(document.metadata.pages)) {
+        const pages = document.metadata.pages.filter(
+          (p: any) => p.pageNumber >= start && p.pageNumber <= end
+        )
+        combinedText = pages.map((p: any) => p.text).join('\n\n')
+      } else {
+        // Fallback: Split by approximate page length
+        // Average academic PDF page ≈ 3000-4000 characters
+        const avgPageLength = 3500
+        const startChar = (start - 1) * avgPageLength
+        const endChar = end * avgPageLength
+        combinedText = fullText.substring(startChar, Math.min(endChar, fullText.length))
+      }
+
+      if (!combinedText || combinedText.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'No content found in selected page range' },
+          { status: 400 }
+        )
+      }
+
+      // Limit to reasonable size
+      combinedText = combinedText.substring(0, 48000) // ~12K tokens
+
+    } else if ((selection && selection.type === 'topic') || legacyTopic) {
+      // TOPIC MODE: Use vector search for topic-specific content
+      const topicQuery = selection?.topic?.title || legacyTopic
+      selectionDescription = `topic: ${topicQuery}`
+
+      logger.info('Flashcard generation with topic', {
+        userId,
+        documentId,
+        topic: topicQuery,
+      })
+
+      // Check vector store status
+      const docStats = await getDocumentStats(documentId)
+      if (!docStats.exists || docStats.chunkCount === 0) {
+        logger.warn('Document not indexed, falling back to full text', { documentId })
+        // Fallback to full document text
+        combinedText = (document.extracted_text || '').substring(0, 48000)
+      } else {
+        // Topic-specific retrieval
+        const topicResults = await searchDocument(documentId, topicQuery, 10)
+        const relevantChunks = topicResults.map((r) => r.text)
+        combinedText = relevantChunks.join('\n\n').substring(0, 48000)
+        usedVectorStore = true
+
+        logger.debug('Topic-based retrieval completed', {
+          userId,
+          documentId,
+          topic: topicQuery,
+          chunksRetrieved: relevantChunks.length,
         })
-      })
+      }
 
-      relevantChunks = Array.from(uniqueChunks.values())
-      logger.debug('General retrieval completed', {
+    } else {
+      // FULL DOCUMENT MODE: Use vector search for comprehensive coverage
+      selectionDescription = 'full document'
+
+      logger.info('Flashcard generation for full document', {
         userId,
         documentId,
-        chunksRetrieved: relevantChunks.length,
       })
+
+      // Check vector store status
+      const docStats = await getDocumentStats(documentId)
+      if (!docStats.exists || docStats.chunkCount === 0) {
+        logger.warn('Document not indexed, using full text', { documentId })
+        // Fallback to full document text
+        combinedText = (document.extracted_text || '').substring(0, 48000)
+      } else {
+        // General retrieval - get diverse sections
+        const queries = [
+          'main concepts and key ideas',
+          'important definitions and terminology',
+          'examples and applications',
+          'principles and theories',
+          'procedures and processes',
+        ]
+
+        const allResults = await Promise.all(
+          queries.map((query) => searchDocument(documentId, query, 3))
+        )
+
+        // Combine and deduplicate chunks
+        const uniqueChunks = new Map<number, string>()
+        allResults.forEach((results) => {
+          results.forEach((result) => {
+            uniqueChunks.set(result.chunkIndex, result.text)
+          })
+        })
+
+        const relevantChunks = Array.from(uniqueChunks.values())
+        combinedText = relevantChunks.join('\n\n').substring(0, 48000)
+        usedVectorStore = true
+
+        logger.debug('General retrieval completed', {
+          userId,
+          documentId,
+          chunksRetrieved: relevantChunks.length,
+        })
+      }
     }
 
-    if (relevantChunks.length === 0) {
+    // 7. Validate we have content to work with
+    if (!combinedText || combinedText.trim().length === 0) {
       return NextResponse.json(
-        { error: 'No relevant content found in document' },
+        { error: 'No relevant content found for flashcard generation' },
         { status: 400 }
       )
     }
 
-    // 8. Combine chunks into context (limit to reasonable size)
-    const combinedText = relevantChunks.join('\n\n').substring(0, 48000) // ~12K tokens
-
-    logger.debug('Combined context prepared', {
+    logger.debug('Content prepared for flashcard generation', {
       userId,
       documentId,
-      contextLength: combinedText.length,
+      selectionType: selection?.type || 'legacy',
+      contentLength: combinedText.length,
+      usedVectorStore,
     })
 
-    // 9. Generate flashcards using RAG context
+    // 8. Generate flashcards using selected content
     const customOptions = {
       variation: 0,
-      customPrompt: topic
-        ? `Generate ${count} flashcards focused specifically on: ${topic}\n\nContext from document:\n\n${combinedText}`
+      customPrompt: selection
+        ? `Generate ${count} flashcards from ${selectionDescription}.\n\nContent:\n\n${combinedText}`
+        : legacyTopic
+        ? `Generate ${count} flashcards focused specifically on: ${legacyTopic}\n\nContext from document:\n\n${combinedText}`
         : `Generate ${count} comprehensive flashcards covering the most important concepts from this document:\n\n${combinedText}`,
     }
 
@@ -267,15 +351,16 @@ export async function POST(request: NextRequest) {
       userId,
       documentId,
       flashcardCount: savedFlashcards.length,
-      chunksUsed: relevantChunks.length,
+      selectionType: selection?.type || 'legacy',
+      selectionDescription,
     })
 
     return NextResponse.json({
       flashcards: savedFlashcards,
       documentId,
       documentName: document.file_name,
-      chunksUsed: relevantChunks.length,
-      totalChunks: docStats.chunkCount,
+      selection: selectionDescription,
+      usedVectorStore,
       aiProvider: result.provider,
       providerReason: result.providerReason,
     })

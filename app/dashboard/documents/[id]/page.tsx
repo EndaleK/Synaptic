@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft, FileText, Calendar, HardDrive, Download, Loader2 } from "lucide-react"
+import { ArrowLeft, FileText, Calendar, HardDrive, Download, Loader2, Sparkles, Brain } from "lucide-react"
 import { Document as PDFDocument } from "@/lib/supabase/types"
 import Breadcrumb from "@/components/Breadcrumb"
+import PageTopicSelector, { SelectionData } from "@/components/PageTopicSelector"
 
 export default function DocumentDetailPage() {
   const router = useRouter()
@@ -15,6 +16,9 @@ export default function DocumentDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [selection, setSelection] = useState<SelectionData>({ type: 'full' })
+  const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false)
+  const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false)
 
   useEffect(() => {
     const fetchDocument = async () => {
@@ -78,6 +82,71 @@ export default function DocumentDetailPage() {
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  const handleGenerateFlashcards = async () => {
+    if (!document) return
+
+    setIsGeneratingFlashcards(true)
+    try {
+      const response = await fetch('/api/generate-flashcards-rag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentId: document.id,
+          selection,
+          count: 15
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to generate flashcards')
+      }
+
+      const data = await response.json()
+
+      // Redirect to flashcards page/mode
+      router.push(`/dashboard?mode=flashcards&documentId=${document.id}`)
+    } catch (error) {
+      console.error('Error generating flashcards:', error)
+      alert(error instanceof Error ? error.message : 'Failed to generate flashcards')
+    } finally {
+      setIsGeneratingFlashcards(false)
+    }
+  }
+
+  const handleGeneratePodcast = async () => {
+    if (!document) return
+
+    setIsGeneratingPodcast(true)
+    try {
+      const response = await fetch('/api/generate-podcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentId: document.id,
+          selection,
+          format: 'deep-dive',
+          targetDuration: 10
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to generate podcast')
+      }
+
+      const data = await response.json()
+
+      // Redirect to podcast page/mode
+      router.push(`/dashboard?mode=podcast&documentId=${document.id}`)
+    } catch (error) {
+      console.error('Error generating podcast:', error)
+      alert(error instanceof Error ? error.message : 'Failed to generate podcast')
+    } finally {
+      setIsGeneratingPodcast(false)
+    }
   }
 
   if (isLoading) {
@@ -177,6 +246,64 @@ export default function DocumentDetailPage() {
             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-400">
               PDF preview not available for this document type
+            </p>
+          </div>
+        )}
+
+        {/* Content Selection & Generation */}
+        {document.processing_status === 'completed' && document.metadata?.page_count && (
+          <div className="mt-6 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Generate Learning Content
+            </h2>
+
+            <PageTopicSelector
+              documentId={documentId}
+              totalPages={document.metadata.page_count}
+              onSelectionChange={setSelection}
+              className="mb-6"
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleGenerateFlashcards}
+                disabled={isGeneratingFlashcards || isGeneratingPodcast}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isGeneratingFlashcards ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Generating Flashcards...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="w-5 h-5" />
+                    Generate Flashcards
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleGeneratePodcast}
+                disabled={isGeneratingFlashcards || isGeneratingPodcast}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isGeneratingPodcast ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Generating Podcast...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5" />
+                    Generate Podcast
+                  </>
+                )}
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+              Select content above to generate flashcards or a podcast from specific pages, topics, or the full document.
             </p>
           </div>
         )}
