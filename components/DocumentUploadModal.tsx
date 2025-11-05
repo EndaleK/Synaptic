@@ -268,7 +268,7 @@ export default function DocumentUploadModal({
       // Provide specific error messages based on error type
       if (err instanceof Error) {
         if (err.name === 'AbortError') {
-          setError('Upload timed out after 5 minutes. Please try a smaller file or check your internet connection.')
+          setError('Upload timed out after 3 minutes. Please try a smaller file or check your internet connection.')
         } else if (err.message === 'Failed to fetch') {
           setError('Network error. Please check if the server is running and try again.')
         } else {
@@ -374,9 +374,9 @@ export default function DocumentUploadModal({
 
         console.log(`📤 Uploading chunk ${chunkIndex + 1}/${totalChunks} (attempt ${retryCount + 1})`)
 
-        // Upload chunk with 60s timeout per chunk
+        // Upload chunk with 180s timeout per chunk (first chunk needs extra time for DB + storage ops)
         const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), 60000)
+        const timeout = setTimeout(() => controller.abort(), 180000)
 
         const response = await fetch('/api/upload-large-document', {
           method: 'POST',
@@ -412,7 +412,7 @@ export default function DocumentUploadModal({
         // Retry on failure (network issues, timeouts)
         if (retryCount < MAX_RETRIES) {
           console.log(`🔄 Retrying chunk ${chunkIndex + 1} (attempt ${retryCount + 2}/${MAX_RETRIES + 1})`)
-          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))) // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount))) // Exponential backoff: 1s, 2s, 4s
           return uploadChunk(chunkIndex, retryCount + 1)
         }
 
