@@ -51,6 +51,24 @@ export default function DocumentsPage() {
     fetchDocuments()
   }, [fetchDocuments])
 
+  // Auto-refresh polling for documents with "processing" status
+  useEffect(() => {
+    const hasProcessing = documents.some(doc => doc.processing_status === 'processing')
+
+    if (hasProcessing) {
+      console.log('📊 Auto-refresh enabled: Found documents with "processing" status')
+      const interval = setInterval(() => {
+        console.log('🔄 Auto-refreshing documents (processing status detected)...')
+        fetchDocuments()
+      }, 3000) // Poll every 3 seconds
+
+      return () => {
+        console.log('⏹️ Auto-refresh stopped')
+        clearInterval(interval)
+      }
+    }
+  }, [documents, fetchDocuments])
+
   const handleSelectMode = async (documentId: string, mode: PreferredMode) => {
     try {
       // Find the document

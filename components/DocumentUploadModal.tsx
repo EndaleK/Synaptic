@@ -441,6 +441,14 @@ export default function DocumentUploadModal({
     }
 
     console.log(`🔍 DEBUG: uploadLargeFile completing with documentId: ${documentId}`)
+
+    // Defensive check: ensure we got a documentId from server
+    if (!documentId) {
+      console.error('❌ CRITICAL: Upload completed but documentId is null/undefined')
+      console.error('This usually means the server response is missing the documentId field')
+      throw new Error('Upload succeeded but document ID was not returned from server. Please refresh the page and try again.')
+    }
+
     return documentId
   }
 
