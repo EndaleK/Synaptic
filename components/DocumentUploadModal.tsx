@@ -421,33 +421,34 @@ export default function DocumentUploadModal({
       }
     }
 
-    // Upload chunks in parallel batches
-    for (let i = 0; i < totalChunks; i += PARALLEL_CHUNKS) {
-      const batch = []
-      for (let j = 0; j < PARALLEL_CHUNKS && i + j < totalChunks; j++) {
-        batch.push(uploadChunk(i + j))
-      }
-      const results = await Promise.all(batch)
+    // Upload first chunk sequentially to get documentId (eliminates race condition)
+    console.log(`🎯 Uploading first chunk sequentially to obtain documentId...`)
+    const firstChunkResult = await uploadChunk(0)
 
-      // Check if any result contains the documentId (from last chunk)
-      for (const result of results) {
-        console.log(`🔍 DEBUG: Checking batch result:`, result)
-        // Check both top-level documentId and nested processing.documentId
-        if (result.documentId || result.processing?.documentId) {
-          documentId = result.documentId || result.processing.documentId
-          console.log(`🎯 DEBUG: Found documentId in batch result: ${documentId}`)
-        }
-      }
-    }
+    // Extract documentId from first chunk response
+    documentId = firstChunkResult.documentId || firstChunkResult.processing?.documentId
 
-    console.log(`🔍 DEBUG: uploadLargeFile completing with documentId: ${documentId}`)
-
-    // Defensive check: ensure we got a documentId from server
     if (!documentId) {
-      console.error('❌ CRITICAL: Upload completed but documentId is null/undefined')
-      console.error('This usually means the server response is missing the documentId field')
-      throw new Error('Upload succeeded but document ID was not returned from server. Please refresh the page and try again.')
+      console.error('❌ CRITICAL: First chunk uploaded but documentId not returned')
+      throw new Error('Failed to initialize document upload. Please refresh and try again.')
     }
+
+    console.log(`✅ Document initialized with ID: ${documentId}`)
+
+    // Upload remaining chunks in parallel batches for speed
+    if (totalChunks > 1) {
+      console.log(`🚀 Uploading remaining ${totalChunks - 1} chunks in parallel...`)
+
+      for (let i = 1; i < totalChunks; i += PARALLEL_CHUNKS) {
+        const batch = []
+        for (let j = 0; j < PARALLEL_CHUNKS && i + j < totalChunks; j++) {
+          batch.push(uploadChunk(i + j))
+        }
+        await Promise.all(batch)
+      }
+    }
+
+    console.log(`✅ All ${totalChunks} chunks uploaded successfully, documentId: ${documentId}`)
 
     return documentId
   }
