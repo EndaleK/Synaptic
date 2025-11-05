@@ -285,7 +285,10 @@ export async function POST(request: NextRequest) {
       isComplete: allChunksReceived,
       message: allChunksReceived ? 'Document processed successfully' : `Chunk ${currentChunkIndex + 1}/${totalChunks} received (${receivedChunks}/${totalChunks} total)`,
       ...(r2Url && { r2Url }),
-      ...(processingResult && { processing: processingResult }),
+      ...(processingResult && {
+        processing: processingResult,
+        documentId: processingResult.documentId  // Expose at top level for easier client access
+      }),
     })
 
   } catch (error) {

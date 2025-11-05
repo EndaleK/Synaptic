@@ -113,9 +113,9 @@ export default function DocumentUploadModal({
       console.log('📚 Importing PDF.js library...')
       const pdfjsLib = await import('pdfjs-dist')
 
-      // Configure worker after import (v5.3.31)
-      // Use .js extension, not .mjs - critical for version 5.x
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@5.3.31/build/pdf.worker.min.js`
+      // Configure worker after import
+      // Use local API endpoint to avoid CORS issues and leverage fallback logic
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '/api/pdf-worker'
       console.log('📄 PDF.js worker configured:', pdfjsLib.GlobalWorkerOptions.workerSrc)
 
       setUploadProgress({
@@ -432,8 +432,9 @@ export default function DocumentUploadModal({
       // Check if any result contains the documentId (from last chunk)
       for (const result of results) {
         console.log(`🔍 DEBUG: Checking batch result:`, result)
-        if (result.processing?.documentId) {
-          documentId = result.processing.documentId
+        // Check both top-level documentId and nested processing.documentId
+        if (result.documentId || result.processing?.documentId) {
+          documentId = result.documentId || result.processing.documentId
           console.log(`🎯 DEBUG: Found documentId in batch result: ${documentId}`)
         }
       }
