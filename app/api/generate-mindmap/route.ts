@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
     const {
       documentId,
       maxNodes,
-      maxDepth
+      maxDepth,
+      selection // Optional content selection (pages, topics, or full document)
     } = body
 
     // Validate input
@@ -101,17 +102,17 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Fetch document using Supabase UUID
+    // Fetch document using Supabase UUID (include metadata for page/topic selection)
     logger.debug('Attempting to fetch document', {
       userId,
       documentId,
       userProfileId: profile.id,
-      query: 'SELECT id, file_name, extracted_text, user_id FROM documents WHERE id = ? AND user_id = ?'
+      query: 'SELECT id, file_name, extracted_text, metadata, user_id FROM documents WHERE id = ? AND user_id = ?'
     })
 
     const { data: document, error: docError } = await supabase
       .from('documents')
-      .select('id, file_name, extracted_text, user_id')
+      .select('id, file_name, extracted_text, metadata, user_id')
       .eq('id', documentId)
       .eq('user_id', profile.id)
       .single()
@@ -171,8 +172,104 @@ export async function POST(req: NextRequest) {
       textLength: document.extracted_text.length
     })
 
+    // Determine selection mode and extract relevant text
+    let documentText = document.extracted_text
+    let selectionDescription = 'full document'
+
+    if (selection && selection.type === 'pages' && selection.pageRange) {
+      // PAGE RANGE MODE: Extract text from specific pages
+      const { start, end } = selection.pageRange
+      selectionDescription = `pages ${start}-${end}`
+
+      logger.info('Mind map generation with page range', {
+        userId,
+        documentId,
+        pageStart: start,
+        pageEnd: end,
+      })
+
+      const fullText = document.extracted_text || ''
+
+      // If document has page metadata, extract specific pages
+      if (document.metadata?.pages && Array.isArray(document.metadata.pages)) {
+        const pages = document.metadata.pages.filter(
+          (p: any) => p.pageNumber >= start && p.pageNumber <= end
+        )
+        documentText = pages.map((p: any) => p.text).join('\n\n')
+      } else {
+        // Fallback: Split by approximate page length
+        const avgPageLength = 3500
+        const startChar = (start - 1) * avgPageLength
+        const endChar = end * avgPageLength
+        documentText = fullText.substring(startChar, Math.min(endChar, fullText.length))
+      }
+
+      if (!documentText || documentText.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'No content found in selected page range' },
+          { status: 400 }
+        )
+      }
+
+      // Limit to reasonable size for mind map generation
+      documentText = documentText.substring(0, 48000) // ~12K tokens
+
+    } else if (selection && selection.type === 'topic' && selection.topic) {
+      // TOPIC MODE: Extract text from specific topic
+      const topicTitle = selection.topic.title
+      selectionDescription = `topic: ${topicTitle}`
+
+      logger.info('Mind map generation with topic', {
+        userId,
+        documentId,
+        topic: topicTitle,
+      })
+
+      // If document has topic metadata with page ranges
+      if (document.metadata?.topics && Array.isArray(document.metadata.topics)) {
+        const topic = document.metadata.topics.find((t: any) => t.title === topicTitle)
+
+        if (topic && topic.pageRange) {
+          const { start, end } = topic.pageRange
+          const fullText = document.extracted_text || ''
+
+          // Extract topic's pages
+          if (document.metadata?.pages && Array.isArray(document.metadata.pages)) {
+            const pages = document.metadata.pages.filter(
+              (p: any) => p.pageNumber >= start && p.pageNumber <= end
+            )
+            documentText = pages.map((p: any) => p.text).join('\n\n')
+          } else {
+            // Fallback: Approximate extraction
+            const avgPageLength = 3500
+            const startChar = (start - 1) * avgPageLength
+            const endChar = end * avgPageLength
+            documentText = fullText.substring(startChar, Math.min(endChar, fullText.length))
+          }
+        }
+      }
+
+      // Limit to reasonable size
+      documentText = documentText.substring(0, 48000)
+
+      if (!documentText || documentText.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'No content found for selected topic' },
+          { status: 400 }
+        )
+      }
+    }
+    // else: Use full document text (already set)
+
+    logger.debug('Content selection applied', {
+      userId,
+      documentId,
+      selection: selectionDescription,
+      textLength: documentText.length
+    })
+
     // Analyze document complexity to determine optimal parameters
-    const complexityAnalysis = analyzeDocumentComplexity(document.extracted_text)
+    const complexityAnalysis = analyzeDocumentComplexity(documentText)
     logger.debug('Document complexity analysis', {
       userId,
       documentId,
@@ -263,7 +360,7 @@ export async function POST(req: NextRequest) {
     const modelName = selectedProvider.name === 'anthropic' ? 'claude-sonnet-4-20250514'
       : selectedProvider.name === 'deepseek' ? 'deepseek-chat'
       : 'gpt-4o'
-    const costEstimate = estimateRequestCost(modelName, document.extracted_text, 4000)
+    const costEstimate = estimateRequestCost(modelName, documentText, 4000)
     logger.debug('Cost estimate for mind map generation', {
       userId,
       documentId,
@@ -284,7 +381,7 @@ export async function POST(req: NextRequest) {
 
     // Use the refactored generateMindMap function with provider injection
     const mindMapData = await generateMindMap({
-      text: document.extracted_text,
+      text: documentText,
       maxNodes: effectiveMaxNodes,
       maxDepth: effectiveMaxDepth,
       provider: selectedProvider

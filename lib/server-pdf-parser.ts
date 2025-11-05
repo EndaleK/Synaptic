@@ -3,6 +3,7 @@
 
 interface PDFParseResult {
   text: string
+  pageCount?: number
   error?: string
 }
 
@@ -56,7 +57,8 @@ export async function parseServerPDF(file: File): Promise<PDFParseResult> {
             try {
               // Extract text from all pages
               let extractedText = ''
-              
+              const pageCount = pdfData.Pages?.length || 0
+
               if (pdfData.Pages && Array.isArray(pdfData.Pages)) {
                 for (const page of pdfData.Pages) {
                   if (page.Texts && Array.isArray(page.Texts)) {
@@ -107,14 +109,16 @@ export async function parseServerPDF(file: File): Promise<PDFParseResult> {
                   }
                   
                   console.log(`Large document truncated from ${extractedText.length} to ${truncatedText.length} characters`)
-                  
+
                   resolve({
                     text: truncatedText + "\n\n[Note: This document was truncated due to size. For complete content, use the PDF viewer mode.]",
+                    pageCount,
                     error: undefined
                   })
                 } else {
                   resolve({
                     text: extractedText,
+                    pageCount,
                     error: undefined
                   })
                 }

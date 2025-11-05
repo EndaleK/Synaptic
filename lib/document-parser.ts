@@ -3,6 +3,7 @@ import { parseServerPDF, isPDFFile } from "./server-pdf-parser"
 
 interface ParseResult {
   text: string
+  pageCount?: number
   error?: string
 }
 

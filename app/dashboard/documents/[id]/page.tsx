@@ -241,11 +241,24 @@ export default function DocumentDetailPage() {
               />
             </div>
           </div>
+        ) : document.file_type === 'application/pdf' && !pdfUrl ? (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 p-8 text-center">
+            <FileText className="w-16 h-16 text-yellow-600 dark:text-yellow-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
+              PDF Visual Preview Unavailable
+            </h3>
+            <p className="text-yellow-800 dark:text-yellow-200 mb-4">
+              The PDF file is uploaded and text has been extracted, but the visual preview cannot be loaded.
+            </p>
+            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+              You can still generate flashcards, podcasts, and mind maps from the extracted text below.
+            </p>
+          </div>
         ) : (
           <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-12 text-center">
             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 dark:text-gray-400">
-              PDF preview not available for this document type
+              Visual preview is only available for PDF files. This is a {document.file_type || 'text'} document.
             </p>
           </div>
         )}
@@ -305,6 +318,42 @@ export default function DocumentDetailPage() {
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
               Select content above to generate flashcards or a podcast from specific pages, topics, or the full document.
             </p>
+          </div>
+        )}
+
+        {/* Content Selection Unavailable Message */}
+        {document.processing_status !== 'completed' && (
+          <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-6">
+            <div className="flex items-start gap-3">
+              <Loader2 className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin mt-0.5" />
+              <div>
+                <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                  Document Processing
+                </h3>
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  Your document is still being processed. Content selection and learning tools will be available once processing completes.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {document.processing_status === 'completed' && !document.metadata?.page_count && (
+          <div className="mt-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 p-6">
+            <div className="flex items-start gap-3">
+              <FileText className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
+                  Content Selection Unavailable
+                </h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-2">
+                  Page information is not available for this document. You can still generate flashcards, podcasts, and mind maps from the full document.
+                </p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                  Note: This may occur with older uploads or non-PDF documents. Try re-uploading the file to enable page-based content selection.
+                </p>
+              </div>
+            </div>
           </div>
         )}
 

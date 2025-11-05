@@ -51,13 +51,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Verify document ownership and update
+    // 4. Fetch existing document to preserve metadata (r2_url, topics, etc.)
+    const { data: existingDoc, error: fetchError } = await supabase
+      .from('documents')
+      .select('metadata')
+      .eq('id', documentId)
+      .eq('user_id', profile.id)
+      .single()
+
+    if (fetchError || !existingDoc) {
+      console.error('Failed to fetch existing document:', fetchError)
+      return NextResponse.json(
+        { error: 'Document not found or access denied' },
+        { status: 404 }
+      )
+    }
+
+    // 5. Verify document ownership and update with merged metadata
     const { data: document, error: updateError } = await supabase
       .from('documents')
       .update({
         extracted_text: extractedText.substring(0, 50000), // Store first 50K chars in DB
         processing_status: 'completed',
         metadata: {
+          ...(existingDoc.metadata || {}), // Preserve existing metadata (r2_url, topics, etc.)
           page_count: pageCount,
           extraction_method: 'client-side',
           updated_at: new Date().toISOString(),

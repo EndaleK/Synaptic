@@ -350,7 +350,12 @@ export async function POST(request: NextRequest) {
       .update({
         storage_path: storagePath,
         extracted_text: extractedText,
-        processing_status: 'completed'
+        processing_status: 'completed',
+        metadata: {
+          page_count: parseResult.pageCount || null,
+          extraction_method: 'server-side',
+          updated_at: new Date().toISOString(),
+        }
       })
       .eq('id', documentId)
 
