@@ -4,9 +4,13 @@ import { useState, useRef, ChangeEvent } from "react"
 import { X, Upload, FileText, Loader2, Link as LinkIcon } from "lucide-react"
 import * as pdfjsLib from 'pdfjs-dist'
 
-// Configure PDF.js worker
+// Configure PDF.js worker (v5.3.31)
+// Using CDN for speed (user's preference)
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@5.3.31/build/pdf.worker.min.mjs`
+
+  // Log worker configuration for debugging
+  console.log('📄 PDF.js worker configured:', pdfjsLib.GlobalWorkerOptions.workerSrc)
 }
 
 interface DocumentUploadModalProps {
@@ -97,9 +101,12 @@ export default function DocumentUploadModal({
    * Sends extracted text to server after completion
    */
   const extractTextFromPDF = async (file: File, documentId: string): Promise<void> => {
+    console.log(`🔍 Starting PDF text extraction for ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`)
+
     try {
       // Only process PDFs
       if (file.type !== 'application/pdf') {
+        console.log('⚠️ Skipping text extraction - not a PDF file')
         return
       }
 
@@ -107,15 +114,26 @@ export default function DocumentUploadModal({
         uploadedChunks: 0,
         totalChunks: 0,
         percentage: 0,
-        status: 'Loading PDF...'
+        status: 'Loading PDF in browser...'
       })
 
       // Load PDF in browser
+      console.log('📄 Loading PDF document...')
       const arrayBuffer = await file.arrayBuffer()
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
+
+      // Add progress callback for large PDFs
+      loadingTask.onProgress = (progress: any) => {
+        const percentLoaded = Math.round((progress.loaded / progress.total) * 100)
+        console.log(`📥 PDF loading progress: ${percentLoaded}%`)
+      }
+
+      const pdf = await loadingTask.promise
+      const totalPages = pdf.numPages
+      console.log(`✅ PDF loaded successfully: ${totalPages} pages`)
 
       let extractedText = ''
-      const totalPages = pdf.numPages
+      const startTime = Date.now()
 
       // Extract text from each page
       for (let i = 1; i <= totalPages; i++) {
@@ -132,6 +150,20 @@ export default function DocumentUploadModal({
           percentage,
           status: `Extracting text... page ${i}/${totalPages}`
         })
+
+        // Log progress every 10 pages for large PDFs
+        if (i % 10 === 0 || i === totalPages) {
+          console.log(`📄 Extracted ${i}/${totalPages} pages (${extractedText.length} chars so far)`)
+        }
+      }
+
+      const extractionTime = ((Date.now() - startTime) / 1000).toFixed(1)
+      console.log(`✅ Text extraction complete: ${extractedText.length} characters in ${extractionTime}s`)
+
+      // Check for empty extraction (scanned PDFs)
+      if (extractedText.trim().length < 100) {
+        console.warn('⚠️ Very little text extracted - this might be a scanned PDF')
+        throw new Error('This appears to be a scanned PDF with no extractable text. Please use a text-based PDF or enable OCR.')
       }
 
       // Send extracted text to server
@@ -139,9 +171,10 @@ export default function DocumentUploadModal({
         uploadedChunks: 0,
         totalChunks: 0,
         percentage: 100,
-        status: 'Saving extracted text...'
+        status: 'Saving to database...'
       })
 
+      console.log('💾 Sending extracted text to server...')
       const response = await fetch('/api/documents/update-text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -153,15 +186,31 @@ export default function DocumentUploadModal({
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to save extracted text')
+        const errorData = await response.json().catch(() => ({ error: 'Unknown server error' }))
+        console.error('❌ Server error:', errorData)
+        throw new Error(`Server error: ${errorData.error || 'Failed to save extracted text'}`)
       }
 
-      console.log(`✅ Successfully extracted ${extractedText.length} characters from ${totalPages} pages`)
+      const result = await response.json()
+      console.log(`✅ Document processing complete!`, result)
 
     } catch (error) {
-      console.error('Client-side PDF extraction failed:', error)
-      throw new Error(`PDF extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('❌ PDF extraction failed:', error)
+
+      // Provide specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid PDF')) {
+          throw new Error('Invalid PDF file. The file may be corrupted or password-protected.')
+        } else if (error.message.includes('scanned PDF')) {
+          throw error // Already has good message
+        } else if (error.message.includes('Worker')) {
+          throw new Error('PDF worker failed to load. Please check your internet connection and try again.')
+        } else {
+          throw new Error(`PDF extraction failed: ${error.message}`)
+        }
+      }
+
+      throw new Error('Unknown error occurred during PDF processing')
     }
   }
 
@@ -219,13 +268,17 @@ export default function DocumentUploadModal({
   }
 
   /**
-   * Upload small files (≤50MB) to Supabase Storage via /api/documents
+   * Upload small files (≤5MB) to Supabase Storage via /api/documents
+   * For PDFs: Uploads file, then extracts text client-side (consistent with large file handling)
+   * For other types: Server handles text extraction
    */
-  const uploadSmallFile = async (file: File) => {
+  const uploadSmallFile = async (file: File): Promise<void> => {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 300000) // 5 minute timeout
 
     try {
+      console.log(`📤 Uploading small file via /api/documents: ${file.name}`)
+
       const formData = new FormData()
       formData.append('file', file)
 
@@ -241,6 +294,17 @@ export default function DocumentUploadModal({
         const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to upload document')
       }
+
+      const result = await response.json()
+      console.log(`✅ Small file uploaded successfully:`, result)
+
+      // For PDFs, override server-side extraction with client-side extraction
+      // This ensures consistent behavior between small and large PDFs
+      if (file.type === 'application/pdf' && result.document?.id) {
+        console.log(`🔄 Overriding with client-side PDF extraction for consistency`)
+        await extractTextFromPDF(file, result.document.id)
+      }
+
     } catch (err) {
       clearTimeout(timeout)
       throw err
