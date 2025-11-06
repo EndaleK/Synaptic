@@ -43,6 +43,16 @@ export default function PageTopicSelector({
   const [isLoadingTopics, setIsLoadingTopics] = useState(false)
   const [topicsError, setTopicsError] = useState<string | null>(null)
 
+  // Reset state when documentId changes (prevents stale topics from previous document)
+  useEffect(() => {
+    setTopics([])
+    setSelectedTopicId(null)
+    setTopicsError(null)
+    setSelectionMode('full')
+    setPageStart('1')
+    setPageEnd(totalPages.toString())
+  }, [documentId, totalPages])
+
   // Notify parent of selection changes
   useEffect(() => {
     if (selectionMode === 'full') {
@@ -67,7 +77,7 @@ export default function PageTopicSelector({
     if (selectionMode === 'topics' && topics.length === 0 && !isLoadingTopics) {
       loadTopics()
     }
-  }, [selectionMode])
+  }, [selectionMode, topics.length, isLoadingTopics])
 
   const loadTopics = async () => {
     setIsLoadingTopics(true)
