@@ -11,10 +11,12 @@ import DashboardHome from "@/components/DashboardHome"
 import PodcastView from "@/components/PodcastView"
 import MindMapView from "@/components/MindMapView"
 import QuizPromptModal from "@/components/QuizPromptModal"
+import InlineDocumentPicker from "@/components/InlineDocumentPicker"
+import ContentSelectionModal from "@/components/ContentSelectionModal"
 import { Flashcard } from "@/lib/types"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import { useDocumentStore } from "@/lib/store/useStore"
-import type { LearningStyle, PreferredMode } from "@/lib/supabase/types"
+import type { LearningStyle, PreferredMode, Document } from "@/lib/supabase/types"
 
 // Dynamic imports to prevent SSR hydration issues
 const ChatInterface = dynamic(() => import("@/components/ChatInterface"), {
@@ -72,8 +74,13 @@ function DashboardContent() {
     setAssessmentScores,
     setUserProfile
   } = useUserStore()
-  const { currentDocument } = useDocumentStore()
+  const { currentDocument, setCurrentDocument } = useDocumentStore()
   const searchParams = useSearchParams()
+
+  // Modal state for inline document picker flow
+  const [selectedDocForModal, setSelectedDocForModal] = useState<Document | null>(null)
+  const [contentModalOpen, setContentModalOpen] = useState(false)
+  const [contentModalType, setContentModalType] = useState<'flashcards' | 'podcast' | 'mindmap'>('flashcards')
 
   // Load flashcards from URL params after generation
   useEffect(() => {
@@ -268,6 +275,40 @@ function DashboardContent() {
     }
   }
 
+  // Handle document selection from inline picker
+  const handleDocumentSelect = (document: Document, mode: string) => {
+    console.log(`📄 Document selected: ${document.file_name} for mode: ${mode}`)
+
+    // Check if document is still processing
+    if (document.processing_status !== 'completed') {
+      alert('This document is still processing. Please wait a moment.')
+      return
+    }
+
+    // For Chat mode: Set document and activate chat immediately
+    if (mode === 'chat') {
+      setCurrentDocument({
+        id: document.id,
+        name: document.file_name,
+        content: document.extracted_text || '',
+        fileType: document.file_type,
+        storagePath: document.storage_path
+      })
+      setActiveMode('chat')
+      return
+    }
+
+    // For Flashcards/Podcast/Mind Map: Open ContentSelectionModal
+    setSelectedDocForModal(document)
+    setContentModalType(mode as 'flashcards' | 'podcast' | 'mindmap')
+    setContentModalOpen(true)
+  }
+
+  const handleCloseContentModal = () => {
+    setContentModalOpen(false)
+    setSelectedDocForModal(null)
+  }
+
   // Render different content based on active mode
   const renderModeContent = () => {
     switch (activeMode) {
@@ -289,25 +330,10 @@ function DashboardContent() {
       case "chat":
         if (!currentDocument) {
           return (
-            <div className="h-full flex items-center justify-center p-6">
-              <div className="text-center max-w-md">
-                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <span className="text-white text-4xl">💬</span>
-                </div>
-                <h2 className="text-3xl font-bold text-black dark:text-white mb-4">
-                  No Document Selected
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Please select a document from the Documents page to start chatting.
-                </p>
-                <button
-                  onClick={() => router.push('/dashboard/documents')}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-semibold hover:shadow-xl transition-all"
-                >
-                  Go to Documents
-                </button>
-              </div>
-            </div>
+            <InlineDocumentPicker
+              onDocumentSelect={(doc) => handleDocumentSelect(doc, 'chat')}
+              mode="chat"
+            />
           )
         }
         return (
@@ -319,25 +345,10 @@ function DashboardContent() {
       case "podcast":
         if (!currentDocument) {
           return (
-            <div className="h-full flex items-center justify-center p-6">
-              <div className="text-center max-w-md">
-                <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <span className="text-white text-4xl">🎙️</span>
-                </div>
-                <h2 className="text-3xl font-bold text-black dark:text-white mb-4">
-                  No Document Selected
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Please select a document from the Documents page to generate a podcast.
-                </p>
-                <button
-                  onClick={() => router.push('/dashboard/documents')}
-                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:shadow-xl transition-all"
-                >
-                  Go to Documents
-                </button>
-              </div>
-            </div>
+            <InlineDocumentPicker
+              onDocumentSelect={(doc) => handleDocumentSelect(doc, 'podcast')}
+              mode="podcast"
+            />
           )
         }
         return (
@@ -352,25 +363,10 @@ function DashboardContent() {
       case "mindmap":
         if (!currentDocument) {
           return (
-            <div className="h-full flex items-center justify-center p-6">
-              <div className="text-center max-w-md">
-                <div className="w-24 h-24 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <span className="text-white text-4xl">🗺️</span>
-                </div>
-                <h2 className="text-3xl font-bold text-black dark:text-white mb-4">
-                  No Document Selected
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Please select a document from the Documents page to generate a mind map.
-                </p>
-                <button
-                  onClick={() => router.push('/dashboard/documents')}
-                  className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold hover:shadow-xl transition-all"
-                >
-                  Go to Documents
-                </button>
-              </div>
-            </div>
+            <InlineDocumentPicker
+              onDocumentSelect={(doc) => handleDocumentSelect(doc, 'mindmap')}
+              mode="mindmap"
+            />
           )
         }
         return (
@@ -400,25 +396,10 @@ function DashboardContent() {
       default:
         if (!currentDocument) {
           return (
-            <div className="h-full flex items-center justify-center p-6">
-              <div className="text-center max-w-md">
-                <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <span className="text-white text-4xl">🃏</span>
-                </div>
-                <h2 className="text-3xl font-bold text-black dark:text-white mb-4">
-                  No Document Selected
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Please select a document from the Documents page to generate flashcards.
-                </p>
-                <button
-                  onClick={() => router.push('/dashboard/documents')}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold hover:shadow-xl transition-all"
-                >
-                  Go to Documents
-                </button>
-              </div>
-            </div>
+            <InlineDocumentPicker
+              onDocumentSelect={(doc) => handleDocumentSelect(doc, 'flashcards')}
+              mode="flashcards"
+            />
           )
         }
         return (
@@ -450,6 +431,16 @@ function DashboardContent() {
       <div className="h-screen overflow-hidden">
         {renderModeContent()}
       </div>
+
+      {/* Content Selection Modal for Flashcards/Podcast/Mind Map */}
+      {contentModalOpen && selectedDocForModal && (
+        <ContentSelectionModal
+          isOpen={contentModalOpen}
+          onClose={handleCloseContentModal}
+          document={selectedDocForModal}
+          generationType={contentModalType}
+        />
+      )}
 
       {/* Learning Style Assessment Modal */}
       <LearningStyleAssessment
