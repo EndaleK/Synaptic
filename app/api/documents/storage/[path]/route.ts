@@ -20,8 +20,15 @@ export async function GET(
     }
 
     // Decode the path
-    const storagePath = decodeURIComponent(path)
-    console.log('📥 Storage API: Fetching file from storage:', storagePath)
+    let storagePath = decodeURIComponent(path)
+
+    // Remove 'documents/' prefix if present (bucket is already named 'documents')
+    if (storagePath.startsWith('documents/')) {
+      storagePath = storagePath.substring('documents/'.length)
+      console.log('📥 Storage API: Stripped documents/ prefix, fetching:', storagePath)
+    } else {
+      console.log('📥 Storage API: Fetching file from storage:', storagePath)
+    }
 
     // Initialize Supabase client
     const supabase = await createClient()
