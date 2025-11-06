@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { UserButton, useUser } from "@clerk/nextjs"
-import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool } from "lucide-react"
+import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool, Youtube } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useUIStore } from "@/lib/store/useStore"
 import { useToast } from "@/components/ToastContainer"
@@ -75,6 +75,7 @@ export default function DashboardLayout({
     { name: "Podcast", id: "podcast", icon: Mic, comingSoon: false },
     { name: "Mind Map", id: "mindmap", icon: Network, comingSoon: false },
     { name: "Write", id: "writer", icon: PenTool, comingSoon: false },
+    { name: "Video", id: "video", icon: Youtube, comingSoon: false },
   ]
 
   const studyTools = [
