@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
         const timestamp = session.timestamp
         const sanitizedFileName = session.fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
         const tempKey = `${userId}_${timestamp}_${sanitizedFileName}`
-        r2FileKey = `documents/${userId}/${tempKey}`
+        // NOTE: r2FileKey will be set in the if/else block below based on storage type
         console.log(`[DEBUG] Preparing to save document to storage`)
 
         console.log(`[DEBUG] Step 3: Uploading to storage (hasR2: ${hasR2})`)
@@ -283,6 +283,7 @@ export async function POST(request: NextRequest) {
         // Upload complete file to storage (R2 if available, otherwise Supabase)
         if (hasR2) {
           // Use Cloudflare R2 storage
+          r2FileKey = `documents/${userId}/${tempKey}`
           console.log(`[DEBUG] Uploading to R2: ${r2FileKey}`)
           const { uploadToR2 } = await import('@/lib/r2-storage')
           const uploadResult = await uploadToR2(
