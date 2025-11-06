@@ -45,6 +45,7 @@ export default function PageTopicSelector({
 
   // Reset state when documentId changes (prevents stale topics from previous document)
   useEffect(() => {
+    console.log(`🔄 PageTopicSelector reset for new document:`, { documentId, totalPages })
     setTopics([])
     setSelectedTopicId(null)
     setTopicsError(null)
@@ -84,13 +85,24 @@ export default function PageTopicSelector({
     setTopicsError(null)
 
     try {
-      const response = await fetch(`/api/documents/${documentId}/topics`)
+      console.log(`🔍 Loading topics for documentId: ${documentId}`)
+
+      // Add cache-busting timestamp to prevent browser caching
+      const timestamp = Date.now()
+      const response = await fetch(`/api/documents/${documentId}/topics?t=${timestamp}`, {
+        cache: 'no-store', // Disable browser cache
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
 
       if (!response.ok) {
         throw new Error('Failed to detect topics')
       }
 
       const data = await response.json()
+      console.log(`📦 Loaded ${data.topics?.length || 0} topics for document ${documentId}:`, data.topics?.slice(0, 3).map((t: Topic) => t.title))
+
       setTopics(data.topics || [])
 
       if (data.topics && data.topics.length > 0) {

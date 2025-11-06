@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X, Loader2, Sparkles, Zap, Map } from "lucide-react"
 import { useRouter } from "next/navigation"
 import PageTopicSelector, { SelectionData } from "./PageTopicSelector"
@@ -50,6 +50,17 @@ export default function ContentSelectionModal({
 
   const config = generationConfig[generationType]
   const Icon = config.icon
+
+  // Log when modal opens with different document
+  useEffect(() => {
+    if (isOpen) {
+      console.log(`📖 ContentSelectionModal opened for:`, {
+        documentId: document.id,
+        fileName: document.file_name,
+        generationType
+      })
+    }
+  }, [isOpen, document.id, document.file_name, generationType])
 
   const handleGenerate = async () => {
     setIsGenerating(true)
