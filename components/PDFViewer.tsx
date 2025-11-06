@@ -638,14 +638,20 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
               </div>
             }
           >
-            <Page
-              pageNumber={pageNumber}
-              scale={scale}
-              rotate={rotation}
-              renderTextLayer={false}
-              renderAnnotationLayer={false}
-              className="border border-gray-300 dark:border-gray-600 shadow-lg"
-            />
+            {/* Continuous scroll: render all pages */}
+            <div className="space-y-4">
+              {Array.from(new Array(numPages), (_, index) => (
+                <Page
+                  key={`page_${index + 1}`}
+                  pageNumber={index + 1}
+                  scale={scale}
+                  rotate={rotation}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                  className="border border-gray-300 dark:border-gray-600 shadow-lg"
+                />
+              ))}
+            </div>
           </Document>
         </div>
       </div>

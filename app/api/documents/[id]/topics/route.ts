@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 import { getProviderForFeature } from '@/lib/ai'
+import { detectTorontoNotes } from '@/lib/toronto-notes-detector'
 
 export async function GET(
   request: NextRequest,
@@ -64,7 +65,63 @@ export async function GET(
 
     console.log(`🔍 Detecting topics for document: ${document.file_name}`)
 
-    // 5. Use AI to detect topics
+    // 5. Check if document is Toronto Notes (priority detection)
+    const torontoNotesResult = detectTorontoNotes(
+      document.extracted_text,
+      document.file_name
+    )
+
+    if (torontoNotesResult.isTorontoNotes && torontoNotesResult.topics.length > 0) {
+      console.log(`📚 Toronto Notes detected! Found ${torontoNotesResult.topics.length} specialty topics`)
+      console.log(`   Confidence: ${(torontoNotesResult.confidence * 100).toFixed(1)}%`)
+      console.log(`   Abbreviations: ${torontoNotesResult.metadata?.abbreviationsFound.join(', ')}`)
+
+      // Transform Toronto Notes topics to match expected format
+      const topics = torontoNotesResult.topics.map(topic => ({
+        id: topic.id,
+        title: topic.title,
+        description: `Medical specialty section: ${topic.abbreviation}`,
+        pageRange: {
+          start: topic.estimatedPages?.start || 1,
+          end: topic.estimatedPages?.end || 1
+        },
+        metadata: {
+          abbreviation: topic.abbreviation,
+          detectionMethod: 'toronto-notes-pattern'
+        }
+      }))
+
+      // Cache topics in document metadata
+      try {
+        const updatedMetadata = {
+          ...document.metadata,
+          topics,
+          topics_detected_at: new Date().toISOString(),
+          detection_method: 'toronto-notes-pattern',
+          toronto_notes_confidence: torontoNotesResult.confidence
+        }
+
+        await supabase
+          .from('documents')
+          .update({ metadata: updatedMetadata })
+          .eq('id', documentId)
+
+        console.log('💾 Cached Toronto Notes topics in document metadata')
+      } catch (cacheError) {
+        console.error('Failed to cache topics:', cacheError)
+      }
+
+      // Return Toronto Notes topics
+      return NextResponse.json({
+        topics,
+        detectionMethod: 'toronto-notes-pattern',
+        confidence: torontoNotesResult.confidence
+      })
+    }
+
+    console.log(`📄 Not Toronto Notes (confidence: ${(torontoNotesResult.confidence * 100).toFixed(1)}%). Using AI detection...`)
+
+    // 6. Fallback: Use AI to detect topics for generic documents
     // Truncate text if too long (max ~12K tokens = ~48K chars)
     const maxChars = 48000
     const textToAnalyze = document.extracted_text.length > maxChars
@@ -121,7 +178,7 @@ JSON Response:`
       }
     )
 
-    // 6. Parse AI response
+    // 7. Parse AI response
     let topics: any[] = []
     try {
       // Extract JSON from response (handle cases where AI adds markdown code blocks)
@@ -150,7 +207,7 @@ JSON Response:`
         typeof topic.pageRange.end === 'number'
       )
 
-      console.log(`✅ Detected ${topics.length} topics`)
+      console.log(`✅ Detected ${topics.length} topics using AI`)
     } catch (parseError) {
       console.error('Error parsing AI response:', parseError)
       console.error('AI Response:', response.content)
@@ -162,12 +219,13 @@ JSON Response:`
       })
     }
 
-    // 7. Cache topics in document metadata
+    // 8. Cache topics in document metadata
     try {
       const updatedMetadata = {
         ...document.metadata,
         topics,
-        topics_detected_at: new Date().toISOString()
+        topics_detected_at: new Date().toISOString(),
+        detection_method: 'ai-generic'
       }
 
       await supabase
@@ -175,15 +233,16 @@ JSON Response:`
         .update({ metadata: updatedMetadata })
         .eq('id', documentId)
 
-      console.log('💾 Cached topics in document metadata')
+      console.log('💾 Cached AI-detected topics in document metadata')
     } catch (cacheError) {
       console.error('Failed to cache topics:', cacheError)
       // Non-fatal error, continue anyway
     }
 
-    // 8. Return topics
+    // 9. Return topics
     return NextResponse.json({
       topics,
+      detectionMethod: 'ai-generic',
       usage: response.usage
     })
 
