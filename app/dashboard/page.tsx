@@ -394,7 +394,9 @@ function DashboardContent() {
 
       case "flashcards":
       default:
-        if (!currentDocument) {
+        // Always show InlineDocumentPicker when no flashcards loaded
+        // This handles both: no document selected AND stale document with no flashcards
+        if (flashcards.length === 0) {
           return (
             <InlineDocumentPicker
               onDocumentSelect={(doc) => handleDocumentSelect(doc, 'flashcards')}
@@ -402,25 +404,19 @@ function DashboardContent() {
             />
           )
         }
+
+        // Show flashcards if we have them
         return (
           <div className="h-full p-4">
-            {flashcards.length === 0 ? (
-              <DocumentUpload
-                onFlashcardsGenerated={setFlashcards}
-                isLoading={isLoading}
-                setIsLoading={setIsLoading}
-              />
-            ) : (
-              <FlashcardDisplay
-                flashcards={flashcards}
-                onReset={() => {
-                  setFlashcards([])
-                  setRegenerationCount(0)
-                }}
-                onRegenerate={handleRegenerate}
-                isRegenerating={isRegenerating}
-              />
-            )}
+            <FlashcardDisplay
+              flashcards={flashcards}
+              onReset={() => {
+                setFlashcards([])
+                setRegenerationCount(0)
+              }}
+              onRegenerate={handleRegenerate}
+              isRegenerating={isRegenerating}
+            />
           </div>
         )
     }
