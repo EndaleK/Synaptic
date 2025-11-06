@@ -82,12 +82,34 @@ function DashboardContent() {
   const [contentModalOpen, setContentModalOpen] = useState(false)
   const [contentModalType, setContentModalType] = useState<'flashcards' | 'podcast' | 'mindmap'>('flashcards')
 
-  // Load flashcards from URL params after generation
+  // Track which modes have active content loaded (to distinguish from stale store data)
+  const [activeModeDocuments, setActiveModeDocuments] = useState<{
+    chat: boolean
+    podcast: boolean
+    mindmap: boolean
+  }>({
+    chat: false,
+    podcast: false,
+    mindmap: false
+  })
+
+  // Load content from URL params after generation
   useEffect(() => {
     const mode = searchParams.get('mode')
     const documentId = searchParams.get('documentId')
 
-    if (mode === 'flashcards' && documentId && flashcards.length === 0 && !isLoading) {
+    if (!mode || !documentId) return
+
+    // Set active mode flags when returning from generation
+    if (mode === 'podcast') {
+      console.log('📥 Podcast mode loaded from URL params')
+      setActiveModeDocuments(prev => ({ ...prev, podcast: true }))
+      setActiveMode('podcast')
+    } else if (mode === 'mindmap') {
+      console.log('📥 Mind map mode loaded from URL params')
+      setActiveModeDocuments(prev => ({ ...prev, mindmap: true }))
+      setActiveMode('mindmap')
+    } else if (mode === 'flashcards' && flashcards.length === 0 && !isLoading) {
       console.log('📥 Loading flashcards for document:', documentId)
       setIsLoading(true)
 
@@ -294,6 +316,7 @@ function DashboardContent() {
         fileType: document.file_type,
         storagePath: document.storage_path
       })
+      setActiveModeDocuments(prev => ({ ...prev, chat: true }))
       setActiveMode('chat')
       return
     }
@@ -328,9 +351,8 @@ function DashboardContent() {
         )
 
       case "chat":
-        // Always show document picker as default - ChatInterface will handle document loading internally
-        // Only show ChatInterface if we have a document selected AND it's loaded
-        if (!currentDocument || !currentDocument.content) {
+        // Only show ChatInterface if document was explicitly selected through picker
+        if (!activeModeDocuments.chat) {
           return (
             <InlineDocumentPicker
               onDocumentSelect={(doc) => handleDocumentSelect(doc, 'chat')}
@@ -345,9 +367,8 @@ function DashboardContent() {
         )
 
       case "podcast":
-        // Always show document picker as default unless we have valid document data
-        // Check for both document existence and that it has required fields
-        if (!currentDocument || !currentDocument.id || !currentDocument.name) {
+        // Only show PodcastView if document was explicitly selected and content generated
+        if (!activeModeDocuments.podcast) {
           return (
             <InlineDocumentPicker
               onDocumentSelect={(doc) => handleDocumentSelect(doc, 'podcast')}
@@ -365,9 +386,8 @@ function DashboardContent() {
         )
 
       case "mindmap":
-        // Always show document picker as default unless we have valid document data
-        // Check for both document existence and that it has required fields
-        if (!currentDocument || !currentDocument.id || !currentDocument.name) {
+        // Only show MindMapView if document was explicitly selected and content generated
+        if (!activeModeDocuments.mindmap) {
           return (
             <InlineDocumentPicker
               onDocumentSelect={(doc) => handleDocumentSelect(doc, 'mindmap')}
