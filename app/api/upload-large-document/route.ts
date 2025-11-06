@@ -130,9 +130,16 @@ export async function POST(request: NextRequest) {
 
       // Create document record immediately with "pending" status
       const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
-      const tempStoragePath = `documents/${userId}/${userId}_${timestamp}_${sanitizedFileName}`
 
-      console.log(`[DEBUG] Creating document record with "pending" status`)
+      // Use correct storage path format from the start (prevents stuck documents with wrong path)
+      const tempStoragePath = hasR2
+        ? `documents/${userId}/${userId}_${timestamp}_${sanitizedFileName}`  // R2 format with prefix
+        : `${userProfileId}/${timestamp}-${sanitizedFileName}`  // Supabase format without prefix
+
+      console.log(`[DEBUG] Creating document record with "pending" status`, {
+        hasR2,
+        tempStoragePath
+      })
 
       // Detect file type with fallback to extension-based detection
       let fileType = file.type
