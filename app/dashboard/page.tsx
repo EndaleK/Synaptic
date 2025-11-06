@@ -328,7 +328,9 @@ function DashboardContent() {
         )
 
       case "chat":
-        if (!currentDocument) {
+        // Always show document picker as default - ChatInterface will handle document loading internally
+        // Only show ChatInterface if we have a document selected AND it's loaded
+        if (!currentDocument || !currentDocument.content) {
           return (
             <InlineDocumentPicker
               onDocumentSelect={(doc) => handleDocumentSelect(doc, 'chat')}
@@ -343,7 +345,9 @@ function DashboardContent() {
         )
 
       case "podcast":
-        if (!currentDocument) {
+        // Always show document picker as default unless we have valid document data
+        // Check for both document existence and that it has required fields
+        if (!currentDocument || !currentDocument.id || !currentDocument.name) {
           return (
             <InlineDocumentPicker
               onDocumentSelect={(doc) => handleDocumentSelect(doc, 'podcast')}
@@ -361,7 +365,9 @@ function DashboardContent() {
         )
 
       case "mindmap":
-        if (!currentDocument) {
+        // Always show document picker as default unless we have valid document data
+        // Check for both document existence and that it has required fields
+        if (!currentDocument || !currentDocument.id || !currentDocument.name) {
           return (
             <InlineDocumentPicker
               onDocumentSelect={(doc) => handleDocumentSelect(doc, 'mindmap')}
