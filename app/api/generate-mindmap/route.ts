@@ -9,6 +9,7 @@ import { MindMapGenerationSchema } from "@/lib/validation"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
 import { analyzeDocumentComplexity } from "@/lib/document-complexity-analyzer"
+import { extractTextFromPages, extractTextFromSections, extractTextFromSuggestion } from "@/lib/text-extraction"
 
 export const maxDuration = 300 // 5 minutes max execution time for complex documents (Vercel Pro plan)
 
@@ -176,85 +177,92 @@ export async function POST(req: NextRequest) {
     let documentText = document.extracted_text
     let selectionDescription = 'full document'
 
-    if (selection && selection.type === 'pages' && selection.pageRange) {
-      // PAGE RANGE MODE: Extract text from specific pages
-      const { start, end } = selection.pageRange
-      selectionDescription = `pages ${start}-${end}`
+    if (selection) {
+      try {
+        if (selection.type === 'pages' && selection.pageRange) {
+          // PAGE RANGE MODE: Extract text from specific pages
+          const { start, end } = selection.pageRange
+          selectionDescription = `pages ${start}-${end}`
 
-      logger.info('Mind map generation with page range', {
-        userId,
-        documentId,
-        pageStart: start,
-        pageEnd: end,
-      })
+          logger.info('Mind map generation with page range', {
+            userId,
+            documentId,
+            pageStart: start,
+            pageEnd: end,
+          })
 
-      const fullText = document.extracted_text || ''
+          documentText = await extractTextFromPages(
+            documentId,
+            [selection.pageRange],
+            { maxLength: 48000 }
+          )
 
-      // If document has page metadata, extract specific pages
-      if (document.metadata?.pages && Array.isArray(document.metadata.pages)) {
-        const pages = document.metadata.pages.filter(
-          (p: any) => p.pageNumber >= start && p.pageNumber <= end
-        )
-        documentText = pages.map((p: any) => p.text).join('\n\n')
-      } else {
-        // Fallback: Split by approximate page length
-        const avgPageLength = 3500
-        const startChar = (start - 1) * avgPageLength
-        const endChar = end * avgPageLength
-        documentText = fullText.substring(startChar, Math.min(endChar, fullText.length))
-      }
+        } else if (selection.type === 'structure' && selection.sectionIds) {
+          // STRUCTURE MODE: Extract text from selected book sections
+          selectionDescription = `${selection.sectionIds.length} selected section${selection.sectionIds.length !== 1 ? 's' : ''}`
 
-      if (!documentText || documentText.trim().length === 0) {
-        return NextResponse.json(
-          { error: 'No content found in selected page range' },
-          { status: 400 }
-        )
-      }
+          logger.info('Mind map generation with book structure', {
+            userId,
+            documentId,
+            sectionCount: selection.sectionIds.length,
+          })
 
-      // Limit to reasonable size for mind map generation
-      documentText = documentText.substring(0, 48000) // ~12K tokens
+          documentText = await extractTextFromSections(
+            documentId,
+            selection.sectionIds,
+            { maxLength: 48000 }
+          )
 
-    } else if (selection && selection.type === 'topic' && selection.topic) {
-      // TOPIC MODE: Extract text from specific topic
-      const topicTitle = selection.topic.title
-      selectionDescription = `topic: ${topicTitle}`
+        } else if (selection.type === 'suggestion' && selection.suggestionId) {
+          // SUGGESTION MODE: Extract text from AI-recommended section
+          selectionDescription = `AI-recommended section`
 
-      logger.info('Mind map generation with topic', {
-        userId,
-        documentId,
-        topic: topicTitle,
-      })
+          logger.info('Mind map generation with AI suggestion', {
+            userId,
+            documentId,
+            suggestionId: selection.suggestionId,
+          })
 
-      // If document has topic metadata with page ranges
-      if (document.metadata?.topics && Array.isArray(document.metadata.topics)) {
-        const topic = document.metadata.topics.find((t: any) => t.title === topicTitle)
+          documentText = await extractTextFromSuggestion(
+            documentId,
+            selection.suggestionId,
+            'mindmaps',
+            { maxLength: 48000 }
+          )
 
-        if (topic && topic.pageRange) {
-          const { start, end } = topic.pageRange
-          const fullText = document.extracted_text || ''
+        } else if (selection.type === 'topic' && selection.topic) {
+          // TOPIC MODE: Extract text from topic's page range
+          const topicTitle = selection.topic.title
+          selectionDescription = `topic: ${topicTitle}`
 
-          // Extract topic's pages
-          if (document.metadata?.pages && Array.isArray(document.metadata.pages)) {
-            const pages = document.metadata.pages.filter(
-              (p: any) => p.pageNumber >= start && p.pageNumber <= end
+          logger.info('Mind map generation with topic', {
+            userId,
+            documentId,
+            topic: topicTitle,
+          })
+
+          if (selection.topic.pageRange) {
+            documentText = await extractTextFromPages(
+              documentId,
+              [selection.topic.pageRange],
+              { maxLength: 48000 }
             )
-            documentText = pages.map((p: any) => p.text).join('\n\n')
-          } else {
-            // Fallback: Approximate extraction
-            const avgPageLength = 3500
-            const startChar = (start - 1) * avgPageLength
-            const endChar = end * avgPageLength
-            documentText = fullText.substring(startChar, Math.min(endChar, fullText.length))
           }
         }
-      }
 
-      // Limit to reasonable size
-      documentText = documentText.substring(0, 48000)
+        // Validate extracted text
+        if (!documentText || documentText.trim().length === 0) {
+          logger.warn('No content found in selection', { userId, documentId, selectionType: selection.type })
+          return NextResponse.json(
+            { error: 'No content found in selected area' },
+            { status: 400 }
+          )
+        }
 
-      if (!documentText || documentText.trim().length === 0) {
+      } catch (error) {
+        logger.error('Text extraction failed for mind map', error, { userId, documentId, selection })
         return NextResponse.json(
-          { error: 'No content found for selected topic' },
+          { error: 'Failed to extract text from selection' },
           { status: 400 }
         )
       }

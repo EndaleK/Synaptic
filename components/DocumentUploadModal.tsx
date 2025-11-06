@@ -174,6 +174,18 @@ export default function DocumentUploadModal({
         throw new Error('This appears to be a scanned PDF with no extractable text. Please use a text-based PDF or enable OCR.')
       }
 
+      // Truncate text to avoid 413 Content Too Large error
+      // Vercel has a 4.5MB request body limit, so we send only first 1.5MB of text (~1.5M chars)
+      // The server will store first 50K in database and use R2/ChromaDB for full text
+      const MAX_TEXT_SIZE = 1500000 // 1.5M characters (~1.5MB as JSON)
+      const textToSend = extractedText.length > MAX_TEXT_SIZE
+        ? extractedText.substring(0, MAX_TEXT_SIZE)
+        : extractedText
+
+      if (extractedText.length > MAX_TEXT_SIZE) {
+        console.log(`📦 Truncating text from ${extractedText.length} to ${MAX_TEXT_SIZE} chars for upload (full text: ${(extractedText.length / 1024 / 1024).toFixed(2)}MB)`)
+      }
+
       // Send extracted text to server
       setUploadProgress({
         uploadedChunks: 0,
@@ -188,7 +200,7 @@ export default function DocumentUploadModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           documentId,
-          extractedText,
+          extractedText: textToSend,
           pageCount: totalPages
         })
       })

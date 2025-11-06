@@ -17,6 +17,7 @@ import { logger } from '@/lib/logger'
 import { applyRateLimit, RateLimits } from '@/lib/rate-limit'
 import { checkUsageLimit, incrementUsage } from '@/lib/usage-limits'
 import { estimateRequestCost, trackUsage } from '@/lib/cost-estimator'
+import { extractTextFromPages, extractTextFromSections, extractTextFromSuggestion } from '@/lib/text-extraction'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 minutes for large document processing
@@ -27,9 +28,11 @@ export const maxDuration = 300 // 5 minutes for large document processing
  * Body:
  * - documentId: string (ID from uploaded document)
  * - selection: object (optional - content selection)
- *   - type: 'full' | 'pages' | 'topic'
+ *   - type: 'full' | 'pages' | 'topic' | 'structure' | 'suggestion'
  *   - pageRange: { start: number, end: number } (for 'pages' type)
  *   - topic: { id, title, description, pageRange } (for 'topic' type)
+ *   - sectionIds: string[] (for 'structure' type - selected book sections)
+ *   - suggestionId: string (for 'suggestion' type - AI-recommended section)
  * - topic: string (optional - specific topic to focus on) [DEPRECATED: use selection instead]
  * - count: number (optional - number of flashcards to generate, default 15)
  */
@@ -146,6 +149,69 @@ export async function POST(request: NextRequest) {
 
       // Limit to reasonable size
       combinedText = combinedText.substring(0, 48000) // ~12K tokens
+
+    } else if (selection && selection.type === 'structure' && selection.sectionIds) {
+      // STRUCTURE MODE: Extract text from selected book sections
+      selectionDescription = `${selection.sectionIds.length} selected section${selection.sectionIds.length !== 1 ? 's' : ''}`
+
+      logger.info('Flashcard generation with book structure', {
+        userId,
+        documentId,
+        sectionCount: selection.sectionIds.length,
+      })
+
+      try {
+        combinedText = await extractTextFromSections(
+          documentId,
+          selection.sectionIds,
+          { maxLength: 48000 }
+        )
+
+        logger.debug('Structure-based extraction completed', {
+          userId,
+          documentId,
+          sectionIds: selection.sectionIds,
+          textLength: combinedText.length,
+        })
+      } catch (error) {
+        logger.error('Structure extraction failed', error, { documentId })
+        return NextResponse.json(
+          { error: 'Failed to extract text from selected sections' },
+          { status: 400 }
+        )
+      }
+
+    } else if (selection && selection.type === 'suggestion' && selection.suggestionId) {
+      // SUGGESTION MODE: Extract text from AI-recommended section
+      selectionDescription = `AI-recommended section`
+
+      logger.info('Flashcard generation with AI suggestion', {
+        userId,
+        documentId,
+        suggestionId: selection.suggestionId,
+      })
+
+      try {
+        combinedText = await extractTextFromSuggestion(
+          documentId,
+          selection.suggestionId,
+          'flashcards',
+          { maxLength: 48000 }
+        )
+
+        logger.debug('Suggestion-based extraction completed', {
+          userId,
+          documentId,
+          suggestionId: selection.suggestionId,
+          textLength: combinedText.length,
+        })
+      } catch (error) {
+        logger.error('Suggestion extraction failed', error, { documentId })
+        return NextResponse.json(
+          { error: 'Failed to extract text from suggested section' },
+          { status: 400 }
+        )
+      }
 
     } else if ((selection && selection.type === 'topic') || legacyTopic) {
       // TOPIC MODE: Use vector search for topic-specific content
@@ -297,6 +363,31 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (profile) {
+        // Determine source section metadata
+        let sourceSection = null
+        if (selection?.type === 'structure' && selection.sectionIds) {
+          sourceSection = {
+            type: 'structure',
+            sectionIds: selection.sectionIds,
+          }
+        } else if (selection?.type === 'suggestion' && selection.suggestionId) {
+          sourceSection = {
+            type: 'suggestion',
+            suggestionId: selection.suggestionId,
+          }
+        } else if (selection?.type === 'topic' && selection.topic) {
+          sourceSection = {
+            type: 'topic',
+            topicId: selection.topic.id,
+            topicTitle: selection.topic.title,
+          }
+        } else if (selection?.type === 'pages' && selection.pageRange) {
+          sourceSection = {
+            type: 'pages',
+            pageRange: selection.pageRange,
+          }
+        }
+
         const flashcardsToInsert = flashcards.map((card) => ({
           user_id: profile.id,
           document_id: documentId,
@@ -306,6 +397,7 @@ export async function POST(request: NextRequest) {
           confidence_score: 0,
           times_reviewed: 0,
           times_correct: 0,
+          source_section: sourceSection,
         }))
 
         const { data: insertedCards, error: insertError } = await supabase

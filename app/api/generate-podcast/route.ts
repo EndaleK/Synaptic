@@ -12,6 +12,7 @@ import { logger } from "@/lib/logger"
 import { PodcastGenerationSchema } from "@/lib/validation"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
+import { extractTextFromPages, extractTextFromSections, extractTextFromSuggestion } from "@/lib/text-extraction"
 
 export const maxDuration = 300 // 5 minutes max execution time (Vercel limit)
 
@@ -137,87 +138,99 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Extract text based on selection (full document, page range, or topic)
+    // Extract text based on selection (full document, page range, topic, structure, or suggestion)
     let textForPodcast = document.extracted_text
     let selectionDescription = 'full document'
 
     if (selection) {
-      if (selection.type === 'pages' && selection.pageRange) {
-        // PAGE RANGE MODE: Extract text from specific pages
-        const { start, end } = selection.pageRange
-        selectionDescription = `pages ${start}-${end}`
+      try {
+        if (selection.type === 'pages' && selection.pageRange) {
+          // PAGE RANGE MODE: Extract text from specific pages
+          const { start, end } = selection.pageRange
+          selectionDescription = `pages ${start}-${end}`
 
-        logger.info('Podcast generation with page range', {
-          userId,
-          documentId,
-          pageStart: start,
-          pageEnd: end,
-        })
+          logger.info('Podcast generation with page range', {
+            userId,
+            documentId,
+            pageStart: start,
+            pageEnd: end,
+          })
 
-        // Extract text from document based on page metadata
-        const fullText = document.extracted_text || ''
-
-        // If document has page markers (from pdf-parse), extract specific pages
-        if (document.metadata?.pages && Array.isArray(document.metadata.pages)) {
-          const pages = document.metadata.pages.filter(
-            (p: any) => p.pageNumber >= start && p.pageNumber <= end
+          textForPodcast = await extractTextFromPages(
+            documentId,
+            [selection.pageRange],
+            { maxLength: 48000 }
           )
-          textForPodcast = pages.map((p: any) => p.text).join('\n\n')
-        } else {
-          // Fallback: Split by approximate page length
-          const avgPageLength = 3500
-          const startChar = (start - 1) * avgPageLength
-          const endChar = end * avgPageLength
-          textForPodcast = fullText.substring(startChar, Math.min(endChar, fullText.length))
+
+        } else if (selection.type === 'structure' && selection.sectionIds) {
+          // STRUCTURE MODE: Extract text from selected book sections
+          selectionDescription = `${selection.sectionIds.length} selected section${selection.sectionIds.length !== 1 ? 's' : ''}`
+
+          logger.info('Podcast generation with book structure', {
+            userId,
+            documentId,
+            sectionCount: selection.sectionIds.length,
+          })
+
+          textForPodcast = await extractTextFromSections(
+            documentId,
+            selection.sectionIds,
+            { maxLength: 48000 }
+          )
+
+        } else if (selection.type === 'suggestion' && selection.suggestionId) {
+          // SUGGESTION MODE: Extract text from AI-recommended section
+          selectionDescription = `AI-recommended section`
+
+          logger.info('Podcast generation with AI suggestion', {
+            userId,
+            documentId,
+            suggestionId: selection.suggestionId,
+          })
+
+          textForPodcast = await extractTextFromSuggestion(
+            documentId,
+            selection.suggestionId,
+            'podcasts',
+            { maxLength: 48000 }
+          )
+
+        } else if (selection.type === 'topic' && selection.topic) {
+          // TOPIC MODE: Extract text from topic's page range
+          const topic = selection.topic
+          selectionDescription = `topic: ${topic.title}`
+
+          logger.info('Podcast generation with topic', {
+            userId,
+            documentId,
+            topic: topic.title,
+            pageRange: topic.pageRange,
+          })
+
+          if (topic.pageRange) {
+            textForPodcast = await extractTextFromPages(
+              documentId,
+              [topic.pageRange],
+              { maxLength: 48000 }
+            )
+          }
         }
 
+        // Validate extracted text
         if (!textForPodcast || textForPodcast.trim().length === 0) {
-          logger.warn('No content found in selected page range', { userId, documentId, start, end })
+          logger.warn('No content found in selection', { userId, documentId, selectionType: selection.type })
           return NextResponse.json(
-            { error: 'No content found in selected page range' },
+            { error: 'No content found in selected area' },
             { status: 400 }
           )
         }
 
-      } else if (selection.type === 'topic' && selection.topic) {
-        // TOPIC MODE: Extract text from topic's page range
-        const topic = selection.topic
-        selectionDescription = `topic: ${topic.title}`
-
-        logger.info('Podcast generation with topic', {
-          userId,
-          documentId,
-          topic: topic.title,
-          pageRange: topic.pageRange,
-        })
-
-        // Use topic's page range to extract text
-        if (topic.pageRange) {
-          const { start, end } = topic.pageRange
-          const fullText = document.extracted_text || ''
-
-          // If document has page markers, use them
-          if (document.metadata?.pages && Array.isArray(document.metadata.pages)) {
-            const pages = document.metadata.pages.filter(
-              (p: any) => p.pageNumber >= start && p.pageNumber <= end
-            )
-            textForPodcast = pages.map((p: any) => p.text).join('\n\n')
-          } else {
-            // Fallback to approximate extraction
-            const avgPageLength = 3500
-            const startChar = (start - 1) * avgPageLength
-            const endChar = end * avgPageLength
-            textForPodcast = fullText.substring(startChar, Math.min(endChar, fullText.length))
-          }
-
-          if (!textForPodcast || textForPodcast.trim().length === 0) {
-            logger.warn('No content found for selected topic', { userId, documentId, topic: topic.title })
-            return NextResponse.json(
-              { error: 'No content found for selected topic' },
-              { status: 400 }
-            )
-          }
-        }
+      } catch (error) {
+        logger.error('Text extraction failed for podcast', error, { userId, documentId, selection })
+        return NextResponse.json(
+          { error: 'Failed to extract text from selection' },
+          { status: 400 }
+        )
       }
     }
 
