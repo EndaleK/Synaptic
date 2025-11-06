@@ -11,6 +11,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-out(.*)',
   '/api/webhooks(.*)',
   '/api/storage/test', // Storage diagnostic endpoint
+  '/api/documents/(.*)/storage-info', // Document storage diagnostic
   '/pricing',
   '/about',
   '/clerk-debug',
