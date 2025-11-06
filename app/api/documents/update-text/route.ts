@@ -59,41 +59,53 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Fetch existing document to preserve metadata (r2_url, topics, etc.)
+    // Try multiple strategies to find the document (handles profile duplication issues)
     console.log(`🔍 Fetching document ${documentId} for profile ${profile.id}`)
-    const { data: existingDoc, error: fetchError } = await supabase
+
+    let existingDoc = null
+    let actualUserId = null
+
+    // Strategy 1: Try with current profile.id
+    const { data: docByProfile, error: profileError } = await supabase
       .from('documents')
       .select('metadata, user_id, file_name')
       .eq('id', documentId)
       .eq('user_id', profile.id)
       .single()
 
-    if (fetchError || !existingDoc) {
-      console.error('❌ Failed to fetch existing document:', {
-        documentId,
-        profileId: profile.id,
-        error: fetchError,
-        code: fetchError?.code,
-        message: fetchError?.message,
-        details: fetchError?.details
-      })
-
-      // Try fetching without user_id filter to see if document exists at all
+    if (docByProfile) {
+      existingDoc = docByProfile
+      actualUserId = profile.id
+      console.log('✅ Found document using profile.id')
+    } else {
+      // Strategy 2: Try finding document and check if it belongs to same Clerk user
+      console.log('⚠️ Not found with profile.id, trying Clerk user match...')
       const { data: anyDoc } = await supabase
         .from('documents')
-        .select('id, user_id, file_name')
+        .select('metadata, user_id, file_name')
         .eq('id', documentId)
         .single()
 
       if (anyDoc) {
-        console.error('⚠️ Document exists but user_id mismatch!', {
-          documentUserId: anyDoc.user_id,
-          profileId: profile.id,
-          match: anyDoc.user_id === profile.id
-        })
-      } else {
-        console.error('⚠️ Document does not exist in database:', { documentId })
-      }
+        // Check if this document belongs to the same Clerk user (different profile)
+        const { data: docOwnerProfile } = await supabase
+          .from('user_profiles')
+          .select('clerk_user_id')
+          .eq('id', anyDoc.user_id)
+          .single()
 
+        if (docOwnerProfile && docOwnerProfile.clerk_user_id === userId) {
+          console.log('✅ Found document with different profile but same Clerk user')
+          existingDoc = anyDoc
+          actualUserId = anyDoc.user_id
+        } else {
+          console.error('❌ Document belongs to different user')
+        }
+      }
+    }
+
+    if (!existingDoc) {
+      console.error('❌ Document not found for user:', { documentId, userId, profileId: profile.id })
       return NextResponse.json(
         { error: 'Document not found or access denied' },
         { status: 404 }
@@ -102,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ Document found: ${existingDoc.file_name}`)
 
-    // 5. Verify document ownership and update with merged metadata
+    // 5. Update document with extracted text using actual user_id
     const { data: document, error: updateError } = await supabase
       .from('documents')
       .update({
@@ -116,7 +128,7 @@ export async function POST(request: NextRequest) {
         },
       })
       .eq('id', documentId)
-      .eq('user_id', profile.id) // Verify ownership
+      .eq('user_id', actualUserId) // Use the actual user_id we found
       .select()
       .single()
 
