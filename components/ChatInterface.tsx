@@ -135,9 +135,21 @@ export default function ChatInterface() {
 
           // For PDFs, fetch the original file from storage if available
           if (currentDocument.fileType === 'application/pdf') {
-            if (!currentDocument.storagePath) {
-              console.warn('⚠️ PDF document has no storagePath, will display text-only')
-              throw new Error('PDF storage path not available')
+            console.log('🔍 PDF Document Info:', {
+              id: currentDocument.id,
+              name: currentDocument.name,
+              storagePath: currentDocument.storagePath,
+              storagePathType: typeof currentDocument.storagePath,
+              storagePathLength: currentDocument.storagePath?.length,
+              hasStoragePath: !!currentDocument.storagePath,
+            })
+
+            if (!currentDocument.storagePath || currentDocument.storagePath.trim() === '') {
+              console.error('⚠️ PDF document has no storagePath!', {
+                storagePath: currentDocument.storagePath,
+                document: currentDocument
+              })
+              throw new Error('PDF storage path not available - document may not have finished uploading')
             }
 
             setChatDocument({
@@ -170,7 +182,14 @@ export default function ChatInterface() {
                 error: errorData,
                 responseText
               })
-              throw new Error(`Failed to fetch PDF from storage: ${response.status} ${response.statusText}`)
+
+              // Show detailed error message if available
+              const detailedError = errorData.details || errorData.error || response.statusText
+              const errorMsg = `Failed to fetch PDF from storage: ${response.status} - ${detailedError}`
+
+              console.error('📋 Full error details:', errorData)
+
+              throw new Error(errorMsg)
             }
 
             const blob = await response.blob()
