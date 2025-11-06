@@ -75,7 +75,10 @@ interface UserUsageData {
   flashcardsGenerated: number
   podcastsGenerated: number
   mindMapsGenerated: number
+  writerAnalysesToday: number
+  videoProcessesToday: number
   lastResetDate: Date
+  lastDailyResetDate: Date
   tier: 'free' | 'premium'
 }
 
@@ -111,23 +114,27 @@ function getUserUsageData(userId: string, tier: 'free' | 'premium' = 'free'): Us
   let userData = usageStore.get(userId)
 
   if (!userData) {
+    const now = new Date()
     userData = {
       userId,
       documentsThisMonth: 0,
       flashcardsGenerated: 0,
       podcastsGenerated: 0,
       mindMapsGenerated: 0,
-      lastResetDate: new Date(),
+      writerAnalysesToday: 0,
+      videoProcessesToday: 0,
+      lastResetDate: now,
+      lastDailyResetDate: now,
       tier
     }
     usageStore.set(userId, userData)
     logger.debug('Created new usage data entry', { userId, tier })
   }
 
-  // Check if we need to reset monthly counters
   const now = new Date()
-  const lastReset = userData.lastResetDate
 
+  // Check if we need to reset monthly counters
+  const lastReset = userData.lastResetDate
   if (now.getMonth() !== lastReset.getMonth() ||
       now.getFullYear() !== lastReset.getFullYear()) {
     logger.info('Resetting monthly usage counters', {
@@ -141,6 +148,22 @@ function getUserUsageData(userId: string, tier: 'free' | 'premium' = 'free'): Us
     userData.podcastsGenerated = 0
     userData.mindMapsGenerated = 0
     userData.lastResetDate = now
+  }
+
+  // Check if we need to reset daily counters (for Writer and Video)
+  const lastDailyReset = userData.lastDailyResetDate || userData.lastResetDate
+  if (now.getDate() !== lastDailyReset.getDate() ||
+      now.getMonth() !== lastDailyReset.getMonth() ||
+      now.getFullYear() !== lastDailyReset.getFullYear()) {
+    logger.info('Resetting daily usage counters', {
+      userId,
+      previousDate: lastDailyReset.toDateString(),
+      currentDate: now.toDateString()
+    })
+
+    userData.writerAnalysesToday = 0
+    userData.videoProcessesToday = 0
+    userData.lastDailyResetDate = now
   }
 
   return userData
@@ -385,6 +408,118 @@ export function trackMindMapGeneration(userId: string, tier: 'free' | 'premium' 
 }
 
 /**
+ * Check if user can perform Writer AI analysis
+ */
+export function canUseWriterAnalysis(
+  userId: string,
+  tier: 'free' | 'premium' = 'free'
+): UsageCheck {
+  const userData = getUserUsageData(userId, tier)
+
+  // Premium tier has unlimited analyses
+  if (tier === 'premium') {
+    return { allowed: true }
+  }
+
+  const maxAnalysesPerDay = 5
+
+  if (userData.writerAnalysesToday >= maxAnalysesPerDay) {
+    logger.warn('Writer analysis blocked - daily limit reached', {
+      userId,
+      tier,
+      current: userData.writerAnalysesToday,
+      limit: maxAnalysesPerDay
+    })
+
+    return {
+      allowed: false,
+      reason: `You've reached your daily limit of ${maxAnalysesPerDay} AI analyses. Upgrade to Premium for unlimited analyses.`,
+      currentUsage: {
+        documentsThisMonth: userData.documentsThisMonth,
+        flashcardsGenerated: userData.flashcardsGenerated,
+        podcastsGenerated: userData.podcastsGenerated,
+        mindMapsGenerated: userData.mindMapsGenerated,
+        totalCostThisMonth: 0,
+        lastResetDate: userData.lastResetDate
+      },
+      limit: maxAnalysesPerDay
+    }
+  }
+
+  return { allowed: true }
+}
+
+/**
+ * Check if user can process a video
+ */
+export function canProcessVideo(
+  userId: string,
+  tier: 'free' | 'premium' = 'free'
+): UsageCheck {
+  const userData = getUserUsageData(userId, tier)
+
+  // Premium tier has unlimited video processing
+  if (tier === 'premium') {
+    return { allowed: true }
+  }
+
+  const maxVideosPerDay = 3
+
+  if (userData.videoProcessesToday >= maxVideosPerDay) {
+    logger.warn('Video processing blocked - daily limit reached', {
+      userId,
+      tier,
+      current: userData.videoProcessesToday,
+      limit: maxVideosPerDay
+    })
+
+    return {
+      allowed: false,
+      reason: `You've reached your daily limit of ${maxVideosPerDay} videos. Upgrade to Premium for unlimited video processing.`,
+      currentUsage: {
+        documentsThisMonth: userData.documentsThisMonth,
+        flashcardsGenerated: userData.flashcardsGenerated,
+        podcastsGenerated: userData.podcastsGenerated,
+        mindMapsGenerated: userData.mindMapsGenerated,
+        totalCostThisMonth: 0,
+        lastResetDate: userData.lastResetDate
+      },
+      limit: maxVideosPerDay
+    }
+  }
+
+  return { allowed: true }
+}
+
+/**
+ * Track Writer AI analysis usage
+ */
+export function trackWriterAnalysis(userId: string, tier: 'free' | 'premium' = 'free'): void {
+  const userData = getUserUsageData(userId, tier)
+  userData.writerAnalysesToday++
+
+  logger.debug('Writer analysis tracked', {
+    userId,
+    tier,
+    analysesToday: userData.writerAnalysesToday
+  })
+}
+
+/**
+ * Track video processing usage
+ */
+export function trackVideoProcess(userId: string, tier: 'free' | 'premium' = 'free'): void {
+  const userData = getUserUsageData(userId, tier)
+  userData.videoProcessesToday++
+
+  logger.debug('Video process tracked', {
+    userId,
+    tier,
+    videoProcessesToday: userData.videoProcessesToday
+  })
+}
+
+/**
  * Get current usage statistics for a user
  */
 export function getUserUsageStats(userId: string, tier: 'free' | 'premium' = 'free'): UsageStats {
@@ -475,11 +610,15 @@ export function checkUsageWarnings(
 export function resetUserUsage(userId: string): void {
   const userData = usageStore.get(userId)
   if (userData) {
+    const now = new Date()
     userData.documentsThisMonth = 0
     userData.flashcardsGenerated = 0
     userData.podcastsGenerated = 0
     userData.mindMapsGenerated = 0
-    userData.lastResetDate = new Date()
+    userData.writerAnalysesToday = 0
+    userData.videoProcessesToday = 0
+    userData.lastResetDate = now
+    userData.lastDailyResetDate = now
 
     logger.info('User usage manually reset', { userId })
   }
