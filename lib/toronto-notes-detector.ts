@@ -77,9 +77,22 @@ export function detectTorontoNotes(
   text: string,
   fileName?: string
 ): TorontoNotesDetectionResult {
-  // Quick filename check
+  // STRICT: Only detect Toronto Notes if filename explicitly indicates it
   const isTorontoNotesFilename = fileName?.toLowerCase().includes('toronto notes') ||
-                                  fileName?.toLowerCase().includes('torontonotes')
+                                  fileName?.toLowerCase().includes('torontonotes') ||
+                                  fileName?.toLowerCase().includes('toronto_notes')
+
+  // If filename doesn't match, don't even try to detect
+  // This prevents false positives from documents with lettered sections (A. B. C. etc.)
+  if (!isTorontoNotesFilename) {
+    return {
+      isTorontoNotes: false,
+      confidence: 0,
+      topics: [],
+    }
+  }
+
+  console.log('🏥 Toronto Notes filename detected - analyzing content...')
 
   // Extract first 50K characters for pattern detection (sufficient for TOC/index)
   const sampleText = text.substring(0, 50000)
@@ -108,13 +121,11 @@ export function detectTorontoNotes(
 
   // Calculate confidence score
   const abbreviationScore = Math.min(foundAbbreviations.length / Object.keys(TORONTO_NOTES_ABBREVIATIONS).length, 1)
-  const filenameScore = isTorontoNotesFilename ? 0.3 : 0
-  const confidence = Math.min(abbreviationScore * 0.7 + filenameScore, 1)
+  const filenameScore = 0.5 // High weight since we already verified filename
+  const confidence = Math.min(abbreviationScore * 0.5 + filenameScore, 1)
 
-  // Determine if it's Toronto Notes
-  const isTorontoNotes =
-    foundAbbreviations.length >= MIN_ABBREVIATIONS_FOR_DETECTION ||
-    (foundAbbreviations.length >= 3 && isTorontoNotesFilename)
+  // STRICT: Require minimum abbreviations even with Toronto Notes filename
+  const isTorontoNotes = foundAbbreviations.length >= MIN_ABBREVIATIONS_FOR_DETECTION
 
   // Generate topics if detected as Toronto Notes
   const topics: TorontoNotesTopic[] = isTorontoNotes

@@ -57,10 +57,40 @@ export async function GET(
       )
     }
 
-    // 4. Check if topics are already cached in metadata
-    if (document.metadata?.topics && Array.isArray(document.metadata.topics)) {
-      console.log('📦 Using cached topics from metadata')
-      return NextResponse.json({ topics: document.metadata.topics })
+    // 4. Check for force-refresh parameter to bypass cache
+    const url = new URL(request.url)
+    const forceRefresh = url.searchParams.get('refresh') === 'true'
+
+    // 5. Check if topics are already cached in metadata (unless force refresh)
+    if (!forceRefresh && document.metadata?.topics && Array.isArray(document.metadata.topics)) {
+      // Validate cached topics match the document
+      const cachedTopics = document.metadata.topics
+      const hasTorontoNotesTopics = cachedTopics.some((t: any) =>
+        t.description?.includes('Medical specialty') ||
+        t.metadata?.detectionMethod === 'toronto-notes-pattern'
+      )
+
+      // If document has Toronto Notes topics but filename doesn't suggest medical content, clear cache
+      const isMedicalDocument = document.file_name.toLowerCase().includes('toronto') ||
+                                document.file_name.toLowerCase().includes('medical') ||
+                                document.file_name.toLowerCase().includes('notes')
+
+      if (hasTorontoNotesTopics && !isMedicalDocument) {
+        console.log('⚠️ Cached Toronto Notes topics found on non-medical document - invalidating cache')
+        console.log(`   Document: ${document.file_name}`)
+        console.log(`   Clearing cache and regenerating topics...`)
+        // Fall through to regenerate topics
+      } else {
+        console.log('📦 Using cached topics from metadata')
+        return NextResponse.json({
+          topics: document.metadata.topics,
+          cached: true
+        })
+      }
+    }
+
+    if (forceRefresh) {
+      console.log('🔄 Force refresh requested - regenerating topics')
     }
 
     console.log(`🔍 Detecting topics for document: ${document.file_name}`)
