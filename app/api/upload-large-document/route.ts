@@ -142,6 +142,14 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      console.log(`[DEBUG] 📝 Creating document record:`, {
+        user_id: userProfileId,
+        file_name: fileName,
+        clerk_user_id: userId,
+        file_type: fileType,
+        storage_path: tempStoragePath
+      })
+
       const { data: document, error: dbError } = await supabase
         .from('documents')
         .insert({
@@ -165,7 +173,13 @@ export async function POST(request: NextRequest) {
         throw new Error(`Failed to initialize upload: ${dbError?.message || 'Unknown error'}`)
       }
 
-      console.log(`[DEBUG] ✅ Document created with UUID: ${document.id} (status: pending)`)
+      console.log(`[DEBUG] ✅ Document created:`, {
+        id: document.id,
+        user_id: document.user_id,
+        file_name: document.file_name,
+        status: document.processing_status,
+        clerk_user_id: userId
+      })
 
       session = {
         chunks: [],
@@ -325,6 +339,12 @@ export async function POST(request: NextRequest) {
         }
 
         console.log(`[DEBUG] Step 4: Updating document record with final metadata`)
+        console.log(`[DEBUG] 📝 About to update document:`, {
+          documentId: session.documentId,
+          newFileSize: completeFileBuffer.length,
+          newStoragePath: r2FileKey,
+          newStatus: 'processing'
+        })
 
         // Update document record with final file info and change status to 'processing'
         // Document was already created on first chunk with "pending" status
@@ -350,7 +370,14 @@ export async function POST(request: NextRequest) {
           throw new Error(`Failed to update document metadata: ${dbError?.message || 'Unknown error'}`)
         }
 
-        console.log(`[DEBUG] ✅ Document ${document.id} updated with final metadata (status: processing)`)
+        console.log(`[DEBUG] ✅ Document updated with final metadata:`, {
+          id: document.id,
+          user_id: document.user_id,
+          file_name: document.file_name,
+          file_size: document.file_size,
+          storage_path: document.storage_path,
+          status: document.processing_status
+        })
 
 
         // NOTE: PDF text extraction happens CLIENT-SIDE using pdf.js in browser

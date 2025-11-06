@@ -60,7 +60,13 @@ export async function POST(request: NextRequest) {
 
     // 4. Fetch existing document to preserve metadata (r2_url, topics, etc.)
     // Try multiple strategies to find the document (handles profile duplication issues)
-    console.log(`🔍 Fetching document ${documentId} for profile ${profile.id}`)
+    console.log(`🔍 UPDATE-TEXT REQUEST:`, {
+      documentId,
+      clerkUserId: userId,
+      profileId: profile.id,
+      textLength: extractedText.length,
+      pageCount
+    })
 
     let existingDoc = null
     let actualUserId = null
@@ -68,23 +74,38 @@ export async function POST(request: NextRequest) {
     // Strategy 1: Try with current profile.id
     const { data: docByProfile, error: docFetchError } = await supabase
       .from('documents')
-      .select('metadata, user_id, file_name')
+      .select('metadata, user_id, file_name, storage_path, processing_status')
       .eq('id', documentId)
       .eq('user_id', profile.id)
       .single()
 
+    console.log(`📊 Strategy 1 Result (profile.id=${profile.id}):`, {
+      found: !!docByProfile,
+      error: docFetchError?.message || null
+    })
+
     if (docByProfile) {
       existingDoc = docByProfile
       actualUserId = profile.id
-      console.log('✅ Found document using profile.id')
+      console.log('✅ Found document using profile.id:', {
+        fileName: docByProfile.file_name,
+        status: docByProfile.processing_status,
+        storagePath: docByProfile.storage_path
+      })
     } else {
       // Strategy 2: Try finding document and check if it belongs to same Clerk user
       console.log('⚠️ Not found with profile.id, trying Clerk user match...')
-      const { data: anyDoc } = await supabase
+      const { data: anyDoc, error: anyDocError } = await supabase
         .from('documents')
-        .select('metadata, user_id, file_name')
+        .select('metadata, user_id, file_name, storage_path, processing_status')
         .eq('id', documentId)
         .single()
+
+      console.log(`📊 Strategy 2 Result (any document with id=${documentId}):`, {
+        found: !!anyDoc,
+        error: anyDocError?.message || null,
+        docUserId: anyDoc?.user_id || null
+      })
 
       if (anyDoc) {
         // Check if this document belongs to the same Clerk user (different profile)
@@ -94,6 +115,12 @@ export async function POST(request: NextRequest) {
           .eq('id', anyDoc.user_id)
           .single()
 
+        console.log(`📊 Document owner check:`, {
+          docOwnerClerkId: docOwnerProfile?.clerk_user_id || null,
+          currentClerkId: userId,
+          match: docOwnerProfile?.clerk_user_id === userId
+        })
+
         if (docOwnerProfile && docOwnerProfile.clerk_user_id === userId) {
           console.log('✅ Found document with different profile but same Clerk user')
           existingDoc = anyDoc
@@ -101,11 +128,30 @@ export async function POST(request: NextRequest) {
         } else {
           console.error('❌ Document belongs to different user')
         }
+      } else {
+        // Strategy 3: Check if ANY documents exist for this user at all
+        const { data: userDocs, error: userDocsError } = await supabase
+          .from('documents')
+          .select('id, file_name, created_at')
+          .eq('user_id', profile.id)
+          .order('created_at', { ascending: false })
+          .limit(5)
+
+        console.log(`📊 Recent documents for user (profile.id=${profile.id}):`, {
+          count: userDocs?.length || 0,
+          documents: userDocs?.map(d => ({ id: d.id, fileName: d.file_name })) || [],
+          error: userDocsError?.message || null
+        })
       }
     }
 
     if (!existingDoc) {
-      console.error('❌ Document not found for user:', { documentId, userId, profileId: profile.id })
+      console.error('❌ Document not found for user:', {
+        documentId,
+        clerkUserId: userId,
+        profileId: profile.id,
+        searched: 'Both profile.id and Clerk user matching strategies failed'
+      })
       return NextResponse.json(
         { error: 'Document not found or access denied' },
         { status: 404 }
