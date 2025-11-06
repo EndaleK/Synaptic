@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     let actualUserId = null
 
     // Strategy 1: Try with current profile.id
-    const { data: docByProfile, error: profileError } = await supabase
+    const { data: docByProfile, error: docFetchError } = await supabase
       .from('documents')
       .select('metadata, user_id, file_name')
       .eq('id', documentId)
