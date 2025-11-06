@@ -59,20 +59,48 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Fetch existing document to preserve metadata (r2_url, topics, etc.)
+    console.log(`🔍 Fetching document ${documentId} for profile ${profile.id}`)
     const { data: existingDoc, error: fetchError } = await supabase
       .from('documents')
-      .select('metadata')
+      .select('metadata, user_id, file_name')
       .eq('id', documentId)
       .eq('user_id', profile.id)
       .single()
 
     if (fetchError || !existingDoc) {
-      console.error('Failed to fetch existing document:', fetchError)
+      console.error('❌ Failed to fetch existing document:', {
+        documentId,
+        profileId: profile.id,
+        error: fetchError,
+        code: fetchError?.code,
+        message: fetchError?.message,
+        details: fetchError?.details
+      })
+
+      // Try fetching without user_id filter to see if document exists at all
+      const { data: anyDoc } = await supabase
+        .from('documents')
+        .select('id, user_id, file_name')
+        .eq('id', documentId)
+        .single()
+
+      if (anyDoc) {
+        console.error('⚠️ Document exists but user_id mismatch!', {
+          documentUserId: anyDoc.user_id,
+          profileId: profile.id,
+          match: anyDoc.user_id === profile.id
+        })
+      } else {
+        console.error('⚠️ Document does not exist in database:', { documentId })
+      }
+
       return NextResponse.json(
         { error: 'Document not found or access denied' },
         { status: 404 }
       )
     }
+
+    console.log(`✅ Document found: ${existingDoc.file_name}`)
 
     // 5. Verify document ownership and update with merged metadata
     const { data: document, error: updateError } = await supabase
