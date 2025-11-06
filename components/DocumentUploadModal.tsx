@@ -394,6 +394,7 @@ export default function DocumentUploadModal({
           method: 'POST',
           body: formData,
           signal: controller.signal,
+          credentials: 'include', // Include Clerk session cookie for authentication
         })
 
         clearTimeout(timeout)
