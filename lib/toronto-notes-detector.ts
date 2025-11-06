@@ -134,6 +134,10 @@ export function detectTorontoNotes(
 
 /**
  * Generate structured topics from found abbreviations
+ *
+ * IMPORTANT: Abbreviations are detected in the TOC (first 50K chars),
+ * so we CANNOT use their character positions to estimate actual section locations.
+ * Instead, we use proportional distribution across the document.
  */
 function generateTopicsFromAbbreviations(
   text: string,
@@ -142,56 +146,40 @@ function generateTopicsFromAbbreviations(
 ): TorontoNotesTopic[] {
   const topics: TorontoNotesTopic[] = []
 
-  // Sort positions to estimate page ranges
-  const sortedPositions = [...abbreviationPositions].sort((a, b) => a.position - b.position)
+  // Sort abbreviations alphabetically (Toronto Notes sections are alphabetically ordered)
+  const sortedAbbreviations = [...foundAbbreviations].sort()
 
-  // Improved page estimation for Toronto Notes
   // Toronto Notes typically has 1500-1600 pages with 31 specialties
-  // Average: ~50 pages per specialty, minimum: 20 pages per specialty
+  // We'll use proportional distribution across the document
   const CHARS_PER_PAGE = 2000
-  const MIN_PAGES_PER_SECTION = 20
-  const AVG_PAGES_PER_SECTION = 50
-  const totalPages = Math.ceil(text.length / CHARS_PER_PAGE)
+  const ESTIMATED_TORONTO_NOTES_PAGES = 1584 // Known from user's document
+  const totalPages = Math.max(
+    Math.ceil(text.length / CHARS_PER_PAGE),
+    ESTIMATED_TORONTO_NOTES_PAGES
+  )
 
-  // Calculate average section size based on document proportions
-  const numSections = sortedPositions.length
-  const avgSectionPages = numSections > 0 ? Math.floor(totalPages / numSections) : AVG_PAGES_PER_SECTION
+  // Skip first ~50 pages (front matter, TOC, index)
+  const FRONT_MATTER_PAGES = 50
+  const contentStartPage = FRONT_MATTER_PAGES
+  const availablePages = totalPages - FRONT_MATTER_PAGES
 
-  sortedPositions.forEach((item, index) => {
-    const abbr = item.abbr
+  // Calculate pages per section (distribute evenly)
+  const numSections = sortedAbbreviations.length
+  const pagesPerSection = Math.floor(availablePages / numSections)
+
+  // Ensure minimum 30 pages per section (realistic for medical textbook)
+  const MIN_PAGES_PER_SECTION = 30
+  const adjustedPagesPerSection = Math.max(pagesPerSection, MIN_PAGES_PER_SECTION)
+
+  sortedAbbreviations.forEach((abbr, index) => {
     const fullName = TORONTO_NOTES_ABBREVIATIONS[abbr]
 
-    // Calculate start page from character position
-    let startPage = Math.max(1, Math.ceil(item.position / CHARS_PER_PAGE))
-
-    // Calculate end page with improved logic
-    let endPage: number
-
-    if (index < sortedPositions.length - 1) {
-      // Not the last section - use next abbreviation position
-      const nextPosition = sortedPositions[index + 1].position
-      const calculatedEndPage = Math.ceil(nextPosition / CHARS_PER_PAGE) - 1
-
-      // Ensure minimum section size
-      const minEndPage = startPage + MIN_PAGES_PER_SECTION - 1
-      endPage = Math.max(calculatedEndPage, minEndPage)
-
-      // If calculated range is unrealistically small, use average section size
-      if (endPage - startPage < MIN_PAGES_PER_SECTION) {
-        endPage = Math.min(totalPages, startPage + avgSectionPages - 1)
-      }
-    } else {
-      // Last section - extends to end of document
-      endPage = totalPages
-
-      // If last section is unrealistically large, cap it
-      if (endPage - startPage > avgSectionPages * 3) {
-        endPage = Math.min(totalPages, startPage + avgSectionPages * 2)
-      }
-    }
-
-    // Final validation: ensure end >= start and end <= totalPages
-    endPage = Math.min(Math.max(endPage, startPage), totalPages)
+    // Calculate page range using proportional distribution
+    const startPage = contentStartPage + (index * adjustedPagesPerSection)
+    const endPage = Math.min(
+      startPage + adjustedPagesPerSection - 1,
+      totalPages
+    )
 
     topics.push({
       id: `toronto-notes-${abbr.toLowerCase()}`,

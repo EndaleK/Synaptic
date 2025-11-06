@@ -146,16 +146,29 @@ export default function ChatInterface() {
               isProcessing: true
             })
 
-            console.log('📥 Fetching PDF from storage:', currentDocument.storagePath)
+            console.log('📥 Fetching PDF from storage:', {
+              storagePath: currentDocument.storagePath,
+              encodedPath: encodeURIComponent(currentDocument.storagePath),
+              fullUrl: `/api/documents/storage/${encodeURIComponent(currentDocument.storagePath)}`
+            })
             const response = await fetch(`/api/documents/storage/${encodeURIComponent(currentDocument.storagePath)}`)
 
             if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}))
+              const responseText = await response.text()
+              let errorData: any = {}
+              try {
+                errorData = JSON.parse(responseText)
+              } catch {
+                errorData = { rawResponse: responseText }
+              }
+
               console.error('❌ Storage fetch failed:', {
                 status: response.status,
                 statusText: response.statusText,
                 storagePath: currentDocument.storagePath,
-                error: errorData
+                encodedPath: encodeURIComponent(currentDocument.storagePath),
+                error: errorData,
+                responseText
               })
               throw new Error(`Failed to fetch PDF from storage: ${response.status} ${response.statusText}`)
             }
