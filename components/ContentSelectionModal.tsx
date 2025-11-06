@@ -198,6 +198,7 @@ export default function ContentSelectionModal({
               </h3>
 
               <PageTopicSelector
+                key={document.id} // Force new component instance when document changes
                 documentId={document.id}
                 totalPages={document.metadata.page_count}
                 onSelectionChange={setSelection}
