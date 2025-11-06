@@ -109,29 +109,40 @@ function DashboardContent() {
       console.log('📥 Mind map mode loaded from URL params')
       setActiveModeDocuments(prev => ({ ...prev, mindmap: true }))
       setActiveMode('mindmap')
-    } else if (mode === 'flashcards' && flashcards.length === 0 && !isLoading) {
-      console.log('📥 Loading flashcards for document:', documentId)
-      setIsLoading(true)
+    } else if (mode === 'flashcards') {
+      // Only load if we don't already have flashcards or if it's a different document
+      const shouldLoad = flashcards.length === 0 ||
+        (currentDocument && currentDocument.id !== documentId)
 
-      fetch(`/api/flashcards?documentId=${documentId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.flashcards && data.flashcards.length > 0) {
-            console.log(`✅ Loaded ${data.flashcards.length} flashcards`)
-            setFlashcards(data.flashcards)
+      if (shouldLoad && !isLoading) {
+        console.log('📥 Loading flashcards for document:', documentId)
+        setIsLoading(true)
+
+        fetch(`/api/flashcards?documentId=${documentId}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.flashcards && data.flashcards.length > 0) {
+              console.log(`✅ Loaded ${data.flashcards.length} flashcards`)
+              setFlashcards(data.flashcards)
+              setActiveMode('flashcards')
+            } else {
+              console.log('ℹ️ No flashcards found for this document')
+              // Still set active mode to show the inline picker
+              setActiveMode('flashcards')
+            }
+          })
+          .catch(error => {
+            console.error('Error loading flashcards:', error)
+            // Set active mode anyway to show the inline picker
             setActiveMode('flashcards')
-          } else {
-            console.log('ℹ️ No flashcards found for this document')
-          }
-        })
-        .catch(error => {
-          console.error('Error loading flashcards:', error)
-        })
-        .finally(() => {
-          setIsLoading(false)
-        })
+          })
+          .finally(() => {
+            setIsLoading(false)
+          })
+      }
     }
-  }, [searchParams, flashcards.length, isLoading, setActiveMode, setFlashcards])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]) // Only re-run when URL params change, not when flashcards change
 
   // Check if user needs to take assessment
   useEffect(() => {
@@ -321,7 +332,14 @@ function DashboardContent() {
       return
     }
 
-    // For Flashcards/Podcast/Mind Map: Open ContentSelectionModal
+    // For Flashcards/Podcast/Mind Map: Set document and open ContentSelectionModal
+    setCurrentDocument({
+      id: document.id,
+      name: document.file_name,
+      content: document.extracted_text || '',
+      fileType: document.file_type,
+      storagePath: document.storage_path
+    })
     setSelectedDocForModal(document)
     setContentModalType(mode as 'flashcards' | 'podcast' | 'mindmap')
     setContentModalOpen(true)

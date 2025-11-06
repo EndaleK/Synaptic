@@ -107,10 +107,17 @@ export default function ContentSelectionModal({
         throw new Error(data.error || `Failed to generate ${generationType}`)
       }
 
-      console.log(`✅ ${generationType} generated successfully!`)
+      console.log(`✅ ${generationType} generated successfully!`, {
+        documentId: document.id,
+        flashcardCount: data.flashcards?.length,
+        response: data
+      })
 
       // Close modal
       onClose()
+
+      // Small delay to ensure database transaction commits
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Navigate to dashboard with appropriate mode and documentId
       router.push(`/dashboard?mode=${generationType}&documentId=${document.id}`)
