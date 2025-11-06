@@ -133,21 +133,35 @@ export default function ChatInterface() {
         try {
           let file: File
 
-          // For PDFs, fetch the original file from storage
-          if (currentDocument.fileType === 'application/pdf' && currentDocument.storagePath) {
+          // For PDFs, fetch the original file from storage if available
+          if (currentDocument.fileType === 'application/pdf') {
+            if (!currentDocument.storagePath) {
+              console.warn('⚠️ PDF document has no storagePath, will display text-only')
+              throw new Error('PDF storage path not available')
+            }
+
             setChatDocument({
               file: null,
               content: currentDocument.content,
               isProcessing: true
             })
 
+            console.log('📥 Fetching PDF from storage:', currentDocument.storagePath)
             const response = await fetch(`/api/documents/storage/${encodeURIComponent(currentDocument.storagePath)}`)
 
             if (!response.ok) {
-              throw new Error('Failed to fetch PDF from storage')
+              const errorData = await response.json().catch(() => ({}))
+              console.error('❌ Storage fetch failed:', {
+                status: response.status,
+                statusText: response.statusText,
+                storagePath: currentDocument.storagePath,
+                error: errorData
+              })
+              throw new Error(`Failed to fetch PDF from storage: ${response.status} ${response.statusText}`)
             }
 
             const blob = await response.blob()
+            console.log('✅ PDF fetched successfully, size:', blob.size)
             file = new File([blob], currentDocument.name, { type: 'application/pdf' })
           } else {
             // For other file types, create a file from the content

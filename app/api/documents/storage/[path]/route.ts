@@ -12,6 +12,7 @@ export async function GET(
     const { path } = await params
 
     if (!path) {
+      console.error('❌ Storage API: Missing path parameter')
       return NextResponse.json(
         { error: 'Storage path is required' },
         { status: 400 }
@@ -20,6 +21,7 @@ export async function GET(
 
     // Decode the path
     const storagePath = decodeURIComponent(path)
+    console.log('📥 Storage API: Fetching file from storage:', storagePath)
 
     // Initialize Supabase client
     const supabase = await createClient()
@@ -31,9 +33,17 @@ export async function GET(
       .download(storagePath)
 
     if (error) {
-      console.error('Supabase storage download error:', error)
+      console.error('❌ Supabase storage download error:', {
+        storagePath,
+        error: error.message,
+        details: error
+      })
       return NextResponse.json(
-        { error: 'Failed to fetch document from storage' },
+        {
+          error: 'Failed to fetch document from storage',
+          details: error.message,
+          storagePath
+        },
         { status: 500 }
       )
     }
