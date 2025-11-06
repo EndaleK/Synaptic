@@ -83,7 +83,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       icon: PenTool,
       description: "AI-powered writing assistant with citations and grammar",
       gradient: "from-pink-500 to-rose-500",
-      available: true,
+      available: false,
       premium: true
     },
     {
@@ -92,7 +92,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       icon: Youtube,
       description: "Learn from YouTube videos with AI analysis",
       gradient: "from-red-500 to-orange-500",
-      available: true,
+      available: false,
       premium: true
     }
   ]
