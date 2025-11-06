@@ -66,10 +66,16 @@ export async function POST(request: NextRequest) {
     const chunkIndex = formData.get('chunkIndex') as string
     const totalChunks = formData.get('totalChunks') as string
     const fileName = formData.get('fileName') as string
+    const existingDocumentId = formData.get('documentId') as string | null // Client sends this for chunks after first
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
+
+    console.log(`[DEBUG] Received chunk ${parseInt(chunkIndex) + 1}/${totalChunks} for ${fileName}`, {
+      hasExistingDocId: !!existingDocumentId,
+      documentId: existingDocumentId || 'will create new'
+    })
 
     // 3. Generate unique session key (consistent across all chunks for this upload)
     const chunkKey = `${userId}_${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`
@@ -81,8 +87,11 @@ export async function POST(request: NextRequest) {
     // 5. Initialize or retrieve upload session
     const currentChunkIndex = parseInt(chunkIndex)
     let session: UploadSession
+    let documentId: string
 
-    if (!chunkStorage.has(chunkKey)) {
+    // Try to get session from memory first (for performance)
+    // But if not found and client provided documentId, query database instead
+    if (!chunkStorage.has(chunkKey) && !existingDocumentId) {
       // First chunk: Create new upload session AND database record immediately
       const timestamp = Date.now()
       const supabase = await createClient()
@@ -191,10 +200,79 @@ export async function POST(request: NextRequest) {
         totalChunks: parseInt(totalChunks)
       }
 
+      documentId = document.id
       chunkStorage.set(chunkKey, session)
       console.log(`🆕 Upload session initialized for ${fileName} with documentId: ${document.id}`)
+    } else if (!chunkStorage.has(chunkKey) && existingDocumentId) {
+      // Session not in memory (hit different serverless instance), but client provided documentId
+      // Reconstruct session from database
+      console.log(`[DEBUG] Session not in memory, reconstructing from database using documentId: ${existingDocumentId}`)
+
+      const supabase = await createClient()
+
+      // Get user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('clerk_user_id', userId)
+        .single()
+
+      if (profileError || !profile) {
+        console.error('[ERROR] Failed to get user profile:', profileError)
+        throw new Error(`Failed to get user profile: ${profileError?.message || 'Unknown error'}`)
+      }
+
+      // Query database to verify document exists and get metadata
+      const { data: document, error: docError } = await supabase
+        .from('documents')
+        .select('id, user_id, file_name, metadata')
+        .eq('id', existingDocumentId)
+        .single()
+
+      if (docError || !document) {
+        console.error('[ERROR] Failed to find document:', docError)
+        throw new Error(`Document ${existingDocumentId} not found: ${docError?.message || 'Unknown error'}`)
+      }
+
+      // Verify ownership (either same profile or same Clerk user)
+      if (document.user_id !== profile.id) {
+        // Check if it belongs to same Clerk user (different profile)
+        const { data: docOwnerProfile } = await supabase
+          .from('user_profiles')
+          .select('clerk_user_id')
+          .eq('id', document.user_id)
+          .single()
+
+        if (!docOwnerProfile || docOwnerProfile.clerk_user_id !== userId) {
+          throw new Error(`Access denied: Document ${existingDocumentId} does not belong to user ${userId}`)
+        }
+      }
+
+      console.log(`[DEBUG] ✅ Document verified:`, {
+        id: document.id,
+        user_id: document.user_id,
+        file_name: document.file_name
+      })
+
+      // Reconstruct session (chunks array will be sparse, which is fine)
+      session = {
+        chunks: [],
+        documentId: document.id,
+        fileName: document.file_name,
+        userId,
+        userProfileId: profile.id,
+        timestamp: Date.now(),
+        totalChunks: parseInt(totalChunks)
+      }
+
+      documentId = document.id
+      chunkStorage.set(chunkKey, session)
+      console.log(`♻️  Session reconstructed from database for ${fileName}`)
     } else {
+      // Session exists in memory (same serverless instance handling multiple chunks)
       session = chunkStorage.get(chunkKey)!
+      documentId = session.documentId!
+      console.log(`[DEBUG] Using existing session from memory for ${fileName}`)
     }
 
     // Store chunk at correct index position
@@ -447,12 +525,14 @@ export async function POST(request: NextRequest) {
       totalChunks: session.totalChunks,
       isComplete: allChunksReceived,
       message: allChunksReceived ? 'Document processed successfully' : `Chunk ${currentChunkIndex + 1}/${session.totalChunks} received (${receivedChunks}/${session.totalChunks} total)`,
+      documentId: documentId, // Always include documentId (created on first chunk, passed from client on subsequent chunks)
     }
 
-    // Add documentId if available (will be null until document is created in DB)
-    if (session.documentId) {
-      response.documentId = session.documentId
-    }
+    console.log(`[DEBUG] Sending response:`, {
+      chunkIndex: currentChunkIndex,
+      isComplete: allChunksReceived,
+      documentId: documentId
+    })
 
     // Add optional fields
     if (r2Url) {

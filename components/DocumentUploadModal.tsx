@@ -384,7 +384,15 @@ export default function DocumentUploadModal({
         formData.append('totalChunks', totalChunks.toString())
         formData.append('fileName', file.name)
 
-        console.log(`📤 Uploading chunk ${chunkIndex + 1}/${totalChunks} (attempt ${retryCount + 1})`)
+        // Include documentId for chunks after the first (enables stateless serverless handling)
+        if (documentId) {
+          formData.append('documentId', documentId)
+        }
+
+        console.log(`📤 Uploading chunk ${chunkIndex + 1}/${totalChunks} (attempt ${retryCount + 1})`, {
+          hasDocId: !!documentId,
+          documentId: documentId || 'will create'
+        })
 
         // Upload chunk with 180s timeout per chunk (first chunk needs extra time for DB + storage ops)
         const controller = new AbortController()
