@@ -9,7 +9,7 @@ import { MindMapGenerationSchema } from "@/lib/validation"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
 import { analyzeDocumentComplexity } from "@/lib/document-complexity-analyzer"
-import { extractTextFromPages, extractTextFromSections, extractTextFromSuggestion } from "@/lib/text-extraction"
+import { extractTextFromPages } from "@/lib/text-extraction"
 
 export const maxDuration = 300 // 5 minutes max execution time for complex documents (Vercel Pro plan)
 
@@ -194,39 +194,6 @@ export async function POST(req: NextRequest) {
           documentText = await extractTextFromPages(
             documentId,
             [selection.pageRange],
-            { maxLength: 48000 }
-          )
-
-        } else if (selection.type === 'structure' && selection.sectionIds) {
-          // STRUCTURE MODE: Extract text from selected book sections
-          selectionDescription = `${selection.sectionIds.length} selected section${selection.sectionIds.length !== 1 ? 's' : ''}`
-
-          logger.info('Mind map generation with book structure', {
-            userId,
-            documentId,
-            sectionCount: selection.sectionIds.length,
-          })
-
-          documentText = await extractTextFromSections(
-            documentId,
-            selection.sectionIds,
-            { maxLength: 48000 }
-          )
-
-        } else if (selection.type === 'suggestion' && selection.suggestionId) {
-          // SUGGESTION MODE: Extract text from AI-recommended section
-          selectionDescription = `AI-recommended section`
-
-          logger.info('Mind map generation with AI suggestion', {
-            userId,
-            documentId,
-            suggestionId: selection.suggestionId,
-          })
-
-          documentText = await extractTextFromSuggestion(
-            documentId,
-            selection.suggestionId,
-            'mindmaps',
             { maxLength: 48000 }
           )
 

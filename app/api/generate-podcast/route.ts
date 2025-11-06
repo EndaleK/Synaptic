@@ -12,7 +12,7 @@ import { logger } from "@/lib/logger"
 import { PodcastGenerationSchema } from "@/lib/validation"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
-import { extractTextFromPages, extractTextFromSections, extractTextFromSuggestion } from "@/lib/text-extraction"
+import { extractTextFromPages } from "@/lib/text-extraction"
 
 export const maxDuration = 300 // 5 minutes max execution time (Vercel limit)
 
@@ -159,39 +159,6 @@ export async function POST(req: NextRequest) {
           textForPodcast = await extractTextFromPages(
             documentId,
             [selection.pageRange],
-            { maxLength: 48000 }
-          )
-
-        } else if (selection.type === 'structure' && selection.sectionIds) {
-          // STRUCTURE MODE: Extract text from selected book sections
-          selectionDescription = `${selection.sectionIds.length} selected section${selection.sectionIds.length !== 1 ? 's' : ''}`
-
-          logger.info('Podcast generation with book structure', {
-            userId,
-            documentId,
-            sectionCount: selection.sectionIds.length,
-          })
-
-          textForPodcast = await extractTextFromSections(
-            documentId,
-            selection.sectionIds,
-            { maxLength: 48000 }
-          )
-
-        } else if (selection.type === 'suggestion' && selection.suggestionId) {
-          // SUGGESTION MODE: Extract text from AI-recommended section
-          selectionDescription = `AI-recommended section`
-
-          logger.info('Podcast generation with AI suggestion', {
-            userId,
-            documentId,
-            suggestionId: selection.suggestionId,
-          })
-
-          textForPodcast = await extractTextFromSuggestion(
-            documentId,
-            selection.suggestionId,
-            'podcasts',
             { maxLength: 48000 }
           )
 

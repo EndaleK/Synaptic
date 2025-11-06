@@ -1,20 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { X, Loader2, Sparkles, Zap, Map, BookOpen } from "lucide-react"
+import { X, Loader2, Sparkles, Zap, Map } from "lucide-react"
 import { useRouter } from "next/navigation"
-import PageTopicSelector, { SelectionData as LegacySelectionData } from "./PageTopicSelector"
-import BookNavigator from "./BookNavigator"
+import PageTopicSelector, { SelectionData } from "./PageTopicSelector"
 import { Document } from "@/lib/supabase/types"
-
-// Extended selection data to support book structures
-export type SelectionData = LegacySelectionData | {
-  type: 'structure'
-  sectionIds?: string[]
-} | {
-  type: 'suggestion'
-  suggestionId?: string
-}
 
 interface ContentSelectionModalProps {
   isOpen: boolean
@@ -54,7 +44,6 @@ export default function ContentSelectionModal({
   generationType
 }: ContentSelectionModalProps) {
   const router = useRouter()
-  const [selectionMode, setSelectionMode] = useState<'manual' | 'smart'>('manual')
   const [selection, setSelection] = useState<SelectionData>({ type: 'full' })
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -197,44 +186,11 @@ export default function ContentSelectionModal({
                 Select Content
               </h3>
 
-              {/* Selection Mode Switcher */}
-              <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => setSelectionMode('manual')}
-                  className={`flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all ${
-                    selectionMode === 'manual'
-                      ? 'bg-accent-primary text-white shadow-md'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  Manual Selection
-                </button>
-                <button
-                  onClick={() => setSelectionMode('smart')}
-                  className={`flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 ${
-                    selectionMode === 'smart'
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Smart Structure
-                </button>
-              </div>
-
-              {/* Selector Component */}
-              {selectionMode === 'manual' ? (
-                <PageTopicSelector
-                  documentId={document.id}
-                  totalPages={document.metadata.page_count}
-                  onSelectionChange={setSelection}
-                />
-              ) : (
-                <BookNavigator
-                  documentId={document.id}
-                  onSelectionChange={setSelection}
-                />
-              )}
+              <PageTopicSelector
+                documentId={document.id}
+                totalPages={document.metadata.page_count}
+                onSelectionChange={setSelection}
+              />
             </div>
           ) : (
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
@@ -263,8 +219,6 @@ export default function ContentSelectionModal({
                 {selection.type === 'full' && '📄 Full Document'}
                 {selection.type === 'pages' && `📖 Pages ${selection.pageRange?.start}-${selection.pageRange?.end}`}
                 {selection.type === 'topic' && `📑 ${selection.topic?.title}`}
-                {selection.type === 'structure' && `📚 ${selection.sectionIds?.length || 0} selected section${selection.sectionIds?.length !== 1 ? 's' : ''}`}
-                {selection.type === 'suggestion' && `✨ AI-recommended section`}
               </p>
             </div>
           )}
@@ -283,8 +237,7 @@ export default function ContentSelectionModal({
             onClick={handleGenerate}
             disabled={
               isGenerating ||
-              (selection.type === 'topic' && !selection.topic) ||
-              (selection.type === 'structure' && (!selection.sectionIds || selection.sectionIds.length === 0))
+              (selection.type === 'topic' && !selection.topic)
             }
             className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r ${config.color} text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed`}
           >
