@@ -293,6 +293,19 @@ export async function POST(request: NextRequest) {
       parseResult = await parseDocument(file)
     }
 
+    // Validate storage path for PDFs (critical for PDF viewer)
+    if (file.type === 'application/pdf' && (!storagePath || storagePath.trim() === '')) {
+      const errorMsg = 'PDF uploaded but storage path is empty. This will prevent PDF display.'
+      logger.error('Storage path validation failed', new Error(errorMsg), { userId, documentId, fileType: file.type })
+      await updateDocumentStatus(documentId, 'failed', errorMsg)
+      const duration = Date.now() - startTime
+      logger.api('POST', '/api/documents', 500, duration, { userId, error: 'Missing storage path' })
+      return NextResponse.json(
+        { error: errorMsg },
+        { status: 500 }
+      )
+    }
+
     if (parseResult.error) {
       await updateDocumentStatus(documentId, 'failed', parseResult.error)
       logger.warn('Document parsing failed', { userId, documentId, fileName: file.name, error: parseResult.error })

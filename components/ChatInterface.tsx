@@ -196,9 +196,23 @@ export default function ChatInterface() {
             isProcessing: false
           })
 
+          // Create detailed error message based on error type
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+          let userMessage = `⚠️ Could not load original PDF viewer. `
+
+          if (errorMsg.includes('storage path') || errorMsg.includes('storagePath')) {
+            userMessage += `This document is missing its storage reference. The extracted text is available below for Q&A. To view the full PDF, please re-upload the document.`
+          } else if (errorMsg.includes('403') || errorMsg.includes('401')) {
+            userMessage += `Access denied to PDF storage. The extracted text is available below. Please re-upload the document or contact support if this persists.`
+          } else if (errorMsg.includes('404')) {
+            userMessage += `PDF file not found in storage. The extracted text is available below. Please re-upload the document.`
+          } else {
+            userMessage += `Showing extracted text instead. You can still ask questions about the document!`
+          }
+
           const errorMessage: Message = {
             id: Date.now().toString(),
-            content: `⚠️ Could not load original ${currentDocument.fileType === 'application/pdf' ? 'PDF' : 'document'}. Showing text content instead. Ask me anything about this document!`,
+            content: userMessage,
             type: "assistant",
             timestamp: new Date()
           }

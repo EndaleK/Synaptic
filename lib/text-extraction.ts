@@ -85,6 +85,20 @@ export async function extractTextFromPages(
   const fullText = document.extracted_text || ''
   if (fullText) {
     extractedText = extractPagesFromFullText(fullText, pageRanges, document.metadata?.page_count || 100)
+
+    // Smart expansion: if extracted text is too small, expand the page range
+    const MIN_CONTENT_LENGTH = 5000 // Minimum 5000 chars for meaningful flashcard generation
+
+    if (extractedText.length < MIN_CONTENT_LENGTH && pageRanges.length > 0) {
+      console.log(`⚠️ Extracted text too small (${extractedText.length} chars), expanding page range...`)
+
+      // Expand the range by adding more pages
+      const expandedRanges = expandPageRanges(pageRanges, document.metadata?.page_count || 100)
+      extractedText = extractPagesFromFullText(fullText, expandedRanges, document.metadata?.page_count || 100)
+
+      console.log(`✅ Expanded to ${expandedRanges[0].end - expandedRanges[0].start + 1} pages, got ${extractedText.length} chars`)
+    }
+
     return extractedText.substring(0, maxLength)
   }
 
@@ -194,6 +208,22 @@ export async function extractTextFromSuggestion(
 
   // Extract text from suggestion's page range
   return extractTextFromPages(documentId, [suggestion.pageRange], options)
+}
+
+/**
+ * Expand page ranges when content is insufficient
+ * Adds 20 pages to each range to ensure adequate content
+ */
+function expandPageRanges(pageRanges: PageRange[], totalPages: number): PageRange[] {
+  return pageRanges.map(range => {
+    const rangeSize = range.end - range.start + 1
+    const EXPANSION_PAGES = Math.max(20, rangeSize * 2) // At least 20 pages, or double the current range
+
+    return {
+      start: range.start,
+      end: Math.min(range.end + EXPANSION_PAGES, totalPages)
+    }
+  })
 }
 
 /**

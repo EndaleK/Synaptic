@@ -118,7 +118,27 @@ export default function ContentSelectionModal({
       // Show success message (could add toast notification here)
     } catch (err) {
       console.error(`Error generating ${generationType}:`, err)
-      setError(err instanceof Error ? err.message : 'Generation failed. Please try again.')
+
+      // Create helpful error message based on error type
+      let errorMessage = 'Generation failed. Please try again.'
+
+      if (err instanceof Error) {
+        const errMsg = err.message.toLowerCase()
+
+        if (errMsg.includes('no content') || errMsg.includes('insufficient')) {
+          errorMessage = `${err.message} Try selecting "Full Document" or a larger page range for better results.`
+        } else if (errMsg.includes('page range') || errMsg.includes('pages')) {
+          errorMessage = `${err.message} Try using "Manual Selection" with a custom page range instead.`
+        } else if (errMsg.includes('timeout') || errMsg.includes('timed out')) {
+          errorMessage = 'Generation timed out. Try selecting a smaller section of the document.'
+        } else if (errMsg.includes('rate limit')) {
+          errorMessage = 'Rate limit reached. Please wait a few moments and try again.'
+        } else {
+          errorMessage = err.message
+        }
+      }
+
+      setError(errorMessage)
       setIsGenerating(false)
     }
   }

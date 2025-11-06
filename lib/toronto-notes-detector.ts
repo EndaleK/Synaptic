@@ -145,18 +145,53 @@ function generateTopicsFromAbbreviations(
   // Sort positions to estimate page ranges
   const sortedPositions = [...abbreviationPositions].sort((a, b) => a.position - b.position)
 
-  // Estimate total pages (rough estimate: 2000 chars per page)
+  // Improved page estimation for Toronto Notes
+  // Toronto Notes typically has 1500-1600 pages with 31 specialties
+  // Average: ~50 pages per specialty, minimum: 20 pages per specialty
   const CHARS_PER_PAGE = 2000
+  const MIN_PAGES_PER_SECTION = 20
+  const AVG_PAGES_PER_SECTION = 50
   const totalPages = Math.ceil(text.length / CHARS_PER_PAGE)
+
+  // Calculate average section size based on document proportions
+  const numSections = sortedPositions.length
+  const avgSectionPages = numSections > 0 ? Math.floor(totalPages / numSections) : AVG_PAGES_PER_SECTION
 
   sortedPositions.forEach((item, index) => {
     const abbr = item.abbr
     const fullName = TORONTO_NOTES_ABBREVIATIONS[abbr]
 
-    // Estimate page range
-    const startPage = Math.max(1, Math.ceil(item.position / CHARS_PER_PAGE))
-    const nextPosition = sortedPositions[index + 1]?.position || text.length
-    const endPage = Math.min(totalPages, Math.ceil(nextPosition / CHARS_PER_PAGE))
+    // Calculate start page from character position
+    let startPage = Math.max(1, Math.ceil(item.position / CHARS_PER_PAGE))
+
+    // Calculate end page with improved logic
+    let endPage: number
+
+    if (index < sortedPositions.length - 1) {
+      // Not the last section - use next abbreviation position
+      const nextPosition = sortedPositions[index + 1].position
+      const calculatedEndPage = Math.ceil(nextPosition / CHARS_PER_PAGE) - 1
+
+      // Ensure minimum section size
+      const minEndPage = startPage + MIN_PAGES_PER_SECTION - 1
+      endPage = Math.max(calculatedEndPage, minEndPage)
+
+      // If calculated range is unrealistically small, use average section size
+      if (endPage - startPage < MIN_PAGES_PER_SECTION) {
+        endPage = Math.min(totalPages, startPage + avgSectionPages - 1)
+      }
+    } else {
+      // Last section - extends to end of document
+      endPage = totalPages
+
+      // If last section is unrealistically large, cap it
+      if (endPage - startPage > avgSectionPages * 3) {
+        endPage = Math.min(totalPages, startPage + avgSectionPages * 2)
+      }
+    }
+
+    // Final validation: ensure end >= start and end <= totalPages
+    endPage = Math.min(Math.max(endPage, startPage), totalPages)
 
     topics.push({
       id: `toronto-notes-${abbr.toLowerCase()}`,
