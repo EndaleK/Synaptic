@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react"
 import { Document, Page } from "react-pdf"
-import { FixedSizeList as List } from "react-window"
+import { List } from "react-window"
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, Download, RefreshCw, AlertCircle, Clock, StopCircle, BarChart3, Eye, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { usePDFTimeout } from "@/hooks/usePDFTimeout"
@@ -31,7 +31,7 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
   const [containerHeight, setContainerHeight] = useState<number>(600)
   const [containerWidth, setContainerWidth] = useState<number>(800)
   const containerRef = useRef<HTMLDivElement>(null)
-  const listRef = useRef<List>(null)
+  const listRef = useRef<any>(null)
 
   // Initialize timeout management (increased for large PDFs)
   const timeout = usePDFTimeout({
@@ -665,16 +665,14 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
             {/* Virtual scrolling: render only visible pages for memory efficiency */}
             {containerHeight > 0 && containerWidth > 0 ? (
               <List
-                ref={listRef}
-                height={containerHeight}
-                itemCount={numPages}
-                itemSize={Math.ceil((rotation % 180 === 0 ? 842 : 595) * scale) + 32}
-                width={containerWidth}
+                listRef={listRef}
+                defaultHeight={containerHeight}
+                rowCount={numPages}
+                rowHeight={Math.ceil((rotation % 180 === 0 ? 842 : 595) * scale) + 32}
                 overscanCount={2}
                 key={`${scale}-${rotation}`}
-              >
-                {({ index, style }) => (
-                  <div style={{...style, display: 'flex', justifyContent: 'center', paddingTop: '16px'}} key={`page_${index + 1}`}>
+                rowComponent={({ index, style }: { index: number; style: React.CSSProperties }) => (
+                  <div style={{...style, display: 'flex', justifyContent: 'center', paddingTop: '16px'}}>
                     <Page
                       pageNumber={index + 1}
                       scale={scale}
@@ -685,7 +683,7 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
                     />
                   </div>
                 )}
-              </List>
+              />
             ) : (
               <div className="flex items-center justify-center h-96">
                 <div className="text-body-sm text-gray-600 dark:text-gray-400">Initializing viewer...</div>
