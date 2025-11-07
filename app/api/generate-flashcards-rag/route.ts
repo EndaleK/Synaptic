@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     let usedVectorStore = false
 
     if (selection && selection.type === 'pages' && selection.pageRange) {
-      // PAGE RANGE MODE: Extract text from specific pages
+      // PAGE RANGE MODE: Extract text from specific pages using smart extraction
       const { start, end } = selection.pageRange
       selectionDescription = `pages ${start}-${end}`
 
@@ -120,35 +120,44 @@ export async function POST(request: NextRequest) {
         pageEnd: end,
       })
 
-      // Extract text from document.extracted_text based on page metadata
-      // For now, use simple heuristic: split by page markers if available
-      // TODO: Improve page extraction with actual page boundaries from PDF metadata
-      const fullText = document.extracted_text || ''
-
-      // If document has page markers (from pdf-parse), extract specific pages
-      if (document.metadata?.pages && Array.isArray(document.metadata.pages)) {
-        const pages = document.metadata.pages.filter(
-          (p: any) => p.pageNumber >= start && p.pageNumber <= end
+      // Use smart extraction with auto-expansion if content is insufficient
+      try {
+        combinedText = await extractTextFromPages(
+          documentId,
+          [{ start, end }],
+          { maxLength: 48000 }
         )
-        combinedText = pages.map((p: any) => p.text).join('\n\n')
-      } else {
-        // Fallback: Split by approximate page length
-        // Average academic PDF page ≈ 3000-4000 characters
-        const avgPageLength = 3500
-        const startChar = (start - 1) * avgPageLength
-        const endChar = end * avgPageLength
-        combinedText = fullText.substring(startChar, Math.min(endChar, fullText.length))
-      }
 
-      if (!combinedText || combinedText.trim().length === 0) {
+        if (!combinedText || combinedText.trim().length === 0) {
+          return NextResponse.json(
+            {
+              error: 'No content found in selected page range',
+              suggestion: 'Try selecting "Full Document" or a different page range'
+            },
+            { status: 400 }
+          )
+        }
+
+        logger.info('Page range extraction successful', {
+          userId,
+          documentId,
+          pageRange: `${start}-${end}`,
+          extractedLength: combinedText.length,
+        })
+      } catch (error) {
+        logger.error('Page range extraction failed', error, {
+          userId,
+          documentId,
+          pageRange: `${start}-${end}`,
+        })
         return NextResponse.json(
-          { error: 'No content found in selected page range' },
-          { status: 400 }
+          {
+            error: 'Failed to extract content from page range',
+            details: error instanceof Error ? error.message : 'Unknown error'
+          },
+          { status: 500 }
         )
       }
-
-      // Limit to reasonable size
-      combinedText = combinedText.substring(0, 48000) // ~12K tokens
 
     } else if ((selection && selection.type === 'topic') || legacyTopic) {
       // TOPIC MODE: Use vector search for topic-specific content
