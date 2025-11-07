@@ -43,59 +43,81 @@ export async function GET(
         .eq('storage_path', originalPath)
         .single()
 
-      if (!docError && document && document.metadata?.r2_url) {
-        console.log('📦 File is in R2, fetching from R2 URL:', document.metadata.r2_url)
+      // Check if file is stored in R2 (storage_path starts with "documents/")
+      const isR2File = !docError && document && document.storage_path?.startsWith('documents/')
 
-        // Check file size to determine strategy
-        const fileSize = document.file_size || 0
-        const FILE_SIZE_THRESHOLD = 50 * 1024 * 1024 // 50MB
+      if (isR2File) {
+        console.log('📦 File is in R2, storage_path:', document.storage_path)
 
-        // For large files (>50MB), stream directly from R2
-        if (fileSize > FILE_SIZE_THRESHOLD) {
-          console.log(`📦 Large file (${Math.round(fileSize / 1024 / 1024)}MB), streaming from R2`)
+        // Get R2 URL - either from metadata or generate signed URL
+        let r2Url = document.metadata?.r2_url
 
+        // If r2_url is empty or invalid (contains "undefined"), generate signed URL
+        if (!r2Url || r2Url.includes('undefined')) {
+          console.log('⚠️ R2 public URL not configured, generating signed URL')
           try {
-            const r2Response = await fetch(document.metadata.r2_url)
-            if (!r2Response.ok) {
-              throw new Error(`R2 fetch failed: ${r2Response.status}`)
-            }
-
-            // Stream the response directly without loading into memory
-            return new NextResponse(r2Response.body, {
-              headers: {
-                'Content-Type': 'application/pdf',
-                'Content-Length': String(fileSize),
-                'Content-Disposition': `inline; filename="${storagePath.split('/').pop()}"`,
-                'Cache-Control': 'public, max-age=3600',
-                'Accept-Ranges': 'bytes', // Enable range requests for seeking
-              },
-            })
-          } catch (r2Error) {
-            console.error('❌ R2 stream failed, falling back to Supabase storage:', r2Error)
+            const { getR2SignedUrl } = await import('@/lib/r2-storage')
+            r2Url = await getR2SignedUrl(document.storage_path, 3600) // 1 hour expiry
+            console.log('✅ Generated signed R2 URL')
+          } catch (signedUrlError) {
+            console.error('❌ Failed to generate signed R2 URL:', signedUrlError)
             // Continue to Supabase storage fallback
+            r2Url = null
           }
-        } else {
-          // For smaller files (<50MB), fetch as blob (original behavior)
-          // Don't redirect - that breaks fetch() calls from JavaScript
-          try {
-            const r2Response = await fetch(document.metadata.r2_url)
-            if (!r2Response.ok) {
-              throw new Error(`R2 fetch failed: ${r2Response.status}`)
+        }
+
+        if (r2Url) {
+          // Check file size to determine strategy
+          const fileSize = document.file_size || 0
+          const FILE_SIZE_THRESHOLD = 50 * 1024 * 1024 // 50MB
+
+          // For large files (>50MB), stream directly from R2
+          if (fileSize > FILE_SIZE_THRESHOLD) {
+            console.log(`📦 Large file (${Math.round(fileSize / 1024 / 1024)}MB), streaming from R2`)
+
+            try {
+              const r2Response = await fetch(r2Url)
+              if (!r2Response.ok) {
+                throw new Error(`R2 fetch failed: ${r2Response.status}`)
+              }
+
+              // Stream the response directly without loading into memory
+              return new NextResponse(r2Response.body, {
+                headers: {
+                  'Content-Type': 'application/pdf',
+                  'Content-Length': String(fileSize),
+                  'Content-Disposition': `inline; filename="${storagePath.split('/').pop()}"`,
+                  'Cache-Control': 'public, max-age=3600',
+                  'Accept-Ranges': 'bytes', // Enable range requests for seeking
+                },
+              })
+            } catch (r2Error) {
+              console.error('❌ R2 stream failed, falling back to Supabase storage:', r2Error)
+              // Continue to Supabase storage fallback
             }
+          } else {
+            // For smaller files (<50MB), fetch as blob (original behavior)
+            // Don't redirect - that breaks fetch() calls from JavaScript
+            try {
+              const r2Response = await fetch(r2Url)
+              if (!r2Response.ok) {
+                throw new Error(`R2 fetch failed: ${r2Response.status}`)
+              }
 
-            const r2Data = await r2Response.blob()
-            console.log('✅ Fetched from R2 successfully, size:', r2Data.size)
+              const r2Data = await r2Response.blob()
+              console.log('✅ Fetched from R2 successfully, size:', r2Data.size)
 
-            return new NextResponse(r2Data, {
-              headers: {
-                'Content-Type': 'application/pdf',
-                'Content-Disposition': `inline; filename="${storagePath.split('/').pop()}"`,
-                'Cache-Control': 'public, max-age=3600',
-              },
-            })
-          } catch (r2Error) {
-            console.error('❌ R2 fetch failed, falling back to Supabase storage:', r2Error)
-            // Continue to Supabase storage fallback
+              return new NextResponse(r2Data, {
+                headers: {
+                  'Content-Type': 'application/pdf',
+                  'Content-Disposition': `inline; filename="${storagePath.split('/').pop()}"`,
+                  'Cache-Control': 'public, max-age=3600',
+                },
+              })
+            } catch (r2Error) {
+              console.error('❌ R2 fetch failed, falling back to Supabase storage:', r2Error)
+              // Continue to Supabase storage fallback
+            }
           }
         }
       }

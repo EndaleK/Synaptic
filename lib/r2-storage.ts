@@ -46,7 +46,10 @@ export async function uploadToR2(
 
     // Return the public URL (if bucket is configured for public access)
     // Or return the key for later retrieval via signed URLs
-    const url = `${process.env.R2_PUBLIC_URL}/${key}`
+    // If R2_PUBLIC_URL is not configured, use signed URLs instead
+    const url = process.env.R2_PUBLIC_URL
+      ? `${process.env.R2_PUBLIC_URL}/${key}`
+      : '' // Empty means we'll use signed URLs on-demand
 
     return { url, key }
   } catch (error) {
