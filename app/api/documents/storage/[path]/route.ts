@@ -217,17 +217,18 @@ export async function GET(
     if (error) {
       console.error('❌ Supabase storage download error:', {
         storagePath,
-        error: error.message,
-        errorName: error.name,
-        errorCode: (error as any).statusCode,
-        details: JSON.stringify(error, null, 2)
+        error: error.message || 'Unknown error',
+        errorName: error.name || 'Error',
+        errorCode: (error as any).statusCode || (error as any).status || 'N/A',
+        errorDetails: String(error)
       })
       return NextResponse.json(
         {
           error: 'Failed to fetch document from storage',
-          details: error.message,
+          details: error.message || String(error) || 'Unknown Supabase storage error',
           storagePath,
-          hint: 'Check Supabase storage bucket permissions and RLS policies'
+          hint: 'Check Supabase storage bucket permissions and RLS policies',
+          errorCode: (error as any).statusCode || (error as any).status
         },
         { status: 500 }
       )
