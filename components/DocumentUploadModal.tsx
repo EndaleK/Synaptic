@@ -15,9 +15,9 @@ type UploadTab = 'file' | 'url'
 
 // Chunk size for large file uploads (4MB - stays under Vercel's 4.5MB limit)
 const CHUNK_SIZE = 4 * 1024 * 1024
-// Threshold for using chunked upload (50MB - Supabase max for single request)
-// Files <50MB use direct upload (fast), files >50MB use chunked upload (R2)
-const CHUNKED_UPLOAD_THRESHOLD = 50 * 1024 * 1024
+// Threshold for using chunked upload (5MB - triggers for larger files)
+// TODO: Re-enable direct upload at 50MB threshold once endpoint is debugged
+const CHUNKED_UPLOAD_THRESHOLD = 5 * 1024 * 1024
 // Number of parallel chunk uploads (increased for faster uploads)
 const PARALLEL_CHUNKS = 4
 
@@ -297,130 +297,47 @@ export default function DocumentUploadModal({
   }
 
   /**
-   * Upload small files (≤50MB) using direct Supabase Storage upload
-   * This bypasses the Vercel API route entirely, making uploads 50-70% faster
+   * Upload small files (≤5MB) to Supabase Storage via /api/documents
+   * For PDFs: Uploads file, then extracts text client-side (consistent with large file handling)
+   * For other types: Server handles text extraction
    *
-   * Flow:
-   * 1. Request signed upload URL from API
-   * 2. Upload directly to Supabase Storage using XHR
-   * 3. Notify API that upload is complete
-   * 4. Extract text for PDFs client-side
+   * TODO: Re-implement direct upload for better performance once endpoint is debugged
    */
   const uploadSmallFile = async (file: File): Promise<void> => {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 300000) // 5 minute timeout
+
     try {
-      console.log(`🚀 Starting direct upload for ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`)
+      console.log(`📤 Uploading small file via /api/documents: ${file.name}`)
 
-      // Step 1: Request signed upload URL
-      setUploadProgress({
-        uploadedChunks: 0,
-        totalChunks: 0,
-        percentage: 0,
-        status: 'Preparing upload...'
-      })
+      const formData = new FormData()
+      formData.append('file', file)
 
-      const urlResponse = await fetch('/api/documents/upload-url', {
+      const response = await fetch('/api/documents', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type,
-        }),
+        body: formData,
+        signal: controller.signal,
       })
 
-      if (!urlResponse.ok) {
-        const errorData = await urlResponse.json()
-        throw new Error(errorData.error || 'Failed to get upload URL')
+      clearTimeout(timeout)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to upload document')
       }
 
-      const { uploadUrl, token, documentId, storagePath } = await urlResponse.json()
-      console.log(`✅ Received signed upload URL for document ${documentId}`)
+      const result = await response.json()
+      console.log(`✅ Small file uploaded successfully:`, result)
 
-      // Step 2: Upload directly to Supabase Storage with progress tracking
-      setUploadProgress({
-        uploadedChunks: 0,
-        totalChunks: 0,
-        percentage: 0,
-        status: 'Uploading to storage...'
-      })
-
-      const uploadPromise = new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest()
-
-        // Track upload progress
-        xhr.upload.addEventListener('progress', (e) => {
-          if (e.lengthComputable) {
-            const percentage = Math.round((e.loaded / e.total) * 100)
-            setUploadProgress({
-              uploadedChunks: 0,
-              totalChunks: 0,
-              percentage,
-              status: `Uploading... ${percentage}%`
-            })
-          }
-        })
-
-        xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            console.log(`✅ File uploaded successfully to storage`)
-            resolve()
-          } else {
-            reject(new Error(`Upload failed with status ${xhr.status}`))
-          }
-        })
-
-        xhr.addEventListener('error', () => {
-          reject(new Error('Network error during upload'))
-        })
-
-        xhr.addEventListener('abort', () => {
-          reject(new Error('Upload aborted'))
-        })
-
-        // Supabase signed upload requires PUT with specific headers
-        xhr.open('PUT', uploadUrl)
-        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
-        xhr.setRequestHeader('x-upsert', 'false')
-        if (token) {
-          xhr.setRequestHeader('Authorization', `Bearer ${token}`)
-        }
-        xhr.send(file)
-      })
-
-      await uploadPromise
-
-      // Step 3: Notify server that upload is complete
-      setUploadProgress({
-        uploadedChunks: 0,
-        totalChunks: 0,
-        percentage: 100,
-        status: 'Finalizing...'
-      })
-
-      const completeResponse = await fetch('/api/documents/complete-upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          documentId,
-          storagePath,
-        }),
-      })
-
-      if (!completeResponse.ok) {
-        const errorData = await completeResponse.json()
-        throw new Error(errorData.error || 'Failed to complete upload')
-      }
-
-      console.log(`✅ Upload completed successfully`)
-
-      // Step 4: Extract text for PDFs client-side
-      if (file.type === 'application/pdf' && documentId) {
-        console.log(`🔄 Starting client-side PDF text extraction`)
-        await extractTextFromPDF(file, documentId)
+      // For PDFs, override server-side extraction with client-side extraction
+      // This ensures consistent behavior between small and large PDFs
+      if (file.type === 'application/pdf' && result.document?.id) {
+        console.log(`🔄 Overriding with client-side PDF extraction for consistency`)
+        await extractTextFromPDF(file, result.document.id)
       }
 
     } catch (err) {
-      console.error('❌ Direct upload failed:', err)
+      clearTimeout(timeout)
       throw err
     }
   }
