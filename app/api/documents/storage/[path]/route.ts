@@ -39,7 +39,7 @@ export async function GET(
     try {
       const { data: document, error: docError } = await supabase
         .from('documents')
-        .select('id, metadata, storage_path')
+        .select('id, metadata, storage_path, file_size')
         .eq('storage_path', originalPath)
         .single()
 
@@ -47,7 +47,7 @@ export async function GET(
         console.log('📦 File is in R2, fetching from R2 URL:', document.metadata.r2_url)
 
         // Check file size to determine strategy
-        const fileSize = document.metadata?.file_size || 0
+        const fileSize = document.file_size || 0
         const FILE_SIZE_THRESHOLD = 50 * 1024 * 1024 // 50MB
 
         // For large files (>50MB), stream directly from R2

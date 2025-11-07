@@ -663,32 +663,34 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
             }
           >
             {/* Virtual scrolling: render only visible pages for memory efficiency */}
-            <List
-              ref={listRef}
-              height={containerHeight}
-              itemCount={numPages}
-              itemSize={(() => {
-                // Calculate page height based on scale and rotation
-                // Standard A4: 595x842 pixels at scale 1.0
-                const baseHeight = rotation % 180 === 0 ? 842 : 595
-                return Math.ceil(baseHeight * scale) + 32 // + spacing
-              })()}
-              width={containerWidth}
-              overscanCount={2}
-            >
-              {({ index, style }) => (
-                <div style={{...style, display: 'flex', justifyContent: 'center', paddingTop: '16px'}} key={`page_${index + 1}`}>
-                  <Page
-                    pageNumber={index + 1}
-                    scale={scale}
-                    rotate={rotation}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                    className="border border-gray-300 dark:border-gray-600 shadow-lg"
-                  />
-                </div>
-              )}
-            </List>
+            {containerHeight > 0 && containerWidth > 0 ? (
+              <List
+                ref={listRef}
+                height={containerHeight}
+                itemCount={numPages}
+                itemSize={Math.ceil((rotation % 180 === 0 ? 842 : 595) * scale) + 32}
+                width={containerWidth}
+                overscanCount={2}
+                key={`${scale}-${rotation}`}
+              >
+                {({ index, style }) => (
+                  <div style={{...style, display: 'flex', justifyContent: 'center', paddingTop: '16px'}} key={`page_${index + 1}`}>
+                    <Page
+                      pageNumber={index + 1}
+                      scale={scale}
+                      rotate={rotation}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                      className="border border-gray-300 dark:border-gray-600 shadow-lg"
+                    />
+                  </div>
+                )}
+              </List>
+            ) : (
+              <div className="flex items-center justify-center h-96">
+                <div className="text-body-sm text-gray-600 dark:text-gray-400">Initializing viewer...</div>
+              </div>
+            )}
           </Document>
         </div>
       </div>
