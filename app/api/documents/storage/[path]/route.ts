@@ -44,8 +44,30 @@ export async function GET(
         .single()
 
       if (!docError && document && document.metadata?.r2_url) {
-        console.log('📦 File is in R2, redirecting to R2 URL:', document.metadata.r2_url)
-        return NextResponse.redirect(document.metadata.r2_url)
+        console.log('📦 File is in R2, fetching from R2 URL:', document.metadata.r2_url)
+
+        // Fetch the file from R2 and return it
+        // Don't redirect - that breaks fetch() calls from JavaScript
+        try {
+          const r2Response = await fetch(document.metadata.r2_url)
+          if (!r2Response.ok) {
+            throw new Error(`R2 fetch failed: ${r2Response.status}`)
+          }
+
+          const r2Data = await r2Response.blob()
+          console.log('✅ Fetched from R2 successfully, size:', r2Data.size)
+
+          return new NextResponse(r2Data, {
+            headers: {
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': `inline; filename="${storagePath.split('/').pop()}"`,
+              'Cache-Control': 'public, max-age=3600',
+            },
+          })
+        } catch (r2Error) {
+          console.error('❌ R2 fetch failed, falling back to Supabase storage:', r2Error)
+          // Continue to Supabase storage fallback
+        }
       }
 
       // If document not found or no R2 URL, continue with Supabase storage fetch
