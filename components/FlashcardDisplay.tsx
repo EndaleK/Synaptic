@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { ChevronLeft, ChevronRight, RotateCcw, Download, Home, ChevronDown, RefreshCw, BookOpen, Sparkles, Zap, TrendingUp, Check, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, RotateCcw, Download, Home, ChevronDown, RefreshCw, BookOpen, Sparkles, Zap, TrendingUp, Check, X, Share2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Flashcard, MasteryLevel } from "@/lib/types"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
+import ShareModal from "./ShareModal"
 import { useToast } from "./ToastContainer"
 
 interface FlashcardDisplayProps {
@@ -20,6 +21,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   const [flipped, setFlipped] = useState(false)
   const [studiedCards, setStudiedCards] = useState<Set<string>>(new Set())
   const [showExportMenu, setShowExportMenu] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
   const exportMenuRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -976,9 +978,20 @@ ${'='.repeat(50)}`).join('\n')}`
                     </button>
                     <button
                       onClick={handleExportText}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded-b-lg text-gray-700 dark:text-gray-300"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                     >
                       Text
+                    </button>
+                    <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                    <button
+                      onClick={() => {
+                        setShowShareModal(true)
+                        setShowExportMenu(false)
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded-b-lg text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                    >
+                      <Share2 className="h-3.5 w-3.5" />
+                      Share QR Code
                     </button>
                   </div>
                 )}
@@ -1143,6 +1156,15 @@ ${'='.repeat(50)}`).join('\n')}`
           // Reset flashcard display when switching documents
           onReset()
         }}
+      />
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        url="https://synaptic.study"
+        title="Share Synaptic"
+        description="Scan this QR code to access Synaptic - AI-powered personalized learning"
       />
     </div>
   )

@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
 import { BookOpen, Brain, MessageSquare, Mic, Network, Sparkles, ArrowRight, Check } from "lucide-react"
 import Logo from "@/components/Logo"
+import { QRCodeGenerator } from "@/components/QRCodeGenerator"
 
 export default function LandingPage() {
   const { isSignedIn } = useAuth()
@@ -376,6 +377,68 @@ export default function LandingPage() {
                   <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
                   <span className="font-medium">Cancel anytime</span>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* QR Code & Footer Section */}
+      <section className="py-12 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black border-t border-gray-200 dark:border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Left: QR Code */}
+            <div className="flex flex-col items-center md:items-start space-y-4">
+              <div className="text-center md:text-left">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Share Synaptic
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 max-w-md">
+                  Scan the QR code or download it to share Synaptic with friends, classmates, or on social media.
+                </p>
+              </div>
+              <QRCodeGenerator
+                url="https://synaptic.study"
+                size={200}
+                logoSize={50}
+                filename="synaptic-qr-code.png"
+                showDownload={true}
+                className="mx-auto md:mx-0"
+              />
+            </div>
+
+            {/* Right: Quick Links & Info */}
+            <div className="space-y-6">
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                  Get Started Today
+                </h4>
+                <div className="space-y-2">
+                  <Link
+                    href="/sign-up"
+                    className="block text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                  >
+                    → Create a free account
+                  </Link>
+                  <Link
+                    href="/sign-in"
+                    className="block text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                  >
+                    → Sign in to your account
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    className="block text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                  >
+                    → Go to Dashboard
+                  </Link>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <strong className="text-gray-700 dark:text-gray-300">About Synaptic:</strong> AI-powered personalized learning platform featuring flashcards, interactive chat, podcasts, mind maps, and more.
+                </p>
               </div>
             </div>
           </div>
