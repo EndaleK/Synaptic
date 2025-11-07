@@ -54,15 +54,38 @@ export async function GET(
 
         // If r2_url is empty or invalid (contains "undefined"), generate signed URL
         if (!r2Url || r2Url.includes('undefined')) {
-          console.log('⚠️ R2 public URL not configured, generating signed URL')
+          console.log('⚠️ R2 public URL not configured, generating signed URL for:', document.storage_path)
+
+          // Check if R2 is configured
+          const hasR2 = !!(process.env.R2_ENDPOINT && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY)
+
+          if (!hasR2) {
+            console.error('❌ R2 credentials not configured - cannot generate signed URL')
+            return NextResponse.json(
+              {
+                error: 'File stored in R2 but R2 credentials not configured',
+                details: 'This file requires R2 storage access. Please configure R2_ENDPOINT, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY environment variables.',
+                storagePath: document.storage_path,
+                hint: 'Contact administrator to configure R2 storage access'
+              },
+              { status: 503 }
+            )
+          }
+
           try {
             const { getR2SignedUrl } = await import('@/lib/r2-storage')
             r2Url = await getR2SignedUrl(document.storage_path, 3600) // 1 hour expiry
-            console.log('✅ Generated signed R2 URL')
+            console.log('✅ Generated signed R2 URL successfully')
           } catch (signedUrlError) {
             console.error('❌ Failed to generate signed R2 URL:', signedUrlError)
-            // Continue to Supabase storage fallback
-            r2Url = null
+            return NextResponse.json(
+              {
+                error: 'Failed to generate R2 download URL',
+                details: signedUrlError instanceof Error ? signedUrlError.message : 'Unknown error',
+                storagePath: document.storage_path
+              },
+              { status: 500 }
+            )
           }
         }
 
