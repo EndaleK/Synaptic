@@ -407,14 +407,53 @@ export async function POST(request: NextRequest) {
           // Use Cloudflare R2 storage
           r2FileKey = `documents/${userId}/${tempKey}`
           console.log(`[DEBUG] Uploading to R2: ${r2FileKey}`)
-          const { uploadToR2 } = await import('@/lib/r2-storage')
-          const uploadResult = await uploadToR2(
-            completeFileBuffer,
-            r2FileKey,
-            file.type || 'application/pdf'
-          )
-          r2Url = uploadResult.url
-          console.log(`[DEBUG] ☁️ Uploaded complete file to R2: ${r2FileKey}`)
+          const { uploadToR2, fileExistsInR2 } = await import('@/lib/r2-storage')
+
+          try {
+            const uploadResult = await uploadToR2(
+              completeFileBuffer,
+              r2FileKey,
+              file.type || 'application/pdf'
+            )
+            r2Url = uploadResult.url
+            console.log(`[DEBUG] ☁️ Uploaded complete file to R2: ${r2FileKey}`)
+
+            // Verify the upload succeeded by checking if file exists
+            const uploadVerified = await fileExistsInR2(r2FileKey)
+            if (!uploadVerified) {
+              console.warn(`[WARN] ⚠️ R2 upload verification failed for ${r2FileKey}, falling back to Supabase`)
+              throw new Error('R2 upload verification failed - file not found after upload')
+            }
+            console.log(`[DEBUG] ✅ R2 upload verified successfully`)
+          } catch (r2UploadError) {
+            console.error(`[ERROR] R2 upload/verification failed, falling back to Supabase:`, r2UploadError)
+
+            // Fall back to Supabase Storage
+            const supabaseFilePath = `${userProfileId}/${timestamp}-${sanitizedFileName}`
+            console.log(`[DEBUG] Uploading to Supabase Storage (R2 fallback): ${supabaseFilePath}`)
+
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('documents')
+              .upload(supabaseFilePath, completeFileBuffer, {
+                cacheControl: '3600',
+                upsert: false,
+                contentType: file.type || 'application/pdf'
+              })
+
+            if (uploadError) {
+              console.error('[ERROR] Supabase fallback upload also failed:', uploadError)
+              throw new Error(`Both R2 and Supabase uploads failed: ${uploadError.message}`)
+            }
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+              .from('documents')
+              .getPublicUrl(supabaseFilePath)
+
+            r2Url = publicUrl
+            r2FileKey = supabaseFilePath
+            console.log(`[DEBUG] ✅ Fallback to Supabase successful: ${r2FileKey}`)
+          }
         } else {
           // Fall back to Supabase Storage (upload Buffer directly, no File object needed)
           const supabaseFilePath = `${userProfileId}/${timestamp}-${sanitizedFileName}`

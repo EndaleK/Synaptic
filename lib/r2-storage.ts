@@ -30,6 +30,14 @@ export async function uploadToR2(
   key: string,
   contentType: string = 'application/pdf'
 ): Promise<{ url: string; key: string }> {
+  console.log('📤 R2 Upload starting:', {
+    bucket: BUCKET_NAME,
+    key,
+    endpoint: process.env.R2_ENDPOINT,
+    contentType,
+    fileSize: file instanceof Buffer ? file.length : 'stream'
+  })
+
   try {
     // Use Upload for automatic multipart handling (files > 5MB)
     const upload = new Upload({
@@ -42,7 +50,8 @@ export async function uploadToR2(
       },
     })
 
-    await upload.done()
+    const result = await upload.done()
+    console.log('✅ R2 Upload successful:', { bucket: BUCKET_NAME, key })
 
     // Return the public URL (if bucket is configured for public access)
     // Or return the key for later retrieval via signed URLs
@@ -53,8 +62,14 @@ export async function uploadToR2(
 
     return { url, key }
   } catch (error) {
-    console.error('R2 upload error:', error)
-    throw new Error('Failed to upload file to R2 storage')
+    console.error('❌ R2 upload error:', {
+      bucket: BUCKET_NAME,
+      key,
+      endpoint: process.env.R2_ENDPOINT,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      errorDetails: error
+    })
+    throw new Error(`Failed to upload file to R2 storage: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
@@ -66,6 +81,13 @@ export async function getR2SignedUrl(
   key: string,
   expiresIn: number = 3600
 ): Promise<string> {
+  console.log('🔐 R2 Generating signed URL:', {
+    bucket: BUCKET_NAME,
+    key,
+    endpoint: process.env.R2_ENDPOINT,
+    expiresIn
+  })
+
   try {
     const command = new GetObjectCommand({
       Bucket: BUCKET_NAME,
@@ -73,10 +95,17 @@ export async function getR2SignedUrl(
     })
 
     const signedUrl = await getSignedUrl(r2Client, command, { expiresIn })
+    console.log('✅ R2 Signed URL generated successfully for key:', key)
     return signedUrl
   } catch (error) {
-    console.error('R2 signed URL error:', error)
-    throw new Error('Failed to generate download URL')
+    console.error('❌ R2 signed URL generation failed:', {
+      bucket: BUCKET_NAME,
+      key,
+      endpoint: process.env.R2_ENDPOINT,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      errorDetails: error
+    })
+    throw new Error(`Failed to generate download URL: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
@@ -161,8 +190,14 @@ export async function fileExistsInR2(key: string): Promise<boolean> {
     })
 
     await r2Client.send(command)
+    console.log('✅ R2 File exists:', { bucket: BUCKET_NAME, key })
     return true
   } catch (error) {
+    console.warn('⚠️ R2 File does not exist:', {
+      bucket: BUCKET_NAME,
+      key,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    })
     return false
   }
 }

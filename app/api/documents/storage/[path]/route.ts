@@ -52,38 +52,32 @@ export async function GET(
 
         // If r2_url is empty or invalid (contains "undefined"), generate signed URL
         if (!r2Url || r2Url.includes('undefined')) {
-          console.log('⚠️ R2 public URL not configured, generating signed URL for:', document.storage_path)
+          console.log('⚠️ R2 public URL not configured, checking if file exists and generating signed URL for:', document.storage_path)
 
           // Check if R2 is configured
           const hasR2 = !!(process.env.R2_ENDPOINT && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY)
 
           if (!hasR2) {
-            console.error('❌ R2 credentials not configured - cannot generate signed URL')
-            return NextResponse.json(
-              {
-                error: 'File stored in R2 but R2 credentials not configured',
-                details: 'This file requires R2 storage access. Please configure R2_ENDPOINT, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY environment variables.',
-                storagePath: document.storage_path,
-                hint: 'Contact administrator to configure R2 storage access'
-              },
-              { status: 503 }
-            )
-          }
+            console.error('❌ R2 credentials not configured - will try Supabase fallback')
+            isR2File = false // Mark as non-R2 to trigger Supabase fallback
+          } else {
+            try {
+              // First check if file actually exists in R2
+              const { fileExistsInR2, getR2SignedUrl } = await import('@/lib/r2-storage')
+              const fileExists = await fileExistsInR2(document.storage_path)
 
-          try {
-            const { getR2SignedUrl } = await import('@/lib/r2-storage')
-            r2Url = await getR2SignedUrl(document.storage_path, 3600) // 1 hour expiry
-            console.log('✅ Generated signed R2 URL successfully')
-          } catch (signedUrlError) {
-            console.error('❌ Failed to generate signed R2 URL:', signedUrlError)
-            return NextResponse.json(
-              {
-                error: 'Failed to generate R2 download URL',
-                details: signedUrlError instanceof Error ? signedUrlError.message : 'Unknown error',
-                storagePath: document.storage_path
-              },
-              { status: 500 }
-            )
+              if (!fileExists) {
+                console.warn('⚠️ File not found in R2, will try Supabase fallback:', document.storage_path)
+                isR2File = false // Mark as non-R2 to trigger Supabase fallback
+              } else {
+                // File exists, generate signed URL
+                r2Url = await getR2SignedUrl(document.storage_path, 3600) // 1 hour expiry
+                console.log('✅ File exists in R2, generated signed URL successfully')
+              }
+            } catch (r2Error) {
+              console.error('❌ R2 check/signed URL failed, will try Supabase fallback:', r2Error)
+              isR2File = false // Mark as non-R2 to trigger Supabase fallback
+            }
           }
         }
 
@@ -113,16 +107,9 @@ export async function GET(
                 },
               })
             } catch (r2Error) {
-              console.error('❌ R2 stream failed:', r2Error)
-              return NextResponse.json(
-                {
-                  error: 'Failed to fetch document from R2 storage',
-                  details: r2Error instanceof Error ? r2Error.message : 'Unknown error',
-                  storagePath: document.storage_path,
-                  hint: 'R2 storage is currently unavailable. Please try again later.'
-                },
-                { status: 500 }
-              )
+              console.error('❌ R2 stream failed, will try Supabase fallback:', r2Error)
+              // Don't return error - fall through to Supabase fallback
+              isR2File = false // Disable R2 mode to trigger Supabase fallback
             }
           } else {
             // For smaller files (<50MB), fetch as blob (original behavior)
@@ -144,33 +131,18 @@ export async function GET(
                 },
               })
             } catch (r2Error) {
-              console.error('❌ R2 fetch failed:', r2Error)
-              return NextResponse.json(
-                {
-                  error: 'Failed to fetch document from R2 storage',
-                  details: r2Error instanceof Error ? r2Error.message : 'Unknown error',
-                  storagePath: document.storage_path,
-                  hint: 'R2 storage is currently unavailable. Please try again later.'
-                },
-                { status: 500 }
-              )
+              console.error('❌ R2 fetch failed, will try Supabase fallback:', r2Error)
+              // Don't return error - fall through to Supabase fallback
+              isR2File = false // Disable R2 mode to trigger Supabase fallback
             }
           }
         }
       }
 
-      // If R2 file but no R2 URL, return error (don't fall back to Supabase for R2 files)
+      // If R2 file but failed to fetch from R2, fall back to Supabase
       if (isR2File) {
-        console.error('❌ R2 file detected but no R2 URL available')
-        return NextResponse.json(
-          {
-            error: 'R2 storage configuration issue',
-            details: 'File is stored in R2 but URL is not available',
-            storagePath: document.storage_path,
-            hint: 'Please contact support'
-          },
-          { status: 500 }
-        )
+        console.log('⚠️ R2 fetch failed, falling back to Supabase storage')
+        // Try Supabase with original R2 path first, then strip prefix if needed
       }
 
       // If document not found in DB, try Supabase storage directly
