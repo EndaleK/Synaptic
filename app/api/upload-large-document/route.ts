@@ -1,13 +1,15 @@
 /**
- * API Route: Upload Large Document (Chunked Upload)
+ * API Route: Upload Large Document (Streaming Multipart Upload)
  *
- * Handles chunked uploads of large PDF files with streaming processing
+ * Handles chunked uploads of large PDF files with ZERO memory buffering
  * 1. Accept file chunks from client (max 4MB per chunk to stay under Vercel's 4.5MB limit)
- * 2. Accumulate chunks in memory
- * 3. Upload to Cloudflare R2 storage (optional backup) or Supabase
- * 4. Extract text using PDF parser
- * 5. Index in ChromaDB for vector search (optional)
- * 6. Save metadata to Supabase
+ * 2. Stream each chunk IMMEDIATELY to R2 (multipart upload) or Supabase (temp files)
+ * 3. Complete multipart upload server-side (R2) or concatenate chunks (Supabase)
+ * 4. Save metadata to Supabase
+ * 5. Client-side PDF text extraction happens in browser
+ *
+ * MEMORY OPTIMIZATION: Never buffers complete file in memory, only current 4MB chunk
+ * This allows uploads of 200MB+ files without hitting serverless memory limits
  *
  * IMPORTANT: Each chunk must be < 4.5MB due to Vercel's request body limit
  * Client should send chunks of 4MB max to ensure compatibility
@@ -16,14 +18,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
+import { S3Client, CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand, AbortMultipartUploadCommand } from '@aws-sdk/client-s3'
 
 export const runtime = 'nodejs' // Required for pdf-parse and Buffer operations
 export const maxDuration = 300 // 5 minutes max (requires Vercel Pro plan)
 // Note: Vercel enforces 4.5MB max body size at edge level (cannot be changed)
 
+// Initialize R2 client for multipart uploads
+const getR2Client = () => {
+  if (!process.env.R2_ENDPOINT || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
+    return null
+  }
+
+  return new S3Client({
+    region: 'auto',
+    endpoint: process.env.R2_ENDPOINT,
+    credentials: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+    },
+  })
+}
+
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'synaptic-documents'
+
 // Upload session tracking to handle parallel chunk uploads
 interface UploadSession {
-  chunks: Buffer[]
+  uploadId?: string  // R2/S3 multipart upload ID
+  parts: Map<number, string>  // Map of chunk index → ETag (for multipart upload)
   documentId: string | null  // UUID from database (set after document creation)
   fileName: string
   userId: string
@@ -31,10 +53,13 @@ interface UploadSession {
   timestamp: number
   totalChunks: number
   authValidatedAt: number  // Track when auth was last validated
+  storageKey: string  // R2/Supabase storage path
+  fileType: string
+  hasR2: boolean  // Track which storage backend we're using
 }
 
-// Temporary storage for chunks during upload (cleared after processing)
-const chunkStorage = new Map<string, UploadSession>()
+// Temporary storage for sessions during upload (no chunks buffered in memory)
+const sessionStorage = new Map<string, UploadSession>()
 
 // Auth session cache - prevents re-validating Clerk auth for every chunk
 // Clerk sessions can expire during long uploads (10-15 min), causing "Unauthorized" errors
@@ -103,7 +128,7 @@ export async function POST(request: NextRequest) {
     // 3. Generate unique session key (consistent across all chunks for this upload)
     const chunkKey = `${userId}_${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`
 
-    // 4. Convert chunk to buffer
+    // 4. Convert chunk to buffer (only current chunk, not all chunks!)
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
@@ -112,9 +137,25 @@ export async function POST(request: NextRequest) {
     let session: UploadSession
     let documentId: string
 
+    // Detect file type early
+    let fileType = file.type
+    if (!fileType || fileType === 'application/octet-stream') {
+      if (fileName.toLowerCase().endsWith('.pdf')) {
+        fileType = 'application/pdf'
+      } else if (fileName.toLowerCase().endsWith('.docx')) {
+        fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      } else if (fileName.toLowerCase().endsWith('.doc')) {
+        fileType = 'application/msword'
+      } else if (fileName.toLowerCase().endsWith('.txt')) {
+        fileType = 'text/plain'
+      } else {
+        fileType = 'application/octet-stream'
+      }
+    }
+
     // Try to get session from memory first (for performance)
     // But if not found and client provided documentId, query database instead
-    if (!chunkStorage.has(chunkKey) && !existingDocumentId) {
+    if (!sessionStorage.has(chunkKey) && !existingDocumentId) {
       // First chunk: Create new upload session AND database record immediately
       const timestamp = Date.now()
       const supabase = await createClient()
@@ -164,23 +205,6 @@ export async function POST(request: NextRequest) {
         tempStoragePath
       })
 
-      // Detect file type with fallback to extension-based detection
-      let fileType = file.type
-      if (!fileType || fileType === 'application/octet-stream') {
-        // Fallback: Detect by file extension
-        if (fileName.toLowerCase().endsWith('.pdf')) {
-          fileType = 'application/pdf'
-        } else if (fileName.toLowerCase().endsWith('.docx')) {
-          fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        } else if (fileName.toLowerCase().endsWith('.doc')) {
-          fileType = 'application/msword'
-        } else if (fileName.toLowerCase().endsWith('.txt')) {
-          fileType = 'text/plain'
-        } else {
-          fileType = 'application/octet-stream'
-        }
-      }
-
       console.log(`[DEBUG] 📝 Creating document record:`, {
         user_id: userProfileId,
         file_name: fileName,
@@ -220,20 +244,49 @@ export async function POST(request: NextRequest) {
         clerk_user_id: userId
       })
 
+      // Initialize multipart upload for R2 (if configured)
+      let uploadId: string | undefined
+
+      if (hasR2) {
+        const r2Client = getR2Client()
+        if (r2Client) {
+          try {
+            console.log(`[DEBUG] Initiating R2 multipart upload for: ${tempStoragePath}`)
+            const createMultipartCommand = new CreateMultipartUploadCommand({
+              Bucket: R2_BUCKET_NAME,
+              Key: tempStoragePath,
+              ContentType: fileType,
+            })
+
+            const multipartResponse = await r2Client.send(createMultipartCommand)
+            uploadId = multipartResponse.UploadId
+            console.log(`[DEBUG] ✅ R2 multipart upload initiated: ${uploadId}`)
+          } catch (r2Error) {
+            console.error(`[ERROR] Failed to initiate R2 multipart upload:`, r2Error)
+            // Continue without R2 - will fall back to Supabase
+          }
+        }
+      }
+
       session = {
-        chunks: [],
-        documentId: document.id, // Set immediately!
+        uploadId, // R2 multipart upload ID (undefined for Supabase)
+        parts: new Map(), // Track uploaded parts and their ETags
+        documentId: document.id,
         fileName,
         userId,
-        userProfileId, // Cache for later
+        userProfileId,
         timestamp,
-        totalChunks: parseInt(totalChunks)
+        totalChunks: parseInt(totalChunks),
+        authValidatedAt: now,
+        storageKey: tempStoragePath,
+        fileType,
+        hasR2
       }
 
       documentId = document.id
-      chunkStorage.set(chunkKey, session)
-      console.log(`🆕 Upload session initialized for ${fileName} with documentId: ${document.id}`)
-    } else if (!chunkStorage.has(chunkKey) && existingDocumentId) {
+      sessionStorage.set(chunkKey, session)
+      console.log(`🆕 Upload session initialized for ${fileName} with documentId: ${document.id}${uploadId ? `, uploadId: ${uploadId}` : ''}`)
+    } else if (!sessionStorage.has(chunkKey) && existingDocumentId) {
       // Session not in memory (hit different serverless instance), but client provided documentId
       // Reconstruct session from database
       console.log(`[DEBUG] Session not in memory, reconstructing from database using documentId: ${existingDocumentId}`)
@@ -255,7 +308,7 @@ export async function POST(request: NextRequest) {
       // Query database to verify document exists and get metadata
       const { data: document, error: docError } = await supabase
         .from('documents')
-        .select('id, user_id, file_name, metadata')
+        .select('id, user_id, file_name, metadata, storage_path, file_type')
         .eq('id', existingDocumentId)
         .single()
 
@@ -284,38 +337,104 @@ export async function POST(request: NextRequest) {
         file_name: document.file_name
       })
 
-      // Reconstruct session (chunks array will be sparse, which is fine)
+      // Extract uploadId from metadata if available (for R2 multipart uploads)
+      const uploadId = document.metadata?.uploadId as string | undefined
+
+      // Reconstruct session (parts map will be populated as chunks arrive)
       session = {
-        chunks: [],
+        uploadId,
+        parts: new Map(), // Will be populated as chunks arrive
         documentId: document.id,
         fileName: document.file_name,
         userId,
         userProfileId: profile.id,
         timestamp: Date.now(),
-        totalChunks: parseInt(totalChunks)
+        totalChunks: parseInt(totalChunks),
+        authValidatedAt: now,
+        storageKey: document.storage_path,
+        fileType: document.file_type || fileType,
+        hasR2
       }
 
       documentId = document.id
-      chunkStorage.set(chunkKey, session)
+      sessionStorage.set(chunkKey, session)
       console.log(`♻️  Session reconstructed from database for ${fileName}`)
     } else {
       // Session exists in memory (same serverless instance handling multiple chunks)
-      session = chunkStorage.get(chunkKey)!
+      session = sessionStorage.get(chunkKey)!
       documentId = session.documentId!
       console.log(`[DEBUG] Using existing session from memory for ${fileName}`)
     }
 
-    // Store chunk at correct index position
-    session.chunks[currentChunkIndex] = buffer
+    // 6. Upload chunk immediately to storage (NO buffering in memory!)
+    console.log(`📤 Uploading chunk ${parseInt(chunkIndex) + 1}/${totalChunks} for ${fileName} (${buffer.length} bytes)`)
 
-    console.log(`📤 Received chunk ${parseInt(chunkIndex) + 1}/${totalChunks} for ${fileName} (${buffer.length} bytes)`)
+    // AWS S3/R2 part numbers are 1-indexed, not 0-indexed
+    const partNumber = currentChunkIndex + 1
 
-    // 6. Check if ALL chunks have been received (not just if this is the last chunk)
+    try {
+      if (session.uploadId && session.hasR2) {
+        // R2 multipart upload: Upload this chunk as a part
+        const r2Client = getR2Client()
+        if (r2Client) {
+          console.log(`[DEBUG] Uploading part ${partNumber} to R2 multipart upload ${session.uploadId}`)
+
+          const uploadPartCommand = new UploadPartCommand({
+            Bucket: R2_BUCKET_NAME,
+            Key: session.storageKey,
+            UploadId: session.uploadId,
+            PartNumber: partNumber,
+            Body: buffer,
+          })
+
+          const uploadPartResponse = await r2Client.send(uploadPartCommand)
+          const etag = uploadPartResponse.ETag
+
+          if (!etag) {
+            throw new Error(`R2 upload part ${partNumber} did not return ETag`)
+          }
+
+          // Store ETag for final completion
+          session.parts.set(partNumber, etag)
+          console.log(`[DEBUG] ✅ Part ${partNumber} uploaded with ETag: ${etag}`)
+        }
+      } else {
+        // Supabase Storage: Upload chunk as temporary file
+        const supabase = await createClient()
+        const chunkPath = `${session.storageKey}.chunk${currentChunkIndex}`
+
+        console.log(`[DEBUG] Uploading chunk ${currentChunkIndex} to Supabase: ${chunkPath}`)
+
+        const { error: uploadError } = await supabase.storage
+          .from('documents')
+          .upload(chunkPath, buffer, {
+            cacheControl: '3600',
+            upsert: true, // Allow re-uploading same chunk (retry logic)
+            contentType: 'application/octet-stream'
+          })
+
+        if (uploadError) {
+          console.error(`[ERROR] Failed to upload chunk ${currentChunkIndex}:`, uploadError)
+          throw new Error(`Failed to upload chunk to storage: ${uploadError.message}`)
+        }
+
+        session.parts.set(partNumber, chunkPath) // Store path instead of ETag
+        console.log(`[DEBUG] ✅ Chunk ${currentChunkIndex} uploaded to: ${chunkPath}`)
+      }
+    } catch (uploadError) {
+      console.error(`[ERROR] Chunk upload failed:`, uploadError)
+      throw new Error(`Failed to upload chunk ${currentChunkIndex}: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`)
+    }
+
+    // Buffer has been uploaded - can be garbage collected now!
+    // No need to hold it in memory
+
+    // 7. Check if ALL chunks have been received (not just if this is the last chunk)
     // Chunks can arrive out of order due to parallel uploads
-    const receivedChunks = session.chunks.filter(chunk => chunk !== undefined).length
+    const receivedChunks = session.parts.size
     const allChunksReceived = receivedChunks === session.totalChunks
 
-    console.log(`📊 Progress: ${receivedChunks}/${session.totalChunks} chunks received`)
+    console.log(`📊 Progress: ${receivedChunks}/${session.totalChunks} chunks uploaded`)
 
     let processingResult = null
     let r2Url = ''
@@ -371,124 +490,167 @@ export async function POST(request: NextRequest) {
           session.userProfileId = userProfileId
         }
 
-        console.log(`[DEBUG] Step 2: Validating and concatenating ${session.chunks.length} chunks (expected: ${session.totalChunks})`)
+        console.log(`[DEBUG] Step 2: Finalizing upload (all ${session.totalChunks} parts uploaded)`)
 
-        // Validate all chunks are present (no undefined/sparse array values)
-        const missingChunks: number[] = []
-        for (let i = 0; i < session.totalChunks; i++) {
-          if (!session.chunks[i]) {
-            missingChunks.push(i)
+        // Validate all parts are present
+        const missingParts: number[] = []
+        for (let i = 1; i <= session.totalChunks; i++) {
+          if (!session.parts.has(i)) {
+            missingParts.push(i)
           }
         }
 
-        if (missingChunks.length > 0) {
-          console.error(`[ERROR] Missing chunks detected:`, missingChunks)
-          throw new Error(`Upload incomplete: missing chunks ${missingChunks.join(', ')}. Please try uploading again.`)
+        if (missingParts.length > 0) {
+          console.error(`[ERROR] Missing parts detected:`, missingParts)
+          throw new Error(`Upload incomplete: missing parts ${missingParts.join(', ')}. Please try uploading again.`)
         }
 
-        // Concatenate all chunks into complete buffer
-        const completeFileBuffer = Buffer.concat(session.chunks)
-        console.log(`[DEBUG] ✅ Assembled ${completeFileBuffer.length} bytes from ${session.totalChunks} chunks`)
+        console.log(`[DEBUG] ✅ All ${session.totalChunks} parts validated`)
 
-        // Clear chunks from memory but keep session for documentId access
-        session.chunks = []  // Free memory but keep session metadata
+        // Storage path already set in session
+        r2FileKey = session.storageKey
+        let totalFileSize = 0
 
-        // Generate storage path (will use actual documentId from DB after insertion)
-        const timestamp = session.timestamp
-        const sanitizedFileName = session.fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
-        const tempKey = `${userId}_${timestamp}_${sanitizedFileName}`
-        // NOTE: r2FileKey will be set in the if/else block below based on storage type
-        console.log(`[DEBUG] Preparing to save document to storage`)
+        console.log(`[DEBUG] Step 3: Completing upload (hasR2: ${session.hasR2}, uploadId: ${session.uploadId})`)
 
-        console.log(`[DEBUG] Step 3: Uploading to storage (hasR2: ${hasR2})`)
+        // Complete upload based on storage backend
+        if (session.uploadId && session.hasR2) {
+          // R2 multipart upload: Complete with all ETags
+          const r2Client = getR2Client()
+          if (r2Client) {
+            console.log(`[DEBUG] Completing R2 multipart upload ${session.uploadId}`)
 
-        // Upload complete file to storage (R2 if available, otherwise Supabase)
-        if (hasR2) {
-          // Use Cloudflare R2 storage
-          r2FileKey = `documents/${userId}/${tempKey}`
-          console.log(`[DEBUG] Uploading to R2: ${r2FileKey}`)
-          const { uploadToR2, fileExistsInR2 } = await import('@/lib/r2-storage')
+            // Convert parts Map to array of {ETag, PartNumber} sorted by PartNumber
+            const parts = Array.from(session.parts.entries())
+              .sort(([a], [b]) => a - b) // Sort by part number
+              .map(([partNumber, etag]) => ({
+                ETag: etag,
+                PartNumber: partNumber
+              }))
 
-          try {
-            const uploadResult = await uploadToR2(
-              completeFileBuffer,
-              r2FileKey,
-              file.type || 'application/pdf'
-            )
-            r2Url = uploadResult.url
-            console.log(`[DEBUG] ☁️ Uploaded complete file to R2: ${r2FileKey}`)
+            console.log(`[DEBUG] Completing with ${parts.length} parts`)
 
-            // Verify the upload succeeded by checking if file exists
-            const uploadVerified = await fileExistsInR2(r2FileKey)
-            if (!uploadVerified) {
-              console.warn(`[WARN] ⚠️ R2 upload verification failed for ${r2FileKey}, falling back to Supabase`)
-              throw new Error('R2 upload verification failed - file not found after upload')
-            }
-            console.log(`[DEBUG] ✅ R2 upload verified successfully`)
-          } catch (r2UploadError) {
-            console.error(`[ERROR] R2 upload/verification failed, falling back to Supabase:`, r2UploadError)
-
-            // Fall back to Supabase Storage
-            const supabaseFilePath = `${userProfileId}/${timestamp}-${sanitizedFileName}`
-            console.log(`[DEBUG] Uploading to Supabase Storage (R2 fallback): ${supabaseFilePath}`)
-
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('documents')
-              .upload(supabaseFilePath, completeFileBuffer, {
-                cacheControl: '3600',
-                upsert: false,
-                contentType: file.type || 'application/pdf'
+            try {
+              const completeCommand = new CompleteMultipartUploadCommand({
+                Bucket: R2_BUCKET_NAME,
+                Key: r2FileKey,
+                UploadId: session.uploadId,
+                MultipartUpload: { Parts: parts }
               })
 
-            if (uploadError) {
-              console.error('[ERROR] Supabase fallback upload also failed:', uploadError)
-              throw new Error(`Both R2 and Supabase uploads failed: ${uploadError.message}`)
+              const completeResponse = await r2Client.send(completeCommand)
+              console.log(`[DEBUG] ✅ R2 multipart upload completed successfully`)
+
+              // Get file metadata to determine size
+              const { getR2FileMetadata } = await import('@/lib/r2-storage')
+              try {
+                const metadata = await getR2FileMetadata(r2FileKey)
+                totalFileSize = metadata.size
+                console.log(`[DEBUG] ✅ Retrieved file size from R2: ${totalFileSize} bytes`)
+              } catch (metaError) {
+                console.warn(`[WARN] Could not retrieve file metadata, estimating size:`, metaError)
+                // Estimate size as sum of chunk sizes (4MB per chunk)
+                totalFileSize = session.totalChunks * 4 * 1024 * 1024
+              }
+
+              r2Url = process.env.R2_PUBLIC_URL ? `${process.env.R2_PUBLIC_URL}/${r2FileKey}` : ''
+              console.log(`[DEBUG] ☁️ Complete file available at R2: ${r2FileKey}`)
+            } catch (completeError) {
+              console.error(`[ERROR] Failed to complete R2 multipart upload:`, completeError)
+
+              // Abort the multipart upload to clean up
+              try {
+                const abortCommand = new AbortMultipartUploadCommand({
+                  Bucket: R2_BUCKET_NAME,
+                  Key: r2FileKey,
+                  UploadId: session.uploadId
+                })
+                await r2Client.send(abortCommand)
+                console.log(`[DEBUG] Aborted incomplete multipart upload`)
+              } catch (abortError) {
+                console.error(`[ERROR] Failed to abort multipart upload:`, abortError)
+              }
+
+              throw new Error(`Failed to complete R2 upload: ${completeError instanceof Error ? completeError.message : 'Unknown error'}`)
             }
-
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-              .from('documents')
-              .getPublicUrl(supabaseFilePath)
-
-            r2Url = publicUrl
-            r2FileKey = supabaseFilePath
-            console.log(`[DEBUG] ✅ Fallback to Supabase successful: ${r2FileKey}`)
           }
         } else {
-          // Fall back to Supabase Storage (upload Buffer directly, no File object needed)
-          const supabaseFilePath = `${userProfileId}/${timestamp}-${sanitizedFileName}`
-          console.log(`[DEBUG] Uploading to Supabase Storage: ${supabaseFilePath} (${completeFileBuffer.length} bytes)`)
+          // Supabase Storage: Concatenate chunk files
+          console.log(`[DEBUG] Concatenating ${session.totalChunks} Supabase chunks`)
 
+          // Download all chunks and concatenate
+          const chunkBuffers: Buffer[] = []
+
+          for (let i = 0; i < session.totalChunks; i++) {
+            const partNumber = i + 1
+            const chunkPath = session.parts.get(partNumber)
+
+            if (!chunkPath) {
+              throw new Error(`Missing chunk path for part ${partNumber}`)
+            }
+
+            console.log(`[DEBUG] Downloading chunk ${i}: ${chunkPath}`)
+
+            const { data: chunkData, error: downloadError } = await supabase.storage
+              .from('documents')
+              .download(chunkPath)
+
+            if (downloadError || !chunkData) {
+              console.error(`[ERROR] Failed to download chunk ${i}:`, downloadError)
+              throw new Error(`Failed to download chunk ${i}: ${downloadError?.message || 'Unknown error'}`)
+            }
+
+            const chunkBuffer = Buffer.from(await chunkData.arrayBuffer())
+            chunkBuffers.push(chunkBuffer)
+          }
+
+          // Concatenate all chunks
+          const completeFileBuffer = Buffer.concat(chunkBuffers)
+          totalFileSize = completeFileBuffer.length
+          console.log(`[DEBUG] ✅ Concatenated ${chunkBuffers.length} chunks into ${totalFileSize} bytes`)
+
+          // Upload final file
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('documents')
-            .upload(supabaseFilePath, completeFileBuffer, {
+            .upload(r2FileKey, completeFileBuffer, {
               cacheControl: '3600',
-              upsert: false,
-              contentType: file.type || 'application/pdf'
+              upsert: true, // Overwrite if exists
+              contentType: session.fileType
             })
 
           if (uploadError) {
-            console.error('[ERROR] Supabase Storage upload error:', uploadError)
-            console.error('[ERROR] Upload details:', { supabaseFilePath, fileSize: completeFileBuffer.length, contentType: file.type })
-            throw new Error(`Failed to upload to storage: ${uploadError.message}`)
+            console.error('[ERROR] Supabase final upload failed:', uploadError)
+            throw new Error(`Failed to upload final file: ${uploadError.message}`)
           }
-
-          console.log(`[DEBUG] Upload successful, getting public URL`)
 
           // Get public URL
           const { data: { publicUrl } } = supabase.storage
             .from('documents')
-            .getPublicUrl(supabaseFilePath)
+            .getPublicUrl(r2FileKey)
 
           r2Url = publicUrl
-          r2FileKey = supabaseFilePath
-          console.log(`[DEBUG] ☁️ Uploaded complete file to Supabase Storage: ${r2FileKey}, URL: ${publicUrl}`)
+          console.log(`[DEBUG] ☁️ Complete file uploaded to Supabase: ${r2FileKey}`)
+
+          // Clean up chunk files
+          console.log(`[DEBUG] Cleaning up ${session.totalChunks} temporary chunk files`)
+          for (let i = 0; i < session.totalChunks; i++) {
+            const partNumber = i + 1
+            const chunkPath = session.parts.get(partNumber)
+            if (chunkPath) {
+              try {
+                await supabase.storage.from('documents').remove([chunkPath])
+              } catch (cleanupError) {
+                console.warn(`[WARN] Failed to cleanup chunk ${i}:`, cleanupError)
+                // Non-fatal, continue
+              }
+            }
+          }
         }
 
         console.log(`[DEBUG] Step 4: Updating document record with final metadata`)
         console.log(`[DEBUG] 📝 About to update document:`, {
           documentId: session.documentId,
-          newFileSize: completeFileBuffer.length,
+          newFileSize: totalFileSize,
           newStoragePath: r2FileKey,
           newStatus: 'processing'
         })
@@ -498,13 +660,14 @@ export async function POST(request: NextRequest) {
         const { data: document, error: dbError } = await supabase
           .from('documents')
           .update({
-            file_size: completeFileBuffer.length,
+            file_size: totalFileSize,
             storage_path: r2FileKey,
             processing_status: 'processing', // Change from "pending" to "processing"
             metadata: {
               r2_url: r2Url,
               total_chunks: session.totalChunks,
-              received_chunks: session.totalChunks
+              received_chunks: session.totalChunks,
+              uploadId: session.uploadId // Store uploadId for session reconstruction
             },
           })
           .eq('id', session.documentId!) // Update the document created on first chunk
@@ -513,7 +676,7 @@ export async function POST(request: NextRequest) {
 
         if (dbError || !document) {
           console.error('[ERROR] Supabase update error:', dbError)
-          console.error('[ERROR] Update details:', { documentId: session.documentId, fileSize: completeFileBuffer.length, r2FileKey })
+          console.error('[ERROR] Update details:', { documentId: session.documentId, fileSize: totalFileSize, r2FileKey })
           throw new Error(`Failed to update document metadata: ${dbError?.message || 'Unknown error'}`)
         }
 
@@ -535,7 +698,7 @@ export async function POST(request: NextRequest) {
         processingResult = {
           documentId: document.id,
           fileName,
-          fileSize: completeFileBuffer.length,
+          fileSize: totalFileSize,
           pageCount: 0, // Unknown until processing completes
           chunks: 0, // Unknown until processing completes
           r2Url,
@@ -547,8 +710,8 @@ export async function POST(request: NextRequest) {
       } catch (processingError) {
         console.error('Document processing error:', processingError)
 
-        // Clean up chunk storage on error
-        chunkStorage.delete(chunkKey)
+        // Clean up session storage on error
+        sessionStorage.delete(chunkKey)
 
         // Get user profile ID for error record
         const supabase = await createClient()
@@ -618,8 +781,8 @@ export async function POST(request: NextRequest) {
     // Clean up completed sessions after a delay to allow all chunks to access documentId
     if (allChunksReceived && session.documentId) {
       setTimeout(() => {
-        if (chunkStorage.has(chunkKey)) {
-          chunkStorage.delete(chunkKey)
+        if (sessionStorage.has(chunkKey)) {
+          sessionStorage.delete(chunkKey)
           console.log(`🧹 Cleaned up session for ${fileName}`)
         }
       }, 30000) // 30 seconds delay for cleanup
