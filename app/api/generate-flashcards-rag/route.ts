@@ -293,13 +293,20 @@ export async function POST(request: NextRequest) {
     // 11. Save flashcards to database
     let savedFlashcards = flashcards
     try {
-      const { data: profile } = await supabase
+      console.log(`🔍 Looking up user profile for userId: ${userId}`)
+
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('id')
         .eq('clerk_user_id', userId)
         .single()
 
+      if (profileError) {
+        console.error('❌ Failed to fetch user profile:', profileError)
+      }
+
       if (profile) {
+        console.log(`✅ Found user profile, ID: ${profile.id}`)
         // Determine source section metadata
         let sourceSection = null
         if (selection?.type === 'structure' && selection.sectionIds) {
@@ -337,12 +344,19 @@ export async function POST(request: NextRequest) {
           source_section: sourceSection,
         }))
 
+        console.log(`💾 Attempting to save ${flashcardsToInsert.length} flashcards to database...`)
+
         const { data: insertedCards, error: insertError } = await supabase
           .from('flashcards')
           .insert(flashcardsToInsert)
           .select()
 
+        if (insertError) {
+          console.error('❌ Failed to insert flashcards:', insertError)
+        }
+
         if (!insertError && insertedCards) {
+          console.log(`✅ Successfully inserted ${insertedCards.length} flashcards`)
           savedFlashcards = insertedCards.map((dbCard) => ({
             id: dbCard.id,
             front: dbCard.front,
@@ -365,8 +379,11 @@ export async function POST(request: NextRequest) {
             flashcardCount: savedFlashcards.length,
           })
         }
+      } else {
+        console.warn(`⚠️ No user profile found for userId: ${userId}, flashcards won't be saved`)
       }
     } catch (dbError) {
+      console.error('❌ Database save failed for RAG flashcards:', dbError)
       logger.error('Database save failed for RAG flashcards', dbError, {
         userId,
         documentId,

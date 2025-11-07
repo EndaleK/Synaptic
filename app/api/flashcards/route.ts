@@ -74,6 +74,8 @@ export async function GET(request: NextRequest) {
     }
 
     // 6. Return flashcards
+    console.log(`📋 Returning ${flashcards?.length || 0} flashcards for document ${documentId}`)
+
     return NextResponse.json({
       flashcards: flashcards || [],
       documentName: document.file_name
