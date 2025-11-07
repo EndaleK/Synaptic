@@ -82,6 +82,10 @@ export default function LargeFileUploader({
     try {
       let uploadedChunks = 0
 
+      // Generate unique session ID for auth caching across all chunks
+      // This prevents Clerk session timeout during long uploads (10-15 min)
+      const uploadSessionId = `upload_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+
       // Upload chunks sequentially
       for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
         const start = chunkIndex * CHUNK_SIZE
@@ -95,10 +99,14 @@ export default function LargeFileUploader({
         formData.append('totalChunks', totalChunks.toString())
         formData.append('fileName', file.name)
 
-        // Upload chunk
+        // Upload chunk with authentication
         const response = await fetch('/api/upload-large-document', {
           method: 'POST',
           body: formData,
+          credentials: 'include', // Send auth cookies with request
+          headers: {
+            'x-upload-session-id': uploadSessionId, // Enable auth caching on server
+          },
         })
 
         if (!response.ok) {
