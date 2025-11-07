@@ -5,14 +5,29 @@ import Stripe from 'stripe'
 import { logger } from '@/lib/logger'
 
 // Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia',
-})
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-11-20.acacia',
+    })
+  : null
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now()
 
   try {
+    // Validate Stripe configuration
+    if (!stripe || !process.env.STRIPE_SECRET_KEY) {
+      logger.error('Stripe not configured - missing STRIPE_SECRET_KEY')
+      return NextResponse.json(
+        {
+          error: 'Subscription management not available',
+          details: 'Stripe is not configured on the server. Please contact support.',
+          code: 'STRIPE_NOT_CONFIGURED'
+        },
+        { status: 503 }
+      )
+    }
+
     // Authenticate user
     const { userId } = await auth()
     if (!userId) {
@@ -73,18 +88,45 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     const duration = Date.now() - startTime
+
+    // Determine error type and provide helpful message
+    let errorDetails = error?.message || 'Unknown error'
+    let errorCode = 'PORTAL_CREATION_FAILED'
+
+    if (error?.type === 'StripeInvalidRequestError') {
+      errorCode = 'STRIPE_INVALID_REQUEST'
+      if (error?.message?.includes('customer')) {
+        errorDetails = 'Invalid customer ID. Your subscription may not be properly configured.'
+      } else if (error?.message?.includes('api_key')) {
+        errorDetails = 'Stripe API key is invalid. Please contact support.'
+        errorCode = 'STRIPE_AUTH_ERROR'
+      }
+    } else if (error?.type === 'StripeAPIError') {
+      errorCode = 'STRIPE_API_ERROR'
+      errorDetails = 'Stripe service is temporarily unavailable. Please try again in a few moments.'
+    } else if (error?.type === 'StripeConnectionError') {
+      errorCode = 'STRIPE_CONNECTION_ERROR'
+      errorDetails = 'Unable to connect to Stripe. Please check your internet connection.'
+    }
+
     logger.error('Stripe portal session creation failed', error, {
       userId: 'unknown',
-      errorMessage: error?.message
+      errorType: error?.type,
+      errorCode,
+      errorMessage: error?.message,
+      stripeCode: error?.code
     })
     logger.api('POST', '/api/stripe/create-portal-session', 500, duration, {
-      error: error?.message
+      error: error?.message,
+      errorType: error?.type
     })
 
     return NextResponse.json(
       {
         error: 'Failed to create portal session',
-        message: error?.message || 'Unknown error'
+        details: errorDetails,
+        code: errorCode,
+        stripeError: error?.type || undefined
       },
       { status: 500 }
     )

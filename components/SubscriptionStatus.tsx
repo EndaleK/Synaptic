@@ -97,17 +97,32 @@ export default function SubscriptionStatus() {
         headers: { 'Content-Type': 'application/json' }
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        throw new Error('Failed to create portal session')
+        // Provide specific error messages
+        if (data.code === 'STRIPE_NOT_CONFIGURED') {
+          alert('Subscription management is temporarily unavailable. Please contact support at support@synaptic.study.')
+        } else if (response.status === 400) {
+          alert(data.error || 'No active subscription found.')
+        } else if (response.status === 404) {
+          alert('User profile not found. Please try signing out and back in.')
+        } else {
+          alert(`Failed to open subscription management: ${data.details || data.error || 'Unknown error'}`)
+        }
+        console.error('Portal session error:', data)
+        setIsManaging(false)
+        return
       }
 
-      const data = await response.json()
       if (data.url) {
         window.location.href = data.url
+      } else {
+        throw new Error('No portal URL returned')
       }
     } catch (error) {
       console.error('Error opening customer portal:', error)
-      alert('Failed to open subscription management. Please try again.')
+      alert('Failed to open subscription management. Please try again or contact support.')
       setIsManaging(false)
     }
   }
