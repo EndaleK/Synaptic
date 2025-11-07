@@ -93,7 +93,17 @@ export async function GET(
             try {
               const r2Response = await fetch(r2Url)
               if (!r2Response.ok) {
-                throw new Error(`R2 fetch failed: ${r2Response.status}`)
+                // Capture detailed error information from R2
+                const errorBody = await r2Response.text().catch(() => 'Unable to read error body')
+                const errorDetails = {
+                  status: r2Response.status,
+                  statusText: r2Response.statusText,
+                  headers: Object.fromEntries(r2Response.headers.entries()),
+                  body: errorBody,
+                  url: r2Url.substring(0, 100) + '...' // Log partial URL for debugging
+                }
+                console.error('❌ R2 fetch failed with detailed error:', errorDetails)
+                throw new Error(`R2 fetch failed: ${r2Response.status} ${r2Response.statusText} - ${errorBody}`)
               }
 
               // Stream the response directly without loading into memory
@@ -117,7 +127,17 @@ export async function GET(
             try {
               const r2Response = await fetch(r2Url)
               if (!r2Response.ok) {
-                throw new Error(`R2 fetch failed: ${r2Response.status}`)
+                // Capture detailed error information from R2
+                const errorBody = await r2Response.text().catch(() => 'Unable to read error body')
+                const errorDetails = {
+                  status: r2Response.status,
+                  statusText: r2Response.statusText,
+                  headers: Object.fromEntries(r2Response.headers.entries()),
+                  body: errorBody,
+                  url: r2Url.substring(0, 100) + '...' // Log partial URL for debugging
+                }
+                console.error('❌ R2 fetch failed with detailed error:', errorDetails)
+                throw new Error(`R2 fetch failed: ${r2Response.status} ${r2Response.statusText} - ${errorBody}`)
               }
 
               const r2Data = await r2Response.blob()
