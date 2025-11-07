@@ -161,6 +161,19 @@ Target: ${maxNodes} nodes maximum, ${maxDepth} levels deep
 Aim for: ~${Math.ceil(maxNodes * 0.20)} main branches (level 1), each with ${Math.floor((maxNodes - Math.ceil(maxNodes * 0.20)) / Math.ceil(maxNodes * 0.20))} sub-branches
 CRITICAL: Include ${Math.ceil(maxNodes * 0.15)} cross-links connecting concepts from different branches!
 
+SOURCE FIDELITY REQUIREMENTS (CRITICAL - MUST FOLLOW):
+⚠️ These rules override all other instructions when conflicts arise:
+1. **Content Restriction**: Create nodes and relationships ONLY from concepts explicitly mentioned in the provided document content
+2. **No External Knowledge**: Do NOT add nodes, descriptions, or relationships based on your general knowledge of the topic
+3. **Text-Based Relationships**: Relationships must be supported by the TEXT, not by what you know about the topic in general
+4. **Description Fidelity**: Node descriptions must derive directly from the text - NO external elaboration or context
+5. **Incomplete Information Handling**: If the text doesn't provide enough information for a complete mind map structure, create a smaller/simpler map rather than adding external knowledge
+6. **Cross-Link Limitation**: Only create cross-links between concepts that are actually related IN THE TEXT, not in general knowledge
+7. **No Assumptions**: Do not assume relationships, examples, or details that aren't stated in the source text
+8. **Quote Priority**: When in doubt, use direct quotes from the text rather than paraphrasing with external context
+
+If following these rules results in fewer nodes than the target, that is acceptable - accuracy and source fidelity are more important than hitting the target node count.
+
 Return ONLY a valid JSON object in this exact format:
 {
   "title": "Main topic/title (the focus question answer)",

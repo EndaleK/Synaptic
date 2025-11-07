@@ -160,7 +160,16 @@ Guidelines for extracting flashcard content:
 5. Aim for a balance between comprehensiveness and brevity.
 6. Generate different flashcards each time by focusing on varied aspects of the content.
 
-Create exactly ${targetCards} flashcards based on the content available.
+CRITICAL - Source Fidelity Rules (MUST FOLLOW):
+- Use ONLY information explicitly stated in the provided text above
+- Do NOT add definitions, explanations, or context from your general knowledge
+- Do NOT elaborate on concepts beyond what the text actually provides
+- If a concept is mentioned but not explained in the text, do NOT create a flashcard for it
+- Every word in the "back" field must be directly traceable to the source text
+- When in doubt, quote directly from the text rather than paraphrasing with external knowledge
+- If the text doesn't provide enough information for ${targetCards} quality flashcards, create fewer flashcards rather than adding external information
+
+Create exactly ${targetCards} flashcards based on the content available (or fewer if insufficient information).
 
 Respond ONLY with a valid JSON array in this exact format:
 [

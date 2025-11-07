@@ -257,13 +257,15 @@ export async function POST(request: NextRequest) {
     })
 
     // 8. Generate flashcards using selected content
+    const sourceFidelityInstruction = `\n\n🚨 CRITICAL - Source Fidelity:\nUse ONLY information from the content below. Do NOT add external knowledge, definitions, or context from your training. Every flashcard must be verifiable against the provided text.`
+
     const customOptions = {
       variation: 0,
       customPrompt: selection
-        ? `Generate ${count} flashcards from ${selectionDescription}.\n\nContent:\n\n${combinedText}`
+        ? `Generate ${count} flashcards from ${selectionDescription}.${sourceFidelityInstruction}\n\nContent:\n\n${combinedText}`
         : legacyTopic
-        ? `Generate ${count} flashcards focused specifically on: ${legacyTopic}\n\nContext from document:\n\n${combinedText}`
-        : `Generate ${count} comprehensive flashcards covering the most important concepts from this document:\n\n${combinedText}`,
+        ? `Generate ${count} flashcards focused specifically on: ${legacyTopic}${sourceFidelityInstruction}\n\nContext from document:\n\n${combinedText}`
+        : `Generate ${count} comprehensive flashcards covering the most important concepts from this document.${sourceFidelityInstruction}\n\nContent:\n\n${combinedText}`,
     }
 
     const result = await generateFlashcardsAuto(combinedText, customOptions as any)
