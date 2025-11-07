@@ -341,7 +341,7 @@ export async function POST(request: NextRequest) {
           confidence_score: 0,
           times_reviewed: 0,
           times_correct: 0,
-          source_section: sourceSection,
+          // source_section: sourceSection, // TODO: Add this column to database schema
         }))
 
         console.log(`💾 Attempting to save ${flashcardsToInsert.length} flashcards to database...`)
