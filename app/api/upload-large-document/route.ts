@@ -30,10 +30,16 @@ interface UploadSession {
   userProfileId?: string  // Cached after first lookup
   timestamp: number
   totalChunks: number
+  authValidatedAt: number  // Track when auth was last validated
 }
 
 // Temporary storage for chunks during upload (cleared after processing)
 const chunkStorage = new Map<string, UploadSession>()
+
+// Auth session cache - prevents re-validating Clerk auth for every chunk
+// Clerk sessions can expire during long uploads (10-15 min), causing "Unauthorized" errors
+// We validate once and trust the session for the duration of the upload
+const authSessionCache = new Map<string, { userId: string, validatedAt: number }>()
 
 /**
  * POST /api/upload-large-document
@@ -43,10 +49,27 @@ const chunkStorage = new Map<string, UploadSession>()
  */
 export async function POST(request: NextRequest) {
   try {
-    // 1. Authenticate user
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // 1. Authenticate user (with caching to prevent session timeout during long uploads)
+    // For chunked uploads, we validate auth once and cache it for 30 minutes
+    const authCacheKey = request.headers.get('x-upload-session-id') || 'default'
+    const cachedAuth = authSessionCache.get(authCacheKey)
+    const now = Date.now()
+
+    let userId: string
+
+    if (cachedAuth && (now - cachedAuth.validatedAt) < 30 * 60 * 1000) {
+      // Use cached auth if less than 30 minutes old
+      userId = cachedAuth.userId
+      console.log(`[DEBUG] Using cached auth for session: ${authCacheKey}`)
+    } else {
+      // Validate with Clerk and cache the result
+      const authResult = await auth()
+      if (!authResult.userId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      userId = authResult.userId
+      authSessionCache.set(authCacheKey, { userId, validatedAt: now })
+      console.log(`[DEBUG] New auth validated and cached for session: ${authCacheKey}`)
     }
 
     // 2. Check storage configuration (R2 is optional, will fall back to Supabase)

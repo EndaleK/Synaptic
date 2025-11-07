@@ -21,6 +21,7 @@ export async function GET(
 
     // Decode the path
     let storagePath = decodeURIComponent(path)
+    const originalPath = storagePath // Keep for DB lookup
 
     // Remove 'documents/' prefix if present (bucket is already named 'documents')
     if (storagePath.startsWith('documents/')) {
@@ -32,6 +33,28 @@ export async function GET(
 
     // Initialize Supabase client
     const supabase = await createClient()
+
+    // Check if this file is in R2 by looking up the document
+    // Large files (>5MB) are stored in R2 and have metadata.r2_url
+    try {
+      const { data: document, error: docError } = await supabase
+        .from('documents')
+        .select('id, metadata, storage_path')
+        .eq('storage_path', originalPath)
+        .single()
+
+      if (!docError && document && document.metadata?.r2_url) {
+        console.log('📦 File is in R2, redirecting to R2 URL:', document.metadata.r2_url)
+        return NextResponse.redirect(document.metadata.r2_url)
+      }
+
+      // If document not found or no R2 URL, continue with Supabase storage fetch
+      if (docError) {
+        console.log('⚠️ Document not found in DB, falling back to Supabase storage:', docError.message)
+      }
+    } catch (lookupError) {
+      console.warn('⚠️ R2 lookup failed, falling back to Supabase storage:', lookupError)
+    }
 
     // Try approach 1: Generate a signed URL and redirect (more reliable)
     try {

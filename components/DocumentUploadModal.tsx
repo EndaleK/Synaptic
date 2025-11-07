@@ -348,6 +348,10 @@ export default function DocumentUploadModal({
     const fileSize = file.size
     const totalChunks = Math.ceil(fileSize / CHUNK_SIZE)
 
+    // Generate unique session ID for auth caching (prevents Clerk session timeout during long uploads)
+    const uploadSessionId = `upload_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
+    console.log(`🔑 Generated upload session ID: ${uploadSessionId}`)
+
     // Initialize progress
     setUploadProgress({
       uploadedChunks: 0,
@@ -400,6 +404,9 @@ export default function DocumentUploadModal({
 
         const response = await fetch('/api/upload-large-document', {
           method: 'POST',
+          headers: {
+            'x-upload-session-id': uploadSessionId, // Session ID for auth caching
+          },
           body: formData,
           signal: controller.signal,
           credentials: 'include', // Include Clerk session cookie for authentication
