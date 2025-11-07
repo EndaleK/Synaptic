@@ -11,11 +11,11 @@ export async function parseServerPDF(file: File): Promise<PDFParseResult> {
   try {
     console.log(`Server PDF parsing: ${file.name}, size: ${file.size} bytes`)
     
-    // Check file size limit (100MB max for server processing)
-    if (file.size > 100 * 1024 * 1024) {
-      return { 
-        text: "", 
-        error: "PDF file is too large for server processing (max 100MB). Please use the PDF viewer mode to read the document, or try splitting it into smaller sections." 
+    // Check file size limit (500MB max for server processing)
+    if (file.size > 500 * 1024 * 1024) {
+      return {
+        text: "",
+        error: "PDF file is too large for server processing (max 500MB). Please use the PDF viewer mode to read the document, or try splitting it into smaller sections."
       }
     }
 

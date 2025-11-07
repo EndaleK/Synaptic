@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { Document, Page } from "react-pdf"
+import { FixedSizeList as List } from "react-window"
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, Download, RefreshCw, AlertCircle, Clock, StopCircle, BarChart3, Eye, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { usePDFTimeout } from "@/hooks/usePDFTimeout"
@@ -27,11 +28,15 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
   const [pdfWorkerManager, setPdfWorkerManager] = useState<any>(null)
   const [renderMode, setRenderMode] = useState<RenderMode>('iframe')
   const [pdfUrl, setPdfUrl] = useState<string>("")
+  const [containerHeight, setContainerHeight] = useState<number>(600)
+  const [containerWidth, setContainerWidth] = useState<number>(800)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<List>(null)
 
-  // Initialize timeout management
+  // Initialize timeout management (increased for large PDFs)
   const timeout = usePDFTimeout({
-    loadTimeout: 30000,      // 30 seconds max
-    progressTimeout: 10000,  // 10 seconds without progress = stuck
+    loadTimeout: 120000,     // 120 seconds (2 minutes) for large files
+    progressTimeout: 30000,  // 30 seconds without progress = stuck
     healthCheckInterval: 1000 // Check every second
   })
 
@@ -187,6 +192,25 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
       timeout.stopTimeout()
     }
   }, [timeout.shouldAbort, timeout.isTimeout, timeout.isStuck, abortAttempted, timeout, renderMode])
+
+  // Track container dimensions for virtual scrolling
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        setContainerWidth(width)
+        setContainerHeight(height)
+      }
+    })
+
+    resizeObserver.observe(containerRef.current)
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [])
 
   const goToPrevPage = () => {
     setPageNumber(prev => Math.max(1, prev - 1))
@@ -566,7 +590,7 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
       </div>
 
       {/* PDF Content */}
-      <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4">
+      <div ref={containerRef} className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4">
         <div className="flex justify-center">
           <Document
             file={file}
@@ -638,20 +662,33 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
               </div>
             }
           >
-            {/* Continuous scroll: render all pages */}
-            <div className="space-y-4">
-              {Array.from(new Array(numPages), (_, index) => (
-                <Page
-                  key={`page_${index + 1}`}
-                  pageNumber={index + 1}
-                  scale={scale}
-                  rotate={rotation}
-                  renderTextLayer={false}
-                  renderAnnotationLayer={false}
-                  className="border border-gray-300 dark:border-gray-600 shadow-lg"
-                />
-              ))}
-            </div>
+            {/* Virtual scrolling: render only visible pages for memory efficiency */}
+            <List
+              ref={listRef}
+              height={containerHeight}
+              itemCount={numPages}
+              itemSize={(() => {
+                // Calculate page height based on scale and rotation
+                // Standard A4: 595x842 pixels at scale 1.0
+                const baseHeight = rotation % 180 === 0 ? 842 : 595
+                return Math.ceil(baseHeight * scale) + 32 // + spacing
+              })()}
+              width={containerWidth}
+              overscanCount={2}
+            >
+              {({ index, style }) => (
+                <div style={{...style, display: 'flex', justifyContent: 'center', paddingTop: '16px'}} key={`page_${index + 1}`}>
+                  <Page
+                    pageNumber={index + 1}
+                    scale={scale}
+                    rotate={rotation}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
+                    className="border border-gray-300 dark:border-gray-600 shadow-lg"
+                  />
+                </div>
+              )}
+            </List>
           </Document>
         </div>
       </div>

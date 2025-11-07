@@ -15,8 +15,8 @@ interface PDFTimeoutState {
 }
 
 const DEFAULT_CONFIG: PDFTimeoutConfig = {
-  loadTimeout: 30000,        // 30 seconds max loading time
-  progressTimeout: 10000,    // 10 seconds without progress = stuck
+  loadTimeout: 120000,       // 120 seconds (2 minutes) max loading time for large PDFs
+  progressTimeout: 30000,    // 30 seconds without progress = stuck
   healthCheckInterval: 1000  // Check every second
 }
 
