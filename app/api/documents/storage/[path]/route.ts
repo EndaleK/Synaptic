@@ -20,31 +20,29 @@ export async function GET(
     }
 
     // Decode the path
-    let storagePath = decodeURIComponent(path)
-    const originalPath = storagePath // Keep for DB lookup
+    const storagePath = decodeURIComponent(path)
 
-    // Remove 'documents/' prefix if present (bucket is already named 'documents')
-    if (storagePath.startsWith('documents/')) {
-      storagePath = storagePath.substring('documents/'.length)
-      console.log('📥 Storage API: Stripped documents/ prefix, fetching:', storagePath)
-    } else {
-      console.log('📥 Storage API: Fetching file from storage:', storagePath)
-    }
+    console.log('📥 Storage API: Fetching file from storage:', storagePath)
 
     // Initialize Supabase client
     const supabase = await createClient()
 
     // Check if this file is in R2 by looking up the document
     // Large files (>5MB) are stored in R2 and have metadata.r2_url
+    let isR2File = false
+    let document: any = null
+
     try {
-      const { data: document, error: docError } = await supabase
+      const { data: doc, error: docError } = await supabase
         .from('documents')
         .select('id, metadata, storage_path, file_size')
-        .eq('storage_path', originalPath)
+        .eq('storage_path', storagePath)
         .single()
 
+      document = doc
+
       // Check if file is stored in R2 (storage_path starts with "documents/")
-      const isR2File = !docError && document && document.storage_path?.startsWith('documents/')
+      isR2File = !docError && document && document.storage_path?.startsWith('documents/')
 
       if (isR2File) {
         console.log('📦 File is in R2, storage_path:', document.storage_path)
@@ -115,8 +113,16 @@ export async function GET(
                 },
               })
             } catch (r2Error) {
-              console.error('❌ R2 stream failed, falling back to Supabase storage:', r2Error)
-              // Continue to Supabase storage fallback
+              console.error('❌ R2 stream failed:', r2Error)
+              return NextResponse.json(
+                {
+                  error: 'Failed to fetch document from R2 storage',
+                  details: r2Error instanceof Error ? r2Error.message : 'Unknown error',
+                  storagePath: document.storage_path,
+                  hint: 'R2 storage is currently unavailable. Please try again later.'
+                },
+                { status: 500 }
+              )
             }
           } else {
             // For smaller files (<50MB), fetch as blob (original behavior)
@@ -138,16 +144,38 @@ export async function GET(
                 },
               })
             } catch (r2Error) {
-              console.error('❌ R2 fetch failed, falling back to Supabase storage:', r2Error)
-              // Continue to Supabase storage fallback
+              console.error('❌ R2 fetch failed:', r2Error)
+              return NextResponse.json(
+                {
+                  error: 'Failed to fetch document from R2 storage',
+                  details: r2Error instanceof Error ? r2Error.message : 'Unknown error',
+                  storagePath: document.storage_path,
+                  hint: 'R2 storage is currently unavailable. Please try again later.'
+                },
+                { status: 500 }
+              )
             }
           }
         }
       }
 
-      // If document not found or no R2 URL, continue with Supabase storage fetch
-      if (docError) {
-        console.log('⚠️ Document not found in DB, falling back to Supabase storage:', docError.message)
+      // If R2 file but no R2 URL, return error (don't fall back to Supabase for R2 files)
+      if (isR2File) {
+        console.error('❌ R2 file detected but no R2 URL available')
+        return NextResponse.json(
+          {
+            error: 'R2 storage configuration issue',
+            details: 'File is stored in R2 but URL is not available',
+            storagePath: document.storage_path,
+            hint: 'Please contact support'
+          },
+          { status: 500 }
+        )
+      }
+
+      // If document not found in DB, try Supabase storage directly
+      if (!document) {
+        console.log('⚠️ Document not found in DB, trying Supabase storage directly')
       }
     } catch (lookupError) {
       console.warn('⚠️ R2 lookup failed, falling back to Supabase storage:', lookupError)
