@@ -153,7 +153,8 @@ export async function GET(
       console.warn('⚠️ R2 lookup failed, falling back to Supabase storage:', lookupError)
     }
 
-    // Try approach 1: Generate a signed URL and redirect (more reliable)
+    // Try approach 1: Generate a signed URL and fetch blob
+    // NOTE: Don't use redirect - it breaks fetch() calls from JavaScript
     try {
       const { data: urlData, error: urlError } = await supabase
         .storage
@@ -163,9 +164,24 @@ export async function GET(
       if (urlError) {
         console.warn('⚠️ Signed URL failed, trying download approach:', urlError.message)
       } else if (urlData?.signedUrl) {
-        console.log('✅ Generated signed URL successfully')
-        // Redirect to the signed URL
-        return NextResponse.redirect(urlData.signedUrl)
+        console.log('✅ Generated signed URL successfully, fetching blob...')
+
+        // Fetch the file from the signed URL
+        const fileResponse = await fetch(urlData.signedUrl)
+        if (!fileResponse.ok) {
+          throw new Error(`Fetch from signed URL failed: ${fileResponse.status}`)
+        }
+
+        const fileBlob = await fileResponse.blob()
+        console.log('✅ Fetched from Supabase successfully, size:', fileBlob.size)
+
+        return new NextResponse(fileBlob, {
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="${storagePath.split('/').pop()}"`,
+            'Cache-Control': 'public, max-age=3600',
+          },
+        })
       }
     } catch (signedUrlError) {
       console.warn('⚠️ Signed URL approach failed:', signedUrlError)
