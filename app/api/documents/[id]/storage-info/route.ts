@@ -75,7 +75,7 @@ export async function GET(
         fileExistsInSupabase: storageFileExists,
         storageError: storageError,
         storagePath: document.storage_path,
-        expectedFetchUrl: `/api/documents/storage/${encodeURIComponent(document.storage_path || '')}`,
+        expectedFetchUrl: `/api/documents/storage/${documentId}`, // Uses documentId to fetch correct path from DB
       },
       environment: envConfig,
       diagnosis: {

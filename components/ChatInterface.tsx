@@ -158,12 +158,12 @@ export default function ChatInterface() {
               isProcessing: true
             })
 
-            console.log('📥 Fetching PDF from storage:', {
+            console.log('📥 Fetching PDF from storage using document ID:', {
+              documentId: currentDocument.id,
               storagePath: currentDocument.storagePath,
-              encodedPath: encodeURIComponent(currentDocument.storagePath),
-              fullUrl: `/api/documents/storage/${encodeURIComponent(currentDocument.storagePath)}`
+              fullUrl: `/api/documents/storage/${currentDocument.id}`
             })
-            const response = await fetch(`/api/documents/storage/${encodeURIComponent(currentDocument.storagePath)}`)
+            const response = await fetch(`/api/documents/storage/${currentDocument.id}`)
 
             if (!response.ok) {
               const responseText = await response.text()
