@@ -270,8 +270,19 @@ export async function POST(request: NextRequest) {
               endpoint: process.env.R2_ENDPOINT,
               bucket: R2_BUCKET_NAME,
               hasAccessKey: !!process.env.R2_ACCESS_KEY_ID,
+              accessKeyStart: process.env.R2_ACCESS_KEY_ID?.slice(0, 8) || 'N/A',
+              accessKeyEnd: process.env.R2_ACCESS_KEY_ID?.slice(-4) || 'N/A',
+              accessKeyLength: process.env.R2_ACCESS_KEY_ID?.length || 0,
               hasSecretKey: !!process.env.R2_SECRET_ACCESS_KEY,
-              error: r2Error instanceof Error ? r2Error.message : String(r2Error)
+              secretKeyStart: process.env.R2_SECRET_ACCESS_KEY?.slice(0, 8) || 'N/A',
+              secretKeyEnd: process.env.R2_SECRET_ACCESS_KEY?.slice(-4) || 'N/A',
+              secretKeyLength: process.env.R2_SECRET_ACCESS_KEY?.length || 0,
+              expectedAccessKeyStart: '6757762B',
+              expectedAccessKeyEnd: '3a99',
+              expectedSecretKeyStart: 'b48723d1',
+              expectedSecretKeyEnd: '98a6',
+              error: r2Error instanceof Error ? r2Error.message : String(r2Error),
+              errorStack: r2Error instanceof Error ? r2Error.stack : undefined
             })
             // Fall back to Supabase - change storage path format
             actualStoragePath = `${userProfileId}/${timestamp}-${sanitizedFileName}`
