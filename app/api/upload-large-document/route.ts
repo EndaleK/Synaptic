@@ -28,6 +28,7 @@ const uploadSessions = new Map<string, {
   receivedChunks: Set<number>
   chunks: Map<number, string> // chunk index -> storage path
   createdAt: number
+  tempKey: string // Original fileId used for temp chunk storage paths
 }>()
 
 // Cleanup old sessions (older than 1 hour)
@@ -97,6 +98,10 @@ export async function POST(request: NextRequest) {
     let session = uploadSessions.get(fileId)
 
     if (!session) {
+      console.log(`🆕 No existing session found for fileId: ${fileId}, creating new session`)
+      if (chunkIndex > 0) {
+        console.warn(`⚠️ WARNING: Creating new session for chunk ${chunkIndex + 1} - this might indicate a session key mismatch!`)
+      }
       // Create document record on first chunk
       const timestamp = Date.now()
       const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
@@ -137,15 +142,25 @@ export async function POST(request: NextRequest) {
         totalChunks,
         receivedChunks: new Set(),
         chunks: new Map(),
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        tempKey: fileId // Store original fileId for consistent temp chunk paths
       }
 
       uploadSessions.set(fileId, session)
       console.log(`✅ Document created with ID: ${document.id}`)
+
+      // CRITICAL FIX: Remap session from temp fileId to permanent documentId
+      // This ensures subsequent chunks (which send documentId) find the correct session
+      if (fileId !== document.id) {
+        uploadSessions.delete(fileId) // Remove temp key
+        uploadSessions.set(document.id, session) // Add with document UUID
+        console.log(`🔄 Session remapped: ${fileId} → ${document.id}`)
+      }
     }
 
     // 5. Upload chunk to Supabase storage
-    const chunkPath = `temp/${fileId}/chunk-${chunkIndex}`
+    // Use session.tempKey to ensure all chunks go to the same temp directory
+    const chunkPath = `temp/${session.tempKey}/chunk-${chunkIndex}`
     const buffer = Buffer.from(await chunk.arrayBuffer())
 
     const { error: uploadError } = await supabase.storage
