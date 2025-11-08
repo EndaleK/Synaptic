@@ -41,8 +41,13 @@ export async function GET(
 
       document = doc
 
-      // Check if file is stored in R2 (storage_path starts with "documents/")
-      isR2File = !docError && document && document.storage_path?.startsWith('documents/')
+      // Check if file is stored in R2 (storage_path starts with "documents/" OR metadata has r2_url)
+      // Note: Some files have incorrect storage_path due to R2 fallback during upload,
+      // but still exist in R2, so we check metadata.r2_url as well
+      isR2File = !docError && document && (
+        document.storage_path?.startsWith('documents/') ||
+        document.metadata?.r2_url
+      )
 
       if (isR2File) {
         console.log('📦 File is in R2, storage_path:', document.storage_path)
@@ -62,16 +67,33 @@ export async function GET(
             isR2File = false // Mark as non-R2 to trigger Supabase fallback
           } else {
             try {
+              // Determine the actual R2 path
+              // If storage_path doesn't start with "documents/", it's incorrect (Supabase fallback format)
+              // We need to reconstruct the correct R2 path from metadata
+              let actualR2Path = document.storage_path
+
+              if (!document.storage_path?.startsWith('documents/') && document.metadata?.r2_url) {
+                // Extract the actual path from r2_url or reconstruct it
+                // r2_url format: https://...r2.cloudflarestorage.com/synaptic-documents/documents/user_xxx/file.pdf
+                const urlMatch = document.metadata.r2_url.match(/synaptic-documents\/(.+)\?/)
+                if (urlMatch && urlMatch[1]) {
+                  actualR2Path = urlMatch[1]
+                  console.log(`📝 Reconstructed R2 path from metadata: ${actualR2Path}`)
+                } else {
+                  console.warn('⚠️ Could not extract R2 path from r2_url, using r2_url directly')
+                }
+              }
+
               // First check if file actually exists in R2
               const { fileExistsInR2, getR2SignedUrl } = await import('@/lib/r2-storage')
-              const fileExists = await fileExistsInR2(document.storage_path)
+              const fileExists = await fileExistsInR2(actualR2Path)
 
               if (!fileExists) {
-                console.warn('⚠️ File not found in R2, will try Supabase fallback:', document.storage_path)
+                console.warn('⚠️ File not found in R2, will try Supabase fallback:', actualR2Path)
                 isR2File = false // Mark as non-R2 to trigger Supabase fallback
               } else {
-                // File exists, generate signed URL
-                r2Url = await getR2SignedUrl(document.storage_path, 3600) // 1 hour expiry
+                // File exists, generate signed URL using the actual R2 path
+                r2Url = await getR2SignedUrl(actualR2Path, 3600) // 1 hour expiry
                 console.log('✅ File exists in R2, generated signed URL successfully')
               }
             } catch (r2Error) {
