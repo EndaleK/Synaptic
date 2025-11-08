@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         file_type: fileType,
         storage_path: storagePath,
         extracted_text: '',
-        processing_status: 'uploading', // Will be updated to 'completed' by completion endpoint
+        processing_status: 'pending', // Will be updated to 'completed' by completion endpoint
         metadata: {
           upload_started_at: new Date().toISOString(),
           upload_method: 'signed_url'
