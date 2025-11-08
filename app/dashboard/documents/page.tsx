@@ -10,9 +10,8 @@ import { useToast } from "@/components/ToastContainer"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { useDocumentStore, useUIStore } from "@/lib/store/useStore"
 
-// Dynamically import DocumentUploadModal to avoid SSR issues with PDF.js
-// PDF.js uses browser APIs (DOMMatrix) that don't exist in Node.js
-const DocumentUploadModal = dynamic(() => import("@/components/DocumentUploadModal"), {
+// Use new simplified uploader (no chunking, direct Supabase upload)
+const SimpleDocumentUploader = dynamic(() => import("@/components/SimpleDocumentUploader"), {
   ssr: false,
 })
 
@@ -194,8 +193,8 @@ export default function DocumentsPage() {
         />
       </div>
 
-      {/* Upload Modal */}
-      <DocumentUploadModal
+      {/* Upload Modal - Using new simple uploader (no chunking) */}
+      <SimpleDocumentUploader
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onSuccess={handleUploadSuccess}
