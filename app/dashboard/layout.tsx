@@ -362,7 +362,7 @@ export default function DashboardLayout({
               sidebarCollapsed ? "justify-center" : ""
             }`}>
               <div className="relative flex-shrink-0">
-                <UserButton afterSignOutUrl="/" />
+                <UserButton />
                 <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
               </div>
               {!sidebarCollapsed && (
@@ -421,7 +421,7 @@ export default function DashboardLayout({
               >
                 {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
-              <UserButton afterSignOutUrl="/" />
+              <UserButton />
             </div>
           </div>
         </header>

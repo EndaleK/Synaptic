@@ -281,6 +281,15 @@ The app uses a dual-mode PDF strategy:
 - **Transpile packages**: react-pdf and pdfjs-dist must be transpiled
 - **Server externals**: PDF libraries excluded from server bundle to prevent SSR conflicts
 - **Rewrites**: `/pdf.worker.min.js` → `/api/pdf-worker` for worker file serving
+- **Security headers**: Comprehensive production security headers including:
+  - Strict-Transport-Security (HSTS)
+  - X-Frame-Options (SAMEORIGIN)
+  - X-Content-Type-Options (nosniff)
+  - X-XSS-Protection
+  - Referrer-Policy (origin-when-cross-origin)
+  - Permissions-Policy (restricts camera, microphone, geolocation)
+  - Cache-Control headers for API routes (no-store)
+- **Production optimizations**: `poweredByHeader: false`, compression enabled
 
 ### Authentication Flow (`middleware.ts`)
 
@@ -349,6 +358,42 @@ Three Zustand stores with localStorage persistence:
 - Set `CHROMA_URL=http://localhost:8000` in `.env.local`
 - Upload via `/api/upload-large-document` (auto-indexes)
 - Chat via `/api/chat-rag`, flashcards via `/api/generate-flashcards-rag`
+
+### Large File Upload Architecture (`/api/upload-large-document`)
+
+**Problem**: Vercel has 4.5MB request body limit, need to handle 500MB+ files
+
+**Solution - Chunked Upload System**:
+1. **Client-side chunking** (`components/LargeFileUploader.tsx`):
+   - Files split into 4MB chunks (safely under Vercel limit)
+   - Parallel upload with configurable concurrency (default: 3)
+   - Retry logic: 3 attempts per chunk with exponential backoff
+   - Progress tracking per chunk and overall
+   - Pause/resume support
+
+2. **Server-side assembly** (`/api/upload-large-document/route.ts`):
+   - Receives chunks with metadata (chunkIndex, totalChunks, fileId)
+   - Uploads each chunk to R2 storage
+   - Tracks chunk completion in memory
+   - On final chunk: assembles complete file in R2
+   - Triggers vector indexing for RAG
+
+3. **Authentication requirements**:
+   - Each chunk request must include Clerk session cookies
+   - Use `credentials: 'include'` in fetch calls
+   - Session must remain valid for entire upload (can take minutes)
+
+**Key Implementation Details**:
+- Chunk size: 4MB (4 * 1024 * 1024 bytes)
+- Concurrency: 3 parallel uploads (configurable)
+- Retry policy: 3 attempts with 1s, 2s, 4s delays
+- File ID: UUID generated client-side to track upload
+- Cleanup: Failed uploads cleaned from R2 automatically
+
+**Common Issues**:
+- **401 Errors**: Session expired during upload, user needs to re-authenticate
+- **Network failures**: Handled by retry logic, but may need manual retry
+- **Memory usage**: Large files processed in chunks to avoid memory issues
 
 ### Spaced Repetition System (`lib/spaced-repetition/sm2-algorithm.ts`)
 
@@ -430,6 +475,116 @@ Two-tier rate limiting (`lib/rate-limit.ts`):
 - Client components: Toast notifications (`components/Toast.tsx`)
 - API routes: Structured JSON errors with status codes
 - Sentry integration: Auto-captures unhandled errors in production
+
+## Troubleshooting Common Issues
+
+### 401 Unauthorized Errors on Production
+
+**Symptoms**: Uploads work locally but fail on production with 401 errors, chunks retry 3 times but all fail
+
+**Root Causes** (in order of likelihood):
+
+1. **Clerk Session Expired** (90% of cases)
+   - User logged in days ago, session cookie expired or invalid
+   - **Fix**: Sign out completely, clear browser cookies for domain, sign back in
+   - **Verification**: Check if `Cookie` header is present in Network tab
+
+2. **Wrong Clerk Keys on Production**
+   - Using test keys (`pk_test_`, `sk_test_`) instead of live keys (`pk_live_`, `sk_live_`)
+   - Keys not set in Vercel Production environment (only set for Preview)
+   - **Fix**:
+     - Verify Vercel → Settings → Environment Variables → Filter by "Production"
+     - Ensure `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` starts with `pk_live_`
+     - Ensure `CLERK_SECRET_KEY` starts with `sk_live_`
+     - Redeploy after updating
+
+3. **Browser Cache/Cookie Issues**
+   - Old JavaScript cached or Clerk session cookie corrupted
+   - **Fix**:
+     - Hard refresh: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
+     - Clear cookies for the domain
+     - Try incognito/private window
+
+4. **CORS/Cookie Blocking**
+   - Third-party cookies blocked by browser security settings
+   - **Fix**: Check browser console for cookie warnings, enable cookies in browser settings
+
+**Debug Steps**:
+
+1. **Test authentication directly** (run in browser console):
+   ```javascript
+   fetch('/api/user/profile', { credentials: 'include' })
+     .then(r => r.json())
+     .then(d => console.log('Auth test:', d))
+     .catch(e => console.error('Auth failed:', e))
+   ```
+   - ✅ If you see user data → Auth works, upload issue is elsewhere
+   - ❌ If you see `{ error: 'Unauthorized' }` → Auth broken, sign out/in
+
+2. **Check Network tab during upload**:
+   - Open DevTools → Network tab
+   - Try upload, click failed request
+   - Verify `Cookie:` header is present in Request Headers
+   - Check response body for error details
+
+3. **Verify Clerk environment**:
+   - Dashboard routes should auto-create user profiles (see `middleware.ts:42-72`)
+   - Check Supabase `user_profiles` table has entry for `clerk_user_id`
+   - Check browser console for profile creation errors
+
+### R2 Storage Configuration Issues
+
+**Symptoms**: File uploads fail with "Storage not configured" or S3 errors
+
+**Common Causes**:
+
+1. **Missing R2 credentials in environment**:
+   - Check `.env.local` has: `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`
+   - For production: Verify Vercel environment variables are set
+
+2. **Wrong R2 endpoint format**:
+   - Must be: `https://<account-id>.r2.cloudflarestorage.com`
+   - Not: Custom domain or pub-*.r2.dev URL
+
+3. **Bucket doesn't exist**:
+   - Create bucket in Cloudflare dashboard matching `R2_BUCKET_NAME`
+   - Ensure API token has read/write permissions for the bucket
+
+**Debug endpoint**: Visit `/api/storage/test` to check R2 configuration status
+
+### ChromaDB Connection Issues
+
+**Symptoms**: RAG features fail, "Cannot connect to ChromaDB" errors
+
+**Fixes**:
+- Verify ChromaDB is running: `docker ps | grep chroma`
+- Start if not running: `docker run -d -p 8000:8000 chromadb/chroma`
+- Check `CHROMA_URL` environment variable (default: `http://localhost:8000`)
+- For production: Use hosted ChromaDB instance or dedicated server
+- Test connection: `curl http://localhost:8000/api/v1/heartbeat`
+
+### PDF Upload/Processing Issues
+
+**Symptoms**: PDFs upload but fail to generate flashcards/chat
+
+**Common Causes**:
+
+1. **Scanned PDFs** (no extractable text):
+   - Error: "This appears to be a scanned PDF"
+   - **Solution**: Use OCR software (Adobe Acrobat, online OCR tools) to convert to text-based PDF
+
+2. **Encrypted/Password-Protected PDFs**:
+   - Error: "PDF is encrypted or password-protected"
+   - **Solution**: Remove protection using PDF tools before uploading
+
+3. **Large PDFs** (>100MB):
+   - Use RAG pipeline via "Large File Upload" option
+   - Requires R2 and ChromaDB configuration
+
+4. **PDF.js Worker Issues**:
+   - Check browser console for worker loading errors
+   - Verify `/pdf.worker.min.js` route is accessible
+   - Check Next.js rewrite configuration in `next.config.ts`
 
 ## Deployment
 

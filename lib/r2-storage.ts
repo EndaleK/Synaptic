@@ -19,7 +19,7 @@ const r2Client = new S3Client({
   },
 })
 
-const BUCKET_NAME = process.env.R2_BUCKET_NAME || 'synaptic-documents'
+const BUCKET_NAME = process.env.R2_BUCKET_NAME || 'documents'
 
 /**
  * Upload a file to R2 storage
