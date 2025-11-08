@@ -158,42 +158,33 @@ export default function ChatInterface() {
               isProcessing: true
             })
 
-            console.log('📥 Fetching PDF from storage using document ID:', {
-              documentId: currentDocument.id,
-              storagePath: currentDocument.storagePath,
-              fullUrl: `/api/documents/storage/${currentDocument.id}`
-            })
-            const response = await fetch(`/api/documents/storage/${currentDocument.id}`)
+            console.log('📥 Fetching PDF download URL for document:', currentDocument.id)
+
+            // Step 1: Get signed download URL from server
+            const urlResponse = await fetch(`/api/documents/${currentDocument.id}/download-url`)
+
+            if (!urlResponse.ok) {
+              const errorData = await urlResponse.json().catch(() => ({ error: 'Failed to get download URL' }))
+              console.error('❌ Failed to get download URL:', errorData)
+              throw new Error(errorData.error || 'Failed to get download URL')
+            }
+
+            const { downloadUrl } = await urlResponse.json()
+            console.log('✅ Download URL received, fetching PDF directly from Supabase...')
+
+            // Step 2: Fetch PDF directly from Supabase using signed URL
+            const response = await fetch(downloadUrl)
 
             if (!response.ok) {
-              const responseText = await response.text()
-              let errorData: any = {}
-              try {
-                errorData = JSON.parse(responseText)
-              } catch {
-                errorData = { rawResponse: responseText }
-              }
-
-              console.error('❌ Storage fetch failed:', {
+              console.error('❌ PDF fetch failed:', {
                 status: response.status,
-                statusText: response.statusText,
-                storagePath: currentDocument.storagePath,
-                encodedPath: encodeURIComponent(currentDocument.storagePath),
-                error: errorData,
-                responseText
+                statusText: response.statusText
               })
-
-              // Show detailed error message if available
-              const detailedError = errorData.details || errorData.error || response.statusText
-              const errorMsg = `Failed to fetch PDF from storage: ${response.status} - ${detailedError}`
-
-              console.error('📋 Full error details:', errorData)
-
-              throw new Error(errorMsg)
+              throw new Error(`Failed to fetch PDF: ${response.status} ${response.statusText}`)
             }
 
             const blob = await response.blob()
-            console.log('✅ PDF fetched successfully, size:', blob.size)
+            console.log('✅ PDF fetched successfully from Supabase, size:', blob.size)
             file = new File([blob], currentDocument.name, { type: 'application/pdf' })
           } else {
             // For other file types, create a file from the content
