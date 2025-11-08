@@ -156,16 +156,13 @@ export default function LargeFileUploader({
       const firstChunkData = await uploadChunk(0)
       documentId = firstChunkData.documentId
 
-      // Upload remaining chunks in parallel batches for speed
+      // Upload remaining chunks sequentially to avoid Clerk auth issues with parallel requests
       if (totalChunks > 1) {
-        console.log(`🚀 Uploading remaining ${totalChunks - 1} chunks in parallel (${PARALLEL_CHUNKS} at a time)...`)
+        console.log(`🚀 Uploading remaining ${totalChunks - 1} chunks sequentially...`)
 
-        for (let i = 1; i < totalChunks; i += PARALLEL_CHUNKS) {
-          const batch = []
-          for (let j = 0; j < PARALLEL_CHUNKS && i + j < totalChunks; j++) {
-            batch.push(uploadChunk(i + j))
-          }
-          await Promise.all(batch) // Upload batch in parallel
+        for (let i = 1; i < totalChunks; i++) {
+          console.log(`📤 Uploading chunk ${i + 1}/${totalChunks}...`)
+          await uploadChunk(i)
         }
       }
 
