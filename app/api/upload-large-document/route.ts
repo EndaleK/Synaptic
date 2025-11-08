@@ -72,14 +72,19 @@ export async function POST(request: NextRequest) {
 
     // 3. Parse request data
     const formData = await request.formData()
-    const chunk = formData.get('chunk') as Blob
+    const chunk = formData.get('file') as Blob // Client sends 'file' not 'chunk'
     const chunkIndex = parseInt(formData.get('chunkIndex') as string)
     const totalChunks = parseInt(formData.get('totalChunks') as string)
     const fileName = formData.get('fileName') as string
-    const fileType = formData.get('fileType') as string
-    const fileId = formData.get('fileId') as string
+    const documentId = formData.get('documentId') as string // Use as fileId
 
-    if (!chunk || isNaN(chunkIndex) || isNaN(totalChunks) || !fileName || !fileId) {
+    // Derive file type from filename
+    const fileType = fileName.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream'
+
+    // Use documentId as fileId, or generate one for first chunk
+    const fileId = documentId || `upload-${Date.now()}-${Math.random().toString(36).substring(7)}`
+
+    if (!chunk || isNaN(chunkIndex) || isNaN(totalChunks) || !fileName) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -262,7 +267,8 @@ export async function POST(request: NextRequest) {
           success: true,
           message: 'Upload complete',
           documentId: session.documentId,
-          isLastChunk: true
+          isComplete: true, // Client expects 'isComplete' not 'isLastChunk'
+          isLastChunk: true // Keep for backwards compatibility
         })
 
       } catch (assemblyError) {
@@ -289,8 +295,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `Chunk ${chunkIndex + 1}/${totalChunks} uploaded`,
+      documentId: session.documentId, // Client needs this for subsequent chunks
       receivedChunks: session.receivedChunks.size,
       totalChunks,
+      isComplete: false,
       isLastChunk: false
     })
 
