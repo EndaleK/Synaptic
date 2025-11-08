@@ -205,12 +205,12 @@ export async function POST(request: NextRequest) {
         tempStoragePath
       })
 
-      console.log(`[DEBUG] 📝 Creating document record:`, {
+      console.log(`[DEBUG] 📝 Creating document record (initial):`, {
         user_id: userProfileId,
         file_name: fileName,
         clerk_user_id: userId,
         file_type: fileType,
-        storage_path: tempStoragePath
+        storage_path: tempStoragePath // Will be updated after R2 initialization
       })
 
       const { data: document, error: dbError } = await supabase
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
           file_name: fileName,
           file_size: 0, // Will be updated when all chunks received
           file_type: fileType,
-          storage_path: tempStoragePath,
+          storage_path: tempStoragePath, // Temporary, will be updated below
           extracted_text: '',
           processing_status: 'pending', // Status flow: pending → processing → completed
           metadata: {
@@ -246,6 +246,8 @@ export async function POST(request: NextRequest) {
 
       // Initialize multipart upload for R2 (if configured)
       let uploadId: string | undefined
+      let actualStoragePath = tempStoragePath
+      let usingR2 = false
 
       if (hasR2) {
         const r2Client = getR2Client()
@@ -260,11 +262,44 @@ export async function POST(request: NextRequest) {
 
             const multipartResponse = await r2Client.send(createMultipartCommand)
             uploadId = multipartResponse.UploadId
+            usingR2 = true
             console.log(`[DEBUG] ✅ R2 multipart upload initiated: ${uploadId}`)
           } catch (r2Error) {
             console.error(`[ERROR] Failed to initiate R2 multipart upload:`, r2Error)
-            // Continue without R2 - will fall back to Supabase
+            console.error(`[ERROR] R2 Error details:`, {
+              endpoint: process.env.R2_ENDPOINT,
+              bucket: R2_BUCKET_NAME,
+              hasAccessKey: !!process.env.R2_ACCESS_KEY_ID,
+              hasSecretKey: !!process.env.R2_SECRET_ACCESS_KEY,
+              error: r2Error instanceof Error ? r2Error.message : String(r2Error)
+            })
+            // Fall back to Supabase - change storage path format
+            actualStoragePath = `${userProfileId}/${timestamp}-${sanitizedFileName}`
+            console.log(`[DEBUG] Falling back to Supabase storage: ${actualStoragePath}`)
           }
+        } else {
+          // R2 client creation failed - use Supabase format
+          actualStoragePath = `${userProfileId}/${timestamp}-${sanitizedFileName}`
+          console.log(`[DEBUG] R2 client unavailable, using Supabase storage: ${actualStoragePath}`)
+        }
+      } else {
+        // R2 not configured - use Supabase format
+        actualStoragePath = `${userProfileId}/${timestamp}-${sanitizedFileName}`
+      }
+
+      // Update document record with correct storage path if it changed
+      if (actualStoragePath !== tempStoragePath) {
+        console.log(`[DEBUG] Updating storage_path in database: ${tempStoragePath} → ${actualStoragePath}`)
+        const { error: updateError } = await supabase
+          .from('documents')
+          .update({ storage_path: actualStoragePath })
+          .eq('id', document.id)
+
+        if (updateError) {
+          console.error('[ERROR] Failed to update storage_path:', updateError)
+          // Non-fatal, continue
+        } else {
+          console.log(`[DEBUG] ✅ Storage path updated to Supabase format`)
         }
       }
 
@@ -278,14 +313,14 @@ export async function POST(request: NextRequest) {
         timestamp,
         totalChunks: parseInt(totalChunks),
         authValidatedAt: now,
-        storageKey: tempStoragePath,
+        storageKey: actualStoragePath, // Use actual path (R2 or Supabase format)
         fileType,
-        hasR2
+        hasR2: usingR2 // Only true if R2 multipart upload succeeded
       }
 
       documentId = document.id
       sessionStorage.set(chunkKey, session)
-      console.log(`🆕 Upload session initialized for ${fileName} with documentId: ${document.id}${uploadId ? `, uploadId: ${uploadId}` : ''}`)
+      console.log(`🆕 Upload session initialized for ${fileName} with documentId: ${document.id}, storage: ${usingR2 ? 'R2' : 'Supabase'}${uploadId ? `, uploadId: ${uploadId}` : ''}`)
     } else if (!sessionStorage.has(chunkKey) && existingDocumentId) {
       // Session not in memory (hit different serverless instance), but client provided documentId
       // Reconstruct session from database
