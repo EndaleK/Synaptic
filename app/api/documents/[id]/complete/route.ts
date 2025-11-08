@@ -105,19 +105,15 @@ export async function POST(
     const isLargeFile = actualFileSize > LARGE_FILE_THRESHOLD
     const isPDF = document.file_type === 'application/pdf'
 
-    let processingStatus: 'completed' | 'processing' = 'completed'
-    let extractedText = ''
-
-    // For now, set status to 'completed' and let client-side handle text extraction
-    // This keeps the API fast and responsive
-    // Text extraction will happen:
-    // - Client-side for PDFs (using pdf.js in browser)
-    // - Server-side for DOCX/TXT (in a separate endpoint if needed)
-    // - RAG indexing for large files (triggered separately)
+    // Always set status to 'completed' immediately
+    // This prevents documents from getting stuck in 'processing' loop
+    // Text extraction and RAG indexing will happen on-demand when needed:
+    // - Client-side PDF extraction when user opens chat
+    // - RAG indexing triggered when user actually uses the document
+    const processingStatus: 'completed' = 'completed'
 
     if (isLargeFile) {
-      console.log(`📦 Large file detected, will use RAG for processing`)
-      processingStatus = 'processing' // Will be updated after RAG indexing
+      console.log(`📦 Large file detected (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB), RAG will be used on-demand`)
     }
 
     // 6. Update document record
