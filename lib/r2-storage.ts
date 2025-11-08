@@ -21,13 +21,6 @@ const r2Client = new S3Client({
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME || 'synaptic-documents'
 
-// Helper function to strip bucket prefix from storage keys
-// Storage paths in DB may include 'documents/' prefix, but R2 SDK expects keys without it
-const BUCKET_PREFIX = 'documents/'
-function stripBucketPrefix(key: string): string {
-  return key.startsWith(BUCKET_PREFIX) ? key.substring(BUCKET_PREFIX.length) : key
-}
-
 /**
  * Upload a file to R2 storage
  * Supports files up to 500GB with automatic multipart upload
@@ -37,13 +30,9 @@ export async function uploadToR2(
   key: string,
   contentType: string = 'application/pdf'
 ): Promise<{ url: string; key: string }> {
-  // Strip bucket prefix if present in key
-  const actualKey = stripBucketPrefix(key)
-
   console.log('📤 R2 Upload starting:', {
     bucket: BUCKET_NAME,
-    originalKey: key,
-    actualKey,
+    key,
     endpoint: process.env.R2_ENDPOINT,
     contentType,
     fileSize: file instanceof Buffer ? file.length : 'stream'
@@ -55,7 +44,7 @@ export async function uploadToR2(
       client: r2Client,
       params: {
         Bucket: BUCKET_NAME,
-        Key: actualKey,  // Use stripped key
+        Key: key,
         Body: file,
         ContentType: contentType,
       },
@@ -92,13 +81,9 @@ export async function getR2SignedUrl(
   key: string,
   expiresIn: number = 3600
 ): Promise<string> {
-  // Strip bucket prefix if present in key
-  const actualKey = stripBucketPrefix(key)
-
   console.log('🔐 R2 Generating signed URL:', {
     bucket: BUCKET_NAME,
-    originalKey: key,
-    actualKey,
+    key,
     endpoint: process.env.R2_ENDPOINT,
     expiresIn
   })
@@ -106,7 +91,7 @@ export async function getR2SignedUrl(
   try {
     const command = new GetObjectCommand({
       Bucket: BUCKET_NAME,
-      Key: actualKey,  // Use stripped key
+      Key: key,
     })
 
     const signedUrl = await getSignedUrl(r2Client, command, { expiresIn })
@@ -129,13 +114,10 @@ export async function getR2SignedUrl(
  * Memory-efficient for large files
  */
 export async function downloadFromR2(key: string): Promise<ReadableStream> {
-  // Strip bucket prefix if present in key
-  const actualKey = stripBucketPrefix(key)
-
   try {
     const command = new GetObjectCommand({
       Bucket: BUCKET_NAME,
-      Key: actualKey,  // Use stripped key
+      Key: key,
     })
 
     const response = await r2Client.send(command)
@@ -156,13 +138,10 @@ export async function downloadFromR2(key: string): Promise<ReadableStream> {
  * Download a file from R2 storage as a Buffer
  */
 export async function downloadFromR2AsBuffer(key: string): Promise<Buffer> {
-  // Strip bucket prefix if present in key
-  const actualKey = stripBucketPrefix(key)
-
   try {
     const command = new GetObjectCommand({
       Bucket: BUCKET_NAME,
-      Key: actualKey,  // Use stripped key
+      Key: key,
     })
 
     const response = await r2Client.send(command)
@@ -187,13 +166,10 @@ export async function downloadFromR2AsBuffer(key: string): Promise<Buffer> {
  * Delete a file from R2 storage
  */
 export async function deleteFromR2(key: string): Promise<void> {
-  // Strip bucket prefix if present in key
-  const actualKey = stripBucketPrefix(key)
-
   try {
     const command = new DeleteObjectCommand({
       Bucket: BUCKET_NAME,
-      Key: actualKey,  // Use stripped key
+      Key: key,
     })
 
     await r2Client.send(command)
@@ -207,13 +183,10 @@ export async function deleteFromR2(key: string): Promise<void> {
  * Check if a file exists in R2
  */
 export async function fileExistsInR2(key: string): Promise<boolean> {
-  // Strip bucket prefix if present in key
-  const actualKey = stripBucketPrefix(key)
-
   try {
     const command = new HeadObjectCommand({
       Bucket: BUCKET_NAME,
-      Key: actualKey,  // Use stripped key
+      Key: key,
     })
 
     await r2Client.send(command)
@@ -237,13 +210,10 @@ export async function getR2FileMetadata(key: string): Promise<{
   contentType: string
   lastModified: Date
 }> {
-  // Strip bucket prefix if present in key
-  const actualKey = stripBucketPrefix(key)
-
   try {
     const command = new HeadObjectCommand({
       Bucket: BUCKET_NAME,
-      Key: actualKey,  // Use stripped key
+      Key: key,
     })
 
     const response = await r2Client.send(command)
