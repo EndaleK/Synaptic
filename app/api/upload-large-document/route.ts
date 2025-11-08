@@ -40,7 +40,7 @@ const getR2Client = () => {
   })
 }
 
-const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'documents'
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'synaptic-documents'
 
 // Upload session tracking to handle parallel chunk uploads
 interface UploadSession {
