@@ -1,8 +1,8 @@
 /**
  * API Route: Fetch Flashcards
  *
- * GET /api/flashcards?documentId={id}
- * Fetches flashcards for a specific document
+ * GET /api/flashcards?documentId={id} - Fetch flashcards for specific document
+ * GET /api/flashcards - Fetch all flashcards for user (for Content Library)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -17,16 +17,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 2. Get documentId from query params
+    // 2. Get query params
     const { searchParams } = new URL(request.url)
     const documentId = searchParams.get('documentId')
-
-    if (!documentId) {
-      return NextResponse.json(
-        { error: 'documentId query parameter is required' },
-        { status: 400 }
-      )
-    }
+    const limit = searchParams.get('limit')
 
     // 3. Initialize Supabase client
     const supabase = await createClient()
@@ -42,28 +36,47 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
     }
 
-    // 4. Verify document ownership
-    const { data: document, error: docError } = await supabase
-      .from('documents')
-      .select('id, file_name, user_id')
-      .eq('id', documentId)
-      .eq('user_id', profile.id)
-      .single()
-
-    if (docError || !document) {
-      return NextResponse.json(
-        { error: 'Document not found or access denied' },
-        { status: 404 }
-      )
-    }
-
-    // 5. Fetch flashcards for this document
-    const { data: flashcards, error: flashcardsError } = await supabase
+    // 4. Build query based on whether documentId is provided
+    let query = supabase
       .from('flashcards')
-      .select('*')
-      .eq('document_id', documentId)
+      .select(`
+        *,
+        documents:document_id (
+          id,
+          file_name,
+          file_type
+        )
+      `)
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
+
+    // Filter by document if provided
+    if (documentId) {
+      // Verify document ownership first
+      const { data: document, error: docError } = await supabase
+        .from('documents')
+        .select('id, file_name, user_id')
+        .eq('id', documentId)
+        .eq('user_id', profile.id)
+        .single()
+
+      if (docError || !document) {
+        return NextResponse.json(
+          { error: 'Document not found or access denied' },
+          { status: 404 }
+        )
+      }
+
+      query = query.eq('document_id', documentId)
+    }
+
+    // Apply limit if provided
+    if (limit) {
+      query = query.limit(parseInt(limit))
+    }
+
+    // 5. Fetch flashcards
+    const { data: flashcards, error: flashcardsError } = await query
 
     if (flashcardsError) {
       console.error('Error fetching flashcards:', flashcardsError)
@@ -74,11 +87,11 @@ export async function GET(request: NextRequest) {
     }
 
     // 6. Return flashcards
-    console.log(`📋 Returning ${flashcards?.length || 0} flashcards for document ${documentId}`)
+    const context = documentId ? `for document ${documentId}` : 'for user (all documents)'
+    console.log(`📋 Returning ${flashcards?.length || 0} flashcards ${context}`)
 
     return NextResponse.json({
-      flashcards: flashcards || [],
-      documentName: document.file_name
+      flashcards: flashcards || []
     })
 
   } catch (error) {
