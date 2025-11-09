@@ -5,7 +5,7 @@
 -- Create topic_selection_presets table
 CREATE TABLE IF NOT EXISTS topic_selection_presets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
   preset_name TEXT NOT NULL,
   selection_data JSONB NOT NULL,
@@ -33,26 +33,46 @@ ALTER TABLE topic_selection_presets ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view their own topic selection presets"
   ON topic_selection_presets
   FOR SELECT
-  USING (user_id = auth.uid());
+  USING (
+    user_id IN (
+      SELECT id FROM user_profiles WHERE clerk_user_id = auth.jwt()->>'sub'
+    )
+  );
 
 -- RLS Policy: Users can create their own presets
 CREATE POLICY "Users can create their own topic selection presets"
   ON topic_selection_presets
   FOR INSERT
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (
+    user_id IN (
+      SELECT id FROM user_profiles WHERE clerk_user_id = auth.jwt()->>'sub'
+    )
+  );
 
 -- RLS Policy: Users can update their own presets
 CREATE POLICY "Users can update their own topic selection presets"
   ON topic_selection_presets
   FOR UPDATE
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  USING (
+    user_id IN (
+      SELECT id FROM user_profiles WHERE clerk_user_id = auth.jwt()->>'sub'
+    )
+  )
+  WITH CHECK (
+    user_id IN (
+      SELECT id FROM user_profiles WHERE clerk_user_id = auth.jwt()->>'sub'
+    )
+  );
 
 -- RLS Policy: Users can delete their own presets
 CREATE POLICY "Users can delete their own topic selection presets"
   ON topic_selection_presets
   FOR DELETE
-  USING (user_id = auth.uid());
+  USING (
+    user_id IN (
+      SELECT id FROM user_profiles WHERE clerk_user_id = auth.jwt()->>'sub'
+    )
+  );
 
 -- Trigger to auto-update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_topic_presets_updated_at()
