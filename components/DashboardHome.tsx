@@ -168,7 +168,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
               <p className="text-white/90 text-lg font-medium">
                 Ready to continue your learning journey?
               </p>
-              <div className="flex items-center gap-2 mt-4 text-white text-caption">
+              <div className="flex items-center gap-2 mt-4 text-white">
                 <Calendar className="w-4 h-4" />
                 <span className="hidden md:inline">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                 <span className="md:hidden">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
