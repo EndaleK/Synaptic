@@ -43,6 +43,17 @@ export async function GET(request: NextRequest) {
 
     if (foldersError) {
       console.error('Failed to fetch folders:', foldersError)
+
+      // If table doesn't exist yet (migration not run), return empty folders gracefully
+      if (foldersError.code === '42P01' || foldersError.message.includes('does not exist')) {
+        console.log('ℹ️ Folders table not found - migration not yet applied. Returning empty folders.')
+        return NextResponse.json({
+          success: true,
+          folders: [],
+          totalCount: 0
+        })
+      }
+
       return NextResponse.json(
         { error: 'Failed to fetch folders', details: foldersError.message },
         { status: 500 }
@@ -163,6 +174,14 @@ export async function POST(request: NextRequest) {
 
     if (createError) {
       console.error('Failed to create folder:', createError)
+
+      // If table doesn't exist yet (migration not run), return helpful error
+      if (createError.code === '42P01' || createError.message.includes('does not exist')) {
+        return NextResponse.json(
+          { error: 'Folders feature not available yet. Please run the database migration first.' },
+          { status: 503 }
+        )
+      }
 
       // Check for unique constraint violation
       if (createError.code === '23505') {

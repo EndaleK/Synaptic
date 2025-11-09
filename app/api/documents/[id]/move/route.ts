@@ -66,7 +66,18 @@ export async function POST(
         .eq('user_id', profile.id)
         .single()
 
-      if (folderError || !folder) {
+      if (folderError) {
+        // If table doesn't exist yet (migration not run), return helpful error
+        if (folderError.code === '42P01' || folderError.message.includes('does not exist')) {
+          return NextResponse.json(
+            { error: 'Folders feature not available yet. Please run the database migration first.' },
+            { status: 503 }
+          )
+        }
+        return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
+      }
+
+      if (!folder) {
         return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
       }
     }
