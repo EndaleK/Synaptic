@@ -170,9 +170,9 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
         <RecentContentWidget />
 
         {/* Study Scheduler Tools */}
-        <div>
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
           <div className="flex items-center gap-2 mb-6">
-            <h2 className="text-headline text-gray-900 dark:text-white">Study Tools & Scheduler</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Study Tools & Scheduler</h2>
             <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
               AI Enhanced
             </span>
@@ -180,7 +180,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
           <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
             <button
               onClick={() => window.location.href = '/dashboard/study/review'}
-              className="relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+              className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
             >
               <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full">
                 AI
@@ -198,7 +198,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
 
             <button
               onClick={() => window.location.href = '/dashboard/study/pomodoro'}
-              className="relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+              className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
             >
               <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full">
                 AI
@@ -216,7 +216,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
 
             <button
               onClick={() => window.location.href = '/dashboard/study/calendar'}
-              className="relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+              className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
             >
               <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4">
                 <Calendar className="w-7 h-7 text-white" />
@@ -231,7 +231,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
 
             <button
               onClick={() => window.location.href = '/dashboard/study/statistics'}
-              className="relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+              className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
             >
               <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full">
                 AI
@@ -249,7 +249,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
 
             <button
               onClick={() => window.location.href = '/dashboard/study/settings'}
-              className="relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+              className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
             >
               <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-xl flex items-center justify-center mb-4">
                 <Bell className="w-7 h-7 text-white" />
@@ -265,8 +265,8 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
         </div>
 
         {/* Learning Modes Grid */}
-        <div>
-          <h2 className="text-headline text-gray-900 dark:text-white mb-6">Choose Your Learning Mode</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Choose Your Learning Mode</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {learningModes.map((mode) => {
               const Icon = mode.icon
@@ -275,7 +275,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                   key={mode.id}
                   onClick={() => mode.available && onModeSelect(mode.id)}
                   disabled={!mode.available}
-                  className={`relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 ${
+                  className={`relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 ${
                     mode.available ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
                   }`}
                 >
@@ -380,16 +380,6 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
 
         {/* Recent Documents */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recent Documents</h2>
-            <button
-              onClick={() => window.location.href = '/dashboard/documents'}
-              className="text-sm text-accent-primary hover:underline"
-            >
-              View All Documents
-            </button>
-          </div>
-
           {isLoadingDocs ? (
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-12 text-center">
               <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
