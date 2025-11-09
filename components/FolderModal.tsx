@@ -71,7 +71,7 @@ export default function FolderModal({ isOpen, onClose, onCreateFolder, parentFol
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-lg animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl animate-in fade-in duration-200"
       onClick={handleClose}
     >
       <div
