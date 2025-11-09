@@ -304,9 +304,9 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
               className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
             >
               {isExpanded ? (
-                <ChevronDown className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <ChevronDown className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               ) : (
-                <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <ChevronRight className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               )}
             </button>
           ) : (
@@ -347,7 +347,7 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
             className="p-1 invisible group-hover:visible hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all cursor-pointer z-10 relative"
             title="Folder options"
           >
-            <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            <MoreVertical className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
           </button>
         </div>
 
@@ -385,7 +385,7 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
             className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             title="Create Folder"
           >
-            <FolderPlus className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            <FolderPlus className="w-4 h-4 text-purple-600 dark:text-purple-400" />
           </button>
         </div>
 
@@ -401,7 +401,7 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
           onDragOver={(e) => handleDragOver(e, 'root')}
           onDragLeave={handleDragLeave}
         >
-          <FolderIcon className={`w-5 h-5 ${selectedFolderId === null ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`} />
+          <FolderIcon className={`w-5 h-5 ${selectedFolderId === null ? 'text-blue-600 dark:text-blue-400' : 'text-indigo-600 dark:text-indigo-400'}`} />
           <span className={`flex-1 text-sm ${selectedFolderId === null ? 'font-medium text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>
             All Documents
           </span>
@@ -412,7 +412,7 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
           {folders.length === 0 ? (
             <div className="text-center py-8 px-4">
               <div className="w-16 h-16 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <FolderPlus className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                <FolderPlus className="w-8 h-8 text-purple-500 dark:text-purple-400" />
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 No folders yet
@@ -453,14 +453,14 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
             }}
             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
-            <FolderPlus className="w-4 h-4" />
+            <FolderPlus className="w-4 h-4 text-purple-600 dark:text-purple-400" />
             Create Subfolder
           </button>
           <button
             onClick={() => handleRenameFolder(contextMenu.folderId)}
             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
-            <Pencil className="w-4 h-4" />
+            <Pencil className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             Rename
           </button>
           <button

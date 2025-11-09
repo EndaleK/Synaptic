@@ -198,7 +198,7 @@ export default function DocumentsPage() {
         {/* Two-column layout: Folder sidebar + Document list */}
         <div className="flex gap-8">
           {/* Left Sidebar - Folder Tree */}
-          <div className="w-80 flex-shrink-0">
+          <div className="w-[368px] flex-shrink-0">
             <div className="sticky top-6 bg-white dark:bg-gray-900 rounded-xl shadow-xl border-2 border-gray-200 dark:border-gray-700 overflow-hidden min-h-[600px]">
               <FolderTree
                 selectedFolderId={selectedFolderId}

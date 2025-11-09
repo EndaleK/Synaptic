@@ -169,46 +169,6 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
         {/* Recent Content Widget */}
         <RecentContentWidget />
 
-        {/* Learning Modes Grid */}
-        <div>
-          <h2 className="text-headline text-gray-900 dark:text-white mb-6">Choose Your Learning Mode</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {learningModes.map((mode) => {
-              const Icon = mode.icon
-              return (
-                <button
-                  key={mode.id}
-                  onClick={() => mode.available && onModeSelect(mode.id)}
-                  disabled={!mode.available}
-                  className={`relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 ${
-                    mode.available ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
-                  }`}
-                >
-                  <div className={`w-14 h-14 ${mode.bgClass} rounded-xl flex items-center justify-center mb-4 shadow-lg ${mode.shadowClass}`}>
-                    <Icon className="w-7 h-7 text-white" />
-                  </div>
-                  <h3 className="text-title text-gray-900 dark:text-white mb-2">
-                    {mode.name}
-                  </h3>
-                  <p className="text-body text-gray-600 dark:text-gray-400 leading-relaxed">
-                    {mode.description}
-                  </p>
-                  {!mode.available && (
-                    <span className="absolute top-4 right-4 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-semibold rounded-full">
-                      Soon
-                    </span>
-                  )}
-                  {mode.premium && (
-                    <span className="absolute top-4 right-4 px-2 py-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-semibold rounded-full shadow-md">
-                      Premium
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
         {/* Study Scheduler Tools */}
         <div>
           <div className="flex items-center gap-2 mb-6">
@@ -301,6 +261,46 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                 Configure reminders and alerts
               </p>
             </button>
+          </div>
+        </div>
+
+        {/* Learning Modes Grid */}
+        <div>
+          <h2 className="text-headline text-gray-900 dark:text-white mb-6">Choose Your Learning Mode</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {learningModes.map((mode) => {
+              const Icon = mode.icon
+              return (
+                <button
+                  key={mode.id}
+                  onClick={() => mode.available && onModeSelect(mode.id)}
+                  disabled={!mode.available}
+                  className={`relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 ${
+                    mode.available ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
+                  }`}
+                >
+                  <div className={`w-14 h-14 ${mode.bgClass} rounded-xl flex items-center justify-center mb-4 shadow-lg ${mode.shadowClass}`}>
+                    <Icon className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-title text-gray-900 dark:text-white mb-2">
+                    {mode.name}
+                  </h3>
+                  <p className="text-body text-gray-600 dark:text-gray-400 leading-relaxed">
+                    {mode.description}
+                  </p>
+                  {!mode.available && (
+                    <span className="absolute top-4 right-4 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-semibold rounded-full">
+                      Soon
+                    </span>
+                  )}
+                  {mode.premium && (
+                    <span className="absolute top-4 right-4 px-2 py-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-semibold rounded-full shadow-md">
+                      Premium
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </div>
         </div>
 
