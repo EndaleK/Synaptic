@@ -27,7 +27,25 @@
   /* Additional brain logo colors */
   --accent-blue: 45 62 159;           /* Deep blue from logo #2D3E9F */
   --accent-orange: 255 107 53;        /* Orange from logo #FF6B35 */
-  
+
+  /* Mode-specific colors (60-30-10 color rule implementation) */
+  /* Primary (60%) - Surface colors */
+  --color-surface: 255 255 255;           /* White background */
+  --color-surface-secondary: 248 250 252; /* Slate-50 for cards */
+
+  /* Secondary (30%) - Learning mode colors (solid, not gradients) */
+  --mode-flashcards: 99 102 241;      /* Indigo-500 - focus/learning */
+  --mode-chat: 59 130 246;            /* Blue-500 - communication */
+  --mode-podcast: 139 92 246;         /* Violet-500 - audio */
+  --mode-mindmap: 34 197 94;          /* Emerald-500 - growth/connections */
+  --mode-writer: 244 63 94;           /* Rose-500 - creativity */
+  --mode-video: 251 191 36;           /* Amber-500 - media */
+
+  /* Text colors for better accessibility (WCAG AAA) */
+  --text-on-light: 15 23 42;          /* Slate-900 - primary text */
+  --text-secondary-light: 71 85 105;  /* Slate-600 - secondary text */
+  --text-caption-light: 100 116 139;  /* Slate-500 - captions */
+
   /* Neutral colors */
   --gray-50: #f9fafb;
   --gray-100: #f3f4f6;
@@ -104,7 +122,7 @@
   :root {
     --background: #0f172a;
     --foreground: #f1f5f9;
-    
+
     /* Dark mode adjustments */
     --gray-50: #1e293b;
     --gray-100: #334155;
@@ -116,10 +134,19 @@
     --gray-700: #f1f5f9;
     --gray-800: #f8fafc;
     --gray-900: #ffffff;
-    
+
     --primary: #ffffff;
     --primary-hover: #cccccc;
     --primary-light: #333333;
+
+    /* Dark mode surface colors */
+    --color-surface: 15 23 42;           /* Slate-900 background */
+    --color-surface-secondary: 30 41 59; /* Slate-800 for cards */
+
+    /* Text colors for dark mode */
+    --text-on-dark: 248 250 252;         /* Slate-50 - primary text */
+    --text-secondary-dark: 203 213 225;  /* Slate-300 - secondary text */
+    --text-caption-dark: 148 163 184;    /* Slate-400 - captions */
   }
 }
 
@@ -246,7 +273,52 @@ html.font-size-large {
   }
 }
 
-/* Typography utilities */
+/* Typography utilities - Systematic Scale */
+/* Display - Hero headings (48px) */
+.text-display {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+/* Headline - Section headers (30px) */
+.text-headline {
+  font-size: 1.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+/* Title - Card headers (20px) */
+.text-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* Body - Main content (16px) */
+.text-body {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* Caption - Meta info (14px) */
+.text-caption {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: rgb(var(--text-caption-light));
+}
+
+@media (prefers-color-scheme: dark) {
+  .text-caption {
+    color: rgb(var(--text-caption-dark));
+  }
+}
+
+/* Legacy typography utilities (keep for backward compatibility) */
 .text-display-lg {
   font-size: var(--font-size-4xl);
   line-height: var(--line-height-tight);

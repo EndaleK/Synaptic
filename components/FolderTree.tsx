@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronRight, ChevronDown, FolderPlus, MoreVertical, Pencil, Trash2, FolderIcon } from 'lucide-react'
 import FolderModal from './FolderModal'
 
@@ -36,6 +37,10 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
   const [parentFolder, setParentFolder] = useState<{ id: string; name: string } | null>(null)
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
 
+  // Refs for click-outside detection
+  const menuRef = useRef<HTMLDivElement>(null)
+  const menuButtonRef = useRef<Map<string, HTMLButtonElement>>(new Map())
+
   // Fetch folders
   const fetchFolders = async () => {
     try {
@@ -55,12 +60,34 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
     fetchFolders()
   }, [])
 
-  // Close context menu on click outside
+  // Close context menu on click outside - with proper target checking
   useEffect(() => {
-    const handleClick = () => setContextMenu(null)
-    document.addEventListener('click', handleClick)
-    return () => document.removeEventListener('click', handleClick)
-  }, [])
+    if (!contextMenu) return
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node
+
+      // Don't close if clicking the menu itself
+      if (menuRef.current?.contains(target)) {
+        return
+      }
+
+      // Don't close if clicking any three-dot button
+      const clickedMenuButton = Array.from(menuButtonRef.current.values()).some(
+        button => button?.contains(target)
+      )
+      if (clickedMenuButton) {
+        return
+      }
+
+      // Close menu for any other click
+      setContextMenu(null)
+    }
+
+    // Use mousedown instead of click for better timing
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [contextMenu])
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders(prev => {
@@ -308,11 +335,17 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
 
           {/* Context Menu Button */}
           <button
+            type="button"
+            ref={(el) => {
+              if (el) menuButtonRef.current.set(folder.id, el)
+              else menuButtonRef.current.delete(folder.id)
+            }}
             onClick={(e) => {
               e.stopPropagation()
               handleContextMenu(e, folder.id)
             }}
-            className="p-1 opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all"
+            className="p-1 invisible group-hover:visible hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all cursor-pointer z-10 relative"
+            title="Folder options"
           >
             <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-400" />
           </button>
@@ -343,6 +376,7 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
       <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-800">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Folders</h3>
           <button
             onClick={() => {
               setParentFolder(null)
@@ -353,7 +387,6 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
           >
             <FolderPlus className="w-4 h-4 text-gray-600 dark:text-gray-400" />
           </button>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Folders</h3>
         </div>
 
         {/* All Documents (Root) */}
@@ -401,16 +434,18 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
         </div>
       </div>
 
-      {/* Context Menu */}
-      {contextMenu && (
-        <div
-          className="fixed z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 min-w-[180px]"
-          style={{
-            left: contextMenu.x,
-            top: contextMenu.y
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
+      {/* Context Menu - Rendered via Portal */}
+      {contextMenu && typeof window !== 'undefined' && (() => {
+        return createPortal(
+          <div
+            ref={menuRef}
+            className="fixed z-[9999] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1 min-w-[180px]"
+            style={{
+              left: `${contextMenu.x}px`,
+              top: `${contextMenu.y}px`
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
           <button
             onClick={() => {
               const folder = findFolderById(folders, contextMenu.folderId)
@@ -435,8 +470,10 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
             <Trash2 className="w-4 h-4" />
             Delete
           </button>
-        </div>
-      )}
+        </div>,
+        document.body
+        )
+      })()}
 
       {/* Folder Modal */}
       <FolderModal

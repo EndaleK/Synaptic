@@ -35,14 +35,16 @@ export default function PomodoroWidget({ onMaximize }: PomodoroWidgetProps) {
         const elapsed = Math.floor((Date.now() - state.lastUpdate) / 1000)
 
         if (state.isActive && elapsed < state.timeLeft) {
+          // Timer was running and hasn't completed - resume with adjusted time
           setTimeLeft(state.timeLeft - elapsed)
+          setIsActive(true) // Auto-resume timer
         } else {
           setTimeLeft(state.timeLeft)
+          setIsActive(false) // Timer completed or was paused
         }
 
         setMode(state.mode)
         setSessionsCompleted(state.sessionsCompleted)
-        setIsActive(false) // Don't auto-resume on page load
         setIsMinimized(state.isMinimized ?? true)
       } catch (error) {
         console.error('Failed to load timer state:', error)
@@ -197,162 +199,194 @@ export default function PomodoroWidget({ onMaximize }: PomodoroWidgetProps) {
   const modeConfig = getModeConfig()
   const activeModeDisplay = getActiveModeDisplay()
 
+  // Determine color based on time remaining
+  const getTimerColorState = () => {
+    if (timeLeft === 0) {
+      return 'alert' // Time's up - flashing red
+    } else if (timeLeft <= 300) { // 5 minutes = 300 seconds
+      return 'warning' // Less than 5 minutes - orange
+    }
+    return 'normal' // Default color
+  }
+
+  const colorState = getTimerColorState()
+
+  // Override mode config colors based on time state
+  const getDisplayConfig = () => {
+    if (colorState === 'alert') {
+      return {
+        label: modeConfig.label,
+        color: 'from-red-600 to-red-700',
+        bgColor: 'bg-red-600'
+      }
+    } else if (colorState === 'warning') {
+      return {
+        label: modeConfig.label,
+        color: 'from-orange-500 to-orange-600',
+        bgColor: 'bg-orange-500'
+      }
+    }
+    return modeConfig
+  }
+
+  const displayConfig = getDisplayConfig()
+
   // Don't show if timer is idle and minimized
   if (!isActive && isMinimized && timeLeft === getInitialTime(mode)) {
     return null
   }
 
   return (
-    <div className="fixed top-6 right-6 z-50 animate-in slide-in-from-top-4 duration-300">
+    <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-4 duration-300">
       {isMinimized ? (
-        // Minimized view
-        <div className={`bg-gradient-to-br ${modeConfig.color} rounded-2xl shadow-2xl border-2 border-white/30 backdrop-blur-sm overflow-hidden`}>
-          <div className="p-3">
-            <div className="flex items-center gap-3">
+        // Minimized view - 30% bigger
+        <div className={`bg-gradient-to-br ${displayConfig.color} rounded-3xl shadow-2xl border-2 border-white/30 backdrop-blur-sm overflow-hidden ${colorState === 'alert' ? 'animate-pulse' : ''}`}>
+          <div className="p-4">
+            <div className="flex items-center gap-4">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <div className="text-xs text-white/90 font-semibold uppercase tracking-wide">
-                    {modeConfig.label}
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="text-sm text-white/90 font-semibold uppercase tracking-wide">
+                    {displayConfig.label}
                   </div>
                   {mode === 'work' && activeMode !== 'home' && (
-                    <div className="flex items-center gap-1 text-[10px] text-white/80 bg-white/20 px-1.5 py-0.5 rounded">
-                      <Sparkles className="w-2.5 h-2.5" />
+                    <div className="flex items-center gap-1.5 text-xs text-white/80 bg-white/20 px-2 py-1 rounded">
+                      <Sparkles className="w-3 h-3" />
                       <span>{activeModeDisplay.icon} {activeModeDisplay.name}</span>
                     </div>
                   )}
                 </div>
-                <div className="text-3xl font-bold text-white tabular-nums">
+                <div className="text-4xl font-bold text-white tabular-nums">
                   {formatTime(timeLeft)}
                 </div>
                 {sessionsCompleted > 0 && (
-                  <div className="text-xs text-white/80 mt-1">
+                  <div className="text-sm text-white/80 mt-1">
                     Session {Math.floor(sessionsCompleted % 4) + 1}/4
                   </div>
                 )}
               </div>
 
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-2.5">
                 <button
                   onClick={handleStartPause}
-                  className="w-11 h-11 bg-white/25 hover:bg-white/35 rounded-xl flex items-center justify-center transition-all transform hover:scale-105 shadow-lg"
+                  className="w-14 h-14 bg-white/25 hover:bg-white/35 rounded-xl flex items-center justify-center transition-all transform hover:scale-105 shadow-lg"
                   title={isActive ? 'Pause' : 'Start'}
                 >
                   {isActive ? (
-                    <Pause className="w-5 h-5 text-white" />
+                    <Pause className="w-6 h-6 text-white" />
                   ) : (
-                    <Play className="w-5 h-5 text-white ml-0.5" />
+                    <Play className="w-6 h-6 text-white ml-0.5" />
                   )}
                 </button>
 
                 <button
                   onClick={() => setIsMinimized(false)}
-                  className="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors"
+                  className="w-11 h-11 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors"
                   title="Expand"
                 >
-                  <Maximize2 className="w-4 h-4 text-white" />
+                  <Maximize2 className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
           </div>
         </div>
       ) : (
-        // Expanded view
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border-2 border-gray-200 dark:border-gray-700 overflow-hidden w-80 backdrop-blur-sm">
+        // Expanded view - 30% bigger
+        <div className={`bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border-2 border-gray-200 dark:border-gray-700 overflow-hidden w-[416px] backdrop-blur-sm ${colorState === 'alert' ? 'animate-pulse' : ''}`}>
           {/* Header */}
-          <div className={`bg-gradient-to-br ${modeConfig.color} p-5`}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-white" />
-                <span className="text-sm font-bold text-white uppercase tracking-wide">
-                  {modeConfig.label}
+          <div className={`bg-gradient-to-br ${displayConfig.color} p-6`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <Clock className="w-6 h-6 text-white" />
+                <span className="text-base font-bold text-white uppercase tracking-wide">
+                  {displayConfig.label}
                 </span>
                 {mode === 'work' && activeMode !== 'home' && (
-                  <div className="flex items-center gap-1 text-xs text-white/90 bg-white/20 px-2 py-1 rounded-lg">
-                    <Sparkles className="w-3 h-3" />
+                  <div className="flex items-center gap-1.5 text-sm text-white/90 bg-white/20 px-2.5 py-1.5 rounded-lg">
+                    <Sparkles className="w-4 h-4" />
                     <span>{activeModeDisplay.icon} {activeModeDisplay.name}</span>
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 {onMaximize && (
                   <button
                     onClick={() => {
                       onMaximize()
                       setIsMinimized(true)
                     }}
-                    className="p-2 rounded-lg hover:bg-white/20 transition-all transform hover:scale-105"
+                    className="p-2.5 rounded-lg hover:bg-white/20 transition-all transform hover:scale-105"
                     title="Open full timer"
                   >
-                    <Maximize2 className="w-4 h-4 text-white" />
+                    <Maximize2 className="w-5 h-5 text-white" />
                   </button>
                 )}
                 <button
                   onClick={() => setIsMinimized(true)}
-                  className="p-2 rounded-lg hover:bg-white/20 transition-all transform hover:scale-105"
+                  className="p-2.5 rounded-lg hover:bg-white/20 transition-all transform hover:scale-105"
                   title="Minimize"
                 >
-                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
                 <button
                   onClick={handleStop}
-                  className="p-2 rounded-lg hover:bg-white/20 transition-all transform hover:scale-105"
+                  className="p-2.5 rounded-lg hover:bg-white/20 transition-all transform hover:scale-105"
                   title="Stop timer"
                 >
-                  <X className="w-4 h-4 text-white" />
+                  <X className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
 
             {/* Timer Display */}
             <div className="text-center">
-              <div className="text-6xl font-bold text-white mb-2 tabular-nums">
+              <div className="text-7xl font-bold text-white mb-2.5 tabular-nums">
                 {formatTime(timeLeft)}
               </div>
-              <div className="text-sm text-white/90 font-medium">
+              <div className="text-base text-white/90 font-medium">
                 Session {Math.floor(sessionsCompleted % 4) + 1}/4
               </div>
             </div>
           </div>
 
           {/* Controls */}
-          <div className="p-5 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
-            <div className="flex items-center justify-center gap-4 mb-4">
+          <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
+            <div className="flex items-center justify-center gap-5 mb-5">
               <button
                 onClick={handleReset}
                 disabled={!isActive && timeLeft === getInitialTime(mode)}
-                className="p-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 shadow-md border border-gray-200 dark:border-gray-600"
+                className="p-4 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 shadow-md border border-gray-200 dark:border-gray-600"
                 title="Reset"
               >
-                <RotateCcw className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                <RotateCcw className="w-6 h-6 text-gray-700 dark:text-gray-300" />
               </button>
 
               <button
                 onClick={handleStartPause}
-                className={`p-5 rounded-xl bg-gradient-to-br ${modeConfig.color} hover:opacity-90 transition-all transform hover:scale-105 shadow-xl`}
+                className={`p-6 rounded-xl bg-gradient-to-br ${displayConfig.color} hover:opacity-90 transition-all transform hover:scale-105 shadow-xl`}
                 title={isActive ? 'Pause' : 'Start'}
               >
                 {isActive ? (
-                  <Pause className="w-7 h-7 text-white" />
+                  <Pause className="w-9 h-9 text-white" />
                 ) : (
-                  <Play className="w-7 h-7 text-white ml-0.5" />
+                  <Play className="w-9 h-9 text-white ml-0.5" />
                 )}
               </button>
 
               <button
                 onClick={handleStop}
-                className="p-3 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all transform hover:scale-105 shadow-md border border-gray-200 dark:border-gray-600"
+                className="p-4 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all transform hover:scale-105 shadow-md border border-gray-200 dark:border-gray-600"
                 title="Stop"
               >
-                <X className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                <X className="w-6 h-6 text-gray-700 dark:text-gray-300" />
               </button>
             </div>
 
             {/* Progress Info */}
             {sessionsCompleted > 0 && (
-              <div className="text-center pt-3 border-t border-gray-300 dark:border-gray-600">
-                <div className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+              <div className="text-center pt-4 border-t border-gray-300 dark:border-gray-600">
+                <div className="text-base text-gray-700 dark:text-gray-300 font-medium">
                   🎯 {sessionsCompleted} session{sessionsCompleted !== 1 ? 's' : ''} completed today
                 </div>
               </div>

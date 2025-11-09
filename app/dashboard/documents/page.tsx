@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
-import { Upload, RefreshCw, Search, X } from "lucide-react"
+import { Upload, RefreshCw } from "lucide-react"
 import DocumentList from "@/components/DocumentList"
 import FolderTree from "@/components/FolderTree"
 import Breadcrumb, { documentsBreadcrumb } from "@/components/Breadcrumb"
@@ -24,7 +24,6 @@ export default function DocumentsPage() {
   const [error, setError] = useState<string | null>(null)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
   const { setCurrentDocument } = useDocumentStore()
   const { setActiveMode } = useUIStore()
 
@@ -36,10 +35,13 @@ export default function DocumentsPage() {
       const response = await fetch('/api/documents')
 
       if (!response.ok) {
-        throw new Error('Failed to fetch documents')
+        const errorData = await response.json().catch(() => ({}))
+        console.error('API Error:', response.status, errorData)
+        throw new Error(errorData.message || `Failed to fetch documents (${response.status})`)
       }
 
       const data = await response.json()
+      console.log('Documents fetched successfully:', data.documents?.length || 0)
       setDocuments(data.documents || [])
     } catch (err) {
       console.error('Error fetching documents:', err)
@@ -135,18 +137,11 @@ export default function DocumentsPage() {
     toast.success('Document uploaded successfully')
   }
 
-  // Filter documents based on selected folder and search query
+  // Filter documents based on selected folder only (search is handled by DocumentList component)
   const filteredDocuments = documents.filter(doc => {
-    // Filter by folder
-    const folderMatch = selectedFolderId === null
+    return selectedFolderId === null
       ? doc.folder_id === null
       : doc.folder_id === selectedFolderId
-
-    // Filter by search query
-    const searchMatch = searchQuery.trim() === '' ||
-      doc.file_name.toLowerCase().includes(searchQuery.toLowerCase())
-
-    return folderMatch && searchMatch
   })
 
   return (
@@ -200,39 +195,11 @@ export default function DocumentsPage() {
           </div>
         )}
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search documents..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-12 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-accent-primary focus:border-transparent transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                title="Clear search"
-              >
-                <X className="w-4 h-4 text-gray-400" />
-              </button>
-            )}
-          </div>
-          {searchQuery && (
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              Found {filteredDocuments.length} {filteredDocuments.length === 1 ? 'document' : 'documents'} matching "{searchQuery}"
-            </p>
-          )}
-        </div>
-
         {/* Two-column layout: Folder sidebar + Document list */}
-        <div className="flex gap-6">
+        <div className="flex gap-8">
           {/* Left Sidebar - Folder Tree */}
-          <div className="w-64 flex-shrink-0">
-            <div className="sticky top-6 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+          <div className="w-80 flex-shrink-0">
+            <div className="sticky top-6 bg-white dark:bg-gray-900 rounded-xl shadow-xl border-2 border-gray-200 dark:border-gray-700 overflow-hidden min-h-[600px]">
               <FolderTree
                 selectedFolderId={selectedFolderId}
                 onSelectFolder={setSelectedFolderId}
@@ -249,6 +216,7 @@ export default function DocumentsPage() {
               onSelectMode={handleSelectMode}
               onDelete={handleDelete}
               onRefresh={fetchDocuments}
+              onUpload={handleUploadClick}
             />
           </div>
         </div>

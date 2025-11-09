@@ -71,11 +71,12 @@ export default function FolderModal({ isOpen, onClose, onCreateFolder, parentFol
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-start bg-black/95 backdrop-blur-xl animate-in fade-in duration-200"
       onClick={handleClose}
     >
       <div
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-800 animate-in zoom-in-95 duration-200"
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-800 animate-in zoom-in-95 duration-200"
+        style={{ marginLeft: 'calc(20rem + 10vw)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

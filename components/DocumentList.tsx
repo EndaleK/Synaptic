@@ -13,6 +13,7 @@ interface DocumentListProps {
   onSelectMode: (documentId: string, mode: PreferredMode) => void
   onDelete: (documentId: string) => Promise<void>
   onRefresh: () => void
+  onUpload?: () => void
 }
 
 export default function DocumentList({
@@ -20,7 +21,8 @@ export default function DocumentList({
   isLoading,
   onSelectMode,
   onDelete,
-  onRefresh
+  onRefresh,
+  onUpload
 }: DocumentListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'size'>('date')
@@ -57,7 +59,7 @@ export default function DocumentList({
   if (documents.length === 0) {
     return (
       <div className="py-12">
-        <NoDocumentsEmptyState onUpload={onRefresh} />
+        <NoDocumentsEmptyState onUpload={onUpload || onRefresh} />
       </div>
     )
   }
