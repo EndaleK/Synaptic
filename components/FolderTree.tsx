@@ -256,9 +256,9 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
         {/* Folder Row */}
         <div
           className={`
-            group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all
-            ${isSelected ? 'bg-accent-primary/5 dark:bg-accent-primary/10 border-l-2 border-accent-primary' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 border-l-2 border-transparent'}
-            ${isDragOver ? 'bg-accent-primary/10 dark:bg-accent-primary/20 ring-2 ring-accent-primary' : ''}
+            group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors
+            ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}
+            ${isDragOver ? 'bg-blue-100 dark:bg-blue-900/40 ring-2 ring-blue-500' : ''}
           `}
           style={{ paddingLeft: `${12 + depth * 20}px` }}
           onClick={() => onSelectFolder(folder.id)}
@@ -295,7 +295,7 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
           </div>
 
           {/* Folder Name */}
-          <span className={`flex-1 text-sm truncate ${isSelected ? 'font-medium text-accent-primary' : 'text-gray-700 dark:text-gray-300'}`}>
+          <span className={`flex-1 text-sm truncate ${isSelected ? 'font-medium text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>
             {folder.name}
           </span>
 
@@ -359,28 +359,23 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
         {/* All Documents (Root) */}
         <div
           className={`
-            flex items-center gap-2 px-3 py-2.5 mx-3 mt-3 rounded-lg cursor-pointer transition-all
-            ${selectedFolderId === null ? 'bg-accent-primary/5 dark:bg-accent-primary/10 border-l-2 border-accent-primary' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 border-l-2 border-transparent'}
-            ${dragOverFolderId === 'root' ? 'bg-accent-primary/10 dark:bg-accent-primary/20 ring-2 ring-accent-primary' : ''}
+            flex items-center gap-2 px-3 py-2 mx-3 mt-3 rounded-lg cursor-pointer transition-colors
+            ${selectedFolderId === null ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}
+            ${dragOverFolderId === 'root' ? 'bg-blue-100 dark:bg-blue-900/40 ring-2 ring-blue-500' : ''}
           `}
           onClick={() => onSelectFolder(null)}
           onDrop={(e) => handleDrop(e, null)}
           onDragOver={(e) => handleDragOver(e, 'root')}
           onDragLeave={handleDragLeave}
         >
-          <FolderIcon className={`w-5 h-5 ${selectedFolderId === null ? 'text-accent-primary' : 'text-gray-600 dark:text-gray-400'}`} />
-          <span className={`flex-1 text-sm ${selectedFolderId === null ? 'font-medium text-accent-primary' : 'text-gray-700 dark:text-gray-300'}`}>
+          <FolderIcon className={`w-5 h-5 ${selectedFolderId === null ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`} />
+          <span className={`flex-1 text-sm ${selectedFolderId === null ? 'font-medium text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>
             All Documents
           </span>
         </div>
 
-        {/* Divider */}
-        {folders.length > 0 && (
-          <div className="mx-3 my-2 border-t border-gray-200 dark:border-gray-700" />
-        )}
-
         {/* Folder Tree */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+        <div className="flex-1 overflow-y-auto p-3 space-y-1">
           {folders.length === 0 ? (
             <div className="text-center py-8 px-4">
               <div className="w-16 h-16 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
