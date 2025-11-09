@@ -105,7 +105,7 @@ export function NoFlashcardsEmptyState({ onGenerate }: { onGenerate: () => void 
     <EmptyState
       icon={BookOpen}
       title="No flashcards yet"
-      description="Generate your first set of flashcards from a document. Our AI will automatically create study cards from your content."
+      description="Generate your first set of flashcards from a document. Synaptic will automatically create study cards from your content."
       action={{
         label: "Generate Flashcards",
         onClick: onGenerate
@@ -120,7 +120,7 @@ export function NoChatHistoryEmptyState({ onStartChat }: { onStartChat: () => vo
     <EmptyState
       icon={MessageSquare}
       title="No chat history"
-      description="Start a conversation with your document. Ask questions and get instant answers powered by AI."
+      description="Start a conversation with your document. Ask questions and get instant, intelligent answers."
       action={{
         label: "Start Chatting",
         onClick: onStartChat
@@ -152,7 +152,7 @@ export function LearningJourneyEmptyState({ onGetStarted }: { onGetStarted: () =
     <EmptyState
       icon={Sparkles}
       title="Start your learning journey"
-      description="Welcome to your personal AI-powered study assistant. Upload documents, generate flashcards, and master any subject with intelligent learning tools."
+      description="Welcome to your personalized study assistant. Upload documents, generate flashcards, and master any subject with intelligent learning tools."
       action={{
         label: "Get Started",
         onClick: onGetStarted

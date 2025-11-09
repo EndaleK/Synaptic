@@ -512,7 +512,7 @@ export default function ChatInterface() {
                         Chat with Your Document
                       </h2>
                       <p className="text-gray-600 dark:text-gray-400 mb-4">
-                        Upload any document and engage with an AI teaching assistant that guides you through Socratic dialogue
+                        Upload any document and engage with an intelligent teaching assistant that guides you through Socratic dialogue
                       </p>
 
                       {/* Feature Badges */}
@@ -523,7 +523,7 @@ export default function ChatInterface() {
                         </div>
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
                           <Sparkles className="w-3.5 h-3.5 text-accent-primary" />
-                          AI-Powered
+                          Synaptic Learning
                         </div>
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
                           <FileText className="w-3.5 h-3.5 text-accent-primary" />

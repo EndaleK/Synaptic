@@ -896,14 +896,14 @@ ${'='.repeat(50)}`).join('\n')}`
                 Interactive Flashcards
               </h2>
               <p className="hidden md:block text-gray-600 dark:text-gray-400 mb-4">
-                Master your material with AI-generated flashcards featuring spaced repetition and progress tracking
+                Master your material with intelligently generated flashcards featuring spaced repetition and progress tracking
               </p>
 
               {/* Feature Badges - Hidden on Mobile */}
               <div className="hidden md:flex flex-wrap gap-2">
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
                   <Sparkles className="w-3.5 h-3.5 text-accent-primary" />
-                  AI-Generated
+                  Auto-Generated
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
                   <Zap className="w-3.5 h-3.5 text-accent-primary" />

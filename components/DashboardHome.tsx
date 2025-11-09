@@ -57,7 +57,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       id: "chat",
       name: "Chat",
       icon: MessageSquare,
-      description: "Ask questions about your documents with AI",
+      description: "Ask questions and explore your documents interactively",
       color: "blue", // Maps to --mode-chat
       bgClass: "bg-blue-500",
       shadowClass: "shadow-blue-500/30",
@@ -68,7 +68,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       id: "podcast",
       name: "Podcast",
       icon: Mic,
-      description: "Generate AI-hosted podcast discussions",
+      description: "Generate dynamic podcast discussions from your content",
       color: "violet", // Maps to --mode-podcast
       bgClass: "bg-violet-500",
       shadowClass: "shadow-violet-500/30",
@@ -90,7 +90,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       id: "writer",
       name: "Writer",
       icon: PenTool,
-      description: "AI-powered writing assistant with citations and grammar",
+      description: "Intelligent writing assistant with citations and grammar",
       color: "rose", // Maps to --mode-writer
       bgClass: "bg-rose-500",
       shadowClass: "shadow-rose-500/30",
@@ -101,7 +101,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       id: "video",
       name: "Video",
       icon: Youtube,
-      description: "Learn from YouTube videos with AI analysis",
+      description: "Learn from YouTube videos with deep content analysis",
       color: "amber", // Maps to --mode-video
       bgClass: "bg-amber-500",
       shadowClass: "shadow-amber-500/30",
@@ -174,7 +174,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
           <div className="flex items-center gap-2 mb-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Study Tools & Scheduler</h2>
             <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
-              AI Enhanced
+              Intelligent
             </span>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -183,7 +183,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
               className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
             >
               <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full">
-                AI
+                Smart
               </span>
               <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4">
                 <Brain className="w-7 h-7 text-white" />
@@ -192,7 +192,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                 Review Queue
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                AI-prioritized flashcard reviews
+                Intelligently prioritized flashcard reviews
               </p>
             </button>
 
@@ -201,7 +201,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
               className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
             >
               <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full">
-                AI
+                Adaptive
               </span>
               <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center mb-4">
                 <Clock className="w-7 h-7 text-white" />
@@ -210,7 +210,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                 Pomodoro Timer
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Context-aware smart timer
+                Context-aware adaptive timer
               </p>
             </button>
 
@@ -234,7 +234,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
               className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
             >
               <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full">
-                AI
+                Insights
               </span>
               <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-4">
                 <BarChart3 className="w-7 h-7 text-white" />
@@ -243,7 +243,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                 Statistics
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                AI insights & progress tracking
+                Deep insights & progress tracking
               </p>
             </button>
 
@@ -394,7 +394,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Get Started with Your Documents</h3>
                 <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                  Upload documents or import from URLs to start generating flashcards, mind maps, podcasts, and chat with AI
+                  Upload documents or import from URLs to start generating flashcards, mind maps, podcasts, and interactive learning experiences
                 </p>
               </div>
 

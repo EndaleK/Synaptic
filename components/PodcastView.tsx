@@ -158,7 +158,7 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
                 Audio Overview
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
-                Generate an AI-hosted podcast discussion about "{documentName}"
+                Generate an engaging podcast discussion about "{documentName}"
               </p>
             </div>
           </div>
@@ -222,7 +222,7 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
                     rows={3}
                   />
                   <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    Guide the AI hosts to focus on specific topics or adjust the discussion style
+                    Guide the podcast hosts to focus on specific topics or adjust the discussion style
                   </p>
                 </div>
               </div>
@@ -240,7 +240,7 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
                 <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
                   <li className="flex items-start gap-2">
                     <span className="text-accent-primary">•</span>
-                    <span>Two AI hosts (Alex & Jordan) discuss your document</span>
+                    <span>Two expert hosts (Alex & Jordan) discuss your document</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-accent-primary">•</span>

@@ -67,7 +67,7 @@ export default function LearningProfileBanner({ onTakeAssessment }: LearningProf
               <Sparkles className="w-5 h-5 text-purple-500" />
             </h3>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              Take our 2-minute assessment to unlock personalized AI-powered learning experiences tailored to how you learn best.
+              Take our 2-minute assessment to unlock personalized learning experiences tailored to how you learn best.
             </p>
 
             {/* Learning Styles */}

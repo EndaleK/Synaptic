@@ -265,7 +265,7 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
         </div>
       </div>
 
-      {/* AI-Powered Analysis Info */}
+      {/* Intelligent Analysis Info */}
       <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-2xl border border-blue-200 dark:border-blue-800 p-6">
         <div className="flex items-start gap-3 mb-3">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -273,10 +273,10 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-              AI-Powered Complexity Analysis
+              Intelligent Complexity Analysis
             </h3>
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              Our AI automatically analyzes your document to determine the optimal mind map structure
+              Synaptic automatically analyzes your document to determine the optimal mind map structure
             </p>
           </div>
         </div>
@@ -349,7 +349,7 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
         <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
           <div className="flex items-start gap-2">
             <span className="text-accent-primary font-bold">1.</span>
-            <span>AI extracts key concepts and relationships from your document</span>
+            <span>Automatically extracts key concepts and relationships from your document</span>
           </div>
           <div className="flex items-start gap-2">
             <span className="text-accent-primary font-bold">2.</span>
