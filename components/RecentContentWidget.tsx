@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Clock, Sparkles, Mic, Map, Loader2, ArrowRight } from 'lucide-react'
+import { Clock, Sparkles, Mic, Map as MapIcon, Loader2, ArrowRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
@@ -115,7 +115,7 @@ export default function RecentContentWidget() {
         }
       case 'mindmap':
         return {
-          icon: Map,
+          icon: MapIcon,
           color: 'from-blue-500 to-cyan-500',
           bgColor: 'bg-blue-100 dark:bg-blue-900/30',
           textColor: 'text-blue-600 dark:text-blue-400',

@@ -162,7 +162,7 @@ export default function InlineDocumentPicker({
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
           <button
-            onClick={fetchDocuments}
+            onClick={fetchData}
             className="px-4 py-2 bg-accent-primary text-white rounded-lg hover:opacity-90 transition-opacity"
           >
             Try Again
