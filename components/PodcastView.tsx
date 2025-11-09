@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Mic, Loader2, AlertCircle, Sparkles } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Mic, Loader2, AlertCircle, Sparkles, History } from "lucide-react"
 import PodcastPlayer, { type TranscriptEntry } from "./PodcastPlayer"
 import { useToast } from "./ToastContainer"
 import type { PodcastFormat } from "@/lib/podcast-generator"
@@ -25,11 +25,47 @@ interface PodcastData {
 export default function PodcastView({ documentId, documentName }: PodcastViewProps) {
   const toast = useToast()
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [podcast, setPodcast] = useState<PodcastData | null>(null)
+  const [existingPodcasts, setExistingPodcasts] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
   const [format, setFormat] = useState<PodcastFormat>('deep-dive')
   const [customPrompt, setCustomPrompt] = useState('')
   const [showAdvanced, setShowAdvanced] = useState(false)
+
+  // Check for existing podcasts on mount
+  useEffect(() => {
+    const fetchExistingPodcasts = async () => {
+      setIsLoading(true)
+      try {
+        const response = await fetch(`/api/podcasts?documentId=${documentId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setExistingPodcasts(data.podcasts || [])
+
+          // Auto-load the most recent podcast
+          if (data.podcasts && data.podcasts.length > 0) {
+            const latest = data.podcasts[0]
+            setPodcast({
+              id: latest.id,
+              title: latest.title,
+              description: `Generated ${new Date(latest.created_at).toLocaleDateString()}`,
+              audioUrl: latest.audio_url,
+              duration: latest.duration_seconds,
+              fileSize: latest.file_size,
+              transcript: latest.script
+            })
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch existing podcasts:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchExistingPodcasts()
+  }, [documentId])
 
   const handleGenerate = async () => {
     setIsGenerating(true)
@@ -70,9 +106,31 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
     handleGenerate()
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-accent-primary" />
+        <span className="ml-3 text-gray-600 dark:text-gray-400">Checking for existing podcasts...</span>
+      </div>
+    )
+  }
+
   if (podcast) {
     return (
       <div className="space-y-6">
+        {/* Show existing podcast count */}
+        {existingPodcasts.length > 1 && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="flex items-center gap-2">
+              <History className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                This document has {existingPodcasts.length} podcast{existingPodcasts.length > 1 ? 's' : ''}.
+                Showing the most recent one.
+              </p>
+            </div>
+          </div>
+        )}
+
         <PodcastPlayer
           audioUrl={podcast.audioUrl}
           title={podcast.title}

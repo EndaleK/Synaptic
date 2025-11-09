@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { Network, Loader2, AlertCircle, Sparkles, RefreshCw } from 'lucide-react'
+import { Network, Loader2, AlertCircle, Sparkles, RefreshCw, History } from 'lucide-react'
 import type { MindMapNode, MindMapEdge } from '@/lib/mindmap-generator'
 import DocumentSwitcherModal from './DocumentSwitcherModal'
 
@@ -53,10 +53,45 @@ interface ComplexityAnalysis {
 
 export default function MindMapView({ documentId, documentName }: MindMapViewProps) {
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [mindMapData, setMindMapData] = useState<MindMapData | null>(null)
+  const [existingMindMaps, setExistingMindMaps] = useState<any[]>([])
   const [documentText, setDocumentText] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [complexityAnalysis, setComplexityAnalysis] = useState<ComplexityAnalysis | null>(null)
+
+  // Check for existing mind maps on mount
+  useEffect(() => {
+    const fetchExistingMindMaps = async () => {
+      setIsLoading(true)
+      try {
+        const response = await fetch(`/api/mindmaps?documentId=${documentId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setExistingMindMaps(data.mindmaps || [])
+
+          // Auto-load the most recent mind map
+          if (data.mindmaps && data.mindmaps.length > 0) {
+            const latest = data.mindmaps[0]
+            setMindMapData({
+              title: latest.title,
+              nodes: latest.nodes,
+              edges: latest.edges,
+              template: latest.layout_data?.template,
+              templateReason: latest.layout_data?.templateReason,
+              metadata: latest.layout_data?.metadata
+            })
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch existing mind maps:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchExistingMindMaps()
+  }, [documentId])
 
   const generateMindMap = async () => {
     setIsGenerating(true)
@@ -122,10 +157,33 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
     generateMindMap()
   }
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-accent-primary" />
+        <span className="ml-3 text-gray-600 dark:text-gray-400">Checking for existing mind maps...</span>
+      </div>
+    )
+  }
+
   // If mind map exists, show viewer - MAXIMIZED VIEW
   if (mindMapData) {
     return (
       <div className="h-full flex flex-col">
+        {/* Show existing mind map count */}
+        {existingMindMaps.length > 1 && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4 mx-4 mt-4">
+            <div className="flex items-center gap-2">
+              <History className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                This document has {existingMindMaps.length} mind map{existingMindMaps.length > 1 ? 's' : ''}.
+                Showing the most recent one.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Compact Header with Regenerate Button */}
         <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-accent-primary/5 to-accent-secondary/5">
           <div className="flex items-center gap-3 flex-1 min-w-0">
