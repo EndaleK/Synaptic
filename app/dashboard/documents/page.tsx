@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
-import { Upload, RefreshCw, Search, X } from "lucide-react"
+import { Upload, RefreshCw } from "lucide-react"
 import DocumentList from "@/components/DocumentList"
 import FolderTree from "@/components/FolderTree"
 import Breadcrumb, { documentsBreadcrumb } from "@/components/Breadcrumb"
@@ -24,7 +24,6 @@ export default function DocumentsPage() {
   const [error, setError] = useState<string | null>(null)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
   const { setCurrentDocument } = useDocumentStore()
   const { setActiveMode } = useUIStore()
 
@@ -135,18 +134,11 @@ export default function DocumentsPage() {
     toast.success('Document uploaded successfully')
   }
 
-  // Filter documents based on selected folder and search query
+  // Filter documents based on selected folder
   const filteredDocuments = documents.filter(doc => {
-    // Filter by folder
-    const folderMatch = selectedFolderId === null
+    return selectedFolderId === null
       ? doc.folder_id === null
       : doc.folder_id === selectedFolderId
-
-    // Filter by search query
-    const searchMatch = searchQuery.trim() === '' ||
-      doc.file_name.toLowerCase().includes(searchQuery.toLowerCase())
-
-    return folderMatch && searchMatch
   })
 
   return (
@@ -167,22 +159,23 @@ export default function DocumentsPage() {
           </div>
 
           <div className="flex gap-3">
+            {/* Refresh - Icon only button */}
             <button
               onClick={fetchDocuments}
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2.5 bg-accent-primary/10 dark:bg-accent-primary/20 text-accent-primary rounded-lg font-medium hover:bg-accent-primary/20 dark:hover:bg-accent-primary/30 transition-all disabled:opacity-50 border border-accent-primary/30 dark:border-accent-primary/50"
+              className="p-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all disabled:opacity-50"
               title="Refresh documents"
             >
               <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Refresh</span>
             </button>
 
+            {/* Upload - Primary action button */}
             <button
               onClick={handleUploadClick}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-semibold hover:shadow-xl transition-all shadow-lg"
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:opacity-90 shadow-md hover:shadow-lg transition-all"
             >
               <Upload className="w-5 h-5" />
-              Upload Document
+              <span>Upload Document</span>
             </button>
           </div>
         </div>
@@ -199,34 +192,6 @@ export default function DocumentsPage() {
             </button>
           </div>
         )}
-
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search documents..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-12 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-accent-primary focus:border-transparent transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                title="Clear search"
-              >
-                <X className="w-4 h-4 text-gray-400" />
-              </button>
-            )}
-          </div>
-          {searchQuery && (
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              Found {filteredDocuments.length} {filteredDocuments.length === 1 ? 'document' : 'documents'} matching "{searchQuery}"
-            </p>
-          )}
-        </div>
 
         {/* Two-column layout: Folder sidebar + Document list */}
         <div className="flex gap-6">

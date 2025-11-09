@@ -204,10 +204,10 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
             onClick={() => handleGenerateClick('flashcards')}
             disabled={!isReady}
             className={cn(
-              "flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-medium text-sm transition-all",
+              "flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-sm transition-all",
               isReady
-                ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:opacity-90 shadow-md hover:shadow-lg"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
+                ? "border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-accent-primary hover:bg-accent-primary/5 hover:text-accent-primary"
+                : "border-2 border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
             )}
             title="Generate flashcards from this document"
           >
@@ -220,10 +220,10 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
             onClick={() => handleGenerateClick('podcast')}
             disabled={!isReady}
             className={cn(
-              "flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-medium text-sm transition-all",
+              "flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-sm transition-all",
               isReady
-                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 shadow-md hover:shadow-lg"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
+                ? "border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-accent-primary hover:bg-accent-primary/5 hover:text-accent-primary"
+                : "border-2 border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
             )}
             title="Generate podcast from this document"
           >
@@ -236,10 +236,10 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
             onClick={() => handleGenerateClick('mindmap')}
             disabled={!isReady}
             className={cn(
-              "flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-medium text-sm transition-all",
+              "flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-sm transition-all",
               isReady
-                ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:opacity-90 shadow-md hover:shadow-lg"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
+                ? "border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-accent-primary hover:bg-accent-primary/5 hover:text-accent-primary"
+                : "border-2 border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
             )}
             title="Generate mind map from this document"
           >
@@ -252,10 +252,10 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
             onClick={handleChatClick}
             disabled={!isReady}
             className={cn(
-              "flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-medium text-sm transition-all",
+              "flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-sm transition-all",
               isReady
-                ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:opacity-90 shadow-md hover:shadow-lg"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
+                ? "border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-accent-primary hover:bg-accent-primary/5 hover:text-accent-primary"
+                : "border-2 border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
             )}
             title="Chat with this document"
           >
