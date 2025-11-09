@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Loader2, Sparkles, Zap, Map } from "lucide-react"
+import { X, Loader2, Sparkles, Zap, Map, Save, Check } from "lucide-react"
 import { useRouter } from "next/navigation"
 import PageTopicSelector, { SelectionData } from "./PageTopicSelector"
 import { Document } from "@/lib/supabase/types"
@@ -47,6 +47,12 @@ export default function ContentSelectionModal({
   const [selection, setSelection] = useState<SelectionData>({ type: 'full' })
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Preset saving state
+  const [showSavePreset, setShowSavePreset] = useState(false)
+  const [presetName, setPresetName] = useState('')
+  const [isSavingPreset, setIsSavingPreset] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   const config = generationConfig[generationType]
   const Icon = config.icon
@@ -154,7 +160,52 @@ export default function ContentSelectionModal({
     if (!isGenerating) {
       setSelection({ type: 'full' })
       setError(null)
+      setShowSavePreset(false)
+      setPresetName('')
+      setSaveSuccess(false)
       onClose()
+    }
+  }
+
+  const handleSavePreset = async () => {
+    if (!presetName.trim()) return
+
+    setIsSavingPreset(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/documents/${document.id}/presets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          presetName: presetName.trim(),
+          selectionData: selection
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save preset')
+      }
+
+      console.log('✅ Preset saved successfully:', data.preset)
+
+      // Show success state
+      setSaveSuccess(true)
+
+      // Reset after a moment
+      setTimeout(() => {
+        setShowSavePreset(false)
+        setPresetName('')
+        setSaveSuccess(false)
+      }, 1500)
+
+    } catch (err) {
+      console.error('Error saving preset:', err)
+      setError(err instanceof Error ? err.message : 'Failed to save preset')
+    } finally {
+      setIsSavingPreset(false)
     }
   }
 
@@ -244,34 +295,109 @@ export default function ContentSelectionModal({
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-800 sticky bottom-0 bg-white dark:bg-gray-900">
-          <button
-            onClick={handleClose}
-            disabled={isGenerating}
-            className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleGenerate}
-            disabled={
-              isGenerating ||
-              (selection.type === 'topic' && !selection.topic)
-            }
-            className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r ${config.color} text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <span className="text-xl">{config.emoji}</span>
-                Generate {generationType === 'flashcards' ? 'Flashcards' : generationType === 'podcast' ? 'Podcast' : 'Mind Map'}
-              </>
+        <div className="p-6 border-t border-gray-200 dark:border-gray-800 sticky bottom-0 bg-white dark:bg-gray-900 space-y-3">
+          {/* Save Preset Section */}
+          {showSavePreset && (
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Save this selection as a preset
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && presetName.trim()) {
+                      handleSavePreset()
+                    } else if (e.key === 'Escape') {
+                      setShowSavePreset(false)
+                      setPresetName('')
+                    }
+                  }}
+                  placeholder="Enter preset name..."
+                  disabled={isSavingPreset || saveSuccess}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSavePreset}
+                  disabled={!presetName.trim() || isSavingPreset || saveSuccess}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {saveSuccess ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Saved!
+                    </>
+                  ) : isSavingPreset ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSavePreset(false)
+                    setPresetName('')
+                  }}
+                  disabled={isSavingPreset}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleClose}
+              disabled={isGenerating}
+              className="px-6 py-3 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+
+            {/* Save Selection Button - Only show if a selection is made and not full document */}
+            {selection.type !== 'full' && !showSavePreset && !isGenerating && (
+              <button
+                onClick={() => setShowSavePreset(true)}
+                className="flex items-center gap-2 px-6 py-3 border border-blue-500 dark:border-blue-600 text-blue-600 dark:text-blue-400 rounded-lg font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              >
+                <Save className="w-4 h-4" />
+                Save Selection
+              </button>
             )}
-          </button>
+
+            <button
+              onClick={handleGenerate}
+              disabled={
+                isGenerating ||
+                (selection.type === 'topic' && !selection.topic)
+              }
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r ${config.color} text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <span className="text-xl">{config.emoji}</span>
+                  Generate {generationType === 'flashcards' ? 'Flashcards' : generationType === 'podcast' ? 'Podcast' : 'Mind Map'}
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

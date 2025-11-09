@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Check, Loader2, Sparkles } from "lucide-react"
+import { Check, Loader2, Sparkles, BookmarkCheck, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export interface PageRange {
@@ -29,6 +29,13 @@ interface PageTopicSelectorProps {
   className?: string
 }
 
+interface Preset {
+  id: string
+  preset_name: string
+  selection_data: SelectionData
+  created_at: string
+}
+
 export default function PageTopicSelector({
   documentId,
   totalPages,
@@ -43,6 +50,11 @@ export default function PageTopicSelector({
   const [isLoadingTopics, setIsLoadingTopics] = useState(false)
   const [topicsError, setTopicsError] = useState<string | null>(null)
 
+  // Preset loading state
+  const [presets, setPresets] = useState<Preset[]>([])
+  const [isLoadingPresets, setIsLoadingPresets] = useState(false)
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null)
+
   // Reset state when documentId changes (prevents stale topics from previous document)
   useEffect(() => {
     console.log(`🔄 PageTopicSelector reset for new document:`, { documentId, totalPages })
@@ -52,7 +64,34 @@ export default function PageTopicSelector({
     setSelectionMode('full')
     setPageStart('1')
     setPageEnd(totalPages.toString())
+    setSelectedPresetId(null)
+
+    // Load presets for new document
+    loadPresets()
   }, [documentId, totalPages])
+
+  // Load saved presets
+  const loadPresets = async () => {
+    setIsLoadingPresets(true)
+
+    try {
+      const response = await fetch(`/api/documents/${documentId}/presets`)
+
+      if (!response.ok) {
+        throw new Error('Failed to load presets')
+      }
+
+      const data = await response.json()
+      setPresets(data.presets || [])
+      console.log(`📚 Loaded ${data.count} presets for document ${documentId}`)
+
+    } catch (error) {
+      console.error('Error loading presets:', error)
+      // Fail silently - presets are optional
+    } finally {
+      setIsLoadingPresets(false)
+    }
+  }
 
   // Notify parent of selection changes
   useEffect(() => {
@@ -143,8 +182,114 @@ export default function PageTopicSelector({
     }
   }
 
+  const handleLoadPreset = (preset: Preset) => {
+    console.log(`📖 Loading preset: ${preset.preset_name}`, preset.selection_data)
+
+    const selectionData = preset.selection_data
+    setSelectedPresetId(preset.id)
+
+    // Apply the saved selection
+    if (selectionData.type === 'full') {
+      setSelectionMode('full')
+    } else if (selectionData.type === 'pages' && selectionData.pageRange) {
+      setSelectionMode('pages')
+      setPageStart(selectionData.pageRange.start.toString())
+      setPageEnd(selectionData.pageRange.end.toString())
+    } else if (selectionData.type === 'topic' && selectionData.topic) {
+      setSelectionMode('topics')
+      // Load topics if not already loaded
+      if (topics.length === 0) {
+        loadTopics().then(() => {
+          // After topics load, select the topic from preset
+          setSelectedTopicId(selectionData.topic!.id)
+        })
+      } else {
+        setSelectedTopicId(selectionData.topic.id)
+      }
+    }
+  }
+
+  const handleDeletePreset = async (presetId: string, presetName: string, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent triggering load preset
+
+    if (!confirm(`Delete preset "${presetName}"?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/documents/${documentId}/presets?presetId=${presetId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete preset')
+      }
+
+      console.log(`🗑️ Deleted preset: ${presetName}`)
+
+      // Refresh presets list
+      setPresets(presets.filter(p => p.id !== presetId))
+
+      // Clear selection if deleted preset was selected
+      if (selectedPresetId === presetId) {
+        setSelectedPresetId(null)
+      }
+
+    } catch (error) {
+      console.error('Error deleting preset:', error)
+      alert('Failed to delete preset. Please try again.')
+    }
+  }
+
   return (
     <div className={cn("space-y-4", className)}>
+      {/* Saved Presets Dropdown */}
+      {presets.length > 0 && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <BookmarkCheck className="w-4 h-4" />
+            Saved Selections
+          </label>
+          <div className="space-y-2">
+            {presets.map((preset) => (
+              <button
+                key={preset.id}
+                onClick={() => handleLoadPreset(preset)}
+                className={cn(
+                  "w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all text-left group",
+                  selectedPresetId === preset.id
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                    : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                )}
+              >
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900 dark:text-gray-100">
+                    {preset.preset_name}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {preset.selection_data.type === 'full' && 'Full Document'}
+                    {preset.selection_data.type === 'pages' && `Pages ${preset.selection_data.pageRange?.start}-${preset.selection_data.pageRange?.end}`}
+                    {preset.selection_data.type === 'topic' && preset.selection_data.topic?.title}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedPresetId === preset.id && (
+                    <Check className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  )}
+                  <button
+                    onClick={(e) => handleDeletePreset(preset.id, preset.preset_name, e)}
+                    className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors opacity-0 group-hover:opacity-100"
+                    title="Delete preset"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  </button>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Mode Selector */}
       <div className="flex gap-2">
         <button
