@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { UserButton, useUser } from "@clerk/nextjs"
 import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool, Youtube, Share2, Library, GraduationCap } from "lucide-react"
@@ -128,12 +129,18 @@ export default function DashboardLayout({
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+          <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
             <Link href="/dashboard" className="flex items-center gap-3 group">
               {!sidebarCollapsed ? (
                 <>
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold text-lg">S</span>
+                  <div className="w-[54px] h-[54px] flex items-center justify-center flex-shrink-0">
+                    <Image
+                      src="/logo-brain-s.svg"
+                      alt="Synaptic Logo"
+                      width={54}
+                      height={54}
+                      className="w-[54px] h-[54px]"
+                    />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400">
@@ -145,8 +152,14 @@ export default function DashboardLayout({
                   </div>
                 </>
               ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">S</span>
+                <div className="w-[54px] h-[54px] flex items-center justify-center">
+                  <Image
+                    src="/logo-brain-s.svg"
+                    alt="Synaptic Logo"
+                    width={54}
+                    height={54}
+                    className="w-[54px] h-[54px]"
+                  />
                 </div>
               )}
             </Link>
@@ -202,7 +215,7 @@ export default function DashboardLayout({
                 <div className="px-4 mb-2">
                   <div className="flex items-center gap-2">
                     <div className="h-px flex-1 bg-gradient-to-r from-accent-primary/20 to-transparent"></div>
-                    <h3 className="text-[10px] font-semibold text-accent-primary uppercase tracking-wider">
+                    <h3 className="text-[13.5px] font-semibold text-accent-primary uppercase tracking-wider">
                       Learning Modes
                     </h3>
                     <div className="h-px flex-1 bg-gradient-to-l from-accent-primary/20 to-transparent"></div>
@@ -254,7 +267,7 @@ export default function DashboardLayout({
                     <div className="flex items-center gap-2">
                       <div className="h-px flex-1 bg-gradient-to-r from-accent-primary/20 to-transparent"></div>
                       <div className="flex items-center gap-1.5">
-                        <h3 className="text-[10px] font-semibold text-accent-primary uppercase tracking-wider">
+                        <h3 className="text-[13.5px] font-semibold text-accent-primary uppercase tracking-wider">
                           Study Tools
                         </h3>
                         {studyToolsExpanded ? (

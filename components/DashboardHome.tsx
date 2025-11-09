@@ -278,7 +278,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
         {/* Learning Modes Grid */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Choose Your Learning Mode</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
             {learningModes.map((mode) => {
               const Icon = mode.icon
               return (
@@ -293,10 +293,10 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                   <div className={`w-14 h-14 ${mode.bgClass} rounded-xl flex items-center justify-center mb-4 shadow-lg ${mode.shadowClass}`}>
                     <Icon className="w-7 h-7 text-white" />
                   </div>
-                  <h3 className="text-title text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
                     {mode.name}
                   </h3>
-                  <p className="text-body text-gray-600 dark:text-gray-400 leading-relaxed">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     {mode.description}
                   </p>
                   {!mode.available && (
