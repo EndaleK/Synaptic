@@ -71,11 +71,11 @@ export default function FolderModal({ isOpen, onClose, onCreateFolder, parentFol
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-lg animate-in fade-in duration-200"
       onClick={handleClose}
     >
       <div
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-800 animate-in zoom-in-95 duration-200"
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-800 animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -105,7 +105,7 @@ export default function FolderModal({ isOpen, onClose, onCreateFolder, parentFol
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Folder Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -128,10 +128,10 @@ export default function FolderModal({ isOpen, onClose, onCreateFolder, parentFol
 
           {/* Color Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Choose a Color
             </label>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2.5">
               {FOLDER_COLORS.map((color) => (
                 <button
                   key={color.value}
@@ -155,19 +155,19 @@ export default function FolderModal({ isOpen, onClose, onCreateFolder, parentFol
 
           {/* Icon Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Choose an Icon
             </label>
-            <div className="grid grid-cols-8 gap-2">
+            <div className="grid grid-cols-10 gap-1.5">
               {FOLDER_ICONS.map((icon) => (
                 <button
                   key={icon}
                   type="button"
                   onClick={() => setSelectedIcon(icon)}
                   disabled={isCreating}
-                  className={`w-12 h-12 text-3xl flex items-center justify-center rounded-xl transition-all ${
+                  className={`w-10 h-10 text-2xl flex items-center justify-center rounded-lg transition-all ${
                     selectedIcon === icon
-                      ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500 scale-105 shadow-lg'
+                      ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500 scale-105'
                       : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 hover:scale-105'
                   } disabled:opacity-50`}
                 >
@@ -178,37 +178,37 @@ export default function FolderModal({ isOpen, onClose, onCreateFolder, parentFol
           </div>
 
           {/* Preview */}
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800/30 rounded-xl p-5 border-2 border-dashed border-gray-300 dark:border-gray-600">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800/30 rounded-xl p-4 border-2 border-dashed border-gray-300 dark:border-gray-600">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
               Preview
             </p>
-            <div className="flex items-center gap-3 bg-white dark:bg-gray-900 p-3 rounded-lg">
+            <div className="flex items-center gap-3 bg-white dark:bg-gray-900 p-2.5 rounded-lg">
               <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-md"
+                className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shadow-md"
                 style={{ backgroundColor: selectedColor }}
               >
                 {selectedIcon}
               </div>
-              <span className="font-semibold text-gray-900 dark:text-white flex-1">
+              <span className="font-semibold text-gray-900 dark:text-white flex-1 text-sm">
                 {folderName || 'Folder Name'}
               </span>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-3">
             <button
               type="button"
               onClick={handleClose}
               disabled={isCreating}
-              className="flex-1 px-5 py-3 border-2 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-all disabled:opacity-50 hover:border-gray-400 dark:hover:border-gray-600"
+              className="flex-1 px-4 py-2.5 border-2 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-all disabled:opacity-50 hover:border-gray-400 dark:hover:border-gray-600"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isCreating || !folderName.trim()}
-              className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
             >
               {isCreating ? (
                 <>
