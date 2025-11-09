@@ -243,7 +243,7 @@ export default function DashboardLayout({
                         <>
                           <span className="flex-1">{mode.name}</span>
                           {mode.comingSoon && (
-                            <span className="px-1.5 py-0.5 text-[10px] bg-gray-300 dark:bg-gray-700 rounded-full">
+                            <span className="px-1.5 py-0.5 text-xs bg-gray-300 dark:bg-gray-700 rounded-full">
                               Soon
                             </span>
                           )}
@@ -385,7 +385,7 @@ export default function DashboardLayout({
                   <p className="text-sm font-semibold text-black dark:text-white truncate">
                     {user?.fullName || user?.username || "User"}
                   </p>
-                  <p className="text-[11px] text-gray-600 dark:text-gray-400 truncate">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
                     {user?.primaryEmailAddress?.emailAddress}
                   </p>
                 </div>
@@ -393,7 +393,7 @@ export default function DashboardLayout({
             </div>
 
             {/* Copyright Notice */}
-            <div className={`px-2.5 py-0.5 text-center text-[10px] text-gray-500 dark:text-gray-400 ${
+            <div className={`px-2.5 py-0.5 text-center text-xs text-gray-500 dark:text-gray-400 ${
               sidebarCollapsed ? "text-center" : ""
             }`}>
               {sidebarCollapsed ? (

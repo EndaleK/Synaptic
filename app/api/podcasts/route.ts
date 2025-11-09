@@ -69,11 +69,23 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 5. Parse script JSON for each podcast
-    const podcastsWithParsedScript = podcasts?.map(podcast => ({
-      ...podcast,
-      script: typeof podcast.script === 'string' ? JSON.parse(podcast.script) : podcast.script
-    })) || []
+    // 5. Parse script JSON for each podcast (with error handling)
+    const podcastsWithParsedScript = podcasts?.map(podcast => {
+      try {
+        return {
+          ...podcast,
+          script: typeof podcast.script === 'string' && podcast.script
+            ? JSON.parse(podcast.script)
+            : podcast.script || null
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse podcast script for podcast', podcast.id, parseError)
+        return {
+          ...podcast,
+          script: null // Return null if parsing fails
+        }
+      }
+    }) || []
 
     return NextResponse.json({
       success: true,

@@ -9,10 +9,10 @@ import { logger } from '@/lib/logger'
 // Usage limits per tier
 export const USAGE_LIMITS = {
   free: {
-    documents: 10,
+    documents: 5,
     flashcards: 50,
-    podcasts: 5,
-    mindmaps: 10,
+    podcasts: 3,
+    mindmaps: 5,
     exams: 3  // Free tier: 3 exams per month
   },
   premium: {

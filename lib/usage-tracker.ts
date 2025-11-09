@@ -48,12 +48,12 @@ export interface UsageCheck {
 // ============================================================================
 
 export const FREE_TIER: UsageLimits = {
-  maxDocuments: 10,
+  maxDocuments: 5,
   maxCostPerMonth: 10.0,
   warningCostPerMonth: 5.0,
   maxFlashcardsPerMonth: 50,
-  maxPodcastsPerMonth: 5,
-  maxMindMapsPerMonth: 10
+  maxPodcastsPerMonth: 3,
+  maxMindMapsPerMonth: 5
 }
 
 export const PREMIUM_TIER: UsageLimits = {

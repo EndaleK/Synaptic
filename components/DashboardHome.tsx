@@ -193,7 +193,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
               onClick={() => window.location.href = '/dashboard/library'}
               className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
             >
-              <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full">
+              <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
                 Smart
               </span>
               <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4">
@@ -211,7 +211,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
               onClick={() => window.location.href = '/dashboard/study/pomodoro'}
               className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
             >
-              <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full">
+              <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
                 Adaptive
               </span>
               <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center mb-4">
@@ -244,7 +244,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
               onClick={() => window.location.href = '/dashboard/study/statistics'}
               className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
             >
-              <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full">
+              <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
                 Insights
               </span>
               <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-4">
