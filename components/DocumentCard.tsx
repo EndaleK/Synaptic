@@ -265,33 +265,33 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
         </div>
 
         {/* Secondary Actions */}
-        <div className="flex gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
           {(document.file_type.toLowerCase().includes('pdf') || document.file_name.toLowerCase().endsWith('.pdf')) && (
             <button
               onClick={() => router.push(`/dashboard/documents/${document.id}`)}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-accent-primary hover:text-accent-secondary hover:bg-accent-primary/10 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-accent-primary/5 text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-all hover:scale-105"
               title="View PDF"
             >
-              <Eye className="w-3.5 h-3.5" />
-              View PDF
+              <Eye className="w-4 h-4" />
+              <span>View</span>
             </button>
           )}
           {document.storage_path && (
             <button
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all hover:scale-105"
               title="Download"
             >
-              <Download className="w-3.5 h-3.5" />
-              Download
+              <Download className="w-4 h-4" />
+              <span>Download</span>
             </button>
           )}
           <button
             onClick={handleDelete}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors ml-auto"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all hover:scale-105 ml-auto"
             title="Delete"
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            Delete
+            <Trash2 className="w-4 h-4" />
+            <span>Delete</span>
           </button>
         </div>
 
