@@ -257,9 +257,21 @@ Create a clear, well-structured mind map with ${maxNodes} nodes organized in ${m
           throw new Error(`Invalid node ${index}: missing id or label`)
         }
 
+        // PHASE 1.3: Label Length Validation (Cognitive Load Theory)
+        // Research shows 4-6 words optimal for reducing cognitive load
+        const trimmedLabel = node.label.trim();
+        const wordCount = trimmedLabel.split(/\s+/).length;
+
+        if (wordCount > 6) {
+          console.warn(
+            `[Mind Map Validation] Node "${node.id}" label exceeds 6 words (${wordCount} words): "${trimmedLabel}"\n` +
+            `Consider using node description for details to reduce cognitive load.`
+          );
+        }
+
         return {
           id: node.id,
-          label: node.label.trim(),
+          label: trimmedLabel,
           level: typeof node.level === 'number' ? node.level : 0,
           description: node.description || '',
           category: node.category || 'concept'
