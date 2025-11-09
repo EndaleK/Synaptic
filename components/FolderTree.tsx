@@ -343,7 +343,6 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
       <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-800">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Folders</h3>
           <button
             onClick={() => {
               setParentFolder(null)
@@ -354,6 +353,7 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
           >
             <FolderPlus className="w-4 h-4 text-gray-600 dark:text-gray-400" />
           </button>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Folders</h3>
         </div>
 
         {/* All Documents (Root) */}
