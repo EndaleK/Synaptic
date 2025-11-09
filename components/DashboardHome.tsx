@@ -47,7 +47,9 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       name: "Flashcards",
       icon: BookOpen,
       description: "Transform documents into interactive flashcards",
-      gradient: "from-accent-primary to-accent-secondary",
+      color: "indigo", // Maps to --mode-flashcards
+      bgClass: "bg-indigo-500",
+      shadowClass: "shadow-indigo-500/30",
       available: true,
       premium: false
     },
@@ -56,7 +58,9 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       name: "Chat",
       icon: MessageSquare,
       description: "Ask questions about your documents with AI",
-      gradient: "from-blue-500 to-cyan-500",
+      color: "blue", // Maps to --mode-chat
+      bgClass: "bg-blue-500",
+      shadowClass: "shadow-blue-500/30",
       available: true,
       premium: false
     },
@@ -65,7 +69,9 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       name: "Podcast",
       icon: Mic,
       description: "Generate AI-hosted podcast discussions",
-      gradient: "from-green-500 to-emerald-500",
+      color: "violet", // Maps to --mode-podcast
+      bgClass: "bg-violet-500",
+      shadowClass: "shadow-violet-500/30",
       available: true,
       premium: false
     },
@@ -74,7 +80,9 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       name: "Mind Map",
       icon: Network,
       description: "Visualize concepts and relationships interactively",
-      gradient: "from-orange-500 to-red-500",
+      color: "emerald", // Maps to --mode-mindmap
+      bgClass: "bg-emerald-500",
+      shadowClass: "shadow-emerald-500/30",
       available: true,
       premium: false
     },
@@ -83,7 +91,9 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       name: "Writer",
       icon: PenTool,
       description: "AI-powered writing assistant with citations and grammar",
-      gradient: "from-pink-500 to-rose-500",
+      color: "rose", // Maps to --mode-writer
+      bgClass: "bg-rose-500",
+      shadowClass: "shadow-rose-500/30",
       available: true,
       premium: false
     },
@@ -92,7 +102,9 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       name: "Video",
       icon: Youtube,
       description: "Learn from YouTube videos with AI analysis",
-      gradient: "from-red-500 to-orange-500",
+      color: "amber", // Maps to --mode-video
+      bgClass: "bg-amber-500",
+      shadowClass: "shadow-amber-500/30",
       available: true,
       premium: false
     }
@@ -134,19 +146,19 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
 
   return (
     <div className="h-screen overflow-y-auto bg-gray-50 dark:bg-gray-950">
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-6 py-6 lg:px-10 lg:py-8 space-y-6">
         {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-accent-primary to-accent-secondary rounded-2xl p-4 md:p-8 text-white">
+        <div className="bg-gradient-to-r from-accent-primary to-accent-secondary rounded-2xl p-8 text-white">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-2xl md:text-4xl font-bold mb-2">
+              <h1 className="text-display mb-3">
                 Welcome back, {user?.firstName || user?.username || 'Student'}! 👋
               </h1>
-              <p className="text-white/90 text-sm md:text-lg">
+              <p className="text-white/90 text-lg font-medium">
                 Ready to continue your learning journey?
               </p>
-              <div className="flex items-center gap-2 mt-2 md:mt-4 text-white/80 text-xs md:text-sm">
-                <Calendar className="w-3 h-3 md:w-4 md:h-4" />
+              <div className="flex items-center gap-2 mt-4 text-white text-caption">
+                <Calendar className="w-4 h-4" />
                 <span className="hidden md:inline">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                 <span className="md:hidden">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
               </div>
@@ -154,87 +166,13 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
           </div>
         </div>
 
-        {/* Subscription Status */}
-        <SubscriptionStatus />
-
-        {/* Learning Profile Banner - Shows Below Welcome */}
-        <LearningProfileBanner
-          onTakeAssessment={() => onOpenAssessment?.()}
-        />
-
-        {/* Learning Profile Card */}
-        {learningStyle && (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Your Learning Profile</h2>
-              <button
-                onClick={() => window.location.href = '/dashboard/settings'}
-                className="text-sm text-accent-primary hover:underline"
-              >
-                View Full Profile
-              </button>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Dominant Style */}
-              <div className="bg-gradient-to-br from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-xl p-6 border border-accent-primary/30 dark:border-accent-primary/50">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center text-white">
-                    {(() => {
-                      const Icon = getStyleIcon(learningStyle)
-                      return <Icon className="w-6 h-6" />
-                    })()}
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Your Learning Style</p>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white capitalize">
-                      {learningStyle.replace('_', ' ')}
-                    </h3>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  {getStyleDescription(learningStyle)}
-                </p>
-              </div>
-
-              {/* Score Breakdown */}
-              {assessmentScores && (
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your Scores</p>
-                  {Object.entries(assessmentScores).map(([style, score]) => {
-                    const percentage = (score / 30) * 100 // Assuming max score of 30
-                    return (
-                      <div key={style}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400 capitalize">
-                            {style.replace('_', ' ')}
-                          </span>
-                          <span className="text-xs font-semibold text-gray-900 dark:text-white">
-                            {Math.round(percentage)}%
-                          </span>
-                        </div>
-                        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full transition-all duration-500"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Recent Content Widget */}
         <RecentContentWidget />
 
         {/* Learning Modes Grid */}
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-3 md:mb-4">Choose Your Learning Mode</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <h2 className="text-headline text-gray-900 dark:text-white mb-6">Choose Your Learning Mode</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {learningModes.map((mode) => {
               const Icon = mode.icon
               return (
@@ -242,26 +180,26 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                   key={mode.id}
                   onClick={() => mode.available && onModeSelect(mode.id)}
                   disabled={!mode.available}
-                  className={`relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-4 md:p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 ${
+                  className={`relative bg-white dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-800 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 ${
                     mode.available ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
                   }`}
                 >
-                  <div className={`w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br ${mode.gradient} rounded-xl flex items-center justify-center mb-3 md:mb-4`}>
-                    <Icon className="w-6 h-6 md:w-7 md:h-7 text-white" />
+                  <div className={`w-14 h-14 ${mode.bgClass} rounded-xl flex items-center justify-center mb-4 shadow-lg ${mode.shadowClass}`}>
+                    <Icon className="w-7 h-7 text-white" />
                   </div>
-                  <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-1 md:mb-2">
+                  <h3 className="text-title text-gray-900 dark:text-white mb-2">
                     {mode.name}
                   </h3>
-                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 leading-snug">
+                  <p className="text-body text-gray-600 dark:text-gray-400 leading-relaxed">
                     {mode.description}
                   </p>
                   {!mode.available && (
-                    <span className="absolute top-3 md:top-4 right-3 md:right-4 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-semibold rounded-full">
+                    <span className="absolute top-4 right-4 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-semibold rounded-full">
                       Soon
                     </span>
                   )}
                   {mode.premium && (
-                    <span className="absolute top-3 md:top-4 right-3 md:right-4 px-2 py-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-semibold rounded-full shadow-md">
+                    <span className="absolute top-4 right-4 px-2 py-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-semibold rounded-full shadow-md">
                       Premium
                     </span>
                   )}
@@ -273,8 +211,8 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
 
         {/* Study Scheduler Tools */}
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Study Tools & Scheduler</h2>
+          <div className="flex items-center gap-2 mb-6">
+            <h2 className="text-headline text-gray-900 dark:text-white">Study Tools & Scheduler</h2>
             <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
               AI Enhanced
             </span>
@@ -365,6 +303,80 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
             </button>
           </div>
         </div>
+
+        {/* Learning Profile Banner - Shows Below Welcome */}
+        <LearningProfileBanner
+          onTakeAssessment={() => onOpenAssessment?.()}
+        />
+
+        {/* Learning Profile Card */}
+        {learningStyle && (
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Your Learning Profile</h2>
+              <button
+                onClick={() => window.location.href = '/dashboard/settings'}
+                className="text-sm text-accent-primary hover:underline"
+              >
+                View Full Profile
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Dominant Style */}
+              <div className="bg-gradient-to-br from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-xl p-6 border border-accent-primary/30 dark:border-accent-primary/50">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center text-white">
+                    {(() => {
+                      const Icon = getStyleIcon(learningStyle)
+                      return <Icon className="w-6 h-6" />
+                    })()}
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Your Learning Style</p>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white capitalize">
+                      {learningStyle.replace('_', ' ')}
+                    </h3>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  {getStyleDescription(learningStyle)}
+                </p>
+              </div>
+
+              {/* Score Breakdown */}
+              {assessmentScores && (
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your Scores</p>
+                  {Object.entries(assessmentScores).map(([style, score]) => {
+                    const percentage = (score / 30) * 100 // Assuming max score of 30
+                    return (
+                      <div key={style}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400 capitalize">
+                            {style.replace('_', ' ')}
+                          </span>
+                          <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                            {Math.round(percentage)}%
+                          </span>
+                        </div>
+                        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full transition-all duration-500"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Subscription Status */}
+        <SubscriptionStatus />
 
         {/* Recent Documents */}
         <div>
