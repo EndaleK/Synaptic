@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { UserButton, useUser } from "@clerk/nextjs"
-import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool, Youtube, Share2 } from "lucide-react"
+import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool, Youtube, Share2, Library } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useUIStore } from "@/lib/store/useStore"
 import { useToast } from "@/components/ToastContainer"
@@ -81,6 +81,7 @@ export default function DashboardLayout({
   ]
 
   const studyTools = [
+    { name: "Library", href: "/dashboard/library", icon: Library },
     { name: "Calendar", href: "/dashboard/study/calendar", icon: Calendar },
     { name: "Pomodoro Timer", href: "/dashboard/study/pomodoro", icon: Clock },
     { name: "Statistics", href: "/dashboard/study/statistics", icon: BarChart3 },
