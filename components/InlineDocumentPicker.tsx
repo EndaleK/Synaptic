@@ -43,15 +43,20 @@ export default function InlineDocumentPicker({
       setLoading(true)
       const [documentsRes, foldersRes] = await Promise.all([
         fetch('/api/documents'),
-        fetch('/api/folders')
+        fetch('/api/folders').catch(() => null) // Gracefully handle folders API failure
       ])
 
-      if (!documentsRes.ok || !foldersRes.ok) {
-        throw new Error('Failed to fetch data')
+      if (!documentsRes.ok) {
+        throw new Error('Failed to fetch documents')
       }
 
       const documentsData = await documentsRes.json()
-      const foldersData = await foldersRes.json()
+
+      // Only fetch folders if the API is available
+      let foldersData = { folders: [] }
+      if (foldersRes && foldersRes.ok) {
+        foldersData = await foldersRes.json()
+      }
 
       setDocuments(documentsData.documents || [])
       setFolders(foldersData.folders || [])
