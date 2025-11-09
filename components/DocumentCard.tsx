@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { FileText, File, FileType, Trash2, Download, Loader2, CheckCircle2, AlertCircle, Eye, Sparkles, Zap, Map, MessageCircle } from "lucide-react"
+import { FileText, File, FileType, Trash2, Download, Loader2, CheckCircle2, AlertCircle, Eye, Sparkles, Zap, Map, MessageCircle, BookOpen, Mic, Network } from "lucide-react"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { cn } from "@/lib/utils"
 import ContentSelectionModal from "./ContentSelectionModal"
@@ -18,6 +18,38 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
   const [isDeleting, setIsDeleting] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedGenerationType, setSelectedGenerationType] = useState<'flashcards' | 'podcast' | 'mindmap'>('flashcards')
+  const [contentCounts, setContentCounts] = useState({ flashcards: 0, podcasts: 0, mindmaps: 0 })
+
+  // Fetch content counts for this document
+  useEffect(() => {
+    const fetchContentCounts = async () => {
+      try {
+        const [flashcardsRes, podcastsRes, mindmapsRes] = await Promise.all([
+          fetch(`/api/flashcards?documentId=${document.id}`),
+          fetch(`/api/podcasts?documentId=${document.id}`),
+          fetch(`/api/mindmaps?documentId=${document.id}`)
+        ])
+
+        const [flashcardsData, podcastsData, mindmapsData] = await Promise.all([
+          flashcardsRes.ok ? flashcardsRes.json() : { flashcards: [] },
+          podcastsRes.ok ? podcastsRes.json() : { podcasts: [] },
+          mindmapsRes.ok ? mindmapsRes.json() : { mindmaps: [] }
+        ])
+
+        setContentCounts({
+          flashcards: flashcardsData.flashcards?.length || 0,
+          podcasts: podcastsData.podcasts?.length || 0,
+          mindmaps: mindmapsData.mindmaps?.length || 0
+        })
+      } catch (error) {
+        console.error('Failed to fetch content counts:', error)
+      }
+    }
+
+    if (document.processing_status === 'completed') {
+      fetchContentCounts()
+    }
+  }, [document.id, document.processing_status])
 
   const getFileIcon = () => {
     const type = document.file_type.toLowerCase()
@@ -118,11 +150,35 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
         <h3 className="text-base font-semibold text-black dark:text-white mb-1 truncate pr-20" title={document.file_name}>
           {document.file_name}
         </h3>
-        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-4">
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-3">
           <span>{formatFileSize(document.file_size)}</span>
           <span>•</span>
           <span>{formatDate(document.created_at)}</span>
         </div>
+
+        {/* Content Badges */}
+        {isReady && (contentCounts.flashcards > 0 || contentCounts.podcasts > 0 || contentCounts.mindmaps > 0) && (
+          <div className="flex items-center gap-2 mb-4">
+            {contentCounts.flashcards > 0 && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-accent-primary/10 dark:bg-accent-primary/20 text-accent-primary rounded-md text-xs font-medium">
+                <BookOpen className="w-3 h-3" />
+                {contentCounts.flashcards}
+              </div>
+            )}
+            {contentCounts.podcasts > 0 && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-md text-xs font-medium">
+                <Mic className="w-3 h-3" />
+                {contentCounts.podcasts}
+              </div>
+            )}
+            {contentCounts.mindmaps > 0 && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md text-xs font-medium">
+                <Network className="w-3 h-3" />
+                {contentCounts.mindmaps}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Action Buttons - Grid Layout */}
         <div className="grid grid-cols-2 gap-2 mb-3">

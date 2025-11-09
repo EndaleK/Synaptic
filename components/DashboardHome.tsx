@@ -6,6 +6,7 @@ import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphone
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import LearningProfileBanner from "@/components/LearningProfileBanner"
 import SubscriptionStatus from "@/components/SubscriptionStatus"
+import RecentContentWidget from "@/components/RecentContentWidget"
 import type { Document } from "@/lib/supabase/types"
 
 interface DashboardHomeProps {
@@ -226,6 +227,9 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
             </div>
           </div>
         )}
+
+        {/* Recent Content Widget */}
+        <RecentContentWidget />
 
         {/* Learning Modes Grid */}
         <div>
