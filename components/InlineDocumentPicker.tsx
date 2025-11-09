@@ -2,8 +2,18 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { FileText, FileType, Loader2, Upload } from "lucide-react"
+import { FileText, FileType, Loader2, Upload, ChevronRight, FolderIcon } from "lucide-react"
 import { Document } from "@/lib/supabase/types"
+
+interface Folder {
+  id: string
+  name: string
+  color: string
+  icon: string
+  parent_folder_id: string | null
+  documentCount: number
+  children: Folder[]
+}
 
 interface InlineDocumentPickerProps {
   onDocumentSelect: (document: Document) => void
@@ -16,27 +26,38 @@ export default function InlineDocumentPicker({
 }: InlineDocumentPickerProps) {
   const router = useRouter()
   const [documents, setDocuments] = useState<Document[]>([])
+  const [folders, setFolders] = useState<Folder[]>([])
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
+  const [breadcrumbs, setBreadcrumbs] = useState<{ id: string | null; name: string }[]>([
+    { id: null, name: 'All Documents' }
+  ])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchDocuments()
+    fetchData()
   }, [])
 
-  const fetchDocuments = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/documents')
+      const [documentsRes, foldersRes] = await Promise.all([
+        fetch('/api/documents'),
+        fetch('/api/folders')
+      ])
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch documents')
+      if (!documentsRes.ok || !foldersRes.ok) {
+        throw new Error('Failed to fetch data')
       }
 
-      const data = await response.json()
-      setDocuments(data.documents || [])
+      const documentsData = await documentsRes.json()
+      const foldersData = await foldersRes.json()
+
+      setDocuments(documentsData.documents || [])
+      setFolders(foldersData.folders || [])
     } catch (err) {
-      console.error('Error fetching documents:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load documents')
+      console.error('Error fetching data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
       setLoading(false)
     }
@@ -67,6 +88,55 @@ export default function InlineDocumentPicker({
       case 'mindmap': return 'Mind Map'
       default: return mode
     }
+  }
+
+  // Find all folders at current level
+  const getCurrentFolders = (): Folder[] => {
+    const findFoldersInTree = (folderList: Folder[], parentId: string | null): Folder[] => {
+      const result: Folder[] = []
+      folderList.forEach(folder => {
+        if (folder.parent_folder_id === parentId) {
+          result.push(folder)
+        }
+        result.push(...findFoldersInTree(folder.children, parentId))
+      })
+      return result
+    }
+
+    if (selectedFolderId === null) {
+      // Root level: show top-level folders
+      return folders
+    } else {
+      // Inside a folder: show its children
+      const findFolder = (folderList: Folder[]): Folder | null => {
+        for (const folder of folderList) {
+          if (folder.id === selectedFolderId) return folder
+          const found = findFolder(folder.children)
+          if (found) return found
+        }
+        return null
+      }
+      const currentFolder = findFolder(folders)
+      return currentFolder?.children || []
+    }
+  }
+
+  // Filter documents for current folder
+  const currentDocuments = selectedFolderId === null
+    ? documents.filter(doc => doc.folder_id === null)
+    : documents.filter(doc => doc.folder_id === selectedFolderId)
+
+  // Navigate into a folder
+  const handleFolderClick = (folder: Folder) => {
+    setSelectedFolderId(folder.id)
+    setBreadcrumbs([...breadcrumbs, { id: folder.id, name: folder.name }])
+  }
+
+  // Navigate to breadcrumb
+  const handleBreadcrumbClick = (index: number) => {
+    const crumb = breadcrumbs[index]
+    setSelectedFolderId(crumb.id)
+    setBreadcrumbs(breadcrumbs.slice(0, index + 1))
   }
 
   if (loading) {
@@ -102,7 +172,10 @@ export default function InlineDocumentPicker({
     )
   }
 
-  if (documents.length === 0) {
+  const currentFolders = getCurrentFolders()
+  const hasContent = currentDocuments.length > 0 || currentFolders.length > 0
+
+  if (documents.length === 0 && folders.length === 0) {
     return (
       <div className="h-full flex items-center justify-center p-6">
         <div className="text-center max-w-md">
@@ -142,9 +215,67 @@ export default function InlineDocumentPicker({
           </p>
         </div>
 
-        {/* Document Grid */}
+        {/* Breadcrumbs */}
+        {breadcrumbs.length > 1 && (
+          <div className="flex items-center gap-2 mb-6 text-sm">
+            {breadcrumbs.map((crumb, index) => (
+              <div key={crumb.id || 'root'} className="flex items-center gap-2">
+                <button
+                  onClick={() => handleBreadcrumbClick(index)}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    index === breadcrumbs.length - 1
+                      ? 'bg-accent-primary/10 text-accent-primary font-medium'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  {crumb.name}
+                </button>
+                {index < breadcrumbs.length - 1 && (
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!hasContent && (
+          <div className="text-center py-12">
+            <FolderIcon className="w-16 h-16 text-gray-300 dark:text-gray-700 mx-auto mb-4" />
+            <p className="text-gray-600 dark:text-gray-400">This folder is empty</p>
+          </div>
+        )}
+
+        {/* Folders and Documents Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {documents.map((document) => {
+          {/* Folders */}
+          {currentFolders.map((folder) => (
+            <button
+              key={folder.id}
+              onClick={() => handleFolderClick(folder)}
+              className="group relative p-5 border bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-accent-primary dark:hover:border-accent-primary rounded-xl text-left transition-all hover:shadow-lg cursor-pointer"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div
+                  className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl flex-shrink-0"
+                  style={{ backgroundColor: folder.color }}
+                >
+                  {folder.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-black dark:text-white truncate group-hover:text-accent-primary transition-colors">
+                    {folder.name}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    {folder.documentCount} document{folder.documentCount !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-accent-primary transition-colors" />
+              </div>
+            </button>
+          ))}
+
+          {/* Documents */}
+          {currentDocuments.map((document) => {
             const isProcessing = document.processing_status !== 'completed'
 
             return (

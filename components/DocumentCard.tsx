@@ -19,6 +19,7 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedGenerationType, setSelectedGenerationType] = useState<'flashcards' | 'podcast' | 'mindmap'>('flashcards')
   const [contentCounts, setContentCounts] = useState({ flashcards: 0, podcasts: 0, mindmaps: 0 })
+  const [isDragging, setIsDragging] = useState(false)
 
   // Fetch content counts for this document
   useEffect(() => {
@@ -128,14 +129,30 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
     onSelectMode(document.id, 'chat')
   }
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('documentId', document.id)
+    e.dataTransfer.effectAllowed = 'move'
+    setIsDragging(true)
+  }
+
+  const handleDragEnd = () => {
+    setIsDragging(false)
+  }
+
   const isReady = document.processing_status === 'completed'
 
   return (
     <>
-      <div className={cn(
-        "relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:shadow-lg transition-all duration-200",
-        isDeleting && "opacity-50 pointer-events-none"
-      )}>
+      <div
+        draggable
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        className={cn(
+          "relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:shadow-lg transition-all duration-200 cursor-grab active:cursor-grabbing",
+          isDeleting && "opacity-50 pointer-events-none",
+          isDragging && "opacity-40"
+        )}
+      >
         {/* Status Badge */}
         <div className="absolute top-3 right-3">
           {getStatusBadge()}

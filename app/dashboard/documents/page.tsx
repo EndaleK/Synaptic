@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 import { Upload, RefreshCw } from "lucide-react"
 import DocumentList from "@/components/DocumentList"
+import FolderTree from "@/components/FolderTree"
 import Breadcrumb, { documentsBreadcrumb } from "@/components/Breadcrumb"
 import { useToast } from "@/components/ToastContainer"
 import { Document, PreferredMode } from "@/lib/supabase/types"
@@ -22,6 +23,7 @@ export default function DocumentsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const { setCurrentDocument } = useDocumentStore()
   const { setActiveMode } = useUIStore()
 
@@ -132,6 +134,12 @@ export default function DocumentsPage() {
     toast.success('Document uploaded successfully')
   }
 
+  // Filter documents based on selected folder
+  // null = show root-level documents (no folder), otherwise show documents in selected folder
+  const filteredDocuments = selectedFolderId === null
+    ? documents.filter(doc => doc.folder_id === null)
+    : documents.filter(doc => doc.folder_id === selectedFolderId)
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
       <div className="max-w-7xl mx-auto">
@@ -183,14 +191,30 @@ export default function DocumentsPage() {
           </div>
         )}
 
-        {/* Document List */}
-        <DocumentList
-          documents={documents}
-          isLoading={isLoading}
-          onSelectMode={handleSelectMode}
-          onDelete={handleDelete}
-          onRefresh={fetchDocuments}
-        />
+        {/* Two-column layout: Folder sidebar + Document list */}
+        <div className="flex gap-6">
+          {/* Left Sidebar - Folder Tree */}
+          <div className="w-64 flex-shrink-0">
+            <div className="sticky top-6 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <FolderTree
+                selectedFolderId={selectedFolderId}
+                onSelectFolder={setSelectedFolderId}
+                onFolderChange={fetchDocuments}
+              />
+            </div>
+          </div>
+
+          {/* Right Content - Document List */}
+          <div className="flex-1 min-w-0">
+            <DocumentList
+              documents={filteredDocuments}
+              isLoading={isLoading}
+              onSelectMode={handleSelectMode}
+              onDelete={handleDelete}
+              onRefresh={fetchDocuments}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Upload Modal - Using new simple uploader (no chunking) */}
