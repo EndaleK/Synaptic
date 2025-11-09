@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
-import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar, Link2, Globe, CheckCircle2, ArrowRight, Brain, Clock, Bell, BarChart3, Target, PenTool, Youtube } from "lucide-react"
+import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar, Link2, Globe, CheckCircle2, ArrowRight, Brain, Clock, Bell, BarChart3, Target, PenTool, Youtube, GraduationCap, Library } from "lucide-react"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import LearningProfileBanner from "@/components/LearningProfileBanner"
 import SubscriptionStatus from "@/components/SubscriptionStatus"
@@ -107,6 +107,17 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       shadowClass: "shadow-amber-500/30",
       available: true,
       premium: false
+    },
+    {
+      id: "exam",
+      name: "Mock Exam",
+      icon: GraduationCap,
+      description: "Generate practice exams from your documents and test yourself",
+      color: "purple", // Maps to --mode-exam
+      bgClass: "bg-purple-500",
+      shadowClass: "shadow-purple-500/30",
+      available: true,
+      premium: false
     }
   ]
 
@@ -179,20 +190,20 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
             <button
-              onClick={() => window.location.href = '/dashboard/study/review'}
+              onClick={() => window.location.href = '/dashboard/library'}
               className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
             >
               <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full">
                 Smart
               </span>
               <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4">
-                <Brain className="w-7 h-7 text-white" />
+                <Library className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                Review Queue
+                Library
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Intelligently prioritized flashcard reviews
+                Access all your documents and content
               </p>
             </button>
 

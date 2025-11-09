@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { UserButton, useUser } from "@clerk/nextjs"
-import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool, Youtube, Share2, Library } from "lucide-react"
+import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool, Youtube, Share2, Library, GraduationCap } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useUIStore } from "@/lib/store/useStore"
 import { useToast } from "@/components/ToastContainer"
@@ -76,6 +76,7 @@ export default function DashboardLayout({
     { name: "Chat", id: "chat", icon: MessageSquare, comingSoon: false },
     { name: "Podcast", id: "podcast", icon: Mic, comingSoon: false },
     { name: "Mind Map", id: "mindmap", icon: Network, comingSoon: false },
+    { name: "Mock Exams", id: "exam", icon: GraduationCap, comingSoon: false },
     { name: "Write", id: "writer", icon: PenTool, comingSoon: false },
     { name: "Video", id: "video", icon: Youtube, comingSoon: false },
   ]
@@ -319,11 +320,11 @@ export default function DashboardLayout({
           </nav>
 
           {/* User Section */}
-          <div className="p-3 border-t border-gray-200 dark:border-gray-800 space-y-2">
+          <div className="p-2.5 border-t border-gray-200 dark:border-gray-800 space-y-1.5">
             {/* Share Button */}
             <button
               onClick={() => setShowShareModal(true)}
-              className={`w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 text-blue-600 dark:text-blue-400 rounded-lg transition-all text-sm font-medium border border-blue-200 dark:border-blue-800`}
+              className={`w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 text-blue-600 dark:text-blue-400 rounded-lg transition-all text-sm font-medium border border-blue-200 dark:border-blue-800`}
               title={sidebarCollapsed ? "Share Synaptic" : undefined}
             >
               <Share2 className="w-4 h-4" />
@@ -331,11 +332,11 @@ export default function DashboardLayout({
             </button>
 
             {/* Theme Toggle & Sign Out Buttons */}
-            <div className={`flex gap-1.5 ${sidebarCollapsed ? "flex-col" : ""}`}>
+            <div className={`flex gap-1 ${sidebarCollapsed ? "flex-col" : ""}`}>
               {/* Theme Toggle Button */}
               <button
                 onClick={toggleTheme}
-                className={`flex items-center justify-center gap-2 px-3 py-2 bg-accent-primary/10 dark:bg-accent-primary/20 hover:bg-accent-primary/20 dark:hover:bg-accent-primary/30 text-accent-primary rounded-lg transition-all text-sm font-medium border border-accent-primary/30 dark:border-accent-primary/50 ${
+                className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-accent-primary/10 dark:bg-accent-primary/20 hover:bg-accent-primary/20 dark:hover:bg-accent-primary/30 text-accent-primary rounded-lg transition-all text-sm font-medium border border-accent-primary/30 dark:border-accent-primary/50 ${
                   sidebarCollapsed ? "w-full" : "flex-1"
                 }`}
                 title={sidebarCollapsed ? (isDarkMode ? "Light mode" : "Dark mode") : undefined}
@@ -347,7 +348,7 @@ export default function DashboardLayout({
               {/* Sign Out Button */}
               <SignOutButton>
                 <button
-                  className={`flex items-center justify-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-all text-sm font-medium border border-red-200 dark:border-red-800 ${
+                  className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-all text-sm font-medium border border-red-200 dark:border-red-800 ${
                     sidebarCollapsed ? "w-full" : "flex-1"
                   }`}
                   title={sidebarCollapsed ? "Sign out" : undefined}
@@ -359,7 +360,7 @@ export default function DashboardLayout({
             </div>
 
             {/* User Info */}
-            <div className={`flex items-center gap-2.5 px-3 py-2 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-lg border border-accent-primary/20 dark:border-accent-primary/50 ${
+            <div className={`flex items-center gap-2 px-2.5 py-1.5 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-lg border border-accent-primary/20 dark:border-accent-primary/50 ${
               sidebarCollapsed ? "justify-center" : ""
             }`}>
               <div className="relative flex-shrink-0">
@@ -379,7 +380,7 @@ export default function DashboardLayout({
             </div>
 
             {/* Copyright Notice */}
-            <div className={`px-3 py-1 text-center text-[10px] text-gray-500 dark:text-gray-400 ${
+            <div className={`px-2.5 py-0.5 text-center text-[10px] text-gray-500 dark:text-gray-400 ${
               sidebarCollapsed ? "text-center" : ""
             }`}>
               {sidebarCollapsed ? (

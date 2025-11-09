@@ -6,7 +6,7 @@ import { X, Crown, Check, Sparkles, Zap, TrendingUp } from "lucide-react"
 interface UpgradeModalProps {
   isOpen: boolean
   onClose: () => void
-  feature: 'documents' | 'flashcards' | 'podcasts' | 'mindmaps'
+  feature: 'documents' | 'flashcards' | 'podcasts' | 'mindmaps' | 'exams'
   used: number
   limit: number
 }
@@ -35,6 +35,12 @@ const featureInfo = {
     icon: '🗺️',
     description: 'Visualize concepts interactively',
     premiumBenefit: 'Unlimited mind map generations'
+  },
+  exams: {
+    name: 'Mock Exams',
+    icon: '📝',
+    description: 'Create AI-generated practice exams',
+    premiumBenefit: 'Unlimited exam creations with detailed analytics'
   }
 }
 

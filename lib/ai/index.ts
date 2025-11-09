@@ -104,6 +104,7 @@ function getDefaultProvider(feature: string): ProviderType {
     'podcast_tts': 'openai',         // OpenAI has best TTS
     'flashcards': 'deepseek',        // 60-70% cheaper than OpenAI
     'chat': 'deepseek',              // 60-70% cheaper than OpenAI
+    'exam': 'deepseek',              // Cost-effective for exam generation
   };
 
   return defaults[feature] || 'openai';

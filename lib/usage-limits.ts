@@ -12,23 +12,26 @@ export const USAGE_LIMITS = {
     documents: 10,
     flashcards: 50,
     podcasts: 5,
-    mindmaps: 10
+    mindmaps: 10,
+    exams: 3  // Free tier: 3 exams per month
   },
   premium: {
     documents: Infinity,
     flashcards: Infinity,
     podcasts: Infinity,
-    mindmaps: Infinity
+    mindmaps: Infinity,
+    exams: Infinity
   },
   enterprise: {
     documents: Infinity,
     flashcards: Infinity,
     podcasts: Infinity,
-    mindmaps: Infinity
+    mindmaps: Infinity,
+    exams: Infinity
   }
 }
 
-export type FeatureType = 'documents' | 'flashcards' | 'podcasts' | 'mindmaps'
+export type FeatureType = 'documents' | 'flashcards' | 'podcasts' | 'mindmaps' | 'exams'
 
 export interface UsageCheckResult {
   allowed: boolean
@@ -118,7 +121,8 @@ export async function checkUsageLimit(
       const actionTypeMap = {
         flashcards: ['flashcard_generation', 'flashcard'],
         podcasts: ['podcast_generation', 'podcast'],
-        mindmaps: ['mindmap_generation', 'mindmap']
+        mindmaps: ['mindmap_generation', 'mindmap'],
+        exams: ['exam_creation', 'exam']
       }
 
       const actionTypes = actionTypeMap[feature as keyof typeof actionTypeMap] || []
@@ -194,7 +198,8 @@ export async function incrementUsage(
       documents: 'document_upload',
       flashcards: 'flashcard_generation',
       podcasts: 'podcast_generation',
-      mindmaps: 'mindmap_generation'
+      mindmaps: 'mindmap_generation',
+      exams: 'exam_creation'
     }
 
     const actionType = actionTypeMap[feature]

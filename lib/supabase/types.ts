@@ -239,3 +239,125 @@ export interface Video {
   created_at: string
   updated_at: string
 }
+
+// ============================================================================
+// EXAM SIMULATOR INTERFACES
+// ============================================================================
+
+// Exam-specific enum types
+export type QuestionSource = 'document' | 'flashcards' | 'bank' | 'hybrid'
+export type QuestionType = 'mcq' | 'true_false' | 'short_answer'
+export type ExamMode = 'timed' | 'practice'
+export type ExamStatus = 'in_progress' | 'completed' | 'abandoned'
+export type ExamDifficulty = 'easy' | 'medium' | 'hard' | 'mixed'
+
+// User's answer to a single question (stored in exam_attempts.answers JSONB array)
+export interface ExamAnswer {
+  question_id: string
+  user_answer: string
+  is_correct: boolean
+  time_spent: number // seconds
+  flagged: boolean
+}
+
+// Exam template/configuration
+export interface Exam {
+  id: string
+  user_id: number
+  title: string
+  description?: string
+  document_id?: string
+  question_source: QuestionSource
+  question_count: number
+  difficulty: ExamDifficulty
+  time_limit_minutes?: number
+  is_template: boolean
+  tags: string[]
+  created_at: string
+  updated_at: string
+}
+
+// Individual exam question with answer options
+export interface ExamQuestion {
+  id: string
+  exam_id: string
+  question_text: string
+  question_type: QuestionType
+  correct_answer: string
+  options?: string[] // JSONB array for MCQ/True-False
+  explanation?: string
+  source_reference?: string // e.g., "Page 12, Paragraph 4"
+  source_document_id?: string
+  difficulty?: Difficulty
+  topic?: string
+  tags: string[]
+  question_order: number
+  created_at: string
+}
+
+// User's exam session/attempt
+export interface ExamAttempt {
+  id: string
+  user_id: number
+  exam_id: string
+  mode: ExamMode
+  score?: number // 0-100
+  total_questions: number
+  correct_answers?: number
+  time_taken_seconds?: number
+  time_limit_seconds?: number
+  answers: ExamAnswer[] // JSONB array of user answers
+  status: ExamStatus
+  started_at: string
+  completed_at?: string
+}
+
+// Question-level performance analytics
+export interface ExamAnalytics {
+  question_id: string
+  times_shown: number
+  times_correct: number
+  times_flagged: number
+  avg_time_seconds?: number
+  total_time_seconds: number
+  accuracy_rate: number // Auto-calculated: (times_correct / times_shown) * 100
+  updated_at: string
+}
+
+// Pre-built question library
+export interface QuestionBank {
+  id: string
+  name: string
+  description?: string
+  category: string // 'Medical', 'Legal', 'Accounting', etc.
+  subcategory?: string // 'USMLE Step 1', 'Bar Exam Torts', etc.
+  is_public: boolean
+  subscription_tier?: SubscriptionTier
+  total_questions: number
+  tags: string[]
+  created_by?: string
+  created_at: string
+  updated_at: string
+}
+
+// Many-to-many relationship between question banks and questions
+export interface QuestionBankItem {
+  id: string
+  bank_id: string
+  question_id: string
+  difficulty_override?: Difficulty
+  topic_override?: string
+  added_at: string
+}
+
+// Type for inserting new exams (omit auto-generated fields)
+export type ExamInsert = Omit<Exam, 'id' | 'created_at' | 'updated_at'>
+
+// Type for inserting new exam questions (omit auto-generated fields)
+export type ExamQuestionInsert = Omit<ExamQuestion, 'id' | 'created_at'>
+
+// Type for inserting new exam attempts (omit auto-generated fields)
+export type ExamAttemptInsert = Omit<ExamAttempt, 'id' | 'started_at' | 'completed_at'>
+
+// Type for updating exam attempts (commonly used when completing an exam)
+export type ExamAttemptUpdate = Partial<Omit<ExamAttempt, 'id' | 'user_id' | 'exam_id' | 'started_at'>>
