@@ -17,6 +17,82 @@ export interface ReactFlowMindMap {
 }
 
 /**
+ * PHASE 2.2: Relationship Type Icons (Research-Backed)
+ * Maps relationship strings to visual icons for instant recognition
+ * Reduces cognitive load by making relationship types immediately recognizable
+ *
+ * Icons:
+ * → Causal (leads to, causes, produces)
+ * ⊃ Hierarchical (contains, includes, has)
+ * ↔ Bidirectional (interacts with, relates to)
+ * ≠ Comparative (differs from, contrasts with)
+ */
+function getRelationshipIcon(relationship: string): string {
+  const rel = relationship.toLowerCase();
+
+  // Causal relationships → (leads to, causes, produces)
+  if (
+    rel.includes('leads to') ||
+    rel.includes('causes') ||
+    rel.includes('results in') ||
+    rel.includes('produces') ||
+    rel.includes('creates') ||
+    rel.includes('generates') ||
+    rel.includes('triggers') ||
+    rel.includes('enables') ||
+    rel.includes('affects') ||
+    rel.includes('influences')
+  ) {
+    return '→ ';
+  }
+
+  // Hierarchical relationships ⊃ (contains, includes, has)
+  if (
+    rel.includes('contains') ||
+    rel.includes('includes') ||
+    rel.includes('has') ||
+    rel.includes('consists of') ||
+    rel.includes('comprises') ||
+    rel.includes('part of') ||
+    rel.includes('belongs to') ||
+    rel.includes('subdivided into') ||
+    rel.includes('composed of')
+  ) {
+    return '⊃ ';
+  }
+
+  // Bidirectional/interactive relationships ↔ (interacts with, relates to)
+  if (
+    rel.includes('interacts with') ||
+    rel.includes('relates to') ||
+    rel.includes('corresponds to') ||
+    rel.includes('connected to') ||
+    rel.includes('associated with') ||
+    rel.includes('linked to') ||
+    rel.includes('correlated with') ||
+    rel.includes('depends on')
+  ) {
+    return '↔ ';
+  }
+
+  // Comparative/contrastive relationships ≠ (differs from, contrasts with)
+  if (
+    rel.includes('differs from') ||
+    rel.includes('contrasts with') ||
+    rel.includes('versus') ||
+    rel.includes('vs') ||
+    rel.includes('compared to') ||
+    rel.includes('opposite of') ||
+    rel.includes('unlike')
+  ) {
+    return '≠ ';
+  }
+
+  // Default: no icon for unrecognized patterns
+  return '';
+}
+
+/**
  * Main layout function - routes to template-specific algorithm
  */
 export function layoutMindMap(mindMapData: MindMapData): ReactFlowMindMap {
@@ -160,7 +236,7 @@ function layoutHierarchical(
       source: edge.from,
       target: edge.to,
       type: 'smoothstep',
-      label: edge.relationship,
+      label: getRelationshipIcon(edge.relationship) + edge.relationship,  // PHASE 2.2: Add icon prefix
       animated: !isCrossLink,
       style: {
         stroke: isCrossLink ? '#FF6B35' : '#64748B', // Method 3: Orange accent for cross-links (improved contrast)
@@ -363,7 +439,7 @@ function layoutFlowchart(
       source: edge.from,
       target: edge.to,
       type: isCrossLink ? 'smoothstep' : 'default',
-      label: edge.relationship,
+      label: getRelationshipIcon(edge.relationship) + edge.relationship,  // PHASE 2.2: Add icon prefix
       animated: !isCrossLink,
       style: {
         stroke: isCrossLink ? '#9A7B64' : '#64748B', // Warm copper for cross-links, slate for hierarchy
@@ -608,7 +684,7 @@ function layoutTimeline(
         source: edge.from,
         target: edge.to,
         type: 'smoothstep',
-        label: edge.relationship,
+        label: getRelationshipIcon(edge.relationship) + edge.relationship,  // PHASE 2.2: Add icon prefix
         animated: false,
         style: {
           stroke: '#FF6B35', // Orange accent for relationships

@@ -96,6 +96,18 @@ export default function MindMapViewer({
     }
   };
 
+  // PHASE 2.3: Calculate cross-link count for knowledge integration display
+  const crossLinkCount = useMemo(() => {
+    if (!edges || edges.length === 0) return 0;
+
+    return edges.filter(edge => {
+      const sourceNode = nodes.find(n => n.id === edge.from);
+      const targetNode = nodes.find(n => n.id === edge.to);
+      // Cross-link = levels differ by more than 1
+      return sourceNode && targetNode && Math.abs(sourceNode.level - targetNode.level) > 1;
+    }).length;
+  }, [edges, nodes]);
+
   // Convert to ReactFlow nodes and edges using template-specific layout
   const { flowNodes, flowEdges } = useMemo(() => {
     console.log('[MindMapViewer] Applying layout with template:', currentTemplate)
@@ -282,6 +294,36 @@ export default function MindMapViewer({
           width: 16px !important;
           height: 16px !important;
         }
+
+        /* PHASE 2.3: Cross-Link Pulse Animation (Research-Backed Enhancement) */
+        /* Cross-links show knowledge integration - make them visually prominent */
+        @keyframes crossLinkPulse {
+          0%, 100% {
+            stroke-width: 4px;
+            opacity: 1;
+          }
+          50% {
+            stroke-width: 5px;
+            opacity: 0.8;
+          }
+        }
+
+        /* Apply subtle pulse to cross-link edges (dashed orange edges) */
+        .react-flow__edge-path[stroke-dasharray]:not([stroke-dasharray=""]) {
+          animation: crossLinkPulse 2s ease-in-out infinite;
+        }
+
+        /* Enhanced pulse on hover */
+        .react-flow__edge:hover .react-flow__edge-path[stroke-dasharray]:not([stroke-dasharray=""]) {
+          animation: crossLinkPulse 0.8s ease-in-out infinite;
+          filter: drop-shadow(0 0 4px rgba(255, 107, 53, 0.6));
+        }
+
+        /* Dim other edges when hovering a cross-link */
+        .react-flow__edge:hover ~ .react-flow__edge:not(:hover) .react-flow__edge-path:not([stroke-dasharray]) {
+          opacity: 0.3;
+          transition: opacity 0.3s ease;
+        }
       `}</style>
       <div className="w-full h-full bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden flex flex-col">
         {/* Compact Header */}
@@ -291,10 +333,20 @@ export default function MindMapViewer({
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="flex-1 min-w-0">
               <h2 className="text-base font-bold text-black dark:text-white truncate">{title}</h2>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {nodes?.length || 0} concepts • {edges?.length || 0} connections
+              <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2 flex-wrap">
+                <span>{nodes?.length || 0} concepts • {edges?.length || 0} connections</span>
+                {/* PHASE 2.3: Cross-Link Count Badge (Knowledge Integration Indicator) */}
+                {crossLinkCount > 0 && (
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 text-orange-700 dark:text-orange-300 border border-orange-300 dark:border-orange-600"
+                    title="Cross-links show knowledge integration across different branches - a key indicator of deeper understanding"
+                  >
+                    <span className="text-orange-600 dark:text-orange-400">⚡</span>
+                    {crossLinkCount} cross-link{crossLinkCount !== 1 ? 's' : ''}
+                  </span>
+                )}
                 {templateReason && (
-                  <span className="ml-2 italic text-gray-500">
+                  <span className="ml-1 italic text-gray-500">
                     {TEMPLATES[currentTemplate]?.metadata.icon} {templateReason}
                   </span>
                 )}
@@ -434,15 +486,15 @@ export default function MindMapViewer({
             <span className="hidden md:inline">Click nodes to explore details</span>
           </div>
 
-          {/* Edge Types */}
+          {/* Edge Types - PHASE 2.3: Enhanced Cross-Link Visibility */}
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               <div className="w-6 h-1 rounded" style={{ backgroundColor: '#64748B' }}></div>
               <span className="text-gray-700 dark:text-gray-300 hidden sm:inline">Hierarchy</span>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-6 h-0.5 border-t-2 border-dashed rounded" style={{ borderColor: '#9A7B64' }}></div>
-              <span className="text-gray-700 dark:text-gray-300 hidden sm:inline">Cross-link</span>
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700" title="Cross-links show knowledge integration across branches">
+              <div className="w-6 h-0.5 border-t-2 border-dashed rounded" style={{ borderColor: '#FF6B35' }}></div>
+              <span className="text-orange-700 dark:text-orange-300 font-medium hidden sm:inline">Cross-link ⚡</span>
             </div>
           </div>
 
