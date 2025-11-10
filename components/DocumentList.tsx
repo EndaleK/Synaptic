@@ -161,6 +161,7 @@ export default function DocumentList({
               document={document}
               onSelectMode={onSelectMode}
               onDelete={onDelete}
+              onRefresh={onRefresh}
             />
           ))}
         </div>

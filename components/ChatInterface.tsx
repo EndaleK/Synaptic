@@ -399,6 +399,10 @@ export default function ChatInterface() {
     try {
       // Validate document content before sending
       if (!chatDocument.content || chatDocument.content.trim().length === 0) {
+        // Check if this is a large document that needs RAG indexing
+        if (currentDocument && currentDocument.fileSize && currentDocument.fileSize > 10 * 1024 * 1024) {
+          throw new Error("LARGE_DOCUMENT_REQUIRES_RAG")
+        }
         throw new Error("NO_DOCUMENT_CONTENT")
       }
 
@@ -447,7 +451,16 @@ export default function ChatInterface() {
       let errorContent = "I apologize, but I'm having trouble processing your request. "
 
       if (error instanceof Error) {
-        if (error.message === "NO_DOCUMENT_CONTENT") {
+        if (error.message === "LARGE_DOCUMENT_REQUIRES_RAG") {
+          errorContent = "📚 This document is large (>10MB) and requires RAG indexing to use chat features.\n\n" +
+            "**What's RAG?** Retrieval-Augmented Generation allows me to search through your document and find relevant sections to answer your questions.\n\n" +
+            "**Next Steps:**\n" +
+            "1. Go back to the Documents page\n" +
+            "2. Click the 'Index Document' button next to your document\n" +
+            "3. Wait 1-2 minutes for indexing to complete\n" +
+            "4. Return here to start chatting!\n\n" +
+            "**Requirements:** Make sure ChromaDB is running (see deployment guide for setup instructions)."
+        } else if (error.message === "NO_DOCUMENT_CONTENT") {
           errorContent = "No document content found. Please try re-uploading your document."
         } else if (error.message.includes('401')) {
           errorContent = "Authentication error. Please try signing out and back in."

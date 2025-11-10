@@ -186,10 +186,7 @@ export async function POST(req: NextRequest) {
         const duration = Date.now() - startTime
         const errorMessage = fetchError?.code === 'PGRST116' ? 'Document not found or access denied' : 'Failed to fetch document'
         logger.api('POST', '/api/generate-mindmap', 404, duration, { userId, error: errorMessage })
-        return NextResponse.json(
-          { error: errorMessage, debug: { documentExists: !!anyDocument, fetchErrorCode: fetchError?.code } },
-          { status: 404 }
-        )
+        throw new Error(errorMessage)
       }
     }
 
@@ -209,10 +206,7 @@ export async function POST(req: NextRequest) {
       logger.warn('Document has no extracted text', { userId, documentId })
       const duration = Date.now() - startTime
       logger.api('POST', '/api/generate-mindmap', 400, duration, { userId, error: 'No extracted text' })
-      return NextResponse.json(
-        { error: "Document has no extracted text" },
-        { status: 400 }
-      )
+      throw new Error("Document has no extracted text")
     }
 
     logger.debug('Document fetched successfully', {
@@ -269,18 +263,12 @@ export async function POST(req: NextRequest) {
         // Validate extracted text
         if (!documentText || documentText.trim().length === 0) {
           logger.warn('No content found in selection', { userId, documentId, selectionType: selection.type })
-          return NextResponse.json(
-            { error: 'No content found in selected area' },
-            { status: 400 }
-          )
+          throw new Error('No content found in selected area')
         }
 
       } catch (error) {
         logger.error('Text extraction failed for mind map', error, { userId, documentId, selection })
-        return NextResponse.json(
-          { error: 'Failed to extract text from selection' },
-          { status: 400 }
-        )
+        throw new Error('Failed to extract text from selection')
       }
     }
     // else: Use full document text (already set)
@@ -336,7 +324,7 @@ export async function POST(req: NextRequest) {
 
     const selectedProvider = providerFactory.getProviderWithFallback(selectedProviderType, 'openai')
 
-    // Check if provider is configured - return helpful error if not
+    // Check if provider is configured - throw error if not
     if (!selectedProvider.isConfigured()) {
       logger.error('AI provider not configured', null, {
         userId,
@@ -346,14 +334,7 @@ export async function POST(req: NextRequest) {
       })
       const duration = Date.now() - startTime
       logger.api('POST', '/api/generate-mindmap', 500, duration, { userId, error: 'AI provider not configured' })
-      return NextResponse.json(
-        {
-          error: `Mind map generation is not configured. Please add at least one AI provider API key to your environment variables.`,
-          details: `Attempted to use ${selectedProvider.name}, but API key is missing. Add one of: DEEPSEEK_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY`,
-          configurationHelp: 'See .env.example for setup instructions'
-        },
-        { status: 500 }
-      )
+      throw new Error(`Mind map generation is not configured. Please add at least one AI provider API key to your environment variables. Attempted to use ${selectedProvider.name}, but API key is missing. Add one of: DEEPSEEK_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY`)
     }
 
     // Safety cap: DeepSeek works best with fewer nodes (prevents JSON truncation)
