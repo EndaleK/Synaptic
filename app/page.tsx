@@ -91,7 +91,7 @@ export default function LandingPage() {
           {/* Section Header */}
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black dark:text-white mb-4">
-              8 Powerful Learning Tools
+              Powerful Learning Tools
             </h2>
             <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               From exam prep to content creation—everything you need to excel in high school, college, and beyond
