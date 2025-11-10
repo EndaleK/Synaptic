@@ -168,19 +168,20 @@ export function usePDFTimeout(config: Partial<PDFTimeoutConfig> = {}) {
   return {
     // State
     ...state,
-    
+    startTime: startTimeRef.current,
+
     // Actions
     startTimeout,
     stopTimeout,
     signalProgress,
     forceAbort,
     reset,
-    
+
     // Utilities
     getTimeRemaining,
     getProgressPercent,
     getStatusMessage,
-    
+
     // Config
     config: finalConfig
   }
