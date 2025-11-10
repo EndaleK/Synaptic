@@ -36,7 +36,7 @@ export default function LandingPage() {
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-black dark:text-white mb-4 leading-tight tracking-tight">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-orange">Learning That Adapts to You</span>
               <br />
-              <span className="text-black dark:text-white">Eight Intelligent Tools, One Platform</span>
+              <span className="text-black dark:text-white">Everything You Need to Master Any Subject</span>
             </h1>
 
             {/* Subheadline */}
