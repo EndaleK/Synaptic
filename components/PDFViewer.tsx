@@ -33,10 +33,11 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<any>(null)
 
-  // Initialize timeout management (increased for large PDFs)
+  // Initialize timeout management (scaled by file size)
+  const fileSizeMB = file.size / (1024 * 1024)
   const timeout = usePDFTimeout({
-    loadTimeout: 120000,     // 120 seconds (2 minutes) for large files
-    progressTimeout: 30000,  // 30 seconds without progress = stuck
+    loadTimeout: Math.max(120000, fileSizeMB * 3000),     // 3 seconds per MB, minimum 120s
+    progressTimeout: Math.max(45000, fileSizeMB * 1000),  // 1 second per MB, minimum 45s
     healthCheckInterval: 1000 // Check every second
   })
 
@@ -93,9 +94,11 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
         if (result.success) {
           setWorkerStatus(`Ready (${result.source})`)
           console.log('✅ PDF Worker ready:', result.source)
-          
-          // Start timeout monitoring when worker is ready and PDF loading begins
-          timeout.startTimeout()
+
+          // Only start timeout monitoring in react-pdf mode (not needed for iframe)
+          if (renderMode === 'react-pdf') {
+            timeout.startTimeout()
+          }
         } else {
           setWorkerStatus("Worker initialization failed")
           setError(`PDF worker initialization failed: ${result.error || 'Unknown error'}`)
@@ -249,14 +252,17 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
     setError("")
     setIsLoading(true)
     setAbortAttempted(false)
-    
+
     // Reset timeout state
     timeout.reset()
-    
+
     // Reset to react-pdf mode first
     setRenderMode('react-pdf')
     setWorkerStatus("Retrying with react-pdf...")
-    
+
+    // Start timeout monitoring for react-pdf mode
+    timeout.startTimeout()
+
     // Reinitialize worker if available
     if (pdfWorkerManager) {
       try {
@@ -401,6 +407,7 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
                 setRenderMode('react-pdf')
                 setIsLoading(true)
                 setWorkerStatus("Switching to enhanced viewer...")
+                timeout.startTimeout() // Start timeout monitoring for react-pdf
               }}
               className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
               title="Switch to enhanced viewer"
@@ -679,6 +686,10 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
                       rotate={rotation}
                       renderTextLayer={false}
                       renderAnnotationLayer={false}
+                      onRenderSuccess={() => {
+                        // Signal progress to prevent false "stuck" timeouts
+                        timeout.signalProgress()
+                      }}
                       className="border border-gray-300 dark:border-gray-600 shadow-lg"
                     />
                   </div>
