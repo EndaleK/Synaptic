@@ -202,22 +202,71 @@ export async function POST(req: NextRequest) {
       id: (documentWithProfile.user_profiles as any).id
     }
 
-    if (!document.extracted_text) {
-      logger.warn('Document has no extracted text', { userId, documentId })
-      const duration = Date.now() - startTime
-      logger.api('POST', '/api/generate-mindmap', 400, duration, { userId, error: 'No extracted text' })
-      throw new Error("Document has no extracted text")
+    // Handle missing extracted text with fallback extraction
+    let documentText = document.extracted_text
+
+    if (!documentText) {
+      logger.warn('Document has no extracted text, attempting fallback extraction', { userId, documentId, fileType: document.file_type })
+
+      // FALLBACK: Extract text on-demand for documents uploaded before text extraction fix
+      try {
+        const { data: pdfData, error: downloadError } = await supabase.storage
+          .from('documents')
+          .download(document.storage_path)
+
+        if (downloadError || !pdfData) {
+          logger.error('Failed to download document for fallback extraction', downloadError, { userId, documentId })
+          throw new Error("Document has no extracted text and could not be downloaded")
+        }
+
+        if (document.file_type === 'application/pdf') {
+          const { parseServerPDF } = await import('@/lib/server-pdf-parser')
+          const file = new File([pdfData], document.file_name, { type: 'application/pdf' })
+          const parseResult = await parseServerPDF(file)
+
+          if (parseResult.text && parseResult.text.length > 0) {
+            documentText = parseResult.text
+            logger.info('Successfully extracted text via fallback', {
+              userId,
+              documentId,
+              textLength: documentText.length
+            })
+
+            // Update database for next time (fire and forget)
+            supabase.from('documents')
+              .update({ extracted_text: documentText })
+              .eq('id', documentId)
+              .then(({ error }) => {
+                if (error) {
+                  logger.warn('Failed to update document with extracted text', { userId, documentId, error })
+                } else {
+                  logger.info('Updated document with extracted text', { userId, documentId })
+                }
+              })
+          } else {
+            logger.error('PDF extraction returned no text', null, { userId, documentId })
+            throw new Error("Could not extract text from PDF. This may be a scanned document.")
+          }
+        } else {
+          throw new Error(`Document type ${document.file_type} requires extracted text but none is available`)
+        }
+      } catch (extractError) {
+        logger.error('Fallback text extraction failed', extractError, { userId, documentId })
+        const duration = Date.now() - startTime
+        logger.api('POST', '/api/generate-mindmap', 400, duration, { userId, error: 'Text extraction failed' })
+        throw new Error(extractError instanceof Error ? extractError.message : "Document has no extracted text and extraction failed")
+      }
     }
 
-    logger.debug('Document fetched successfully', {
+    logger.debug('Document text ready', {
       userId,
       documentId,
       fileName: document.file_name,
-      textLength: document.extracted_text.length
+      textLength: documentText.length,
+      usedFallback: document.extracted_text === null
     })
 
     // Determine selection mode and extract relevant text
-    let documentText = document.extracted_text
     let selectionDescription = 'full document'
 
     if (selection) {
