@@ -90,10 +90,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-black dark:text-white mb-4">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black dark:text-white mb-4">
               8 Powerful Learning Tools
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               From exam prep to content creation—everything you need to excel in high school, college, and beyond
             </p>
           </div>
@@ -222,10 +222,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-black dark:text-white mb-4">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black dark:text-white mb-4">
               Designed for Every Learner
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
               Whether you're in high school, college, or advancing your career—Synaptic adapts to your goals
             </p>
           </div>
@@ -348,10 +348,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-black dark:text-white mb-4">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black dark:text-white mb-4">
               Proven Results, Trusted by Thousands
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
               Join learners who are already studying smarter with Synaptic
             </p>
           </div>
@@ -441,10 +441,10 @@ export default function LandingPage() {
           {/* Feature Comparison Table */}
           <div className="mb-12">
             <div className="text-center mb-8">
-              <h3 className="text-3xl font-bold text-black dark:text-white mb-2">
+              <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-black dark:text-white mb-2">
                 How Synaptic Compares
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-base md:text-lg text-gray-600 dark:text-gray-400">
                 More features, better pricing, superior technology
               </p>
             </div>
@@ -538,10 +538,10 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="flex-1">
-                <h4 className="text-2xl font-bold text-black dark:text-white mb-3">
+                <h4 className="text-xl md:text-2xl lg:text-3xl font-bold text-black dark:text-white mb-3">
                   Built on Scientific Research
                 </h4>
-                <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+                <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
                   Our mind mapping feature is backed by peer-reviewed research showing a <strong>0.66 effect size</strong> on learning outcomes (Nesbit & Adesope, 2006). This means students using mind maps can expect significantly improved comprehension and retention compared to traditional note-taking methods.
                 </p>
                 <div className="flex flex-wrap gap-3">
@@ -579,10 +579,10 @@ export default function LandingPage() {
                 Simple & Powerful
               </span>
             </div>
-            <h2 className="text-4xl md:text-6xl font-bold text-black dark:text-white mb-4">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black dark:text-white mb-4">
               How It Works
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Get started in four simple steps and transform how you learn
             </p>
           </div>
@@ -718,10 +718,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-black dark:text-white mb-4">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black dark:text-white mb-4">
               Real-World Workflows
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
               See how Synaptic transforms your learning materials into powerful study tools in minutes
             </p>
           </div>
@@ -934,7 +934,7 @@ export default function LandingPage() {
               </div>
 
               {/* Headline */}
-              <h2 className="text-4xl md:text-6xl font-bold text-black dark:text-white mb-6 leading-tight">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black dark:text-white mb-6 leading-tight">
                 Ready to Transform
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400">
@@ -943,7 +943,7 @@ export default function LandingPage() {
               </h2>
 
               {/* Subheadline with social proof */}
-              <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
+              <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
                 Use 8 powerful tools to ace exams, save time, and study 83% cheaper than competitors
               </p>
 
