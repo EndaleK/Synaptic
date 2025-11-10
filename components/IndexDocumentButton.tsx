@@ -38,58 +38,112 @@ export default function IndexDocumentButton({
     setResult(null)
 
     try {
-      const eventSource = new EventSource(`/api/documents/${documentId}/index`)
+      // Use fetch() with manual SSE parsing instead of EventSource
+      // EventSource only supports GET, but this endpoint requires POST
+      const response = await fetch(`/api/documents/${documentId}/index`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
 
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
+      console.log('[IndexDocumentButton] API response status:', response.status)
 
-          if (data.type === 'progress') {
-            setProgress(data.progress)
-            setMessage(data.message)
-          } else if (data.type === 'complete') {
-            setStatus('success')
-            setProgress(100)
-            setResult(data.data)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to start indexing')
+      }
 
-            if (data.data.alreadyIndexed) {
-              setMessage('Document was already indexed!')
-            } else {
-              setMessage(`Successfully indexed ${data.data.chunkCount} chunks!`)
+      // Check if response is SSE stream
+      const contentType = response.headers.get('content-type')
+      if (contentType?.includes('text/event-stream')) {
+        // Handle SSE stream
+        const reader = response.body?.getReader()
+        const decoder = new TextDecoder()
+
+        if (!reader) {
+          throw new Error('Failed to get response reader')
+        }
+
+        let buffer = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n\n')
+          buffer = lines.pop() || ''
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const eventData = line.substring(6)
+
+              // Skip heartbeat messages
+              if (eventData.trim() === '' || eventData === ': heartbeat') continue
+
+              try {
+                const event = JSON.parse(eventData)
+
+                if (event.type === 'progress') {
+                  setProgress(event.progress)
+                  setMessage(event.message)
+                  console.log(`[IndexDocumentButton] Progress: ${event.progress}% - ${event.message}`)
+                } else if (event.type === 'complete') {
+                  setStatus('success')
+                  setProgress(100)
+                  setResult(event.data)
+
+                  if (event.data.alreadyIndexed) {
+                    setMessage('Document was already indexed!')
+                  } else {
+                    setMessage(`Successfully indexed ${event.data.chunkCount} chunks!`)
+                  }
+
+                  setIsIndexing(false)
+
+                  // Call completion callback
+                  if (onIndexComplete) {
+                    setTimeout(() => {
+                      onIndexComplete()
+                    }, 1000)
+                  }
+                } else if (event.type === 'error') {
+                  setStatus('error')
+                  setErrorMessage(event.error)
+                  setMessage('Indexing failed')
+                  setIsIndexing(false)
+                }
+              } catch (parseError) {
+                console.error('[IndexDocumentButton] Failed to parse SSE message:', parseError, 'Data:', eventData)
+              }
             }
-
-            eventSource.close()
-            setIsIndexing(false)
-
-            // Call completion callback
-            if (onIndexComplete) {
-              setTimeout(() => {
-                onIndexComplete()
-              }, 1000)
-            }
-          } else if (data.type === 'error') {
-            setStatus('error')
-            setErrorMessage(data.error)
-            setMessage('Indexing failed')
-            eventSource.close()
-            setIsIndexing(false)
           }
-        } catch (parseError) {
-          console.error('Failed to parse SSE message:', parseError)
+        }
+      } else {
+        // Fallback to regular JSON response
+        const data = await response.json()
+        console.log('[IndexDocumentButton] Raw API response (JSON):', data)
+
+        if (data.error) {
+          throw new Error(data.error)
+        }
+
+        // Handle success
+        setStatus('success')
+        setProgress(100)
+        setResult(data)
+        setMessage(`Successfully indexed ${data.chunkCount} chunks!`)
+        setIsIndexing(false)
+
+        if (onIndexComplete) {
+          setTimeout(() => {
+            onIndexComplete()
+          }, 1000)
         }
       }
 
-      eventSource.onerror = (error) => {
-        console.error('SSE connection error:', error)
-        setStatus('error')
-        setErrorMessage('Connection lost. Please try again.')
-        setMessage('Indexing failed')
-        eventSource.close()
-        setIsIndexing(false)
-      }
-
     } catch (error) {
-      console.error('Indexing error:', error)
+      console.error('[IndexDocumentButton] Indexing error:', error)
       setStatus('error')
       setErrorMessage(error instanceof Error ? error.message : 'Failed to start indexing')
       setMessage('Indexing failed')
