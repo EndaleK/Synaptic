@@ -15,9 +15,9 @@ import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60 // Allow time for text extraction
+export const maxDuration = 120 // Allow time for text extraction (increased to 2 minutes for larger files)
 
-const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024 // 10MB
+const LARGE_FILE_THRESHOLD = 50 * 1024 * 1024 // 50MB - files above this will use RAG
 
 export async function POST(
   request: NextRequest,
