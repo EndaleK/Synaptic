@@ -397,29 +397,47 @@ export default function ChatInterface() {
     setIsLoading(true)
 
     try {
-      // Validate document content before sending
-      if (!chatDocument.content || chatDocument.content.trim().length === 0) {
-        throw new Error("NO_DOCUMENT_CONTENT")
+      // Detect if this is a large file that needs RAG (no extracted content)
+      const isLargeFile = !chatDocument.content || chatDocument.content.trim().length === 0
+
+      // Validate we have the necessary data
+      if (isLargeFile && !currentDocument?.id) {
+        throw new Error("NO_DOCUMENT_ID")
       }
+
+      // Determine which endpoint to use based on file size
+      const endpoint = isLargeFile ? "/api/chat-rag" : "/api/chat-with-document"
 
       console.log('[ChatInterface] Sending chat request:', {
         messageLength: inputMessage.length,
-        contentLength: chatDocument.content.length,
-        fileName: chatDocument.file?.name,
-        teachingMode
+        contentLength: chatDocument.content?.length || 0,
+        fileName: chatDocument.file?.name || currentDocument?.name,
+        teachingMode,
+        endpoint,
+        isLargeFile,
+        documentId: currentDocument?.id
       })
 
-      const response = await fetch("/api/chat-with-document", {
+      // Prepare request body based on endpoint
+      const requestBody = isLargeFile
+        ? {
+            message: inputMessage,
+            documentId: currentDocument.id,
+            teachingMode: teachingMode,
+          }
+        : {
+            message: inputMessage,
+            fileName: chatDocument.file?.name,
+            documentContent: chatDocument.content,
+            teachingMode: teachingMode,
+          }
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          message: inputMessage,
-          fileName: chatDocument.file?.name,
-          documentContent: chatDocument.content,
-          teachingMode: teachingMode,
-        }),
+        body: JSON.stringify(requestBody),
       })
 
       console.log('[ChatInterface] Response status:', response.status)
@@ -449,6 +467,8 @@ export default function ChatInterface() {
       if (error instanceof Error) {
         if (error.message === "NO_DOCUMENT_CONTENT") {
           errorContent = "No document content found. Please try re-uploading your document."
+        } else if (error.message === "NO_DOCUMENT_ID") {
+          errorContent = "Unable to access document for chat. Please try selecting the document again from the library."
         } else if (error.message.includes('401')) {
           errorContent = "Authentication error. Please try signing out and back in."
         } else if (error.message.includes('429')) {
