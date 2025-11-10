@@ -80,11 +80,25 @@ export async function POST(request: NextRequest) {
 
     // 4. Verify document ownership
     const supabase = await createClient()
+
+    // First get user profile to get the internal user_id
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('clerk_user_id', userId)
+      .single()
+
+    if (!profile) {
+      logger.warn('User profile not found', { userId })
+      return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
+    }
+
+    // Then query document using profile.id
     const { data: document, error: docError } = await supabase
       .from('documents')
       .select('*')
       .eq('id', documentId)
-      .eq('clerk_user_id', userId)
+      .eq('user_id', profile.id)
       .single()
 
     if (docError || !document) {
