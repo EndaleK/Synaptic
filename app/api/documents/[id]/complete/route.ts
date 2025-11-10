@@ -15,9 +15,10 @@ import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
-export const maxDuration = 120 // Allow time for text extraction (increased to 2 minutes for larger files)
+export const maxDuration = 60 // Vercel hobby/pro limit
 
-const LARGE_FILE_THRESHOLD = 50 * 1024 * 1024 // 50MB - files above this will use RAG
+const TEXT_EXTRACTION_THRESHOLD = 10 * 1024 * 1024 // 10MB - extract text up to this size
+const LARGE_FILE_THRESHOLD = 50 * 1024 * 1024 // 50MB - files above this require RAG
 
 export async function POST(
   request: NextRequest,
@@ -103,13 +104,14 @@ export async function POST(
 
     // 5. Determine processing strategy based on file size and type
     const isLargeFile = actualFileSize > LARGE_FILE_THRESHOLD
+    const shouldExtractText = actualFileSize <= TEXT_EXTRACTION_THRESHOLD
     const isPDF = document.file_type === 'application/pdf'
 
-    // 6. Extract text for small/medium files (< 10MB)
+    // 6. Extract text for small files (≤ 10MB) to avoid timeout
     let extractedText: string | null = null
     let processingStatus: 'completed' | 'processing' | 'failed' = 'completed'
 
-    if (!isLargeFile && isPDF) {
+    if (shouldExtractText && isPDF) {
       try {
         console.log(`📄 Extracting text from PDF (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)...`)
 
@@ -145,8 +147,11 @@ export async function POST(
         // Don't fail the upload, just log the error
         extractedText = null
       }
+    } else if (!shouldExtractText && isPDF) {
+      console.log(`⚠️ Medium/large PDF (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB) - skipping text extraction to avoid timeout.`)
+      console.log(`📌 User can view PDF but will need to use RAG for features, or split into smaller files.`)
     } else if (isLargeFile) {
-      console.log(`📦 Large file detected (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB), skipping text extraction. RAG will be used.`)
+      console.log(`📦 Very large file detected (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB), RAG indexing required.`)
     } else if (!isPDF) {
       // For non-PDF files (TXT, DOCX), text should have been extracted during initial upload
       console.log(`📝 Non-PDF file, text should be already extracted`)
@@ -161,8 +166,10 @@ export async function POST(
         upload_completed_at: new Date().toISOString(),
         actual_file_size: actualFileSize,
         is_large_file: isLargeFile,
-        text_extraction_attempted: !isLargeFile && isPDF,
-        text_extraction_success: extractedText !== null
+        text_extraction_attempted: shouldExtractText && isPDF,
+        text_extraction_success: extractedText !== null,
+        requires_rag: !shouldExtractText && isPDF,
+        extraction_threshold_mb: TEXT_EXTRACTION_THRESHOLD / (1024 * 1024)
       }
     }
 
@@ -186,7 +193,16 @@ export async function POST(
 
     console.log(`✅ Upload completed successfully for: ${document.file_name}`)
 
-    // 7. Return success response
+    // 8. Return success response with appropriate message
+    let message = 'Upload complete. Document ready to use.'
+    if (!shouldExtractText && isPDF) {
+      message = `Upload complete. This ${(actualFileSize / (1024 * 1024)).toFixed(1)}MB file can be viewed, but text extraction was skipped to prevent timeout. Features like flashcards and chat require files ≤10MB or RAG setup.`
+    } else if (isLargeFile) {
+      message = 'Upload complete. Large file requires RAG indexing for full feature support.'
+    } else if (extractedText) {
+      message = `Upload complete. Successfully extracted ${(extractedText.length / 1000).toFixed(1)}K characters.`
+    }
+
     return NextResponse.json({
       success: true,
       documentId,
@@ -194,9 +210,9 @@ export async function POST(
       fileSize: actualFileSize,
       processingStatus,
       isLargeFile,
-      message: isLargeFile
-        ? 'Upload complete. Large file will be indexed for RAG processing.'
-        : 'Upload complete. Document ready to use.'
+      textExtracted: extractedText !== null,
+      requiresRAG: !shouldExtractText && isPDF,
+      message
     })
 
   } catch (error) {
