@@ -86,35 +86,53 @@ export async function POST(
           return
         }
 
-        // Step 2: Fetch PDF from storage
-        send({ type: 'progress', progress: 10, message: 'Downloading document from storage...' })
+        // Step 2: Get document text (from storage or existing extracted_text)
+        let extractedText: string
 
-        if (!document.storage_path) {
-          throw new Error('Document storage path not found')
+        // Check if document already has extracted_text (legacy documents)
+        if (document.extracted_text && document.extracted_text.trim().length > 0) {
+          send({ type: 'progress', progress: 20, message: 'Using existing extracted text...' })
+          extractedText = document.extracted_text
+
+          logger.info('Using existing extracted_text for indexing', {
+            documentId,
+            textLength: extractedText.length
+          })
+        } else if (document.storage_path) {
+          // New documents: Download from storage and extract
+          send({ type: 'progress', progress: 10, message: 'Downloading document from storage...' })
+
+          const { data: fileData, error: downloadError } = await supabase
+            .storage
+            .from('documents')
+            .download(document.storage_path)
+
+          if (downloadError || !fileData) {
+            throw new Error('Failed to download document from storage')
+          }
+
+          // Convert blob to File object
+          const file = new File([fileData], document.file_name, { type: document.file_type })
+
+          // Extract text
+          send({ type: 'progress', progress: 20, message: 'Extracting text from PDF...' })
+
+          const parseResult = await parseServerPDF(file)
+
+          if (parseResult.error || !parseResult.text) {
+            throw new Error(`Text extraction failed: ${parseResult.error || 'No text extracted'}`)
+          }
+
+          extractedText = parseResult.text
+
+          logger.info('Extracted text from storage file', {
+            documentId,
+            textLength: extractedText.length
+          })
+        } else {
+          // No text and no storage path - cannot index
+          throw new Error('Document has no extracted text and no storage path. Please re-upload the document.')
         }
-
-        const { data: fileData, error: downloadError } = await supabase
-          .storage
-          .from('documents')
-          .download(document.storage_path)
-
-        if (downloadError || !fileData) {
-          throw new Error('Failed to download document from storage')
-        }
-
-        // Convert blob to File object
-        const file = new File([fileData], document.file_name, { type: document.file_type })
-
-        // Step 3: Extract text
-        send({ type: 'progress', progress: 20, message: 'Extracting text from PDF...' })
-
-        const parseResult = await parseServerPDF(file)
-
-        if (parseResult.error || !parseResult.text) {
-          throw new Error(`Text extraction failed: ${parseResult.error || 'No text extracted'}`)
-        }
-
-        const extractedText = parseResult.text
 
         // Step 4: Index to vector store
         send({ type: 'progress', progress: 40, message: 'Chunking document...' })
