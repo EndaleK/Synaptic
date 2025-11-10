@@ -80,21 +80,28 @@ export default function ContentSelectionModal({
         selection
       }
 
-      // Call appropriate API based on generation type
+      // Check if document is RAG-indexed
+      const isRAGIndexed = document.metadata?.rag_indexed === true
+      const isLargeDocument = document.file_size > 10 * 1024 * 1024
+
+      // Call appropriate API based on generation type and document state
       switch (generationType) {
         case 'flashcards':
-          apiEndpoint = '/api/generate-flashcards-rag'
+          // Use RAG endpoint for large/indexed documents, regular endpoint for small documents
+          apiEndpoint = (isRAGIndexed || isLargeDocument) ? '/api/generate-flashcards-rag' : '/api/generate-flashcards'
           requestBody.count = 10 // Default count
           break
 
         case 'podcast':
-          apiEndpoint = '/api/generate-podcast'
+          // Use RAG endpoint for large/indexed documents
+          apiEndpoint = (isRAGIndexed || isLargeDocument) ? '/api/generate-podcast-rag' : '/api/generate-podcast'
           requestBody.format = 'deep-dive'
           requestBody.targetDuration = 10
           break
 
         case 'mindmap':
-          apiEndpoint = '/api/generate-mindmap'
+          // Use RAG endpoint for large/indexed documents
+          apiEndpoint = (isRAGIndexed || isLargeDocument) ? '/api/generate-mindmap-rag' : '/api/generate-mindmap'
           // Mind map uses auto-detected params, but accepts selection
           break
       }

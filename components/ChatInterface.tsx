@@ -397,33 +397,53 @@ export default function ChatInterface() {
     setIsLoading(true)
 
     try {
-      // Validate document content before sending
-      if (!chatDocument.content || chatDocument.content.trim().length === 0) {
-        // Check if this is a large document that needs RAG indexing
-        if (currentDocument && currentDocument.fileSize && currentDocument.fileSize > 10 * 1024 * 1024) {
-          throw new Error("LARGE_DOCUMENT_REQUIRES_RAG")
+      // Check if document is RAG-indexed (for large documents)
+      const isRAGIndexed = currentDocument?.metadata?.rag_indexed === true
+      const isLargeDocument = currentDocument && currentDocument.fileSize && currentDocument.fileSize > 10 * 1024 * 1024
+
+      // For non-RAG documents, validate content
+      if (!isRAGIndexed) {
+        if (!chatDocument.content || chatDocument.content.trim().length === 0) {
+          // Check if this is a large document that needs RAG indexing
+          if (isLargeDocument) {
+            throw new Error("LARGE_DOCUMENT_REQUIRES_RAG")
+          }
+          throw new Error("NO_DOCUMENT_CONTENT")
         }
-        throw new Error("NO_DOCUMENT_CONTENT")
       }
 
+      // Determine which endpoint to use
+      const endpoint = isRAGIndexed ? "/api/chat-rag" : "/api/chat-with-document"
+
       console.log('[ChatInterface] Sending chat request:', {
+        endpoint,
+        isRAGIndexed,
         messageLength: inputMessage.length,
-        contentLength: chatDocument.content.length,
+        contentLength: chatDocument.content?.length || 0,
         fileName: chatDocument.file?.name,
-        teachingMode
+        teachingMode,
+        documentId: currentDocument?.id
       })
 
-      const response = await fetch("/api/chat-with-document", {
+      const requestBody = isRAGIndexed
+        ? {
+            message: inputMessage,
+            documentId: currentDocument?.id,
+            teachingMode: teachingMode,
+          }
+        : {
+            message: inputMessage,
+            fileName: chatDocument.file?.name,
+            documentContent: chatDocument.content,
+            teachingMode: teachingMode,
+          }
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          message: inputMessage,
-          fileName: chatDocument.file?.name,
-          documentContent: chatDocument.content,
-          teachingMode: teachingMode,
-        }),
+        body: JSON.stringify(requestBody),
       })
 
       console.log('[ChatInterface] Response status:', response.status)
