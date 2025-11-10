@@ -105,30 +105,75 @@ export async function POST(
     const isLargeFile = actualFileSize > LARGE_FILE_THRESHOLD
     const isPDF = document.file_type === 'application/pdf'
 
-    // Always set status to 'completed' immediately
-    // This prevents documents from getting stuck in 'processing' loop
-    // Text extraction and RAG indexing will happen on-demand when needed:
-    // - Client-side PDF extraction when user opens chat
-    // - RAG indexing triggered when user actually uses the document
-    const processingStatus: 'completed' = 'completed'
+    // 6. Extract text for small/medium files (< 10MB)
+    let extractedText: string | null = null
+    let processingStatus: 'completed' | 'processing' | 'failed' = 'completed'
 
-    if (isLargeFile) {
-      console.log(`📦 Large file detected (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB), RAG will be used on-demand`)
+    if (!isLargeFile && isPDF) {
+      try {
+        console.log(`📄 Extracting text from PDF (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)...`)
+
+        // Download PDF from storage for server-side extraction
+        const { data: pdfData, error: downloadError } = await supabase
+          .storage
+          .from('documents')
+          .download(document.storage_path)
+
+        if (!downloadError && pdfData) {
+          // Import PDF parser
+          const { parseServerPDF } = await import('@/lib/server-pdf-parser')
+
+          // Convert Blob to File for parser
+          const file = new File([pdfData], document.file_name, { type: 'application/pdf' })
+          const parseResult = await parseServerPDF(file)
+
+          if (parseResult.error) {
+            console.warn(`⚠️ PDF text extraction warning: ${parseResult.error}`)
+            extractedText = null // Leave null, user can still view PDF
+          } else if (parseResult.text && parseResult.text.length > 0) {
+            extractedText = parseResult.text
+            console.log(`✅ Successfully extracted ${extractedText.length} characters from PDF`)
+          } else {
+            console.warn('⚠️ PDF has no extractable text (might be scanned)')
+            extractedText = null
+          }
+        } else {
+          console.error('Failed to download PDF for text extraction:', downloadError)
+        }
+      } catch (extractError) {
+        console.error('PDF text extraction error:', extractError)
+        // Don't fail the upload, just log the error
+        extractedText = null
+      }
+    } else if (isLargeFile) {
+      console.log(`📦 Large file detected (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB), skipping text extraction. RAG will be used.`)
+    } else if (!isPDF) {
+      // For non-PDF files (TXT, DOCX), text should have been extracted during initial upload
+      console.log(`📝 Non-PDF file, text should be already extracted`)
     }
 
-    // 6. Update document record
+    // 7. Update document record with extracted text
+    const updateData: any = {
+      file_size: actualFileSize,
+      processing_status: processingStatus,
+      metadata: {
+        ...document.metadata,
+        upload_completed_at: new Date().toISOString(),
+        actual_file_size: actualFileSize,
+        is_large_file: isLargeFile,
+        text_extraction_attempted: !isLargeFile && isPDF,
+        text_extraction_success: extractedText !== null
+      }
+    }
+
+    // Only update extracted_text if we successfully extracted something
+    if (extractedText !== null) {
+      updateData.extracted_text = extractedText
+    }
+
     const { error: updateError } = await supabase
       .from('documents')
-      .update({
-        file_size: actualFileSize, // Update with actual size from storage
-        processing_status: processingStatus,
-        metadata: {
-          ...document.metadata,
-          upload_completed_at: new Date().toISOString(),
-          actual_file_size: actualFileSize,
-          is_large_file: isLargeFile
-        }
-      })
+      .update(updateData)
       .eq('id', documentId)
 
     if (updateError) {
