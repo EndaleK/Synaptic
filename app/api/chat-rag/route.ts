@@ -106,14 +106,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // 5. Check vector store status
+    // 5. Check vector store status and trigger indexing if needed
     const docStats = await getDocumentStats(documentId)
     if (!docStats.exists || docStats.chunkCount === 0) {
-      logger.error('Document not indexed in vector store', { documentId })
-      return NextResponse.json(
-        { error: 'Document not yet indexed. Please wait for processing to complete.' },
-        { status: 400 }
-      )
+      logger.info('Document not indexed, triggering on-demand indexing', { documentId })
+
+      // Import indexing helper
+      const { indexDocumentForRAG } = await import('@/lib/document-indexer')
+
+      // Trigger indexing
+      const indexResult = await indexDocumentForRAG(documentId, userId)
+
+      if (!indexResult.success) {
+        logger.error('Document indexing failed', {
+          documentId,
+          error: indexResult.error,
+        })
+        return NextResponse.json(
+          {
+            error: `Failed to index document: ${indexResult.error || 'Unknown error'}. Please try again or contact support.`,
+          },
+          { status: 500 }
+        )
+      }
+
+      logger.info('Document indexed successfully for RAG', {
+        documentId,
+        chunks: indexResult.chunks,
+      })
+
+      // Return success message indicating document is ready
+      return NextResponse.json({
+        response: `I've indexed your document and it's now ready for chat! It has been split into ${indexResult.chunks} chunks for efficient retrieval. Please send your question again to continue.`,
+        timestamp: new Date().toISOString(),
+        indexed: true,
+        chunks: indexResult.chunks,
+      })
     }
 
     logger.info('RAG chat started', {

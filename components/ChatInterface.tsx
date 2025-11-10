@@ -451,6 +451,11 @@ export default function ChatInterface() {
       const data = await response.json()
       console.log('[ChatInterface] Received response:', data)
 
+      // Check if document was just indexed
+      if (data.indexed) {
+        console.log('[ChatInterface] Document was indexed with', data.chunks, 'chunks')
+      }
+
       const assistantMessage: Message = {
         id: generateId() + '-response',
         content: data.response || "I apologize, but I'm having trouble processing your request.",
