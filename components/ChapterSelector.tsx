@@ -7,7 +7,7 @@ import { Chapter } from '@/lib/chapter-extractor'
 interface ChapterSelectorProps {
   documentId: string
   documentName: string
-  onConfirm: (selectedChapterIds: string[]) => void
+  onConfirm: (selectedChapterIds: string[], chapters: any[]) => void
   onCancel: () => void
   isOpen: boolean
 }
@@ -101,7 +101,8 @@ export default function ChapterSelector({
       setError('Please select at least one chapter')
       return
     }
-    onConfirm(Array.from(selectedIds))
+    // Pass both selected IDs and chapter data to parent
+    onConfirm(Array.from(selectedIds), chapters)
   }
 
   if (!isOpen) return null

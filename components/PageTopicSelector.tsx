@@ -1,8 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Check, Loader2, Sparkles, BookmarkCheck, Trash2 } from "lucide-react"
+import { Check, Loader2, Sparkles, BookmarkCheck, Trash2, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
+import dynamic from "next/dynamic"
+
+// Dynamically import ChapterSelector to avoid SSR issues
+const ChapterSelector = dynamic(() => import("./ChapterSelector"), {
+  ssr: false
+})
 
 export interface PageRange {
   start: number
@@ -17,9 +23,11 @@ export interface Topic {
 }
 
 export interface SelectionData {
-  type: 'pages' | 'topic' | 'full'
+  type: 'pages' | 'topic' | 'full' | 'chapters'
   pageRange?: PageRange
   topic?: Topic
+  chapterIds?: string[]
+  chapters?: any[] // Chapter data from chapter-extractor
 }
 
 interface PageTopicSelectorProps {
@@ -42,13 +50,18 @@ export default function PageTopicSelector({
   onSelectionChange,
   className
 }: PageTopicSelectorProps) {
-  const [selectionMode, setSelectionMode] = useState<'full' | 'pages' | 'topics'>('full')
+  const [selectionMode, setSelectionMode] = useState<'full' | 'pages' | 'topics' | 'chapters'>('full')
   const [pageStart, setPageStart] = useState<string>('1')
   const [pageEnd, setPageEnd] = useState<string>(totalPages.toString())
   const [topics, setTopics] = useState<Topic[]>([])
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null)
   const [isLoadingTopics, setIsLoadingTopics] = useState(false)
   const [topicsError, setTopicsError] = useState<string | null>(null)
+
+  // Chapter selection state
+  const [showChapterSelector, setShowChapterSelector] = useState(false)
+  const [selectedChapterIds, setSelectedChapterIds] = useState<string[]>([])
+  const [chapterData, setChapterData] = useState<any[]>([])
 
   // Preset loading state
   const [presets, setPresets] = useState<Preset[]>([])
@@ -93,10 +106,23 @@ export default function PageTopicSelector({
     }
   }
 
+  // Handle chapter selection confirmation
+  const handleChapterConfirm = (chapterIds: string[], chapters: any[]) => {
+    setSelectedChapterIds(chapterIds)
+    setChapterData(chapters)
+    setShowChapterSelector(false)
+  }
+
   // Notify parent of selection changes
   useEffect(() => {
     if (selectionMode === 'full') {
       onSelectionChange({ type: 'full' })
+    } else if (selectionMode === 'chapters' && selectedChapterIds.length > 0) {
+      onSelectionChange({
+        type: 'chapters',
+        chapterIds: selectedChapterIds,
+        chapters: chapterData
+      })
     } else if (selectionMode === 'pages') {
       const start = parseInt(pageStart) || 1
       const end = parseInt(pageEnd) || totalPages
@@ -268,6 +294,7 @@ export default function PageTopicSelector({
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {preset.selection_data.type === 'full' && 'Full Document'}
+                    {preset.selection_data.type === 'chapters' && `${preset.selection_data.chapterIds?.length || 0} chapters`}
                     {preset.selection_data.type === 'pages' && `Pages ${preset.selection_data.pageRange?.start}-${preset.selection_data.pageRange?.end}`}
                     {preset.selection_data.type === 'topic' && preset.selection_data.topic?.title}
                   </div>
@@ -294,11 +321,11 @@ export default function PageTopicSelector({
       )}
 
       {/* Mode Selector */}
-      <div className="flex gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <button
           onClick={() => setSelectionMode('full')}
           className={cn(
-            "flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all",
+            "py-2 px-4 rounded-lg font-medium text-sm transition-all",
             selectionMode === 'full'
               ? "bg-accent-primary text-white shadow-md"
               : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -307,9 +334,24 @@ export default function PageTopicSelector({
           Full Document
         </button>
         <button
+          onClick={() => {
+            setSelectionMode('chapters')
+            setShowChapterSelector(true)
+          }}
+          className={cn(
+            "py-2 px-4 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-1",
+            selectionMode === 'chapters'
+              ? "bg-accent-primary text-white shadow-md"
+              : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+          )}
+        >
+          <BookOpen className="w-4 h-4" />
+          Chapters
+        </button>
+        <button
           onClick={() => setSelectionMode('pages')}
           className={cn(
-            "flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all",
+            "py-2 px-4 rounded-lg font-medium text-sm transition-all",
             selectionMode === 'pages'
               ? "bg-accent-primary text-white shadow-md"
               : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -320,7 +362,7 @@ export default function PageTopicSelector({
         <button
           onClick={() => setSelectionMode('topics')}
           className={cn(
-            "flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-1",
+            "py-2 px-4 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-1",
             selectionMode === 'topics'
               ? "bg-accent-primary text-white shadow-md"
               : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -442,6 +484,34 @@ export default function PageTopicSelector({
         </div>
       )}
 
+      {/* Chapters Mode */}
+      {selectionMode === 'chapters' && (
+        <div className="space-y-3">
+          {selectedChapterIds.length > 0 ? (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+              <p className="text-sm text-green-700 dark:text-green-400 font-medium mb-2">
+                ✓ {selectedChapterIds.length} {selectedChapterIds.length === 1 ? 'chapter' : 'chapters'} selected
+              </p>
+              <p className="text-xs text-green-600 dark:text-green-500">
+                Only selected chapters will be indexed, saving time and cost.
+              </p>
+              <button
+                onClick={() => setShowChapterSelector(true)}
+                className="mt-3 text-sm text-green-700 dark:text-green-400 hover:underline font-medium"
+              >
+                Change selection →
+              </button>
+            </div>
+          ) : (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <p className="text-sm text-blue-700 dark:text-blue-400">
+                Click the button above to select specific chapters from your document.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Full Document Mode */}
       {selectionMode === 'full' && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
@@ -449,6 +519,19 @@ export default function PageTopicSelector({
             Flashcards or podcast will be generated from the entire document ({totalPages} pages).
           </p>
         </div>
+      )}
+
+      {/* Chapter Selector Modal */}
+      {showChapterSelector && (
+        <ChapterSelector
+          documentId={documentId}
+          documentName="Current Document"
+          onConfirm={(selectedIds, chapters) => {
+            handleChapterConfirm(selectedIds, chapters)
+          }}
+          onCancel={() => setShowChapterSelector(false)}
+          isOpen={showChapterSelector}
+        />
       )}
     </div>
   )
