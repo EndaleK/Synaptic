@@ -94,7 +94,7 @@ export async function POST(
           send({ type: 'progress', progress: 20, message: 'Using existing extracted text...' })
           extractedText = document.extracted_text
 
-          logger.info('Using existing extracted_text for indexing', {
+          console.log('[RAG Indexing] Using existing extracted_text for indexing', {
             documentId,
             textLength: extractedText.length
           })
@@ -125,7 +125,7 @@ export async function POST(
 
           extractedText = parseResult.text
 
-          logger.info('Extracted text from storage file', {
+          console.log('[RAG Indexing] Extracted text from storage file', {
             documentId,
             textLength: extractedText.length
           })
