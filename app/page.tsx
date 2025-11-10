@@ -26,9 +26,9 @@ export default function LandingPage() {
               <img
                 src="/logo-full.png"
                 alt="Synaptic - Study Smarter"
-                width={569}
-                height={569}
-                className="object-contain w-[414px] h-[414px] sm:w-[518px] sm:h-[518px] md:w-[569px] md:h-[569px]"
+                width={512}
+                height={512}
+                className="object-contain w-[373px] h-[373px] sm:w-[466px] sm:h-[466px] md:w-[512px] md:h-[512px]"
               />
             </div>
 
