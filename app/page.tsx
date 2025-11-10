@@ -431,7 +431,7 @@ export default function LandingPage() {
                   <Briefcase className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="font-semibold text-black dark:text-white">Michael R.</p>
+                  <p className="font-semibold text-black dark:text-white">Gudu Kassa</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Software Engineer</p>
                 </div>
               </div>
