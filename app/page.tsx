@@ -19,10 +19,10 @@ export default function LandingPage() {
           <div className="relative aspect-[1155/678] w-[36.125rem] bg-gradient-to-tr from-gray-200 to-gray-400 dark:from-gray-800 dark:to-gray-600 opacity-30" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
           <div className="text-center max-w-5xl mx-auto">
             {/* Brand Logo */}
-            <div className="mb-2 flex justify-center">
+            <div className="mb-0 flex justify-center">
               <img
                 src="/logo-full.png"
                 alt="Synaptic - Study Smarter"
