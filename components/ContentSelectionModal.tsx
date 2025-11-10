@@ -122,11 +122,17 @@ export default function ContentSelectionModal({
 
         let buffer = ''
         let receivedData = false
+        let eventCount = 0
+
+        console.log('[ContentSelectionModal] Starting SSE stream reading for', generationType)
 
         while (true) {
           const { done, value } = await reader.read()
 
-          if (done) break
+          if (done) {
+            console.log('[ContentSelectionModal] SSE stream ended', { eventCount, receivedData })
+            break
+          }
 
           buffer += decoder.decode(value, { stream: true })
           const lines = buffer.split('\n\n')
@@ -141,14 +147,20 @@ export default function ContentSelectionModal({
 
               try {
                 const event = JSON.parse(eventData)
+                eventCount++
 
                 if (event.type === 'progress') {
                   // Could update UI with progress here if needed
-                  console.log(`Progress: ${event.progress}% - ${event.message}`)
+                  console.log(`[ContentSelectionModal] Progress: ${event.progress}% - ${event.message}`)
                 } else if (event.type === 'complete') {
+                  console.log('[ContentSelectionModal] Received complete event:', {
+                    hasData: !!event.data,
+                    dataKeys: event.data ? Object.keys(event.data) : []
+                  })
                   data = event.data
                   receivedData = true
                 } else if (event.type === 'error') {
+                  console.error('[ContentSelectionModal] Received error event:', event.error)
                   throw new Error(event.error)
                 }
               } catch (parseError) {
@@ -163,6 +175,13 @@ export default function ContentSelectionModal({
         }
 
         if (!receivedData || !data) {
+          console.error('[ContentSelectionModal] SSE stream ended without complete event', {
+            receivedData,
+            data,
+            generationType,
+            responseStatus: response.status,
+            responseHeaders: Object.fromEntries(response.headers.entries())
+          })
           throw new Error('No data received from stream')
         }
       } else {
