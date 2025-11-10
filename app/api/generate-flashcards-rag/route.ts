@@ -160,6 +160,61 @@ export async function POST(request: NextRequest) {
         )
       }
 
+    } else if (selection && selection.type === 'chapters' && selection.chapterIds) {
+      // CHAPTER MODE: Extract text from selected chapters only (lazy RAG)
+      const { chapterIds, chapters } = selection
+      selectionDescription = `${chapterIds.length} selected chapters`
+
+      logger.info('Flashcard generation with chapter selection (lazy RAG)', {
+        userId,
+        documentId,
+        chapterCount: chapterIds.length,
+      })
+
+      // Extract text from selected chapters
+      try {
+        const { extractChapterText } = await import('@/lib/chapter-extractor')
+        const fullText = document.extracted_text || ''
+
+        if (!fullText || fullText.trim().length === 0) {
+          return NextResponse.json(
+            { error: 'No text content available for chapter extraction' },
+            { status: 400 }
+          )
+        }
+
+        combinedText = extractChapterText(fullText, chapters, chapterIds)
+
+        if (!combinedText || combinedText.trim().length === 0) {
+          return NextResponse.json(
+            { error: 'No content found in selected chapters' },
+            { status: 400 }
+          )
+        }
+
+        // Truncate to token limit
+        combinedText = combinedText.substring(0, 48000)
+
+        logger.info('Chapter-based extraction successful', {
+          userId,
+          documentId,
+          chapterIds,
+          extractedLength: combinedText.length,
+        })
+      } catch (error) {
+        logger.error('Chapter extraction failed', error, {
+          userId,
+          documentId,
+        })
+        return NextResponse.json(
+          {
+            error: 'Failed to extract content from selected chapters',
+            details: error instanceof Error ? error.message : 'Unknown error'
+          },
+          { status: 500 }
+        )
+      }
+
     } else if ((selection && selection.type === 'topic') || legacyTopic) {
       // TOPIC MODE: Use vector search for topic-specific content
       const topicQuery = selection?.topic?.title || legacyTopic
