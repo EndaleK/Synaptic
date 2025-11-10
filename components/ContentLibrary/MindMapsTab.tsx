@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Search, Loader2, Map, Calendar, Network, Eye } from 'lucide-react'
+import { Search, Loader2, Map, Calendar, Network, Eye, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface MindMap {
@@ -22,6 +22,7 @@ export default function MindMapsTab() {
   const [mindmaps, setMindmaps] = useState<MindMap[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchAllMindMaps()
@@ -58,6 +59,34 @@ export default function MindMapsTab() {
 
   const handleViewMindMap = (documentId: string) => {
     router.push(`/dashboard?mode=mindmap&documentId=${documentId}`)
+  }
+
+  const handleDelete = async (mindmapId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    if (!confirm('Are you sure you want to delete this mind map? This action cannot be undone.')) {
+      return
+    }
+
+    setDeletingId(mindmapId)
+
+    try {
+      const response = await fetch(`/api/mindmaps/${mindmapId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete mind map')
+      }
+
+      // Remove mind map from state
+      setMindmaps(prev => prev.filter(m => m.id !== mindmapId))
+    } catch (err) {
+      console.error('Error deleting mind map:', err)
+      alert('Failed to delete mind map. Please try again.')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   if (isLoading) {
@@ -128,6 +157,20 @@ export default function MindMapsTab() {
             {/* Thumbnail (placeholder with network icon) */}
             <div className="relative h-48 bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
               <Network className="w-24 h-24 text-white opacity-30" />
+
+              {/* Delete Button */}
+              <button
+                onClick={(e) => handleDelete(mindmap.id, e)}
+                disabled={deletingId === mindmap.id}
+                className="absolute top-3 right-3 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
+                title="Delete mind map"
+              >
+                {deletingId === mindmap.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+              </button>
 
               {/* Overlay on hover */}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">

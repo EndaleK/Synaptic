@@ -13,12 +13,14 @@ import { PodcastGenerationSchema } from "@/lib/validation"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
 import { extractTextFromPages } from "@/lib/text-extraction"
+import { createSSEStream, createSSEHeaders, ProgressTracker } from "@/lib/sse-utils"
 
 export const maxDuration = 300 // 5 minutes max execution time (Vercel limit)
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now()
 
+  // PRE-CHECKS: Run before streaming to catch auth/validation errors early
   try {
     // Authenticate user
     const { userId } = await auth()
@@ -83,60 +85,125 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    logger.debug('Starting podcast generation', {
+    // PRE-CHECKS PASSED: Start streaming response
+    logger.debug('Starting podcast generation with streaming', {
       userId,
       documentId,
       format,
       targetDuration
     })
 
-    // Initialize Supabase
-    const supabase = await createClient()
+    const stream = createSSEStream(async (send) => {
+      // Progress tracker for multi-step process
+      const tracker = new ProgressTracker([
+        'Fetching document',
+        'Extracting content',
+        'Loading preferences',
+        'Generating script',
+        'Generating audio',
+        'Uploading podcast',
+        'Saving metadata'
+      ], send)
 
-    // Get user profile ID first (documents.user_id references user_profiles.id, not clerk_user_id)
-    const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .eq('clerk_user_id', userId)
-      .single()
+      try {
+        // Step 1: Fetch document
+        tracker.completeStep(1, 'Fetching document...')
 
-    if (profileError || !profile) {
-      logger.error('User profile not found for podcast generation', profileError, { userId })
-      const duration = Date.now() - startTime
-      logger.api('POST', '/api/generate-podcast', 404, duration, { userId, error: 'User profile not found' })
-      return NextResponse.json(
-        { error: 'User profile not found' },
-        { status: 404 }
-      )
-    }
+        // Initialize Supabase
+        const supabase = await createClient()
 
-    // Fetch document using Supabase UUID
-    const { data: document, error: docError} = await supabase
-      .from('documents')
-      .select('id, file_name, extracted_text, user_id')
-      .eq('id', documentId)
-      .eq('user_id', profile.id)
-      .single()
+        // OPTIMIZED: Fetch user profile and document in a single JOIN query
+        let { data: documentWithProfile, error: fetchError } = await supabase
+          .from('documents')
+          .select(`
+            id,
+            file_name,
+            extracted_text,
+            user_id,
+            user_profiles!inner (
+              id,
+              clerk_user_id
+            )
+          `)
+          .eq('id', documentId)
+          .eq('user_profiles.clerk_user_id', userId)
+          .single()
 
-    if (docError || !document) {
-      logger.error('Document fetch error for podcast generation', docError, { userId, documentId })
-      const duration = Date.now() - startTime
-      logger.api('POST', '/api/generate-podcast', 404, duration, { userId, error: 'Document not found' })
-      return NextResponse.json(
-        { error: "Document not found" },
-        { status: 404 }
-      )
-    }
+        if (fetchError || !documentWithProfile) {
+          logger.error('Document/profile fetch error for podcast generation', fetchError, {
+            userId,
+            documentId,
+            errorCode: fetchError?.code,
+            errorMessage: fetchError?.message,
+            errorDetails: fetchError?.details,
+            errorHint: fetchError?.hint
+          })
 
-    if (!document.extracted_text) {
-      logger.warn('Document has no extracted text', { userId, documentId })
-      const duration = Date.now() - startTime
-      logger.api('POST', '/api/generate-podcast', 400, duration, { userId, error: 'No extracted text' })
-      return NextResponse.json(
-        { error: "Document has no extracted text" },
-        { status: 400 }
-      )
-    }
+          // DEBUGGING: Try multiple fallback queries to understand the issue
+
+          // 1. Check if document exists at all
+          const { data: anyDocument, error: docError } = await supabase
+            .from('documents')
+            .select('id, user_id, file_name, extracted_text')
+            .eq('id', documentId)
+            .single()
+
+          if (docError) {
+            logger.error('Document lookup failed completely', docError, { documentId })
+          } else if (anyDocument) {
+            logger.info('Document exists', { documentId, userId: anyDocument.user_id, fileName: anyDocument.file_name })
+
+            // 2. Check if user profile exists
+            const { data: userProfile, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('id, clerk_user_id')
+              .eq('id', anyDocument.user_id)
+              .single()
+
+            if (profileError) {
+              logger.error('User profile lookup failed', profileError, { userId: anyDocument.user_id })
+            } else if (userProfile) {
+              logger.info('Found document owner profile', {
+                profileId: userProfile.id,
+                clerkUserId: userProfile.clerk_user_id,
+                requestClerkUserId: userId,
+                match: userProfile.clerk_user_id === userId
+              })
+
+              // If the profile matches the requesting user, use this document anyway
+              if (userProfile.clerk_user_id === userId) {
+                logger.info('User owns document, proceeding despite join failure', { documentId, userId })
+                // Create a mock documentWithProfile object
+                documentWithProfile = {
+                  ...anyDocument,
+                  user_profiles: userProfile
+                } as any
+                // Don't throw error, continue with the request
+              }
+            }
+          }
+
+          // Only throw error if we still don't have the document
+          if (!documentWithProfile) {
+            throw new Error(fetchError?.code === 'PGRST116' ? 'Document not found or access denied' : 'Failed to fetch document')
+          }
+        }
+
+        const document = {
+          id: documentWithProfile.id,
+          file_name: documentWithProfile.file_name,
+          extracted_text: documentWithProfile.extracted_text,
+          user_id: documentWithProfile.user_id
+        }
+
+        const profile = {
+          id: (documentWithProfile.user_profiles as any).id
+        }
+
+        if (!document.extracted_text) {
+          logger.warn('Document has no extracted text', { userId, documentId })
+          throw new Error('Document has no extracted text')
+        }
 
     // Extract text based on selection (full document, page range, topic, structure, or suggestion)
     let textForPodcast = document.extracted_text
@@ -186,20 +253,17 @@ export async function POST(req: NextRequest) {
         // Validate extracted text
         if (!textForPodcast || textForPodcast.trim().length === 0) {
           logger.warn('No content found in selection', { userId, documentId, selectionType: selection.type })
-          return NextResponse.json(
-            { error: 'No content found in selected area' },
-            { status: 400 }
-          )
+          throw new Error('No content found in selected area')
         }
 
       } catch (error) {
         logger.error('Text extraction failed for podcast', error, { userId, documentId, selection })
-        return NextResponse.json(
-          { error: 'Failed to extract text from selection' },
-          { status: 400 }
-        )
+        throw new Error('Failed to extract text from selection')
       }
     }
+
+    // Step 2: Content extracted
+    tracker.completeStep(2, 'Content extracted successfully')
 
     logger.debug('Document text prepared for podcast', {
       userId,
@@ -209,6 +273,9 @@ export async function POST(req: NextRequest) {
       selectionDescription,
       textLength: textForPodcast.length
     })
+
+    // Step 3: Loading preferences
+    tracker.completeStep(3, 'Loading user preferences...')
 
     // Fetch user learning profile for personalization
     let personalizationOptions: any = {}
@@ -274,7 +341,9 @@ export async function POST(req: NextRequest) {
       ...costEstimate
     })
 
-    // Step 1: Generate podcast script with selected provider and selected text
+    // Step 4: Generate podcast script with selected provider and selected text
+    tracker.completeStep(4, 'Generating podcast script...')
+
     logger.debug('Generating podcast script', {
       userId,
       documentId,
@@ -305,7 +374,9 @@ export async function POST(req: NextRequest) {
       estimatedDuration: script.estimatedDuration
     })
 
-    // Step 2: Generate audio for each line
+    // Step 5: Generate audio for each line
+    tracker.completeStep(5, 'Generating audio from script...')
+
     logger.debug('Generating podcast audio', { userId, documentId, lineCount: script.lines.length, language: script.language })
     const audioSegments = await generatePodcastAudio(script.lines, script.language)
 
@@ -317,7 +388,9 @@ export async function POST(req: NextRequest) {
     const transcript = generateTranscript(audioSegments)
     const totalDuration = transcript[transcript.length - 1]?.endTime || script.estimatedDuration
 
-    // Step 5: Upload to Supabase Storage
+    // Step 6: Upload to Supabase Storage
+    tracker.completeStep(6, 'Uploading podcast to storage...')
+
     const fileName = `${userId}/${documentId}_${Date.now()}.mp3`
     logger.debug('Uploading podcast to storage', { userId, documentId, fileName, fileSize: audioBuffer.length })
 
@@ -332,12 +405,7 @@ export async function POST(req: NextRequest) {
 
     if (uploadError) {
       logger.error('Storage upload error for podcast', uploadError, { userId, documentId, fileName })
-      const duration = Date.now() - startTime
-      logger.api('POST', '/api/generate-podcast', 500, duration, { userId, error: 'Storage upload failed' })
-      return NextResponse.json(
-        { error: `Failed to upload audio: ${uploadError.message}` },
-        { status: 500 }
-      )
+      throw new Error(`Failed to upload audio: ${uploadError.message}`)
     }
 
     logger.debug('Podcast uploaded successfully', { userId, documentId, path: uploadData.path })
@@ -350,7 +418,8 @@ export async function POST(req: NextRequest) {
 
     const audioUrl = urlData.publicUrl
 
-    // Step 6: Save podcast metadata to database
+    // Step 7: Save podcast metadata to database
+    tracker.completeStep(7, 'Saving podcast metadata...')
     const { data: podcast, error: dbError } = await supabase
       .from('podcasts')
       .insert({
@@ -409,26 +478,43 @@ export async function POST(req: NextRequest) {
       duration: `${duration}ms`
     })
 
-    // Return response
-    return NextResponse.json({
-      success: true,
-      podcast: {
-        id: podcast?.id,
-        title: script.title,
-        description: script.description,
-        audioUrl,
-        duration: Math.ceil(totalDuration),
-        fileSize: audioBuffer.length,
-        transcript,
-        script: script.lines,
-        selection: selectionDescription
+    // Send completion event with podcast data
+    send({
+      type: 'complete',
+      data: {
+        success: true,
+        podcast: {
+          id: podcast?.id,
+          title: script.title,
+          description: script.description,
+          audioUrl,
+          duration: Math.ceil(totalDuration),
+          fileSize: audioBuffer.length,
+          transcript,
+          script: script.lines,
+          selection: selectionDescription
+        }
       }
     })
 
+      } catch (error: any) {
+        const duration = Date.now() - startTime
+        logger.error('Podcast generation error in stream', error, { userId, documentId, duration: `${duration}ms` })
+        logger.api('POST', '/api/generate-podcast', 500, duration, { userId, error: error.message })
+
+        // Error will be automatically sent by createSSEStream
+        throw error
+      }
+    })
+
+    // Return streaming response
+    return new Response(stream, { headers: createSSEHeaders() })
+
   } catch (error: any) {
+    // This catch is for pre-flight checks (auth, rate limiting, validation)
     const duration = Date.now() - startTime
-    logger.error('Podcast generation error', error, { userId, documentId: req.url, duration: `${duration}ms` })
-    logger.api('POST', '/api/generate-podcast', 500, duration, { userId, error: 'Unknown error' })
+    logger.error('Podcast generation pre-flight error', error, { userId: (await auth()).userId, duration: `${duration}ms` })
+    logger.api('POST', '/api/generate-podcast', 500, duration, { error: error.message })
 
     return NextResponse.json(
       {

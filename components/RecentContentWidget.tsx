@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Clock, Sparkles, Mic, Map as MapIcon, Loader2, ArrowRight } from 'lucide-react'
+import { Clock, Sparkles, Mic, Map as MapIcon, Loader2, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
@@ -21,6 +21,7 @@ export default function RecentContentWidget() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [recentItems, setRecentItems] = useState<RecentItem[]>([])
+  const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
     fetchRecentContent()
@@ -193,7 +194,7 @@ export default function RecentContentWidget() {
       </div>
 
       <div className="space-y-3">
-        {recentItems.map((item) => {
+        {(isExpanded ? recentItems : recentItems.slice(0, 3)).map((item) => {
           const config = getItemConfig(item.type)
           const Icon = config.icon
 
@@ -226,6 +227,26 @@ export default function RecentContentWidget() {
           )
         })}
       </div>
+
+      {/* Show More / Show Less button */}
+      {recentItems.length > 3 && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full mt-3 py-2 text-sm text-accent-primary hover:text-accent-secondary transition-colors flex items-center justify-center gap-1 font-medium"
+        >
+          {isExpanded ? (
+            <>
+              Show Less
+              <ChevronUp className="w-4 h-4" />
+            </>
+          ) : (
+            <>
+              Show {recentItems.length - 3} More
+              <ChevronDown className="w-4 h-4" />
+            </>
+          )}
+        </button>
+      )}
     </div>
   )
 }

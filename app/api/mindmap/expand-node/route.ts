@@ -124,7 +124,13 @@ Format your response as JSON with this structure:
       }
     )
 
-    const responseText = completion.content || '{}'
+    // Strip markdown code blocks if present (some AI providers wrap JSON in ```json ... ```)
+    let responseText = completion.content || '{}'
+    const jsonMatch = responseText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
+    if (jsonMatch) {
+      responseText = jsonMatch[1].trim()
+    }
+
     const parsedResponse = JSON.parse(responseText)
 
     // Validate response structure

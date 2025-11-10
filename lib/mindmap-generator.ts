@@ -8,6 +8,7 @@ export interface MindMapNode {
   level: number // 0 = root, 1 = main topics, 2 = subtopics, etc.
   description: string
   category?: string // For color coding
+  fidelity?: number // 0-100 score indicating how well this concept is supported by source material
 }
 
 export interface MindMapEdge {

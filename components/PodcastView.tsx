@@ -32,6 +32,8 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
   const [format, setFormat] = useState<PodcastFormat>('deep-dive')
   const [customPrompt, setCustomPrompt] = useState('')
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [progressMessage, setProgressMessage] = useState('')
 
   // Check for existing podcasts on mount
   useEffect(() => {
@@ -70,6 +72,8 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
   const handleGenerate = async () => {
     setIsGenerating(true)
     setError(null)
+    setProgress(0)
+    setProgressMessage('Starting podcast generation...')
 
     try {
       const response = await fetch('/api/generate-podcast', {
@@ -88,9 +92,59 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
         throw new Error(errorData.error || 'Failed to generate podcast')
       }
 
-      const data = await response.json()
-      setPodcast(data.podcast)
-      toast.success('Podcast generated successfully!')
+      // Check if response is SSE stream
+      const contentType = response.headers.get('content-type')
+      if (contentType?.includes('text/event-stream')) {
+        // Handle SSE stream
+        const reader = response.body?.getReader()
+        const decoder = new TextDecoder()
+
+        if (!reader) {
+          throw new Error('Failed to get response reader')
+        }
+
+        let buffer = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n\n')
+          buffer = lines.pop() || ''
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.substring(6)
+
+              // Skip heartbeat messages
+              if (data.trim() === '' || data === ': heartbeat') continue
+
+              try {
+                const event = JSON.parse(data)
+
+                if (event.type === 'progress') {
+                  setProgress(event.progress)
+                  setProgressMessage(event.message)
+                } else if (event.type === 'complete') {
+                  setPodcast(event.data.podcast)
+                  toast.success('Podcast generated successfully!')
+                } else if (event.type === 'error') {
+                  throw new Error(event.error)
+                }
+              } catch (parseError) {
+                console.error('Failed to parse SSE message:', parseError, 'Data:', data)
+              }
+            }
+          }
+        }
+      } else {
+        // Fallback to regular JSON response (for backwards compatibility)
+        const data = await response.json()
+        setPodcast(data.podcast)
+        toast.success('Podcast generated successfully!')
+      }
 
     } catch (err: any) {
       console.error('Podcast generation error:', err)
@@ -98,6 +152,8 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
       toast.error(err.message || 'Failed to generate podcast')
     } finally {
       setIsGenerating(false)
+      setProgress(0)
+      setProgressMessage('')
     }
   }
 
@@ -295,14 +351,25 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
 
           {isGenerating && (
             <div className="text-center space-y-3">
-              <div className="flex justify-center gap-2">
-                <div className="w-2 h-2 bg-accent-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-accent-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-accent-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              {/* Progress Bar */}
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-accent-primary to-accent-secondary h-full transition-all duration-500 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
               </div>
+
+              {/* Progress Message */}
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                This may take 2-3 minutes. We're crafting a conversation just for you...
+                {progressMessage || 'This may take 2-3 minutes. We\'re crafting a conversation just for you...'}
               </p>
+
+              {/* Progress Percentage */}
+              {progress > 0 && (
+                <p className="text-xs text-gray-500 dark:text-gray-500">
+                  {progress}% complete
+                </p>
+              )}
             </div>
           )}
 

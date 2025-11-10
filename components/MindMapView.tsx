@@ -25,6 +25,7 @@ interface MindMapViewProps {
 }
 
 interface MindMapData {
+  id?: string  // Database ID for saving edits
   title: string
   nodes: MindMapNode[]
   edges: MindMapEdge[]
@@ -59,6 +60,8 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
   const [documentText, setDocumentText] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [complexityAnalysis, setComplexityAnalysis] = useState<ComplexityAnalysis | null>(null)
+  const [progress, setProgress] = useState(0)
+  const [progressMessage, setProgressMessage] = useState('')
 
   // Check for existing mind maps on mount
   useEffect(() => {
@@ -74,6 +77,7 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
           if (data.mindmaps && data.mindmaps.length > 0) {
             const latest = data.mindmaps[0]
             setMindMapData({
+              id: latest.id, // Include database ID for saving edits
               title: latest.title,
               nodes: latest.nodes,
               edges: latest.edges,
@@ -81,6 +85,21 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
               templateReason: latest.layout_data?.templateReason,
               metadata: latest.layout_data?.metadata
             })
+
+            // Fetch document text for node expansion
+            try {
+              const docResponse = await fetch(`/api/documents/${documentId}`)
+              if (docResponse.ok) {
+                const docData = await docResponse.json()
+                if (docData.document?.extracted_text) {
+                  setDocumentText(docData.document.extracted_text)
+                  console.log('[MindMapView] Loaded document text for node expansion:', docData.document.extracted_text.length, 'chars')
+                }
+              }
+            } catch (docErr) {
+              console.error('Failed to fetch document text:', docErr)
+              // Continue anyway - node expansion just won't be available
+            }
           }
         }
       } catch (err) {
@@ -96,6 +115,8 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
   const generateMindMap = async () => {
     setIsGenerating(true)
     setError(null)
+    setProgress(0)
+    setProgressMessage('Starting mind map generation...')
 
     console.log('[MindMapView] Generating mind map for documentId:', documentId)
     console.log('[MindMapView] Document name:', documentName)
@@ -117,38 +138,118 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
         throw new Error(errorData.error || 'Failed to generate mind map')
       }
 
-      const data = await response.json()
-      console.log('[MindMapView] Raw API response:', data)
-      console.log('[MindMapView] data.mindMap exists:', !!data.mindMap)
-      console.log('[MindMapView] data.mindMap.nodes:', data.mindMap?.nodes?.length)
-      console.log('[MindMapView] data.mindMap.edges:', data.mindMap?.edges?.length)
+      // Check if response is SSE stream
+      const contentType = response.headers.get('content-type')
+      if (contentType?.includes('text/event-stream')) {
+        // Handle SSE stream
+        const reader = response.body?.getReader()
+        const decoder = new TextDecoder()
 
-      // Extract the mindMap object if it exists
-      const mindMapData = data.mindMap || data
-      console.log('[MindMapView] Setting mindMapData:', {
-        title: mindMapData.title,
-        nodeCount: mindMapData.nodes?.length,
-        edgeCount: mindMapData.edges?.length,
-        template: mindMapData.template,
-        templateReason: mindMapData.templateReason,
-        nodesPreview: mindMapData.nodes?.slice(0, 2)
-      })
-      setMindMapData(mindMapData)
+        if (!reader) {
+          throw new Error('Failed to get response reader')
+        }
 
-      // Store complexity analysis
-      if (data.complexityAnalysis) {
-        setComplexityAnalysis(data.complexityAnalysis)
+        let buffer = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n\n')
+          buffer = lines.pop() || ''
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const eventData = line.substring(6)
+
+              // Skip heartbeat messages
+              if (eventData.trim() === '' || eventData === ': heartbeat') continue
+
+              try {
+                const event = JSON.parse(eventData)
+
+                if (event.type === 'progress') {
+                  setProgress(event.progress)
+                  setProgressMessage(event.message)
+                  console.log(`[MindMapView] Progress: ${event.progress}% - ${event.message}`)
+                } else if (event.type === 'complete') {
+                  const data = event.data
+                  console.log('[MindMapView] Received complete event:', data)
+                  console.log('[MindMapView] Raw API response:', data)
+                  console.log('[MindMapView] data.mindMap exists:', !!data.mindMap)
+                  console.log('[MindMapView] data.mindMap.nodes:', data.mindMap?.nodes?.length)
+                  console.log('[MindMapView] data.mindMap.edges:', data.mindMap?.edges?.length)
+
+                  // Extract the mindMap object if it exists
+                  const mindMapData = data.mindMap || data
+                  console.log('[MindMapView] Setting mindMapData:', {
+                    title: mindMapData.title,
+                    nodeCount: mindMapData.nodes?.length,
+                    edgeCount: mindMapData.edges?.length,
+                    template: mindMapData.template,
+                    templateReason: mindMapData.templateReason,
+                    nodesPreview: mindMapData.nodes?.slice(0, 2)
+                  })
+                  setMindMapData(mindMapData)
+
+                  // Store complexity analysis
+                  if (data.complexityAnalysis) {
+                    setComplexityAnalysis(data.complexityAnalysis)
+                  }
+
+                  // Store document text for detail generation
+                  if (data.documentText) {
+                    setDocumentText(data.documentText)
+                  }
+                } else if (event.type === 'error') {
+                  throw new Error(event.error)
+                }
+              } catch (parseError) {
+                console.error('[MindMapView] Failed to parse SSE message:', parseError)
+              }
+            }
+          }
+        }
+      } else {
+        // Fallback to regular JSON response (for backwards compatibility)
+        const data = await response.json()
+        console.log('[MindMapView] Raw API response (JSON):', data)
+        console.log('[MindMapView] data.mindMap exists:', !!data.mindMap)
+        console.log('[MindMapView] data.mindMap.nodes:', data.mindMap?.nodes?.length)
+        console.log('[MindMapView] data.mindMap.edges:', data.mindMap?.edges?.length)
+
+        // Extract the mindMap object if it exists
+        const mindMapData = data.mindMap || data
+        console.log('[MindMapView] Setting mindMapData:', {
+          title: mindMapData.title,
+          nodeCount: mindMapData.nodes?.length,
+          edgeCount: mindMapData.edges?.length,
+          template: mindMapData.template,
+          templateReason: mindMapData.templateReason,
+          nodesPreview: mindMapData.nodes?.slice(0, 2)
+        })
+        setMindMapData(mindMapData)
+
+        // Store complexity analysis
+        if (data.complexityAnalysis) {
+          setComplexityAnalysis(data.complexityAnalysis)
+        }
+
+        // Store document text for detail generation
+        if (data.documentText) {
+          setDocumentText(data.documentText)
+        }
       }
 
-      // Store document text for detail generation
-      if (data.documentText) {
-        setDocumentText(data.documentText)
-      }
     } catch (err) {
       console.error('Mind map generation error:', err)
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {
       setIsGenerating(false)
+      setProgress(0)
+      setProgressMessage('')
     }
   }
 
@@ -219,6 +320,7 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
         {/* Mind Map Viewer - MAXIMIZED */}
         <div className="flex-1 min-h-0">
           <MindMapViewer
+            mindmapId={mindMapData.id} // Pass database ID for saving edits
             title={mindMapData.title || 'Untitled Mind Map'}
             nodes={mindMapData.nodes || []}
             edges={mindMapData.edges || []}
@@ -339,6 +441,31 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
           </>
         )}
       </button>
+
+      {/* Progress Bar */}
+      {isGenerating && (
+        <div className="text-center space-y-3">
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-gradient-to-r from-accent-primary to-accent-secondary h-full transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          {/* Progress Message */}
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {progressMessage || 'Analyzing your document...'}
+          </p>
+
+          {/* Progress Percentage */}
+          {progress > 0 && (
+            <p className="text-xs text-gray-500 dark:text-gray-500">
+              {progress}% complete
+            </p>
+          )}
+        </div>
+      )}
 
       {/* What to Expect Section */}
       <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">

@@ -252,15 +252,15 @@ export default function PageTopicSelector({
           </label>
           <div className="space-y-2">
             {presets.map((preset) => (
-              <button
+              <div
                 key={preset.id}
-                onClick={() => handleLoadPreset(preset)}
                 className={cn(
-                  "w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all text-left group",
+                  "w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all cursor-pointer group",
                   selectedPresetId === preset.id
                     ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
                     : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                 )}
+                onClick={() => handleLoadPreset(preset)}
               >
                 <div className="flex-1">
                   <div className="font-medium text-gray-900 dark:text-gray-100">
@@ -277,14 +277,17 @@ export default function PageTopicSelector({
                     <Check className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   )}
                   <button
-                    onClick={(e) => handleDeletePreset(preset.id, preset.preset_name, e)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeletePreset(preset.id, preset.preset_name, e)
+                    }}
                     className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors opacity-0 group-hover:opacity-100"
                     title="Delete preset"
                   >
                     <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                   </button>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </div>

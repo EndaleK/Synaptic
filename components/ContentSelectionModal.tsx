@@ -107,10 +107,71 @@ export default function ContentSelectionModal({
         body: JSON.stringify(requestBody)
       })
 
-      const data = await response.json()
+      // Check if response is SSE stream (for podcast generation)
+      const contentType = response.headers.get('content-type')
+      let data: any = null
 
-      if (!response.ok) {
-        throw new Error(data.error || `Failed to generate ${generationType}`)
+      if (contentType?.includes('text/event-stream')) {
+        // Handle SSE stream
+        const reader = response.body?.getReader()
+        const decoder = new TextDecoder()
+
+        if (!reader) {
+          throw new Error('Failed to get response reader')
+        }
+
+        let buffer = ''
+        let receivedData = false
+
+        while (true) {
+          const { done, value } = await reader.read()
+
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n\n')
+          buffer = lines.pop() || ''
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const eventData = line.substring(6)
+
+              // Skip heartbeat messages
+              if (eventData.trim() === '' || eventData === ': heartbeat') continue
+
+              try {
+                const event = JSON.parse(eventData)
+
+                if (event.type === 'progress') {
+                  // Could update UI with progress here if needed
+                  console.log(`Progress: ${event.progress}% - ${event.message}`)
+                } else if (event.type === 'complete') {
+                  data = event.data
+                  receivedData = true
+                } else if (event.type === 'error') {
+                  throw new Error(event.error)
+                }
+              } catch (parseError) {
+                console.error('Failed to parse SSE message:', parseError, 'Data:', eventData)
+                // Only rethrow if it's not a JSON parse error
+                if (parseError instanceof SyntaxError === false) {
+                  throw parseError
+                }
+              }
+            }
+          }
+        }
+
+        if (!receivedData || !data) {
+          throw new Error('No data received from stream')
+        }
+      } else {
+        // Regular JSON response
+        data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || `Failed to generate ${generationType}`)
+        }
       }
 
       console.log(`✅ ${generationType} generated successfully!`, {

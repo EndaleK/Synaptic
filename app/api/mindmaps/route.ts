@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       .from('mindmaps')
       .select(`
         *,
-        documents:document_id (
+        documents!document_id (
           id,
           file_name,
           file_type

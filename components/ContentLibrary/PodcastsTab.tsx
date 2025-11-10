@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Search, Loader2, Mic, Clock, Calendar, Play, Pause } from 'lucide-react'
+import { Search, Loader2, Mic, Clock, Calendar, Play, Pause, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
@@ -26,6 +26,7 @@ export default function PodcastsTab() {
   const [error, setError] = useState<string | null>(null)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchAllPodcasts()
@@ -104,6 +105,42 @@ export default function PodcastsTab() {
     router.push(`/dashboard?mode=podcast&documentId=${documentId}`)
   }
 
+  const handleDelete = async (podcastId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    if (!confirm('Are you sure you want to delete this podcast? This action cannot be undone.')) {
+      return
+    }
+
+    setDeletingId(podcastId)
+
+    try {
+      const response = await fetch(`/api/podcasts/${podcastId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete podcast')
+      }
+
+      // Remove podcast from state
+      setPodcasts(prev => prev.filter(p => p.id !== podcastId))
+
+      // Stop audio if this podcast is playing
+      if (playingId === podcastId && currentAudio) {
+        currentAudio.pause()
+        currentAudio.src = ''
+        setPlayingId(null)
+        setCurrentAudio(null)
+      }
+    } catch (err) {
+      console.error('Error deleting podcast:', err)
+      alert('Failed to delete podcast. Please try again.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -175,6 +212,20 @@ export default function PodcastsTab() {
               {/* Cover */}
               <div className="relative h-48 bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                 <Mic className="w-16 h-16 text-white opacity-50" />
+
+                {/* Delete Button */}
+                <button
+                  onClick={(e) => handleDelete(podcast.id, e)}
+                  disabled={deletingId === podcast.id}
+                  className="absolute top-3 right-3 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
+                  title="Delete podcast"
+                >
+                  {deletingId === podcast.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </button>
 
                 {/* Play/Pause Button Overlay */}
                 <button

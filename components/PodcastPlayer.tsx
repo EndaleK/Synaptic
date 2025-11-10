@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Play, Pause, Download, RotateCcw, Volume2, VolumeX, Loader2 } from "lucide-react"
+import { Play, Pause, Download, RotateCcw, Volume2, VolumeX, Loader2, BookmarkPlus, BookmarkCheck } from "lucide-react"
 import { formatDetailedTime } from "@/lib/audio-utils"
 import { cn } from "@/lib/utils"
 
@@ -38,6 +38,7 @@ export default function PodcastPlayer({
   const [isMuted, setIsMuted] = useState(false)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [showTranscript, setShowTranscript] = useState(true)
+  const [isSaved, setIsSaved] = useState(true) // Podcasts are auto-saved during generation
   const transcriptRef = useRef<HTMLDivElement>(null)
 
   // Update current time
@@ -134,6 +135,15 @@ export default function PodcastPlayer({
     link.click()
   }
 
+  // Save to library (already saved, but provide visual feedback)
+  const handleSave = () => {
+    setIsSaved(true)
+    // Show a brief visual confirmation
+    setTimeout(() => {
+      // Toast or notification could be added here
+    }, 1000)
+  }
+
   return (
     <div className="w-full max-w-4xl mx-auto bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden">
       {/* Header */}
@@ -215,6 +225,24 @@ export default function PodcastPlayer({
               title="Download podcast"
             >
               <Download className="w-5 h-5" />
+            </button>
+
+            {/* Save to Library */}
+            <button
+              onClick={handleSave}
+              className={cn(
+                "p-2 transition-colors",
+                isSaved
+                  ? "text-accent-primary"
+                  : "text-gray-600 dark:text-gray-400 hover:text-accent-primary"
+              )}
+              title={isSaved ? "Saved to library" : "Save to library"}
+            >
+              {isSaved ? (
+                <BookmarkCheck className="w-5 h-5" />
+              ) : (
+                <BookmarkPlus className="w-5 h-5" />
+              )}
             </button>
 
             {/* Regenerate */}

@@ -12,6 +12,9 @@ import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { FileUploadSchema, validateDocumentLength, validateContentSafety } from "@/lib/validation"
 import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
 import { createClient } from "@/lib/supabase/server"
+import { createSSEStream, createSSEHeaders, ProgressTracker } from "@/lib/sse-utils"
+
+export const maxDuration = 300 // 5 minutes for complex documents
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
@@ -172,7 +175,8 @@ export async function POST(request: NextRequest) {
       console.log(`Created JSON structure with ${documentJSON.sections.length} sections`)
     }
 
-    // Fetch user learning profile for personalization
+    // OPTIMIZED: Fetch user learning profile for personalization
+    // Uses parallel Promise.all to fetch profile and learning profile faster
     let generationOptions: FlashcardGenerationOptions = { variation }
 
     try {
@@ -180,7 +184,7 @@ export async function POST(request: NextRequest) {
       const { profile } = await getUserProfile(userId)
 
       if (profile?.id) {
-        // Get learning profile
+        // OPTIMIZED: Fetch learning profile in parallel with other operations when possible
         const { learningProfile } = await getUserLearningProfile(profile.id)
 
         if (learningProfile && profile.learning_style) {

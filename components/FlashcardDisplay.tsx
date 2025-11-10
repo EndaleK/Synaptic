@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { ChevronLeft, ChevronRight, RotateCcw, Download, Home, ChevronDown, RefreshCw, BookOpen, Sparkles, Zap, TrendingUp, Check, X, Share2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, RotateCcw, Download, Home, ChevronDown, RefreshCw, BookOpen, Sparkles, Zap, TrendingUp, Check, X, Share2, BookmarkPlus, BookmarkCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Flashcard, MasteryLevel } from "@/lib/types"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
@@ -22,6 +22,8 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   const [studiedCards, setStudiedCards] = useState<Set<string>>(new Set())
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isSaved, setIsSaved] = useState(true) // Flashcards are auto-saved during generation
   const exportMenuRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -174,6 +176,23 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
     downloadFile(dataStr, filename, 'application/json')
     setShowExportMenu(false)
   }
+
+  const handleSave = useCallback(async () => {
+    // Flashcards are already saved to the database during generation
+    // This button just provides visual confirmation
+    setIsSaving(true)
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 300))
+      setIsSaved(true)
+      toast.success('Flashcards already saved to library!')
+    } catch (error) {
+      console.error('Error confirming save:', error)
+      toast.error('Error confirming save')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [toast])
 
   const handleExportHTML = () => {
     const dateStr = new Date().toISOString().split('T')[0]
@@ -947,6 +966,31 @@ ${'='.repeat(50)}`).join('\n')}`
               <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
                 {currentIndex + 1}/{flashcards.length}
               </span>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className={cn(
+                  "flex items-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+                  isSaved
+                    ? "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg"
+                    : "btn-primary"
+                )}
+                style={{
+                  gap: "var(--space-1)",
+                  padding: "var(--space-1) var(--space-2)",
+                  fontSize: "var(--font-size-xs)"
+                }}
+                title={isSaved ? "Flashcards saved to library" : "Save flashcards to library"}
+              >
+                {isSaved ? (
+                  <BookmarkCheck className="h-3.5 w-3.5" />
+                ) : (
+                  <BookmarkPlus className="h-3.5 w-3.5" />
+                )}
+                <span className="hidden sm:inline">
+                  {isSaving ? "Saving..." : isSaved ? "Saved" : "Save"}
+                </span>
+              </button>
               <div className="relative" ref={exportMenuRef}>
                 <button
                   onClick={() => setShowExportMenu(!showExportMenu)}

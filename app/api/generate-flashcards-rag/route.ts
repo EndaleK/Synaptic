@@ -18,6 +18,7 @@ import { applyRateLimit, RateLimits } from '@/lib/rate-limit'
 import { checkUsageLimit, incrementUsage } from '@/lib/usage-limits'
 import { estimateRequestCost, trackUsage } from '@/lib/cost-estimator'
 import { extractTextFromPages } from '@/lib/text-extraction'
+import { createSSEStream, createSSEHeaders, ProgressTracker } from '@/lib/sse-utils'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 minutes for large document processing

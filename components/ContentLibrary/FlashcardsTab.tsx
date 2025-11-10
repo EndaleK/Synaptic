@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Search, Loader2, BookOpen, Calendar, Filter, Play } from 'lucide-react'
+import { Search, Loader2, BookOpen, Calendar, Filter, Play, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
@@ -33,6 +33,7 @@ export default function FlashcardsTab() {
   const [searchQuery, setSearchQuery] = useState('')
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all')
   const [error, setError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchAllFlashcards()
@@ -95,6 +96,34 @@ export default function FlashcardsTab() {
 
   const handleStartReview = (documentId: string) => {
     router.push(`/dashboard?mode=flashcards&documentId=${documentId}`)
+  }
+
+  const handleDelete = async (documentId: string, documentName: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    if (!confirm(`Are you sure you want to delete all flashcards for "${documentName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    setDeletingId(documentId)
+
+    try {
+      const response = await fetch(`/api/flashcards?documentId=${documentId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete flashcards')
+      }
+
+      // Remove all flashcards for this document from state
+      setFlashcards(prev => prev.filter(card => card.document_id !== documentId))
+    } catch (err) {
+      console.error('Error deleting flashcards:', err)
+      alert('Failed to delete flashcards. Please try again.')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   if (isLoading) {
@@ -195,13 +224,27 @@ export default function FlashcardsTab() {
                   {group.count} flashcard{group.count > 1 ? 's' : ''}
                 </p>
               </div>
-              <button
-                onClick={() => handleStartReview(group.documentId)}
-                className="flex items-center gap-2 px-4 py-2 bg-accent-primary text-white rounded-lg font-medium hover:bg-accent-secondary transition-colors"
-              >
-                <Play className="w-4 h-4" />
-                Start Review
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => handleDelete(group.documentId, group.documentName, e)}
+                  disabled={deletingId === group.documentId}
+                  className="w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Delete all flashcards"
+                >
+                  {deletingId === group.documentId ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </button>
+                <button
+                  onClick={() => handleStartReview(group.documentId)}
+                  className="flex items-center gap-2 px-4 py-2 bg-accent-primary text-white rounded-lg font-medium hover:bg-accent-secondary transition-colors"
+                >
+                  <Play className="w-4 h-4" />
+                  Start Review
+                </button>
+              </div>
             </div>
 
             {/* Flashcard Preview (show first 3) */}

@@ -53,12 +53,25 @@ The app follows Next.js 15 App Router patterns:
   - `app/(marketing)/`: Public landing pages (pricing, about)
   - `app/(auth)/`: Clerk authentication pages (sign-in, sign-up)
   - `app/api/*/route.ts`: Server-side API endpoints
+    - `app/api/generate-*/`: AI generation routes (flashcards, podcast, mindmap, exam)
+    - `app/api/flashcards/`: Flashcard CRUD and review system
+    - `app/api/mindmaps/[id]/`: Individual mindmap resource operations
+    - `app/api/podcasts/[id]/`: Individual podcast resource operations
+    - `app/api/documents/`: Document management and uploads
+    - `app/api/chat-*/`: Chat and RAG endpoints
 - `components/`: Client-side React components
+  - UI components for dashboard modes (ChatInterface, FlashcardDisplay, MindMapView, etc.)
+  - Shared components (Toast, Modal, Loading states)
 - `lib/`: Business logic and utilities
   - `lib/ai/`: Multi-provider AI architecture (OpenAI, DeepSeek, Anthropic)
   - `lib/supabase/`: Database client and utilities
   - `lib/store/`: Zustand state management
   - `lib/spaced-repetition/`: SM-2 algorithm implementation
+  - `lib/sse-utils.ts`: Server-Sent Events streaming utilities
+  - `lib/*-generator.ts`: Content generation logic (podcast, mindmap, flashcards)
+  - `lib/document-parser.ts`: Client-side document text extraction
+  - `lib/server-pdf-parser.ts`: Server-side PDF parsing
+  - `lib/vector-store.ts`: ChromaDB integration for RAG
 
 ### Dashboard Architecture (`app/dashboard/page.tsx`)
 
@@ -110,13 +123,18 @@ Three processing modes based on document size:
 - `/api/documents/[id]/topics/route.ts`: Extract topics for content selection
 - `/api/upload-large-document`: R2 upload + vector indexing
 
-**AI Generation**:
+**AI Generation** (with SSE streaming support):
 - `/api/generate-flashcards`: Standard flashcard generation
 - `/api/generate-flashcards-rag`: RAG-based generation for large docs
 - `/api/chat-with-document`: Direct chat with full document
 - `/api/chat-rag`: RAG-based chat for large documents
-- `/api/generate-podcast`: Podcast script + TTS generation
+- `/api/generate-podcast`: Podcast script + TTS generation (SSE streaming)
 - `/api/generate-mindmap`: Mind map extraction with complexity scoring
+
+**Content Resources**:
+- `/api/mindmaps/[id]/route.ts`: Retrieve, update, delete individual mindmaps
+- `/api/podcasts/[id]/route.ts`: Retrieve, update, delete individual podcasts
+- `/api/flashcards/route.ts`: CRUD operations for flashcard sets
 
 **Study Features**:
 - `/api/flashcards/review-queue`: Spaced repetition queue (SM-2)
@@ -406,6 +424,84 @@ Three Zustand stores with localStorage persistence:
 
 **Implementation**: See `lib/spaced-repetition/sm2-algorithm.ts` for full algorithm
 
+### Server-Sent Events (SSE) Streaming (`lib/sse-utils.ts`)
+
+The app uses SSE for real-time progress updates during long-running operations (podcast/mindmap generation).
+
+**Architecture**:
+- **Server**: `createSSEStream()` creates ReadableStream with progress updates
+- **Client**: EventSource API consumes stream and updates UI in real-time
+- **Progress Tracking**: `ProgressTracker` class automatically calculates progress for multi-step operations
+- **Heartbeat**: Keeps connection alive every 15 seconds (prevents proxy timeouts)
+
+**Server-side pattern** (API routes):
+```typescript
+import { createSSEStream, createSSEHeaders, ProgressTracker } from '@/lib/sse-utils'
+
+export const maxDuration = 300 // Important: Set for long-running operations
+
+export async function POST(req: NextRequest) {
+  // Pre-flight checks (auth, rate limiting, validation)
+
+  const stream = createSSEStream(async (send) => {
+    // Create progress tracker for multi-step operations
+    const tracker = new ProgressTracker([
+      'Parsing document',
+      'Generating script',
+      'Creating audio',
+      'Finalizing'
+    ], send)
+
+    // Step 1
+    tracker.completeStep()
+    const parsed = await parseDocument()
+
+    // Step 2
+    tracker.completeStep()
+    const script = await generateScript(parsed)
+
+    // ... more steps ...
+
+    // Final result
+    send({ type: 'complete', data: { id: result.id, url: result.url } })
+  })
+
+  return new Response(stream, { headers: createSSEHeaders() })
+}
+```
+
+**Client-side pattern** (React components):
+```typescript
+const eventSource = new EventSource('/api/generate-podcast')
+
+eventSource.onmessage = (event) => {
+  const data = JSON.parse(event.data)
+
+  if (data.type === 'progress') {
+    setProgress(data.progress)
+    setMessage(data.message)
+  } else if (data.type === 'complete') {
+    setResult(data.data)
+    eventSource.close()
+  } else if (data.type === 'error') {
+    setError(data.error)
+    eventSource.close()
+  }
+}
+```
+
+**Why SSE over WebSockets**:
+- Simpler: One-way server → client communication
+- Better for serverless: No persistent connection state
+- Auto-reconnects on connection loss
+- Works with standard HTTP (no upgrade required)
+- Perfect for progress bars and status updates
+
+**Vercel Deployment Notes**:
+- Set `export const maxDuration = 300` for long-running routes (Vercel Pro: up to 5 minutes)
+- Use `export const runtime = 'nodejs'` if using Node.js-specific libraries (pdf2json, ChromaDB)
+- Default Edge runtime has 30-second timeout, not suitable for podcast/mindmap generation
+
 ## Important Implementation Notes
 
 ### Dynamic Imports for SSR Compatibility
@@ -475,6 +571,37 @@ Two-tier rate limiting (`lib/rate-limit.ts`):
 - Client components: Toast notifications (`components/Toast.tsx`)
 - API routes: Structured JSON errors with status codes
 - Sentry integration: Auto-captures unhandled errors in production
+
+### Vercel Route Configuration
+
+**Route Segment Config** (for API routes):
+- `export const maxDuration = <seconds>`: Max execution time (default: 10s Hobby, 15s Pro, 300s Pro with config)
+  - Use 300 for long operations: podcast generation, mindmap generation, RAG indexing
+  - Use 30 for document uploads
+  - Use 10 (default) for simple CRUD operations
+- `export const runtime = 'nodejs' | 'edge'`: Runtime environment
+  - Use `'nodejs'` for: pdf2json, ChromaDB, Node.js-specific libraries
+  - Use `'edge'` (default) for: Simple API routes, better performance, faster cold starts
+  - Edge runtime limitations: No Node.js APIs (fs, crypto, etc.), 30s timeout
+
+**When to use which**:
+```typescript
+// Long AI operations (podcast, mindmap, RAG)
+export const maxDuration = 300
+export const runtime = 'nodejs' // If using pdf2json or ChromaDB
+
+// Document uploads with R2
+export const maxDuration = 30
+export const runtime = 'nodejs'
+
+// Simple CRUD, flashcards, chat
+// No config needed (uses Edge runtime defaults)
+```
+
+**Common Issues**:
+- **504 Gateway Timeout**: Route exceeds maxDuration limit, increase to 300 or optimize
+- **"Module not found" in production**: Missing `runtime = 'nodejs'` for Node.js libraries
+- **"Dynamic Code Evaluation" errors**: Edge runtime doesn't support `eval()`, switch to nodejs runtime
 
 ## Troubleshooting Common Issues
 
