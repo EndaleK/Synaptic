@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 189, in _run_module_as_main
+  File "<frozen runpy>", line 112, in _get_module_details
+  File "/Users/Letko/anaconda3/lib/python3.11/site-packages/chromadb/__init__.py", line 1, in <module>
+    import chromadb.config
+  File "/Users/Letko/anaconda3/lib/python3.11/site-packages/chromadb/config.py", line 1, in <module>
+    from pydantic import BaseSettings
+  File "/Users/Letko/anaconda3/lib/python3.11/site-packages/pydantic/__init__.py", line 374, in __getattr__
+    return _getattr_migration(attr_name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Letko/anaconda3/lib/python3.11/site-packages/pydantic/_migration.py", line 296, in wrapper
+    raise PydanticImportError(
+pydantic.errors.PydanticImportError: `BaseSettings` has been moved to the `pydantic-settings` package. See https://docs.pydantic.dev/2.6/migration/#basesettings-has-moved-to-pydantic-settings for more details.
+
+For further information visit https://errors.pydantic.dev/2.6/u/import-error
