@@ -199,9 +199,21 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
                     setComplexityAnalysis(data.complexityAnalysis)
                   }
 
-                  // Store document text for detail generation
-                  if (data.documentText) {
-                    setDocumentText(data.documentText)
+                  // Fetch document text separately (for node expansion)
+                  if (data.documentId) {
+                    try {
+                      const docResponse = await fetch(`/api/documents/${data.documentId}`)
+                      if (docResponse.ok) {
+                        const docData = await docResponse.json()
+                        if (docData.document?.extracted_text) {
+                          setDocumentText(docData.document.extracted_text)
+                          console.log('[MindMapView] Loaded document text for node expansion:', docData.document.extracted_text.length, 'chars')
+                        }
+                      }
+                    } catch (docErr) {
+                      console.error('Failed to fetch document text:', docErr)
+                      // Continue anyway - node expansion just won't be available
+                    }
                   }
                 } else if (event.type === 'error') {
                   throw new Error(event.error)
@@ -237,9 +249,21 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
           setComplexityAnalysis(data.complexityAnalysis)
         }
 
-        // Store document text for detail generation
-        if (data.documentText) {
-          setDocumentText(data.documentText)
+        // Fetch document text separately (for node expansion)
+        if (data.documentId) {
+          try {
+            const docResponse = await fetch(`/api/documents/${data.documentId}`)
+            if (docResponse.ok) {
+              const docData = await docResponse.json()
+              if (docData.document?.extracted_text) {
+                setDocumentText(docData.document.extracted_text)
+                console.log('[MindMapView] Loaded document text for node expansion:', docData.document.extracted_text.length, 'chars')
+              }
+            }
+          } catch (docErr) {
+            console.error('Failed to fetch document text:', docErr)
+            // Continue anyway - node expansion just won't be available
+          }
         }
       }
 

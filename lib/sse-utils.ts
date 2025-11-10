@@ -172,6 +172,7 @@ export class ProgressTracker {
 
 /**
  * Create SSE response headers
+ * Includes Vercel-specific headers for proper streaming
  */
 export function createSSEHeaders(): Record<string, string> {
   return {
@@ -179,6 +180,7 @@ export function createSSEHeaders(): Record<string, string> {
     'Cache-Control': 'no-cache, no-transform',
     'Connection': 'keep-alive',
     'X-Accel-Buffering': 'no', // Disable nginx buffering
+    'X-Vercel-Stream': 'true', // Enable Vercel streaming (critical for production)
   }
 }
 

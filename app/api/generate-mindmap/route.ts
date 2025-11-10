@@ -528,7 +528,7 @@ export async function POST(req: NextRequest) {
           templateReason: mindMapData.templateReason,
           metadata: mindMapData.metadata
         },
-        documentText: document.extracted_text, // Include for node detail expansion
+        documentId: document.id, // Send ID instead of full text (can be fetched if needed)
         complexityAnalysis: {
           complexity: complexityAnalysis.complexity,
           score: complexityAnalysis.score,
