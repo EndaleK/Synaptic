@@ -114,10 +114,45 @@ export async function POST(
           // Convert blob to File object
           const file = new File([fileData], document.file_name, { type: document.file_type })
 
-          // Extract text
+          // Extract text with production-safe fallback
           send({ type: 'progress', progress: 20, message: 'Extracting text from PDF...' })
 
-          const parseResult = await parseServerPDF(file)
+          let parseResult
+          try {
+            parseResult = await parseServerPDF(file)
+          } catch (extractionError) {
+            // Handle browser API errors (DOMMatrix, etc) that occur in Vercel production
+            const errorMsg = extractionError instanceof Error ? extractionError.message : String(extractionError)
+
+            if (errorMsg.includes('DOMMatrix') || errorMsg.includes('canvas') || errorMsg.includes('document is not defined')) {
+              console.warn('[RAG Indexing] pdf-parse failed with browser API error, falling back to PyMuPDF...', errorMsg)
+              send({ type: 'progress', progress: 25, message: 'Retrying with alternative extraction method...' })
+
+              // Try PyMuPDF directly
+              try {
+                const buffer = Buffer.from(await fileData.arrayBuffer())
+                const { parsePDFWithPyMuPDF } = await import('@/lib/server-pdf-parser')
+
+                // Call PyMuPDF directly (internal function, but needed for production fallback)
+                const pymupdfResult = await parsePDFWithPyMuPDF(buffer)
+
+                if (!pymupdfResult.error && pymupdfResult.text && pymupdfResult.text.length > 100) {
+                  console.log('[RAG Indexing] PyMuPDF fallback successful', {
+                    textLength: pymupdfResult.text.length
+                  })
+                  parseResult = pymupdfResult
+                } else {
+                  throw new Error(`PyMuPDF fallback failed: ${pymupdfResult.error || 'No text extracted'}`)
+                }
+              } catch (pymupdfError) {
+                console.error('[RAG Indexing] PyMuPDF fallback also failed:', pymupdfError)
+                throw new Error(`Text extraction failed: ${errorMsg}. PyMuPDF fallback also failed.`)
+              }
+            } else {
+              // Other extraction error, not browser API related
+              throw extractionError
+            }
+          }
 
           if (parseResult.error || !parseResult.text) {
             throw new Error(`Text extraction failed: ${parseResult.error || 'No text extracted'}`)
@@ -127,7 +162,8 @@ export async function POST(
 
           console.log('[RAG Indexing] Extracted text from storage file', {
             documentId,
-            textLength: extractedText.length
+            textLength: extractedText.length,
+            method: parseResult.method || 'unknown'
           })
         } else {
           // No text and no storage path - cannot index
