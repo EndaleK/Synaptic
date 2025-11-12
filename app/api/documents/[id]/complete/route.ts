@@ -1,21 +1,28 @@
 /**
  * API Route: POST /api/documents/{id}/complete
  *
- * Called after client completes direct upload to Supabase
+ * Called after client completes direct upload to Supabase Storage
  *
  * Actions:
  * 1. Verify file exists in Supabase Storage
  * 2. Get actual file size from storage
- * 3. Extract text (for small PDFs) or prepare for RAG indexing (large PDFs)
- * 4. Update document status to 'completed' or 'processing'
+ * 3. For small PDFs (<10MB): Extract text synchronously + index into ChromaDB
+ * 4. For large PDFs (≥10MB): Trigger async Inngest background job
+ * 5. For non-PDFs: Mark as completed immediately
+ *
+ * Processing Strategy:
+ * - Small PDFs (<10MB): Synchronous pdf2json extraction + ChromaDB indexing → Ready immediately
+ * - Large PDFs (≥10MB): Async Inngest job with multi-tier extraction + RAG indexing
+ * - Non-PDFs: Immediate completion (no processing needed)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
+import { inngest } from '@/lib/inngest/client'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60 // Allow time for text extraction
+export const maxDuration = 120 // Sufficient for small PDF extraction (<10MB); large files use async
 
 const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024 // 10MB
 
@@ -101,62 +108,141 @@ export async function POST(
 
     console.log(`✅ File verified in storage: ${(actualFileSize / (1024 * 1024)).toFixed(2)} MB`)
 
-    // 5. Determine processing strategy based on file size and type
-    const isLargeFile = actualFileSize > LARGE_FILE_THRESHOLD
+    // 5. Determine processing strategy based on file type and size
     const isPDF = document.file_type === 'application/pdf'
-
-    // 6. Extract text from PDFs < 10MB (server-side)
-    // Large PDFs (>10MB) will use RAG indexing on-demand
+    const isLargeFile = actualFileSize > LARGE_FILE_THRESHOLD
+    let processingStatus: 'processing' | 'completed' = 'completed'
     let extractedText: string | null = null
+    let hasExtractedText = false
+    let ragIndexed = false
+    let ragChunkCount = 0
+    let extractionMethod: string = 'none'
 
-    if (!isLargeFile && isPDF) {
-      console.log(`📄 Extracting text from PDF (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)...`)
+    if (isPDF && !isLargeFile) {
+      // Small PDFs (<10MB): Process synchronously for immediate availability
+      console.log(`📄 Processing small PDF synchronously: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
 
       try {
-        // Download PDF from storage
-        const { data: pdfData, error: downloadError } = await supabase
+        // Download file from storage
+        const { data: fileBlob, error: downloadError } = await supabase
           .storage
           .from('documents')
           .download(document.storage_path)
 
-        if (downloadError || !pdfData) {
+        if (downloadError || !fileBlob) {
           console.error('Failed to download PDF for extraction:', downloadError)
-        } else {
-          // Extract text using server-side parser
-          const { parseServerPDF } = await import('@/lib/server-pdf-parser')
-          const file = new File([pdfData], document.file_name, { type: 'application/pdf' })
-          const parseResult = await parseServerPDF(file)
+          throw new Error('Failed to download PDF from storage')
+        }
 
-          if (!parseResult.error && parseResult.text && parseResult.text.length > 0) {
-            extractedText = parseResult.text
-            console.log(`✅ Successfully extracted ${parseResult.text.length} characters from PDF`)
-          } else {
-            console.warn(`⚠️ PDF extraction returned no text or error: ${parseResult.error}`)
+        // Convert Blob to File for parser
+        const arrayBuffer = await fileBlob.arrayBuffer()
+        const file = new File([arrayBuffer], document.file_name, { type: document.file_type })
+
+        // Extract text using pdf2json
+        const { parseServerPDF } = await import('@/lib/server-pdf-parser')
+        const parseResult = await parseServerPDF(file)
+
+        // Save page count and per-page data if available
+        if (parseResult.pageCount) {
+          console.log(`📄 PDF has ${parseResult.pageCount} pages`)
+          document.metadata = {
+            ...document.metadata,
+            page_count: parseResult.pageCount,
+            // Store per-page data for accurate page-based extraction
+            pages: parseResult.pages || undefined
+          }
+
+          if (parseResult.pages) {
+            console.log(`✅ Stored per-page data for ${parseResult.pages.length} pages`)
           }
         }
+
+        // Capture extraction method
+        extractionMethod = parseResult.method || 'pdf-parse'
+
+        if (parseResult.error) {
+          console.warn('PDF extraction failed:', parseResult.error)
+        } else if (parseResult.text && parseResult.text.length > 0) {
+          extractedText = parseResult.text
+          hasExtractedText = true
+          console.log(`✅ Extracted ${parseResult.text.length} characters from PDF using ${extractionMethod}`)
+
+          // Index into ChromaDB for RAG
+          try {
+            const { indexDocument } = await import('@/lib/vector-store')
+            const indexResult = await indexDocument(documentId, extractedText, {
+              fileName: document.file_name,
+              fileType: document.file_type,
+              userId: profile.id,
+            })
+
+            ragIndexed = true
+            ragChunkCount = indexResult.chunks
+            console.log(`✅ Indexed ${indexResult.chunks} chunks into ChromaDB`)
+          } catch (ragError) {
+            console.error('ChromaDB indexing failed (non-fatal):', ragError)
+            // Not fatal - document still usable without RAG
+          }
+        } else {
+          console.log(`⚠️ No text extracted from PDF (may be scanned or image-based)`)
+        }
+
       } catch (extractionError) {
-        console.error('PDF extraction failed during completion:', extractionError)
-        // Continue anyway - document will still be viewable in PDF viewer
+        console.error('PDF processing error:', extractionError)
+        // Not fatal - document still marked as completed, just without text
       }
-    } else if (isLargeFile) {
-      console.log(`📦 Large file detected (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB), RAG will be used on-demand`)
+
+      processingStatus = 'completed'
+      console.log(`✅ Small PDF processed synchronously, ready for immediate use`)
+
+    } else if (isPDF && isLargeFile) {
+      // Large PDFs (≥10MB): Trigger async Inngest background job
+      console.log(`🚀 Triggering async processing for large PDF: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
+
+      processingStatus = 'processing'
+
+      try {
+        await inngest.send({
+          name: 'document/process',
+          data: {
+            documentId,
+            userId: profile.id,
+            fileName: document.file_name,
+            fileType: document.file_type,
+            fileSize: actualFileSize,
+            storagePath: document.storage_path
+          }
+        })
+
+        console.log(`✅ Background processing job queued for: ${document.file_name}`)
+      } catch (inngestError) {
+        console.error('Failed to queue Inngest job:', inngestError)
+        // Fall back to lazy loading - mark as completed but without extracted text
+        processingStatus = 'completed'
+      }
+    } else {
+      console.log(`✅ Non-PDF file, marking as completed immediately`)
     }
 
-    // 7. Update document record
+    // 6. Update document record with processing results
     const updateData: any = {
-      file_size: actualFileSize, // Update with actual size from storage
-      processing_status: 'completed',
+      file_size: actualFileSize,
+      processing_status: processingStatus,
+      extracted_text: extractedText, // Save extracted text for small PDFs
+      rag_indexed_at: ragIndexed ? new Date().toISOString() : null,
+      rag_chunk_count: ragChunkCount,
+      rag_collection_name: ragIndexed ? `doc_${documentId.replace(/[^a-zA-Z0-9]/g, '_')}` : null,
       metadata: {
         ...document.metadata,
         upload_completed_at: new Date().toISOString(),
         actual_file_size: actualFileSize,
-        is_large_file: isLargeFile
+        is_large_file: isLargeFile,
+        has_extracted_text: hasExtractedText,
+        processing_started_at: isPDF ? new Date().toISOString() : undefined,
+        processing_completed_at: processingStatus === 'completed' ? new Date().toISOString() : undefined,
+        extraction_method: isPDF && !isLargeFile ? `sync_${extractionMethod}` : isPDF && isLargeFile ? 'async_inngest' : 'none',
+        rag_indexed: ragIndexed
       }
-    }
-
-    // Only update extracted_text if we successfully extracted something
-    if (extractedText !== null) {
-      updateData.extracted_text = extractedText
     }
 
     const { error: updateError } = await supabase
@@ -174,18 +260,13 @@ export async function POST(
 
     console.log(`✅ Upload completed successfully for: ${document.file_name}`)
 
-    // 8. Return success response
+    // 7. Return success response (processing continues in background for PDFs)
     return NextResponse.json({
       success: true,
       documentId,
       fileName: document.file_name,
       fileSize: actualFileSize,
-      processingStatus: 'completed',
-      isLargeFile,
-      hasExtractedText: extractedText !== null,
-      message: isLargeFile
-        ? 'Upload complete. Large file will be indexed for RAG processing.'
-        : 'Upload complete. Document ready to use.'
+      processingStatus
     })
 
   } catch (error) {

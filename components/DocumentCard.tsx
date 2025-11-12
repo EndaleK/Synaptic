@@ -79,6 +79,13 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
             Processing
           </div>
         )
+      case 'needs_ocr':
+        return (
+          <div className="flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-md text-xs font-medium">
+            <Eye className="w-3 h-3" />
+            OCR Required
+          </div>
+        )
       case 'failed':
         return (
           <div className="flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-xs font-medium">

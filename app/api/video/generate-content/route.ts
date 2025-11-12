@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (contentType !== 'flashcards') {
+    if (!['flashcards', 'mindmap', 'exam'].includes(contentType)) {
       return NextResponse.json(
-        { error: 'Only flashcards content type is supported' },
+        { error: 'Invalid content type. Supported types: flashcards, mindmap, exam' },
         { status: 400 }
       )
     }
@@ -65,11 +65,56 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Combine transcript and key points for flashcard generation
-    const transcriptText = video.transcript.map((line: any) => line.text).join(' ')
-    const keyPointsText = video.key_points.map((point: any) => `${point.title}: ${point.description}`).join('\n\n')
+    // Check if video has transcript
+    if (!video.transcript || video.transcript.length === 0) {
+      return NextResponse.json(
+        { error: 'This video does not have captions or transcript available. Please try a video with captions enabled.' },
+        { status: 400 }
+      )
+    }
 
-    // Generate flashcards with OpenAI
+    // Combine transcript and key points
+    const transcriptText = video.transcript.map((line: any) => line.text).join(' ')
+    const keyPointsText = video.key_points?.map((point: any) => `${point.title}: ${point.description}`).join('\n\n') || ''
+
+    // Create or get virtual document for the video (shared by all content types)
+    let document
+    const cleanTitle = video.title.replace(/[^\w\s-]/g, '').trim()
+    const libraryFileName = `Video: ${cleanTitle}`
+
+    const { data: existingDoc } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('user_id', profile.id)
+      .eq('file_name', libraryFileName)
+      .single()
+
+    if (existingDoc) {
+      document = existingDoc
+    } else {
+      const { data: newDoc, error: docError } = await supabase
+        .from('documents')
+        .insert({
+          user_id: profile.id,
+          file_name: libraryFileName,
+          file_type: 'video',
+          file_size: 0,
+          extracted_text: transcriptText.slice(0, 50000),
+          document_summary: video.summary,
+          processing_status: 'completed'
+        })
+        .select()
+        .single()
+
+      if (docError) {
+        throw docError
+      }
+      document = newDoc
+    }
+
+    // Handle different content types
+    if (contentType === 'flashcards') {
+      // Generate flashcards with OpenAI
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
@@ -82,8 +127,7 @@ Return a JSON object with:
   "flashcards": [
     {
       "front": "Question or concept to recall",
-      "back": "Answer or explanation",
-      "difficulty": "easy" | "medium" | "hard"
+      "back": "Answer or explanation"
     }
   ]
 }
@@ -117,65 +161,83 @@ Guidelines:
       throw new Error('No flashcards generated')
     }
 
-    // Create a virtual document for the video (to link flashcards)
-    const { data: document, error: docError } = await supabase
-      .from('documents')
-      .insert({
+      // Insert flashcards into database
+      const flashcardInserts = flashcards.map((card: any) => ({
         user_id: profile.id,
-        file_name: `${video.title}.video`,
-        file_type: 'video',
-        file_size: 0,
-        extracted_text: transcriptText.slice(0, 50000), // Store transcript
-        document_summary: video.summary,
-        processing_status: 'completed',
-        source_url: video.video_url,
-        source_type: 'youtube',
-        metadata: {
-          video_id: video.video_id,
-          channel_name: video.channel_name,
-          duration_seconds: video.duration_seconds
-        }
+        document_id: document.id,
+        front: card.front,
+        back: card.back
+      }))
+
+      const { data: insertedFlashcards, error: flashcardError } = await supabase
+        .from('flashcards')
+        .insert(flashcardInserts)
+        .select()
+
+      if (flashcardError) {
+        throw flashcardError
+      }
+
+      // Update video with flashcard IDs
+      const flashcardIds = insertedFlashcards.map(fc => fc.id)
+
+      const { error: updateError } = await supabase
+        .from('videos')
+        .update({
+          generated_flashcard_ids: flashcardIds
+        })
+        .eq('id', videoId)
+
+      if (updateError) {
+        throw updateError
+      }
+
+      return NextResponse.json({ flashcardIds })
+    } else if (contentType === 'mindmap') {
+      // Use existing generate-mindmap logic via API call
+      const mindmapResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/generate-mindmap`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': request.headers.get('Cookie') || ''
+        },
+        body: JSON.stringify({ documentId: document.id })
       })
-      .select()
-      .single()
 
-    if (docError) {
-      throw docError
-    }
+      if (!mindmapResponse.ok) {
+        throw new Error('Failed to generate mind map')
+      }
 
-    // Insert flashcards into database
-    const flashcardInserts = flashcards.map((card: any) => ({
-      user_id: profile.id,
-      document_id: document.id,
-      front: card.front,
-      back: card.back,
-      difficulty: card.difficulty || 'medium'
-    }))
-
-    const { data: insertedFlashcards, error: flashcardError } = await supabase
-      .from('flashcards')
-      .insert(flashcardInserts)
-      .select()
-
-    if (flashcardError) {
-      throw flashcardError
-    }
-
-    // Update video with flashcard IDs
-    const flashcardIds = insertedFlashcards.map(fc => fc.id)
-
-    const { error: updateError } = await supabase
-      .from('videos')
-      .update({
-        generated_flashcard_ids: flashcardIds
+      const mindmapData = await mindmapResponse.json()
+      return NextResponse.json({ mindmapId: mindmapData.id })
+    } else if (contentType === 'exam') {
+      // Use existing exam generation logic via API call
+      const examResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/exams`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': request.headers.get('Cookie') || ''
+        },
+        body: JSON.stringify({
+          documentId: document.id,
+          questionCount: 15,
+          difficulty: 'mixed',
+          timeLimitMinutes: 30
+        })
       })
-      .eq('id', videoId)
 
-    if (updateError) {
-      throw updateError
+      if (!examResponse.ok) {
+        throw new Error('Failed to generate exam')
+      }
+
+      const examData = await examResponse.json()
+      return NextResponse.json({ examId: examData.id })
+    } else {
+      return NextResponse.json(
+        { error: 'Invalid content type' },
+        { status: 400 }
+      )
     }
-
-    return NextResponse.json({ flashcardIds })
   } catch (error) {
     console.error('Content generation error:', error)
     return NextResponse.json(

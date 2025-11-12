@@ -43,3 +43,8 @@ next-env.d.ts
 # clerk configuration (can include secrets)
 /.clerk/
 VERCEL_ENV_SETUP.md
+
+# Python virtual environment
+/venv/
+*.pyc
+__pycache__/

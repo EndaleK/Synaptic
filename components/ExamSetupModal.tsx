@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation"
 import { Document } from "@/lib/supabase/types"
 import type { QuestionType, ExamDifficulty } from "@/lib/supabase/types"
 import UpgradeModal from "./UpgradeModal"
+import PageTopicSelector, { SelectionData } from "./PageTopicSelector"
 
 interface ExamSetupModalProps {
   isOpen: boolean
   onClose: () => void
   document: Document
+  onExamCreated?: () => void
 }
 
 const difficultyOptions: { value: ExamDifficulty; label: string; description: string }[] = [
@@ -29,7 +31,8 @@ const questionTypeOptions: { value: QuestionType; label: string; description: st
 export default function ExamSetupModal({
   isOpen,
   onClose,
-  document
+  document,
+  onExamCreated
 }: ExamSetupModalProps) {
   const router = useRouter()
 
@@ -43,6 +46,7 @@ export default function ExamSetupModal({
   const [includeExplanations, setIncludeExplanations] = useState(true)
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
+  const [selection, setSelection] = useState<SelectionData>({ type: 'full' })
 
   // UI state
   const [isGenerating, setIsGenerating] = useState(false)
@@ -64,6 +68,7 @@ export default function ExamSetupModal({
       setIncludeExplanations(true)
       setTags([])
       setTagInput('')
+      setSelection({ type: 'full' })
       setError(null)
       setShowAdvanced(false)
     }
@@ -122,7 +127,8 @@ export default function ExamSetupModal({
         question_types: selectedQuestionTypes,
         time_limit_minutes: timeLimitMinutes,
         include_explanations: includeExplanations,
-        tags
+        tags,
+        selection
       }
 
       console.log('🎓 Generating exam with config:', requestBody)
@@ -159,6 +165,11 @@ export default function ExamSetupModal({
         questionCount: data.questionCount,
         provider: data.aiProvider
       })
+
+      // Trigger refresh of exam list
+      if (onExamCreated) {
+        onExamCreated()
+      }
 
       // Close modal
       onClose()
@@ -208,7 +219,7 @@ export default function ExamSetupModal({
         <div className="p-6 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
                 <GraduationCap className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -244,7 +255,7 @@ export default function ExamSetupModal({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Biology Chapter 3 - Cell Structure"
               disabled={isGenerating}
-              className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
+              className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
             />
           </div>
 
@@ -259,7 +270,20 @@ export default function ExamSetupModal({
               placeholder="Brief description of what this exam covers..."
               rows={2}
               disabled={isGenerating}
-              className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 resize-none"
+              className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50 resize-none"
+            />
+          </div>
+
+          {/* Content Selection */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+              Content Selection
+            </label>
+            <PageTopicSelector
+              documentId={document.id}
+              totalPages={document.metadata?.page_count || 0}
+              onSelectionChange={setSelection}
+              className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50"
             />
           </div>
 
@@ -283,7 +307,7 @@ export default function ExamSetupModal({
                 min={1}
                 max={200}
                 disabled={isGenerating}
-                className="w-24 text-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
+                className="w-24 text-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
               />
               <button
                 onClick={() => setQuestionCount(Math.min(200, questionCount + 5))}
@@ -311,8 +335,8 @@ export default function ExamSetupModal({
                   disabled={isGenerating}
                   className={`p-3 border-2 rounded-lg transition-all disabled:opacity-50 ${
                     difficulty === option.value
-                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                      : 'border-gray-300 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-700'
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-700'
                   }`}
                 >
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -339,8 +363,8 @@ export default function ExamSetupModal({
                   disabled={isGenerating}
                   className={`p-3 border-2 rounded-lg transition-all disabled:opacity-50 text-left ${
                     selectedQuestionTypes.includes(option.value)
-                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                      : 'border-gray-300 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-700'
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-700'
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -354,7 +378,7 @@ export default function ExamSetupModal({
                     </div>
                     <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
                       selectedQuestionTypes.includes(option.value)
-                        ? 'border-purple-500 bg-purple-500'
+                        ? 'border-indigo-500 bg-indigo-500'
                         : 'border-gray-300 dark:border-gray-600'
                     }`}>
                       {selectedQuestionTypes.includes(option.value) && (
@@ -372,14 +396,14 @@ export default function ExamSetupModal({
           {/* Advanced Settings Toggle */}
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium"
+            className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
           >
             {showAdvanced ? '▼' : '▶'} Advanced Settings
           </button>
 
           {/* Advanced Settings */}
           {showAdvanced && (
-            <div className="space-y-4 pl-4 border-l-2 border-purple-200 dark:border-purple-800">
+            <div className="space-y-4 pl-4 border-l-2 border-indigo-200 dark:border-indigo-800">
               {/* Time Limit */}
               <div>
                 <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
@@ -393,7 +417,7 @@ export default function ExamSetupModal({
                     placeholder="No limit"
                     min={1}
                     disabled={isGenerating}
-                    className="w-32 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
+                    className="w-32 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
                   />
                   <span className="text-sm text-gray-600 dark:text-gray-400">minutes</span>
                 </div>
@@ -407,7 +431,7 @@ export default function ExamSetupModal({
                     checked={includeExplanations}
                     onChange={(e) => setIncludeExplanations(e.target.checked)}
                     disabled={isGenerating}
-                    className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 disabled:opacity-50"
+                    className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 disabled:opacity-50"
                   />
                   <div>
                     <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -438,12 +462,12 @@ export default function ExamSetupModal({
                     }}
                     placeholder="Add a tag..."
                     disabled={isGenerating}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
                   />
                   <button
                     onClick={handleAddTag}
                     disabled={isGenerating || !tagInput.trim()}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Add
                   </button>
@@ -453,13 +477,13 @@ export default function ExamSetupModal({
                     {tags.map((tag) => (
                       <span
                         key={tag}
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full text-sm"
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 rounded-full text-sm"
                       >
                         {tag}
                         <button
                           onClick={() => handleRemoveTag(tag)}
                           disabled={isGenerating}
-                          className="hover:text-purple-600 dark:hover:text-purple-400 disabled:opacity-50"
+                          className="hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-50"
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -485,11 +509,11 @@ export default function ExamSetupModal({
 
           {/* Generation Summary */}
           {!isGenerating && !error && (
-            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-              <p className="text-xs text-purple-600 dark:text-purple-400 mb-1">
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
+              <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-1">
                 Ready to generate:
               </p>
-              <p className="text-sm font-medium text-purple-900 dark:text-purple-100">
+              <p className="text-sm font-medium text-indigo-900 dark:text-indigo-100">
                 {questionCount} questions • {difficulty} difficulty • {selectedQuestionTypes.map(t =>
                   questionTypeOptions.find(opt => opt.value === t)?.label
                 ).join(', ')}
@@ -513,7 +537,7 @@ export default function ExamSetupModal({
             <button
               onClick={handleGenerate}
               disabled={isGenerating || !title.trim() || selectedQuestionTypes.length === 0}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
                 <>

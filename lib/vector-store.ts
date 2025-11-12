@@ -12,8 +12,12 @@ import { OpenAIEmbeddings } from '@langchain/openai'
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters'
 
 // Initialize ChromaDB client (no embedding function - we'll use OpenAI directly)
+// chromadb v3.x uses a simple { path: "url" } format
+const chromaUrl = process.env.CHROMA_URL || 'http://localhost:8000'
+console.log('[Vector Store] ChromaDB URL:', chromaUrl)
+
 const chromaClient = new ChromaClient({
-  path: process.env.CHROMA_URL || 'http://localhost:8000',
+  path: chromaUrl
 })
 
 // Initialize OpenAI embeddings for all embedding operations
@@ -45,15 +49,19 @@ async function getOrCreateCollection(
 
   try {
     // Try to get existing collection
+    // IMPORTANT: Set embeddingFunction to undefined to indicate we're providing our own embeddings
     const collection = await chromaClient.getCollection({
       name: collectionName,
+      embeddingFunction: undefined,
     })
     return collection
   } catch (error) {
     // Create new collection if it doesn't exist
+    // IMPORTANT: Set embeddingFunction to undefined to indicate we're providing our own embeddings
     const collection = await chromaClient.createCollection({
       name: collectionName,
       metadata: { documentId },
+      embeddingFunction: undefined,
     })
     return collection
   }
@@ -69,18 +77,25 @@ export async function indexDocument(
   metadata: Record<string, string> = {}
 ): Promise<{ chunks: number; success: boolean }> {
   try {
+    console.log(`[Vector Store] Starting indexing for document ${documentId}`)
+
     // Split document into chunks
     const chunks = await textSplitter.splitText(text)
+    console.log(`[Vector Store] Split into ${chunks.length} chunks`)
 
     if (chunks.length === 0) {
       throw new Error('No chunks generated from document')
     }
 
     // Get or create collection for this document
+    console.log(`[Vector Store] Getting/creating collection for ${documentId}`)
     const collection = await getOrCreateCollection(documentId)
+    console.log(`[Vector Store] Collection ready`)
 
     // Generate embeddings for all chunks
+    console.log(`[Vector Store] Generating embeddings for ${chunks.length} chunks...`)
     const embeddingVectors = await embeddings.embedDocuments(chunks)
+    console.log(`[Vector Store] Embeddings generated: ${embeddingVectors.length} vectors`)
 
     // Prepare data for ChromaDB
     const ids = chunks.map((_, i) => `${documentId}_chunk_${i}`)
@@ -92,6 +107,7 @@ export async function indexDocument(
     }))
 
     // Store in ChromaDB
+    console.log(`[Vector Store] Storing ${chunks.length} chunks in ChromaDB...`)
     await collection.add({
       ids,
       embeddings: embeddingVectors,
@@ -103,8 +119,12 @@ export async function indexDocument(
 
     return { chunks: chunks.length, success: true }
   } catch (error) {
-    console.error('Vector indexing error:', error)
-    throw new Error('Failed to index document in vector store')
+    console.error('[Vector Store] Indexing error details:', error)
+    if (error instanceof Error) {
+      console.error('[Vector Store] Error message:', error.message)
+      console.error('[Vector Store] Error stack:', error.stack)
+    }
+    throw new Error(`Failed to index document in vector store: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
@@ -202,7 +222,7 @@ export async function getChunksByIndices(
       ids,
     })
 
-    return results.documents || []
+    return (results.documents || []).filter((doc): doc is string => doc !== null)
   } catch (error) {
     console.error('Chunk retrieval error:', error)
     return []
@@ -223,7 +243,7 @@ export async function getAllChunks(documentId: string): Promise<string[]> {
       limit: count,
     })
 
-    return results.documents || []
+    return (results.documents || []).filter((doc): doc is string => doc !== null)
   } catch (error) {
     console.error('Full document retrieval error:', error)
     return []

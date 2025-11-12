@@ -106,7 +106,69 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // 5. Check vector store status and trigger indexing if needed
+    // 5. Determine RAG strategy based on document size
+    const { determineRAGStrategy } = await import('@/lib/document-indexer')
+    const { isGeminiRAGAvailable, queryDocumentWithGemini } = await import('@/lib/gemini-rag')
+
+    const documentText = document.extracted_text || ''
+    const ragStrategy = documentText ? determineRAGStrategy(documentText) : 'chromadb'
+
+    logger.info('RAG strategy selected', {
+      userId,
+      documentId,
+      strategy: ragStrategy,
+      textLength: documentText.length,
+      geminiAvailable: isGeminiRAGAvailable(),
+    })
+
+    // 5a. If Gemini strategy, use direct context window (no vector search)
+    if (ragStrategy === 'gemini' && isGeminiRAGAvailable()) {
+      logger.info('Using Gemini RAG with 2M token context window', { userId, documentId })
+
+      try {
+        // Map teaching mode to Gemini format
+        const geminiTeachingMode = teachingMode === 'socratic'
+          ? 'socratic'
+          : teachingMode === 'direct'
+          ? 'direct'
+          : 'guided'
+
+        const aiResponse = await queryDocumentWithGemini(
+          documentId,
+          userId,
+          message,
+          [], // No conversation history support yet
+          geminiTeachingMode
+        )
+
+        const duration = Date.now() - startTime
+
+        logger.api('POST', '/api/chat-rag', 200, duration, {
+          userId,
+          documentId,
+          strategy: 'gemini',
+          messageLength: message.length,
+          responseLength: aiResponse.length,
+        })
+
+        return NextResponse.json({
+          response: aiResponse,
+          timestamp: new Date().toISOString(),
+          strategy: 'gemini',
+          documentName: document.file_name,
+        })
+      } catch (geminiError: any) {
+        logger.error('Gemini RAG failed, falling back to ChromaDB', geminiError, {
+          userId,
+          documentId,
+        })
+
+        // Fall through to ChromaDB path below
+        // Don't return error - try ChromaDB as fallback
+      }
+    }
+
+    // 5b. ChromaDB strategy: Check vector store status and trigger indexing if needed
     const docStats = await getDocumentStats(documentId)
     if (!docStats.exists || docStats.chunkCount === 0) {
       logger.info('Document not indexed, triggering on-demand indexing', { documentId })
@@ -122,11 +184,19 @@ export async function POST(request: NextRequest) {
           documentId,
           error: indexResult.error,
         })
+
+        // Provide helpful error message for users
+        const errorMessage = indexResult.error?.includes('too large')
+          ? `This PDF is too large for automatic text extraction. ${indexResult.error}`
+          : `Failed to prepare document for chat: ${indexResult.error || 'Unknown error'}. Please try re-uploading the document or use a smaller file.`
+
         return NextResponse.json(
           {
-            error: `Failed to index document: ${indexResult.error || 'Unknown error'}. Please try again or contact support.`,
+            response: errorMessage,
+            timestamp: new Date().toISOString(),
+            error: true,
           },
-          { status: 500 }
+          { status: 200 } // Return 200 so the UI can show the message as a chat response
         )
       }
 
@@ -322,6 +392,7 @@ Please answer this question based on the relevant excerpts provided above. The e
     return NextResponse.json({
       response: aiResponse,
       timestamp: new Date().toISOString(),
+      strategy: 'chromadb',
       chunksUsed: relevantChunks.length,
       totalChunks: docStats.chunkCount,
       documentName: document.file_name,

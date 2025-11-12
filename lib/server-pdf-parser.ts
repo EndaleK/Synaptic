@@ -1,16 +1,188 @@
-// Server-side PDF text extraction using pdf2json
-// This library is specifically designed for Node.js environments
+// Server-side PDF text extraction with multi-tier fallback:
+// 1. pdf-parse (fast, Mozilla PDF.js based)
+// 2. PyMuPDF (robust, handles complex PDFs)
+// 3. Gemini Vision (OCR, handles scanned PDFs and very large files)
+
+import { exec } from 'child_process'
+import { promisify } from 'util'
+import path from 'path'
+import fs from 'fs'
+import { extractPDFWithGemini } from './gemini-pdf-extractor'
+
+const execAsync = promisify(exec)
+
+interface PageData {
+  pageNumber: number
+  text: string
+  startOffset: number
+  endOffset: number
+}
 
 interface PDFParseResult {
   text: string
   pageCount?: number
+  pages?: PageData[]  // NEW: per-page data with character offsets
   error?: string
+  method?: 'pdf-parse' | 'pymupdf' | 'gemini-vision'
+}
+
+// Helper: Create timeout promise that rejects after specified milliseconds
+function createTimeoutPromise(ms: number): Promise<never> {
+  return new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`PDF parsing timeout after ${ms / 1000}s. This PDF is too complex or large for fast parsing. Please try a smaller file or contact support.`))
+    }, ms)
+  })
+}
+
+// Perform pdf-parse extraction with better error handling
+async function parsePDFWithPdfParse(buffer: Buffer): Promise<PDFParseResult> {
+  try {
+    // Use require() with default export handling for Node.js runtime
+    const pdfParseModule = require('pdf-parse')
+    const pdfParse = pdfParseModule.default || pdfParseModule
+
+    console.log(`Starting pdf-parse extraction (buffer size: ${buffer.length} bytes)...`)
+
+    const data = await pdfParse(buffer, {
+      // Options for better performance
+      max: 0, // Parse all pages (0 = no limit)
+      version: 'v2.0.550' // Use specific PDF.js version for consistency
+    })
+
+    const extractedText = data.text
+    const pageCount = data.numpages
+
+    console.log(`✅ Extracted ${extractedText.length} characters from ${pageCount} pages`)
+
+    // Check if we got any text
+    if (!extractedText || extractedText.trim().length === 0) {
+      return {
+        text: "",
+        pageCount,
+        error: "No text could be extracted from this PDF. It might be a scanned document or contain only images. Consider using OCR software to convert it to text first."
+      }
+    }
+
+    // Clean up the extracted text but DO NOT truncate - RAG systems handle large documents
+    let cleanedText = extractedText
+      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+      .replace(/\n{3,}/g, '\n\n') // Replace multiple newlines with double newline
+      .trim()
+
+    console.log(`📊 Cleaned text: ${cleanedText.length} characters (will be stored in full for RAG)`)
+
+    return {
+      text: cleanedText,
+      pageCount,
+      error: undefined,
+      method: 'pdf-parse'
+    }
+
+  } catch (error: any) {
+    console.error('pdf-parse extraction error:', error)
+
+    // Handle specific error types
+    if (error.message?.includes('password') || error.message?.includes('encrypted')) {
+      return {
+        text: "",
+        error: "This PDF appears to be password-protected or encrypted. Please unlock it before uploading."
+      }
+    }
+
+    if (error.message?.includes('Invalid PDF')) {
+      return {
+        text: "",
+        error: "This file appears to be corrupted or is not a valid PDF. Please check the file and try again."
+      }
+    }
+
+    return {
+      text: "",
+      error: `Unable to parse PDF: ${error.message || 'Unknown error'}. You can still use the PDF viewer mode to read the document.`
+    }
+  }
+}
+
+// Fallback: PyMuPDF extraction (more robust for complex PDFs)
+async function parsePDFWithPyMuPDF(buffer: Buffer): Promise<PDFParseResult> {
+  try {
+    console.log('🐍 Attempting PyMuPDF extraction (fallback)...')
+
+    // Save buffer to temp file
+    const tempFilePath = path.join('/tmp', `pdf-extract-${Date.now()}.pdf`)
+    fs.writeFileSync(tempFilePath, buffer)
+
+    try {
+      // Get project root directory
+      const projectRoot = process.cwd()
+      const venvPython = path.join(projectRoot, 'venv', 'bin', 'python3')
+      const scriptPath = path.join(projectRoot, 'scripts', 'extract-pdf-pymupdf.py')
+
+      // Check if venv Python exists, otherwise use system Python
+      const pythonCmd = fs.existsSync(venvPython) ? venvPython : 'python3'
+
+      console.log(`🐍 Running PyMuPDF script: ${pythonCmd} ${scriptPath}`)
+
+      // Call Python script with timeout
+      const { stdout, stderr } = await execAsync(
+        `${pythonCmd} "${scriptPath}" "${tempFilePath}"`,
+        {
+          timeout: 480000, // 8 minutes
+          maxBuffer: 50 * 1024 * 1024 // 50MB buffer for large text output
+        }
+      )
+
+      // Parse JSON response
+      const result = JSON.parse(stdout)
+
+      if (result.success && result.text) {
+        console.log(`✅ PyMuPDF extracted ${result.text.length} characters from ${result.pageCount} pages${result.pages ? ` (with per-page data: ${result.pages.length} pages)` : ''}`)
+
+        // Clean text but DO NOT truncate - RAG systems (ChromaDB/Gemini) handle large documents
+        let cleanedText = result.text
+          .replace(/\s+/g, ' ')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim()
+
+        console.log(`📊 Cleaned text: ${cleanedText.length} characters (will be stored in full for RAG)`)
+
+        return {
+          text: cleanedText,
+          pageCount: result.pageCount,
+          pages: result.pages,  // Pass through page data
+          method: 'pymupdf',
+          error: undefined
+        }
+      } else {
+        console.error('❌ PyMuPDF extraction failed:', result.error)
+        return {
+          text: "",
+          error: result.error,
+          method: 'pymupdf'
+        }
+      }
+    } finally {
+      // Clean up temp file
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath)
+      }
+    }
+  } catch (error: any) {
+    console.error('❌ PyMuPDF subprocess error:', error)
+    return {
+      text: "",
+      error: `PyMuPDF extraction failed: ${error.message || 'Unknown error'}`,
+      method: 'pymupdf'
+    }
+  }
 }
 
 export async function parseServerPDF(file: File): Promise<PDFParseResult> {
   try {
-    console.log(`Server PDF parsing: ${file.name}, size: ${file.size} bytes`)
-    
+    const fileSizeMB = file.size / (1024 * 1024)
+    console.log(`📄 Server PDF parsing: ${file.name}, size: ${file.size} bytes (${fileSizeMB.toFixed(2)} MB)`)
+
     // Check file size limit (500MB max for server processing)
     if (file.size > 500 * 1024 * 1024) {
       return {
@@ -19,139 +191,167 @@ export async function parseServerPDF(file: File): Promise<PDFParseResult> {
       }
     }
 
-    // Convert File to Buffer for pdf2json
+    // Convert File to Buffer for pdf-parse
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-    
-    return new Promise((resolve) => {
-      try {
-        // Dynamic import to ensure it only runs on server
-        import('pdf2json').then(({ default: PDFParser }) => {
-          const pdfParser = new PDFParser()
-          
-          // Set up event handlers
-          pdfParser.on("pdfParser_dataError", (errData: any) => {
-            console.error("PDF parsing error:", errData.parserError)
-            
-            const errorMessage = errData.parserError?.message || errData.parserError || 'Unknown error'
-            
-            if (errorMessage.includes('encrypted') || errorMessage.includes('password')) {
-              resolve({
-                text: "",
-                error: "This PDF appears to be password-protected or encrypted. Please unlock it before uploading."
-              })
-            } else if (errorMessage.includes('Invalid')) {
-              resolve({
-                text: "",
-                error: "This file appears to be corrupted or is not a valid PDF. Please check the file and try again."
-              })
-            } else {
-              resolve({
-                text: "",
-                error: `Unable to parse PDF: ${errorMessage}. You can still use the PDF viewer mode to read the document.`
-              })
-            }
-          })
-          
-          pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
-            try {
-              // Extract text from all pages
-              let extractedText = ''
-              const pageCount = pdfData.Pages?.length || 0
 
-              if (pdfData.Pages && Array.isArray(pdfData.Pages)) {
-                for (const page of pdfData.Pages) {
-                  if (page.Texts && Array.isArray(page.Texts)) {
-                    for (const textItem of page.Texts) {
-                      if (textItem.R && Array.isArray(textItem.R)) {
-                        for (const textRun of textItem.R) {
-                          if (textRun.T) {
-                            // Decode URI component to get actual text
-                            extractedText += decodeURIComponent(textRun.T) + ' '
-                          }
-                        }
-                      }
-                    }
-                  }
-                  // Add page break
-                  extractedText += '\n\n'
-                }
-              }
-              
-              // Clean up the extracted text
-              extractedText = extractedText
-                .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-                .replace(/\n{3,}/g, '\n\n') // Replace multiple newlines with double newline
-                .trim()
-              
-              if (!extractedText || extractedText.length === 0) {
-                resolve({
-                  text: "",
-                  error: "No text could be extracted from this PDF. It might be a scanned document or contain only images. Consider using OCR software to convert it to text first."
-                })
-              } else {
-                console.log(`Successfully extracted ${extractedText.length} characters from PDF`)
-                
-                // Handle very large text documents that might exceed token limits
-                // Estimate tokens (roughly 4 characters per token)
-                const estimatedTokens = extractedText.length / 4
-                const maxTokens = 12000 // Leave room for system prompts and response
-                
-                if (estimatedTokens > maxTokens) {
-                  // Truncate to approximately the right size, but try to end at a sentence
-                  const maxChars = maxTokens * 4
-                  let truncatedText = extractedText.substring(0, maxChars)
-                  
-                  // Try to end at a sentence boundary
-                  const lastSentence = truncatedText.lastIndexOf('. ')
-                  if (lastSentence > maxChars * 0.8) { // If we can find a sentence ending in the last 20%
-                    truncatedText = truncatedText.substring(0, lastSentence + 1)
-                  }
-                  
-                  console.log(`Large document truncated from ${extractedText.length} to ${truncatedText.length} characters`)
+    // Smart routing based on file size:
+    // - Small files (<10MB): Try pdf-parse → PyMuPDF → Gemini
+    // - Medium files (10-20MB): Try pdf-parse → PyMuPDF (skip Gemini - API limit ~20MB)
+    // - Large files (20MB+): PyMuPDF only (most reliable for large files)
+    // - Very large files (100MB+): PyMuPDF with streaming (future optimization)
 
-                  resolve({
-                    text: truncatedText + "\n\n[Note: This document was truncated due to size. For complete content, use the PDF viewer mode.]",
-                    pageCount,
-                    error: undefined
-                  })
-                } else {
-                  resolve({
-                    text: extractedText,
-                    pageCount,
-                    error: undefined
-                  })
-                }
-              }
-            } catch (err) {
-              console.error("Error processing PDF data:", err)
-              resolve({
-                text: "",
-                error: "Failed to process PDF content. Please try again or use a different file format."
-              })
-            }
-          })
-          
-          // Parse the PDF buffer
-          pdfParser.parseBuffer(buffer)
-        }).catch((importError) => {
-          console.error("Failed to import pdf2json:", importError)
-          resolve({
-            text: "",
-            error: "PDF parsing library failed to load. Please try again or use a different file format."
-          })
-        })
-      } catch (error) {
-        console.error("PDF parser initialization error:", error)
-        resolve({
-          text: "",
-          error: "Failed to initialize PDF parser. Please try again or use a different file format."
-        })
+    const isSmallFile = file.size < 10 * 1024 * 1024
+    const isMediumFile = file.size >= 10 * 1024 * 1024 && file.size < 20 * 1024 * 1024
+    const isLargeFile = file.size >= 20 * 1024 * 1024
+
+    // For medium files (10-20MB), try Gemini first (has OCR, handles complex layouts)
+    if (isMediumFile && process.env.GEMINI_API_KEY) {
+      console.log('🤖 Medium-sized file detected (10-20MB), trying Gemini Vision API...')
+      const geminiResult = await extractPDFWithGemini(buffer, file.name)
+
+      // Validate extraction quality (should extract at least 1% of file size as text)
+      const minExpectedChars = Math.max(1000, file.size * 0.01 / 10) // ~1% of file size (rough estimate)
+      const isGoodExtraction = !geminiResult.error && geminiResult.text && geminiResult.text.length > minExpectedChars
+
+      if (isGoodExtraction) {
+        console.log('✅ Gemini extraction successful with good quality')
+        return geminiResult
       }
-    })
-    
+
+      if (geminiResult.text && geminiResult.text.length > 100) {
+        console.warn(`⚠️ Gemini extraction suspicious (only ${geminiResult.text.length} chars from ${fileSizeMB.toFixed(2)}MB file), trying PyMuPDF...`)
+      } else {
+        console.warn('⚠️ Gemini extraction failed, falling back to PyMuPDF...')
+      }
+    }
+
+    // For large files (>20MB), skip pdf-parse and Gemini, go directly to PyMuPDF
+    if (isLargeFile) {
+      console.log(`📦 Large file detected (${fileSizeMB.toFixed(2)}MB), using PyMuPDF directly (most reliable for large files)...`)
+      const pymupdfResult = await parsePDFWithPyMuPDF(buffer)
+
+      if (!pymupdfResult.error && pymupdfResult.text && pymupdfResult.text.length > 100) {
+        console.log('✅ PyMuPDF extraction successful for large file')
+        return pymupdfResult
+      }
+
+      // PyMuPDF failed - return error (don't try pdf-parse for large files, it will timeout)
+      return {
+        text: "",
+        error: `Failed to extract text from large PDF (${fileSizeMB.toFixed(2)}MB). ${pymupdfResult.error || 'Unknown error'}. The file may be scanned or contain only images. Consider using OCR software.`
+      }
+    }
+
+    // Multi-tier extraction strategy for small files (<20MB):
+    // 1. Try pdf-parse first (fast, works for most PDFs)
+    // 2. If pdf-parse fails, try PyMuPDF (robust, handles complex PDFs)
+    // 3. If PyMuPDF fails AND file is small enough (<15MB), try Gemini (OCR, handles scanned PDFs)
+    console.log(`⏱️ Starting pdf-parse with ${isSmallFile ? '3' : '8'}-minute timeout...`)
+
+    try {
+      const timeout = isSmallFile ? 180000 : 480000 // 3 minutes for small files, 8 for medium
+      const result = await Promise.race([
+        parsePDFWithPdfParse(buffer),
+        createTimeoutPromise(timeout)
+      ])
+
+      // Check if pdf-parse succeeded
+      if (!result.error && result.text && result.text.length > 100) {
+        console.log('✅ pdf-parse completed successfully')
+        return { ...result, method: 'pdf-parse' }
+      }
+
+      // pdf-parse failed - try PyMuPDF as fallback
+      console.warn('⚠️ pdf-parse failed or returned no text, trying PyMuPDF fallback...')
+      const pymupdfResult = await parsePDFWithPyMuPDF(buffer)
+
+      if (!pymupdfResult.error && pymupdfResult.text && pymupdfResult.text.length > 100) {
+        return pymupdfResult
+      }
+
+      // PyMuPDF failed - try Gemini as final fallback (only for small files <15MB due to API limit)
+      if (process.env.GEMINI_API_KEY && file.size < 15 * 1024 * 1024) {
+        console.warn('⚠️ PyMuPDF failed or returned no text, trying Gemini Vision as final fallback...')
+        const geminiResult = await extractPDFWithGemini(buffer, file.name)
+
+        if (!geminiResult.error && geminiResult.text && geminiResult.text.length > 100) {
+          console.log('✅ Gemini extraction successful (fallback)')
+          return geminiResult
+        }
+      } else if (file.size >= 15 * 1024 * 1024) {
+        console.warn(`⚠️ File too large for Gemini fallback (${fileSizeMB.toFixed(2)}MB > 15MB limit)`)
+      }
+
+      // All methods failed - return the original pdf-parse error
+      return result
+
+    } catch (parseError) {
+      // pdf-parse threw an error - try PyMuPDF as fallback
+      console.error('❌ pdf-parse error:', parseError)
+      console.log('🔄 Attempting PyMuPDF fallback...')
+
+      try {
+        const pymupdfResult = await parsePDFWithPyMuPDF(buffer)
+
+        if (!pymupdfResult.error && pymupdfResult.text && pymupdfResult.text.length > 100) {
+          return pymupdfResult
+        }
+
+        // PyMuPDF failed - try Gemini as final fallback (only for small files <15MB)
+        if (process.env.GEMINI_API_KEY && file.size < 15 * 1024 * 1024) {
+          console.warn('⚠️ PyMuPDF failed, trying Gemini Vision as final fallback...')
+          const geminiResult = await extractPDFWithGemini(buffer, file.name)
+
+          if (!geminiResult.error && geminiResult.text && geminiResult.text.length > 100) {
+            console.log('✅ Gemini extraction successful (final fallback)')
+            return geminiResult
+          }
+
+          // All three methods failed
+          return {
+            text: "",
+            error: `All extraction methods failed. pdf-parse: ${parseError instanceof Error ? parseError.message : 'Unknown error'}. PyMuPDF: ${pymupdfResult.error}. Gemini: ${geminiResult.error}`
+          }
+        } else if (file.size >= 15 * 1024 * 1024) {
+          console.warn(`⚠️ File too large for Gemini fallback (${fileSizeMB.toFixed(2)}MB > 15MB limit)`)
+        }
+
+        // Gemini not available - return PyMuPDF error
+        return {
+          text: "",
+          error: `Both extraction methods failed. pdf-parse: ${parseError instanceof Error ? parseError.message : 'Unknown error'}. PyMuPDF: ${pymupdfResult.error}`
+        }
+      } catch (pymupdfError) {
+        // PyMuPDF threw an error - try Gemini if available (only for small files <15MB)
+        if (process.env.GEMINI_API_KEY && file.size < 15 * 1024 * 1024) {
+          console.warn('⚠️ PyMuPDF error, trying Gemini Vision as final fallback...')
+          const geminiResult = await extractPDFWithGemini(buffer, file.name)
+
+          if (!geminiResult.error && geminiResult.text && geminiResult.text.length > 100) {
+            console.log('✅ Gemini extraction successful (final fallback after errors)')
+            return geminiResult
+          }
+
+          // All three methods failed
+          return {
+            text: "",
+            error: `All extraction methods failed. pdf-parse: ${parseError instanceof Error ? parseError.message : 'Unknown'}. PyMuPDF: ${pymupdfError instanceof Error ? pymupdfError.message : 'Unknown'}. Gemini: ${geminiResult.error}`
+          }
+        } else if (file.size >= 15 * 1024 * 1024) {
+          console.warn(`⚠️ File too large for Gemini fallback (${fileSizeMB.toFixed(2)}MB > 15MB limit)`)
+        }
+
+        // Gemini not available or file too large
+        return {
+          text: "",
+          error: `PDF parsing failed. pdf-parse: ${parseError instanceof Error ? parseError.message : 'Unknown'}. PyMuPDF: ${pymupdfError instanceof Error ? pymupdfError.message : 'Unknown'}`
+        }
+      }
+    }
+
   } catch (error) {
-    console.error("Server PDF parsing error:", error)
+    console.error("❌ Server PDF parsing error:", error)
     return {
       text: "",
       error: `Unable to process PDF on the server: ${error instanceof Error ? error.message : 'Unknown error'}. Please try using the PDF viewer mode to read the document.`

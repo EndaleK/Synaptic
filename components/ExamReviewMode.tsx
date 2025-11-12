@@ -176,48 +176,48 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header with Performance Summary */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                 {exam.title} - Review
               </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                 Completed on {new Date(attempt.completed_at || '').toLocaleDateString()}
               </p>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               {onRetake && (
                 <button
                   onClick={onRetake}
-                  className="flex items-center gap-2 px-4 py-2 border border-indigo-600 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-indigo-600 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                 >
-                  <RefreshCw className="w-5 h-5" />
+                  <RefreshCw className="w-4 h-4" />
                   Retake Exam
                 </button>
               )}
               <button
                 onClick={onExit}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4" />
                 Exit
               </button>
             </div>
           </div>
 
           {/* Performance Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
             {/* Score */}
-            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-600 rounded-lg">
-                  <Trophy className="w-6 h-6 text-white" />
+            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 rounded-lg p-2.5 border border-indigo-200 dark:border-indigo-800">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-indigo-600 rounded-lg">
+                  <Trophy className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">Score</p>
-                  <p className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
+                  <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">Score</p>
+                  <p className="text-xl font-bold text-indigo-900 dark:text-indigo-100">
                     {scorePercentage.toFixed(1)}%
                   </p>
                 </div>
@@ -225,14 +225,14 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
             </div>
 
             {/* Correct Answers */}
-            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-600 rounded-lg">
-                  <CheckCircle2 className="w-6 h-6 text-white" />
+            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-2.5 border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-green-600 rounded-lg">
+                  <CheckCircle2 className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-green-600 dark:text-green-400 font-medium">Correct</p>
-                  <p className="text-2xl font-bold text-green-900 dark:text-green-100">
+                  <p className="text-xs text-green-600 dark:text-green-400 font-medium">Correct</p>
+                  <p className="text-xl font-bold text-green-900 dark:text-green-100">
                     {correctCount}/{attempt.total_questions}
                   </p>
                 </div>
@@ -240,14 +240,14 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
             </div>
 
             {/* Incorrect Answers */}
-            <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-lg p-4 border border-red-200 dark:border-red-800">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-600 rounded-lg">
-                  <XCircle className="w-6 h-6 text-white" />
+            <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-lg p-2.5 border border-red-200 dark:border-red-800">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-red-600 rounded-lg">
+                  <XCircle className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-red-600 dark:text-red-400 font-medium">Incorrect</p>
-                  <p className="text-2xl font-bold text-red-900 dark:text-red-100">
+                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">Incorrect</p>
+                  <p className="text-xl font-bold text-red-900 dark:text-red-100">
                     {incorrectCount}/{attempt.total_questions}
                   </p>
                 </div>
@@ -255,14 +255,14 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
             </div>
 
             {/* Time Taken */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-600 rounded-lg">
-                  <Clock className="w-6 h-6 text-white" />
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-2.5 border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-blue-600 rounded-lg">
+                  <Clock className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Time</p>
-                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                  <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Time</p>
+                  <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
                     {formatTime(attempt.time_taken_seconds)}
                   </p>
                 </div>
@@ -271,13 +271,13 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex gap-2 mt-6">
+          <div className="flex gap-2 mt-3">
             <button
               onClick={() => {
                 setFilter('all')
                 setCurrentQuestionIndex(0)
               }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
                 filter === 'all'
                   ? 'bg-indigo-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -290,7 +290,7 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
                 setFilter('correct')
                 setCurrentQuestionIndex(0)
               }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
                 filter === 'correct'
                   ? 'bg-green-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -303,7 +303,7 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
                 setFilter('incorrect')
                 setCurrentQuestionIndex(0)
               }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
                 filter === 'incorrect'
                   ? 'bg-red-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -316,28 +316,28 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-4">
         {filteredQuestions.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-12 text-center">
-            <Target className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400 text-lg">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
+            <Target className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-600 dark:text-gray-400">
               No questions match this filter
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Question Review */}
             <div className="lg:col-span-3">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-5">
                 {/* Question Header */}
-                <div className="flex items-start justify-between mb-6">
+                <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                         Question {allQuestions.findIndex(q => q.id === currentQuestion.id) + 1}
                       </span>
                       {currentQuestion.difficulty && (
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
                           currentQuestion.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200' :
                           currentQuestion.difficulty === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200' :
                           'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200'
@@ -346,30 +346,30 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
                         </span>
                       )}
                       {currentQuestion.topic && (
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200">
+                        <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200">
                           {currentQuestion.topic}
                         </span>
                       )}
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                       {currentQuestion.question_text}
                     </h2>
                   </div>
 
                   {/* Result Badge */}
-                  <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ml-4 ${
+                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg ml-3 text-sm ${
                     currentAnswer?.is_correct
                       ? 'bg-green-100 dark:bg-green-900/20 border border-green-300 dark:border-green-800'
                       : 'bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800'
                   }`}>
                     {currentAnswer?.is_correct ? (
                       <>
-                        <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
                         <span className="font-medium text-green-800 dark:text-green-200">Correct</span>
                       </>
                     ) : (
                       <>
-                        <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                        <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
                         <span className="font-medium text-red-800 dark:text-red-200">Incorrect</span>
                       </>
                     )}
@@ -378,7 +378,7 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
 
                 {/* Answer Display for MCQ and True/False */}
                 {(currentQuestion.question_type === 'mcq' || currentQuestion.question_type === 'true_false') && currentQuestion.options && (
-                  <div className="space-y-3 mb-6">
+                  <div className="space-y-2 mb-4">
                     {currentQuestion.options.map((option, index) => {
                       const isUserAnswer = currentAnswer?.user_answer === option
                       const isCorrectAnswer = option === currentQuestion.correct_answer
@@ -386,7 +386,7 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
                       return (
                         <div
                           key={index}
-                          className={`p-4 rounded-lg border-2 ${
+                          className={`p-3 rounded-lg border-2 ${
                             isCorrectAnswer
                               ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
                               : isUserAnswer && !isCorrectAnswer
@@ -394,25 +394,25 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
                               : 'border-gray-200 dark:border-gray-700'
                           }`}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
                             {isCorrectAnswer && (
-                              <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0" />
+                              <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
                             )}
                             {isUserAnswer && !isCorrectAnswer && (
-                              <XCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0" />
+                              <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
                             )}
                             {!isCorrectAnswer && !isUserAnswer && (
-                              <div className="w-6 h-6 rounded-full border-2 border-gray-400 dark:border-gray-500 flex-shrink-0" />
+                              <div className="w-5 h-5 rounded-full border-2 border-gray-400 dark:border-gray-500 flex-shrink-0" />
                             )}
                             <div className="flex-1">
-                              <span className="text-gray-900 dark:text-gray-100">{option}</span>
+                              <span className="text-sm text-gray-900 dark:text-gray-100">{option}</span>
                               {isCorrectAnswer && (
-                                <span className="ml-2 text-sm text-green-600 dark:text-green-400 font-medium">
+                                <span className="ml-2 text-xs text-green-600 dark:text-green-400 font-medium">
                                   (Correct Answer)
                                 </span>
                               )}
                               {isUserAnswer && !isCorrectAnswer && (
-                                <span className="ml-2 text-sm text-red-600 dark:text-red-400 font-medium">
+                                <span className="ml-2 text-xs text-red-600 dark:text-red-400 font-medium">
                                   (Your Answer)
                                 </span>
                               )}
@@ -426,22 +426,22 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
 
                 {/* Answer Display for Short Answer */}
                 {currentQuestion.question_type === 'short_answer' && (
-                  <div className="space-y-4 mb-6">
+                  <div className="space-y-2 mb-4">
                     {/* User's Answer */}
-                    <div className={`p-4 rounded-lg border-2 ${
+                    <div className={`p-3 rounded-lg border-2 ${
                       currentAnswer?.is_correct
                         ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
                         : 'border-red-500 bg-red-50 dark:bg-red-900/20'
                     }`}>
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2">
                         {currentAnswer?.is_correct ? (
-                          <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0 mt-1" />
+                          <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                         ) : (
-                          <XCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-1" />
+                          <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                         )}
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Your Answer:</p>
-                          <p className="text-gray-900 dark:text-gray-100">
+                          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Your Answer:</p>
+                          <p className="text-sm text-gray-900 dark:text-gray-100">
                             {currentAnswer?.user_answer || '(No answer provided)'}
                           </p>
                         </div>
@@ -450,12 +450,12 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
 
                     {/* Correct Answer (if user was wrong) */}
                     {!currentAnswer?.is_correct && (
-                      <div className="p-4 rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-900/20">
-                        <div className="flex items-start gap-3">
-                          <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0 mt-1" />
+                      <div className="p-3 rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-900/20">
+                        <div className="flex items-start gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correct Answer:</p>
-                            <p className="text-gray-900 dark:text-gray-100">{currentQuestion.correct_answer}</p>
+                            <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Correct Answer:</p>
+                            <p className="text-sm text-gray-900 dark:text-gray-100">{currentQuestion.correct_answer}</p>
                           </div>
                         </div>
                       </div>
@@ -465,14 +465,14 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
 
                 {/* Explanation */}
                 {currentQuestion.explanation && (
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
-                    <div className="flex items-start gap-3">
-                      <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-1" />
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                    <div className="flex items-start gap-2">
+                      <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
-                        <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-2">
+                        <h3 className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-1">
                           Explanation
                         </h3>
-                        <p className="text-blue-800 dark:text-blue-200 leading-relaxed">
+                        <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
                           {currentQuestion.explanation}
                         </p>
                       </div>
@@ -482,35 +482,35 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
 
                 {/* Source Reference */}
                 {currentQuestion.source_reference && (
-                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2.5 mb-4">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
                       <span className="font-medium">Source:</span> {currentQuestion.source_reference}
                     </p>
                   </div>
                 )}
 
                 {/* Navigation */}
-                <div className="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
                     onClick={handlePreviousQuestion}
                     disabled={currentQuestionIndex === 0}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-4 h-4" />
                     Previous
                   </button>
 
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="text-xs text-gray-600 dark:text-gray-400">
                     {currentQuestionIndex + 1} of {filteredQuestions.length}
                   </span>
 
                   <button
                     onClick={handleNextQuestion}
                     disabled={currentQuestionIndex === filteredQuestions.length - 1}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -518,11 +518,11 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
 
             {/* Question Navigator */}
             <div className="lg:col-span-1">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 sticky top-24">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sticky top-20">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3">
                   Questions
                 </h3>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-5 gap-1.5">
                   {filteredQuestions.map((question, index) => {
                     const answer = getAnswerForQuestion(question.id)
                     const isCurrent = index === currentQuestionIndex
@@ -532,7 +532,7 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
                       <button
                         key={question.id}
                         onClick={() => setCurrentQuestionIndex(index)}
-                        className={`aspect-square rounded-lg border-2 font-medium text-sm transition-all ${
+                        className={`aspect-square rounded-lg border-2 font-medium text-xs transition-all ${
                           isCurrent
                             ? 'border-indigo-500 bg-indigo-500 text-white'
                             : answer?.is_correct
@@ -547,17 +547,17 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
                   })}
                 </div>
 
-                <div className="mt-6 space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded bg-indigo-500" />
+                <div className="mt-4 space-y-1.5 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-indigo-500" />
                     <span className="text-gray-600 dark:text-gray-400">Current</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded border-2 border-green-500 bg-green-50 dark:bg-green-900/20" />
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded border-2 border-green-500 bg-green-50 dark:bg-green-900/20" />
                     <span className="text-gray-600 dark:text-gray-400">Correct</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded border-2 border-red-500 bg-red-50 dark:bg-red-900/20" />
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded border-2 border-red-500 bg-red-50 dark:bg-red-900/20" />
                     <span className="text-gray-600 dark:text-gray-400">Incorrect</span>
                   </div>
                 </div>

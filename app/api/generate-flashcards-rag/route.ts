@@ -104,7 +104,132 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // 6. Determine selection mode and extract relevant text
+    // 6. Determine RAG strategy based on document size
+    const { determineRAGStrategy } = await import('@/lib/document-indexer')
+    const { isGeminiRAGAvailable, generateFlashcardsWithGeminiRAG } = await import('@/lib/gemini-rag')
+
+    const documentText = document.extracted_text || ''
+    const ragStrategy = documentText ? determineRAGStrategy(documentText) : 'chromadb'
+
+    logger.info('RAG strategy selected for flashcards', {
+      userId,
+      documentId,
+      strategy: ragStrategy,
+      textLength: documentText.length,
+      geminiAvailable: isGeminiRAGAvailable(),
+    })
+
+    // 6a. If Gemini strategy, use direct context window (bypass vector search)
+    if (ragStrategy === 'gemini' && isGeminiRAGAvailable()) {
+      logger.info('Using Gemini RAG for flashcard generation', { userId, documentId })
+
+      try {
+        // Extract topics from selection if provided
+        const selectedTopics: string[] | undefined = selection?.type === 'topic' && selection.topic
+          ? [selection.topic.title]
+          : undefined
+
+        const flashcards = await generateFlashcardsWithGeminiRAG(
+          documentId,
+          userId,
+          count,
+          selectedTopics
+        )
+
+        // Save flashcards to database
+        const insertData = flashcards.map((card: any) => ({
+          user_id: profile.id,
+          document_id: documentId,
+          front: card.front,
+          back: card.back,
+        }))
+
+        const { data: savedFlashcards, error: saveError } = await supabase
+          .from('flashcards')
+          .insert(insertData)
+          .select('id')
+
+        if (saveError) throw saveError
+
+        await incrementUsage(userId, 'flashcards')
+
+        const duration = Date.now() - startTime
+
+        logger.api('POST', '/api/generate-flashcards-rag', 200, duration, {
+          userId,
+          documentId,
+          strategy: 'gemini',
+          flashcardsGenerated: flashcards.length,
+        })
+
+        return NextResponse.json({
+          flashcards: savedFlashcards?.map((f: any) => f.id) || [],
+          count: flashcards.length,
+          strategy: 'gemini',
+          documentName: document.file_name,
+        })
+      } catch (geminiError: any) {
+        logger.error('Gemini flashcard generation failed, falling back to ChromaDB', geminiError, {
+          userId,
+          documentId,
+        })
+
+        // Fall through to ChromaDB path below
+        // Don't return error - try ChromaDB as fallback
+      }
+    }
+
+    // 6b. ChromaDB strategy: If no extracted text, try to extract it now (for old documents or large files)
+    if (!document.extracted_text && document.storage_path) {
+      logger.info('No extracted text found, extracting on-demand', { userId, documentId })
+
+      try {
+        // Download file from storage
+        const { data: fileBlob, error: downloadError } = await supabase
+          .storage
+          .from('documents')
+          .download(document.storage_path)
+
+        if (!downloadError && fileBlob) {
+          // Convert Blob to File
+          const arrayBuffer = await fileBlob.arrayBuffer()
+          const file = new File([arrayBuffer], document.file_name, { type: 'application/pdf' })
+
+          // Extract text using pdf2json
+          const { parseServerPDF } = await import('@/lib/server-pdf-parser')
+          const parseResult = await parseServerPDF(file)
+
+          if (parseResult.text && parseResult.text.length > 0) {
+            document.extracted_text = parseResult.text
+            logger.info('On-demand extraction successful', {
+              userId,
+              documentId,
+              textLength: parseResult.text.length,
+              pageCount: parseResult.pageCount
+            })
+
+            // Save the extracted text to database for future use
+            await supabase
+              .from('documents')
+              .update({
+                extracted_text: parseResult.text,
+                metadata: {
+                  ...document.metadata,
+                  page_count: parseResult.pageCount || document.metadata?.page_count,
+                  extracted_on_demand: true
+                }
+              })
+              .eq('id', documentId)
+          } else {
+            logger.warn('On-demand extraction yielded no text', { userId, documentId })
+          }
+        }
+      } catch (extractError) {
+        logger.error('On-demand extraction failed', extractError, { userId, documentId })
+      }
+    }
+
+    // 7. Determine selection mode and extract relevant text
     let combinedText = ''
     let selectionDescription = ''
     let usedVectorStore = false
@@ -473,6 +598,7 @@ export async function POST(request: NextRequest) {
       documentId,
       documentName: document.file_name,
       selection: selectionDescription,
+      strategy: 'chromadb',
       usedVectorStore,
       aiProvider: result.provider,
       providerReason: result.providerReason,

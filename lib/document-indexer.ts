@@ -16,6 +16,50 @@ export interface IndexingResult {
 }
 
 /**
+ * RAG strategy type for document processing
+ */
+export type RAGStrategy = 'chromadb' | 'gemini'
+
+/**
+ * Get the character threshold for using Gemini RAG
+ * Documents above this threshold will use Gemini's 2M token context window
+ * Documents below will use ChromaDB vector search for cost optimization
+ *
+ * @returns Character count threshold (default: 500,000 chars ~= 500KB)
+ */
+export function getGeminiThreshold(): number {
+  const threshold = process.env.GEMINI_THRESHOLD_CHARS
+  return threshold ? parseInt(threshold, 10) : 500_000
+}
+
+/**
+ * Determine if a document should use Gemini RAG based on its size
+ *
+ * @param textLength - Number of characters in the document
+ * @returns true if document should use Gemini, false for ChromaDB
+ */
+export function shouldUseGemini(textLength: number): boolean {
+  // Check if Gemini API key is configured
+  const hasGeminiKey = !!process.env.GEMINI_API_KEY
+  if (!hasGeminiKey) {
+    return false // Fall back to ChromaDB if Gemini not configured
+  }
+
+  const threshold = getGeminiThreshold()
+  return textLength >= threshold
+}
+
+/**
+ * Determine RAG strategy for a document based on its text content
+ *
+ * @param text - Extracted document text
+ * @returns 'gemini' for large docs, 'chromadb' for smaller docs
+ */
+export function determineRAGStrategy(text: string): RAGStrategy {
+  return shouldUseGemini(text.length) ? 'gemini' : 'chromadb'
+}
+
+/**
  * Index a document for RAG by downloading from storage and extracting text
  *
  * @param documentId - UUID of the document to index
@@ -75,6 +119,16 @@ export async function indexDocumentForRAG(
         throw new Error(`Failed to download document: ${downloadError?.message || 'Unknown error'}`)
       }
 
+      // Check file size - skip on-demand parsing for very large PDFs (>10MB)
+      const fileSizeMB = fileData.size / (1024 * 1024)
+      if (document.file_type === 'application/pdf' && fileSizeMB > 10) {
+        throw new Error(
+          `This PDF is too large (${fileSizeMB.toFixed(1)}MB) for on-demand text extraction. ` +
+          `The document text should have been extracted during upload. ` +
+          `Please try re-uploading the document, or use a smaller PDF file.`
+        )
+      }
+
       // Extract text based on file type
       if (document.file_type === 'application/pdf') {
         text = await extractPDFText(fileData, document.file_name)
@@ -105,8 +159,26 @@ export async function indexDocumentForRAG(
       throw new Error('Insufficient text content for indexing (minimum 100 characters)')
     }
 
-    // 6. Index document in vector store
-    logger.info('Starting vector indexing', { documentId })
+    // 6. Determine RAG strategy based on document size
+    const ragStrategy = determineRAGStrategy(text)
+    logger.info('RAG strategy determined', {
+      documentId,
+      strategy: ragStrategy,
+      textLength: text.length,
+      threshold: getGeminiThreshold(),
+    })
+
+    // 7. For Gemini documents, skip vector indexing (uses full context directly)
+    if (ragStrategy === 'gemini') {
+      logger.info('Skipping vector indexing for Gemini-eligible document', { documentId })
+      return {
+        success: true,
+        chunks: 0, // No chunks needed for Gemini
+      }
+    }
+
+    // 8. For ChromaDB documents, index in vector store
+    logger.info('Starting vector indexing for ChromaDB', { documentId })
 
     const result = await indexDocument(documentId, text, {
       fileName: document.file_name,

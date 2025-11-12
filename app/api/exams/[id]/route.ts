@@ -163,6 +163,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       difficulty,
       time_limit_minutes,
       is_template,
+      is_favorited,
       tags
     } = body
 
@@ -173,6 +174,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (difficulty !== undefined) updateData.difficulty = difficulty
     if (time_limit_minutes !== undefined) updateData.time_limit_minutes = time_limit_minutes
     if (is_template !== undefined) updateData.is_template = is_template
+    if (is_favorited !== undefined) updateData.is_favorited = is_favorited
     if (tags !== undefined) updateData.tags = tags
 
     if (Object.keys(updateData).length === 0) {

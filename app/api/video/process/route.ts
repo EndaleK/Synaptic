@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
-import { YoutubeTranscript } from 'youtube-transcript'
+import { fetchTranscript } from '@egoist/youtube-transcript-plus'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
@@ -79,6 +79,52 @@ export async function POST(request: NextRequest) {
 
     const durationSeconds = parseDuration(videoData.contentDetails.duration)
 
+    // Check if video already exists for this user
+    const { data: existingVideo } = await supabase
+      .from('videos')
+      .select('*')
+      .eq('user_id', profile.id)
+      .eq('video_id', videoId)
+      .single()
+
+    // If video exists, check if it needs reprocessing
+    if (existingVideo) {
+      const hasTranscript = existingVideo.transcript && existingVideo.transcript.length > 0
+      const hasFailed = existingVideo.processing_status === 'failed'
+
+      // Check if transcript has valid timestamps (not all zeros or all same value)
+      const hasBadTimestamps = hasTranscript && (
+        existingVideo.transcript.every((line: any) => line.start_time === 0) ||
+        existingVideo.transcript.every((line: any) => Math.floor(line.start_time) === 0) ||
+        (existingVideo.transcript.length > 5 &&
+         existingVideo.transcript.slice(0, 5).every((line: any) =>
+           Math.floor(line.start_time) === Math.floor(existingVideo.transcript[0].start_time)
+         ))
+      )
+
+      console.log(`[Video ${videoId}] Found existing video:`, {
+        id: existingVideo.id,
+        hasTranscript,
+        transcriptLength: existingVideo.transcript?.length || 0,
+        hasFailed,
+        hasBadTimestamps,
+        status: existingVideo.processing_status
+      })
+
+      // Only return existing video if it has transcript with valid timestamps
+      if (hasTranscript && !hasBadTimestamps) {
+        console.log(`[Video ${videoId}] Returning existing video with transcript`)
+        return NextResponse.json(existingVideo)
+      }
+
+      // Otherwise, delete the incomplete, failed, or bad timestamp record and reprocess
+      console.log(`[Video ${videoId}] Deleting video ${hasBadTimestamps ? 'with bad timestamps' : 'without transcript'} and reprocessing...`)
+      await supabase
+        .from('videos')
+        .delete()
+        .eq('id', existingVideo.id)
+    }
+
     // Create video record with pending status
     const { data: video, error: insertError } = await supabase
       .from('videos')
@@ -90,6 +136,9 @@ export async function POST(request: NextRequest) {
         channel_name: videoData.snippet.channelTitle,
         duration_seconds: durationSeconds,
         thumbnail_url: videoData.snippet.thumbnails.medium.url,
+        transcript: [],
+        key_points: [],
+        generated_flashcard_ids: [],
         processing_status: 'processing'
       })
       .select()
@@ -99,17 +148,33 @@ export async function POST(request: NextRequest) {
       throw insertError
     }
 
-    // Extract transcript
+    // Extract transcript (force English language)
     let transcript: any[] = []
+    let transcriptError: string | null = null
     try {
-      const transcriptData = await YoutubeTranscript.fetchTranscript(videoId)
-      transcript = transcriptData.map((line: any) => ({
-        start_time: line.offset / 1000, // Convert ms to seconds
-        end_time: (line.offset + line.duration) / 1000,
+      console.log(`[Video ${videoId}] Attempting transcript extraction with youtube-transcript-plus (English)...`)
+      const transcriptData = await fetchTranscript(videoId, { lang: 'en' })
+      console.log(`[Video ${videoId}] Transcript fetched successfully, ${transcriptData.segments.length} segments`)
+
+      // Check first segment to determine if offset is in ms or seconds
+      const firstOffset = transcriptData.segments[0]?.offset || 0
+      const isMilliseconds = firstOffset > 100 // If offset > 100, likely milliseconds
+
+      console.log(`[Video ${videoId}] First offset: ${firstOffset}, treating as ${isMilliseconds ? 'milliseconds' : 'seconds'}`)
+
+      transcript = transcriptData.segments.map((line: any) => ({
+        start_time: isMilliseconds ? line.offset / 1000 : line.offset,
+        end_time: isMilliseconds ? (line.offset + line.duration) / 1000 : (line.offset + line.duration),
         text: line.text
       }))
     } catch (err) {
-      console.error('Transcript extraction error:', err)
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      console.error(`[Video ${videoId}] Transcript extraction failed:`, {
+        error: errorMessage,
+        errorType: err instanceof Error ? err.constructor.name : typeof err,
+        stack: err instanceof Error ? err.stack : undefined
+      })
+      transcriptError = errorMessage
       // Continue without transcript - some videos don't have captions
     }
 
@@ -161,6 +226,14 @@ Focus on educational value. Extract 5-10 key learning points.`
       }
     }
 
+    // Determine processing status based on whether we got a transcript
+    const finalStatus = transcript.length > 0 ? 'completed' : 'failed'
+
+    console.log(`[Video ${videoId}] Updating video with status: ${finalStatus}, transcript segments: ${transcript.length}`)
+    if (transcriptError) {
+      console.log(`[Video ${videoId}] Transcript error: ${transcriptError}`)
+    }
+
     // Update video with completed data
     const { data: updatedVideo, error: updateError } = await supabase
       .from('videos')
@@ -168,7 +241,7 @@ Focus on educational value. Extract 5-10 key learning points.`
         transcript,
         summary,
         key_points: keyPoints,
-        processing_status: 'completed'
+        processing_status: finalStatus
       })
       .eq('id', video.id)
       .select()
@@ -178,6 +251,7 @@ Focus on educational value. Extract 5-10 key learning points.`
       throw updateError
     }
 
+    console.log(`[Video ${videoId}] Video processing complete`)
     return NextResponse.json(updatedVideo)
   } catch (error) {
     console.error('Video processing error:', error)

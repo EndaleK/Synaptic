@@ -116,6 +116,7 @@ export async function POST(req: NextRequest) {
         file_name,
         extracted_text,
         metadata,
+        storage_path,
         user_id,
         user_profiles!inner (
           id,
@@ -142,7 +143,7 @@ export async function POST(req: NextRequest) {
       // 1. Check if document exists at all
       const { data: anyDocument, error: docError } = await supabase
         .from('documents')
-        .select('id, user_id, file_name')
+        .select('id, user_id, file_name, extracted_text, storage_path, metadata')
         .eq('id', documentId)
         .single()
 
@@ -181,15 +182,12 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Only return error if we still don't have the document
+      // Only throw error if we still don't have the document
       if (!documentWithProfile) {
         const duration = Date.now() - startTime
         const errorMessage = fetchError?.code === 'PGRST116' ? 'Document not found or access denied' : 'Failed to fetch document'
         logger.api('POST', '/api/generate-mindmap', 404, duration, { userId, error: errorMessage })
-        return NextResponse.json(
-          { error: errorMessage, debug: { documentExists: !!anyDocument, fetchErrorCode: fetchError?.code } },
-          { status: 404 }
-        )
+        throw new Error(errorMessage)
       }
     }
 
@@ -198,6 +196,7 @@ export async function POST(req: NextRequest) {
       file_name: documentWithProfile.file_name,
       extracted_text: documentWithProfile.extracted_text,
       metadata: documentWithProfile.metadata,
+      storage_path: documentWithProfile.storage_path,
       user_id: documentWithProfile.user_id
     }
 
@@ -205,14 +204,62 @@ export async function POST(req: NextRequest) {
       id: (documentWithProfile.user_profiles as any).id
     }
 
+    // If no extracted text, try to extract it now (for old documents or large files)
+    if (!document.extracted_text && document.storage_path) {
+      logger.info('No extracted text found, extracting on-demand', { userId, documentId })
+      tracker.completeStep(1, 'Extracting text from PDF...')
+
+      try {
+        // Download file from storage
+        const { data: fileBlob, error: downloadError } = await supabase
+          .storage
+          .from('documents')
+          .download(document.storage_path)
+
+        if (!downloadError && fileBlob) {
+          // Convert Blob to File
+          const arrayBuffer = await fileBlob.arrayBuffer()
+          const file = new File([arrayBuffer], document.file_name, { type: 'application/pdf' })
+
+          // Extract text using pdf2json
+          const { parseServerPDF } = await import('@/lib/server-pdf-parser')
+          const parseResult = await parseServerPDF(file)
+
+          if (parseResult.text && parseResult.text.length > 0) {
+            document.extracted_text = parseResult.text
+            logger.info('On-demand extraction successful', {
+              userId,
+              documentId,
+              textLength: parseResult.text.length,
+              pageCount: parseResult.pageCount
+            })
+
+            // Optionally save the extracted text to database for future use
+            await supabase
+              .from('documents')
+              .update({
+                extracted_text: parseResult.text,
+                metadata: {
+                  ...document.metadata,
+                  page_count: parseResult.pageCount || document.metadata.page_count,
+                  extracted_on_demand: true
+                }
+              })
+              .eq('id', documentId)
+          } else {
+            logger.warn('On-demand extraction yielded no text', { userId, documentId })
+          }
+        }
+      } catch (extractError) {
+        logger.error('On-demand extraction failed', extractError, { userId, documentId })
+      }
+    }
+
     if (!document.extracted_text) {
-      logger.warn('Document has no extracted text', { userId, documentId })
+      logger.warn('Document has no extracted text (even after on-demand attempt)', { userId, documentId })
       const duration = Date.now() - startTime
       logger.api('POST', '/api/generate-mindmap', 400, duration, { userId, error: 'No extracted text' })
-      return NextResponse.json(
-        { error: "Document has no extracted text" },
-        { status: 400 }
-      )
+      throw new Error("Document has no extracted text. This may be a scanned PDF or image-based document that requires OCR.")
     }
 
     logger.debug('Document fetched successfully', {
@@ -269,18 +316,12 @@ export async function POST(req: NextRequest) {
         // Validate extracted text
         if (!documentText || documentText.trim().length === 0) {
           logger.warn('No content found in selection', { userId, documentId, selectionType: selection.type })
-          return NextResponse.json(
-            { error: 'No content found in selected area' },
-            { status: 400 }
-          )
+          throw new Error('No content found in selected area')
         }
 
       } catch (error) {
         logger.error('Text extraction failed for mind map', error, { userId, documentId, selection })
-        return NextResponse.json(
-          { error: 'Failed to extract text from selection' },
-          { status: 400 }
-        )
+        throw new Error('Failed to extract text from selection')
       }
     }
     // else: Use full document text (already set)
@@ -336,7 +377,7 @@ export async function POST(req: NextRequest) {
 
     const selectedProvider = providerFactory.getProviderWithFallback(selectedProviderType, 'openai')
 
-    // Check if provider is configured - return helpful error if not
+    // Check if provider is configured - throw error if not
     if (!selectedProvider.isConfigured()) {
       logger.error('AI provider not configured', null, {
         userId,
@@ -346,14 +387,7 @@ export async function POST(req: NextRequest) {
       })
       const duration = Date.now() - startTime
       logger.api('POST', '/api/generate-mindmap', 500, duration, { userId, error: 'AI provider not configured' })
-      return NextResponse.json(
-        {
-          error: `Mind map generation is not configured. Please add at least one AI provider API key to your environment variables.`,
-          details: `Attempted to use ${selectedProvider.name}, but API key is missing. Add one of: DEEPSEEK_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY`,
-          configurationHelp: 'See .env.example for setup instructions'
-        },
-        { status: 500 }
-      )
+      throw new Error(`Mind map generation is not configured. Please add at least one AI provider API key to your environment variables. Attempted to use ${selectedProvider.name}, but API key is missing. Add one of: DEEPSEEK_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY`)
     }
 
     // Safety cap: DeepSeek works best with fewer nodes (prevents JSON truncation)

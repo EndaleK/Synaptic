@@ -6,7 +6,7 @@ export type PreferredMode = 'home' | 'flashcards' | 'chat' | 'podcast' | 'mindma
 export type TeachingStylePreference = 'socratic' | 'direct' | 'mixed'
 export type SubscriptionTier = 'free' | 'premium' | 'enterprise'
 export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'past_due'
-export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed'
+export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'needs_ocr'
 export type MessageType = 'user' | 'assistant'
 export type TeachingMode = 'direct' | 'socratic' | 'guided'
 export type Difficulty = 'easy' | 'medium' | 'hard'
@@ -236,6 +236,7 @@ export interface Video {
   generated_flashcard_ids: string[]
   processing_status: VideoProcessingStatus
   error_message?: string
+  is_favorited?: boolean
   created_at: string
   updated_at: string
 }
@@ -272,6 +273,7 @@ export interface Exam {
   difficulty: ExamDifficulty
   time_limit_minutes?: number
   is_template: boolean
+  is_favorited?: boolean
   tags: string[]
   created_at: string
   updated_at: string

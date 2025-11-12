@@ -1,32 +1,30 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { Search, Loader2, AlertCircle, ArrowLeft } from 'lucide-react'
+import { useState } from 'react'
+import { Loader2, AlertCircle, ArrowLeft, Star, Trash2 } from 'lucide-react'
 import VideoSearch from './VideoSearch'
 import VideoPlayer from './VideoPlayer'
 import VideoAnalysis from './VideoAnalysis'
+import MyVideosView from './MyVideosView'
 import type { Video } from '@/lib/supabase/types'
-import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@clerk/nextjs'
+import { useDocumentStore } from '@/lib/store/useStore'
+import { useUIStore } from '@/lib/store/useStore'
 
 export default function VideoView() {
   const { user } = useUser()
-  const [activeView, setActiveView] = useState<'search' | 'player'>('search')
+  const setCurrentDocument = useDocumentStore(state => state.setCurrentDocument)
+  const setActiveMode = useUIStore(state => state.setActiveMode)
+  const [activeView, setActiveView] = useState<'search' | 'my-videos' | 'player'>('search')
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null)
   const [video, setVideo] = useState<Video | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [myVideos, setMyVideos] = useState<Video[]>([])
+  const [isLoadingVideos, setIsLoadingVideos] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
-
-  // Helper function to ensure profile exists (calls API endpoint)
-  const ensureProfileExists = async () => {
-    const response = await fetch('/api/user/ensure-profile', { method: 'POST' })
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to create user profile')
-    }
-    return await response.json()
-  }
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleVideoSelect = async (videoId: string, videoUrl: string) => {
     if (!user) return
@@ -37,40 +35,7 @@ export default function VideoView() {
     setError(null)
 
     try {
-      // Ensure profile exists (creates it server-side if needed)
-      await ensureProfileExists()
-
-      // Check if video already exists in database
-      const supabase = createClient()
-
-      // Get user profile
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('clerk_user_id', user.id)
-        .single()
-
-      if (!profile || profileError) {
-        console.error('User profile not found after creation attempt:', profileError)
-        throw new Error('Failed to load user profile')
-      }
-
-      // Check for existing video
-      const { data: existingVideo } = await supabase
-        .from('videos')
-        .select('*')
-        .eq('user_id', profile.id)
-        .eq('video_id', videoId)
-        .single()
-
-      if (existingVideo) {
-        // Video already processed
-        setVideo(existingVideo)
-        setIsProcessing(false)
-        return
-      }
-
-      // Process new video
+      // Process video via API (handles profile lookup and duplicate checking)
       const response = await fetch('/api/video/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,7 +71,8 @@ export default function VideoView() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to generate flashcards')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate flashcards')
       }
 
       const { flashcardIds } = await response.json()
@@ -117,10 +83,94 @@ export default function VideoView() {
         generated_flashcard_ids: flashcardIds
       })
 
-      alert(`Successfully generated ${flashcardIds.length} flashcards!`)
+      // Get the document for this video and navigate to flashcards
+      const docResponse = await fetch(`/api/video/${video.id}/document`)
+      if (docResponse.ok) {
+        const videoDocument = await docResponse.json()
+        setCurrentDocument(videoDocument)
+        setActiveMode('flashcards')
+      } else {
+        alert(`Successfully generated ${flashcardIds.length} flashcards! Go to the Flashcards section to view them.`)
+      }
     } catch (err) {
       console.error('Flashcard generation error:', err)
-      alert('Failed to generate flashcards')
+      alert(err instanceof Error ? err.message : 'Failed to generate flashcards')
+    }
+  }
+
+  const handleGenerateMindMap = async () => {
+    if (!video) return
+
+    try {
+      const response = await fetch('/api/video/generate-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoId: video.id,
+          contentType: 'mindmap'
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate mind map')
+      }
+
+      const { mindmapId } = await response.json()
+      alert(`Successfully generated mind map! View it in the Mind Map section.`)
+    } catch (err) {
+      console.error('Mind map generation error:', err)
+      alert(err instanceof Error ? err.message : 'Failed to generate mind map')
+    }
+  }
+
+  const handleGenerateExam = async () => {
+    if (!video) return
+
+    try {
+      const response = await fetch('/api/video/generate-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoId: video.id,
+          contentType: 'exam'
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate exam')
+      }
+
+      const { examId } = await response.json()
+      alert(`Successfully generated mock exam! View it in the Mock Exams section.`)
+    } catch (err) {
+      console.error('Exam generation error:', err)
+      alert(err instanceof Error ? err.message : 'Failed to generate exam')
+    }
+  }
+
+  const handleChatWithVideo = async () => {
+    if (!video) return
+
+    try {
+      // Get or create the virtual document for the video
+      const response = await fetch(`/api/video/${video.id}/document`)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to get video document')
+      }
+
+      const videoDocument = await response.json()
+
+      // Set the video's document as current
+      setCurrentDocument(videoDocument)
+      // Navigate to chat mode
+      setActiveMode('chat')
+    } catch (err) {
+      console.error('Chat navigation error:', err)
+      alert(err instanceof Error ? err.message : 'Failed to open chat')
     }
   }
 
@@ -136,8 +186,125 @@ export default function VideoView() {
     setError(null)
   }
 
-  if (activeView === 'search') {
-    return <VideoSearch onVideoSelect={handleVideoSelect} />
+  const handleToggleFavorite = async () => {
+    if (!video) return
+
+    try {
+      const newFavoritedState = !video.is_favorited
+
+      // Optimistic UI update
+      setVideo({
+        ...video,
+        is_favorited: newFavoritedState
+      })
+
+      const response = await fetch(`/api/video/${video.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_favorited: newFavoritedState })
+      })
+
+      if (!response.ok) {
+        // Revert on failure
+        setVideo({
+          ...video,
+          is_favorited: video.is_favorited
+        })
+        throw new Error('Failed to toggle favorite')
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err)
+      alert(err instanceof Error ? err.message : 'Failed to toggle favorite')
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!video) return
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/video/${video.id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete video')
+      }
+
+      // Go back to search after successful deletion
+      handleBackToSearch()
+    } catch (err) {
+      console.error('Error deleting video:', err)
+      alert(err instanceof Error ? err.message : 'Failed to delete video')
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteModal(false)
+    }
+  }
+
+  const loadMyVideos = async (filter: 'all' | 'favorites' = 'all') => {
+    setIsLoadingVideos(true)
+    try {
+      const response = await fetch(`/api/video?filter=${filter}`)
+      if (!response.ok) throw new Error('Failed to load videos')
+      const videos = await response.json()
+      setMyVideos(videos)
+    } catch (err) {
+      console.error('Error loading videos:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load videos')
+    } finally {
+      setIsLoadingVideos(false)
+    }
+  }
+
+  // Tab navigation
+  if (activeView === 'search' || activeView === 'my-videos') {
+    return (
+      <div className="h-full flex flex-col">
+        {/* Tabs */}
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex gap-1 p-2">
+            <button
+              onClick={() => setActiveView('search')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                activeView === 'search'
+                  ? 'bg-accent-primary text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              Search YouTube
+            </button>
+            <button
+              onClick={() => {
+                setActiveView('my-videos')
+                loadMyVideos('all')
+              }}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                activeView === 'my-videos'
+                  ? 'bg-accent-primary text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              My Videos
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-hidden">
+          {activeView === 'search' ? (
+            <VideoSearch onVideoSelect={handleVideoSelect} />
+          ) : (
+            <MyVideosView
+              videos={myVideos}
+              isLoading={isLoadingVideos}
+              onVideoSelect={handleVideoSelect}
+              onLoadVideos={loadMyVideos}
+            />
+          )}
+        </div>
+      </div>
+    )
   }
 
   // Player View
@@ -177,6 +344,33 @@ export default function VideoView() {
               >
                 {video.processing_status}
               </span>
+            </div>
+          )}
+          {video && (
+            <div className="flex items-center gap-2">
+              {/* Favorite/Bookmark Button */}
+              <button
+                onClick={handleToggleFavorite}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                title={video.is_favorited ? "Remove from favorites" : "Add to favorites"}
+              >
+                <Star
+                  className={`w-5 h-5 ${
+                    video.is_favorited
+                      ? 'fill-yellow-400 text-yellow-400'
+                      : 'text-gray-400 dark:text-gray-500'
+                  }`}
+                />
+              </button>
+
+              {/* Delete Button */}
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                title="Delete video"
+              >
+                <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </button>
             </div>
           )}
         </div>
@@ -238,9 +432,50 @@ export default function VideoView() {
               summary={video.summary}
               keyPoints={video.key_points}
               flashcardCount={video.generated_flashcard_ids.length}
+              hasTranscript={!!video.transcript && video.transcript.length > 0}
               onGenerateFlashcards={handleGenerateFlashcards}
+              onGenerateMindMap={handleGenerateMindMap}
+              onGenerateExam={handleGenerateExam}
+              onChatWithVideo={handleChatWithVideo}
               onJumpToTimestamp={handleJumpToTimestamp}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && video && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              Delete Video
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              Are you sure you want to delete "{video.title}"? This will also delete all associated flashcards and cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

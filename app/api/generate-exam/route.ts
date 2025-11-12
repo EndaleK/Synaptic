@@ -14,6 +14,7 @@ import { logger } from '@/lib/logger'
 import { applyRateLimit, RateLimits } from '@/lib/rate-limit'
 import { estimateRequestCost, trackUsage } from '@/lib/cost-estimator'
 import { checkUsageLimit, incrementUsage } from '@/lib/usage-limits'
+import { extractTextFromPages } from '@/lib/text-extraction'
 
 export const maxDuration = 300 // 5 minutes for complex exams
 
@@ -70,7 +71,8 @@ export async function POST(request: NextRequest) {
       time_limit_minutes,
       topics,
       include_explanations = true,
-      tags = []
+      tags = [],
+      selection
     } = body
 
     // 5. Validate required fields
@@ -112,7 +114,7 @@ export async function POST(request: NextRequest) {
     // 7. Verify document ownership and get content
     const { data: document, error: docError } = await supabase
       .from('documents')
-      .select('id, file_name, extracted_text, user_id')
+      .select('id, file_name, extracted_text, user_id, storage_path, metadata')
       .eq('id', document_id)
       .eq('user_id', profile.id)
       .single()
@@ -133,16 +135,178 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 9. Determine selection mode and extract relevant text
+    let contentText = ''
+    let selectionDescription = 'full document'
+
+    if (selection && selection.type === 'pages' && selection.pageRange) {
+      // PAGE RANGE MODE: Extract text from specific pages
+      const { start, end } = selection.pageRange
+      selectionDescription = `pages ${start}-${end}`
+
+      logger.info('Exam generation with page range', {
+        userId,
+        documentId: document_id,
+        pageStart: start,
+        pageEnd: end,
+      })
+
+      try {
+        contentText = await extractTextFromPages(
+          document_id,
+          [{ start, end }],
+          { maxLength: 48000 }
+        )
+
+        if (!contentText || contentText.trim().length === 0) {
+          return NextResponse.json(
+            {
+              error: 'No content found in selected page range',
+              suggestion: 'Try selecting "Full Document" or a different page range'
+            },
+            { status: 400 }
+          )
+        }
+
+        logger.info('Page range extraction successful', {
+          userId,
+          documentId: document_id,
+          pageRange: `${start}-${end}`,
+          extractedLength: contentText.length,
+        })
+      } catch (error) {
+        logger.error('Page range extraction failed', error, {
+          userId,
+          documentId: document_id,
+          pageRange: `${start}-${end}`,
+        })
+        return NextResponse.json(
+          {
+            error: 'Failed to extract content from page range',
+            details: error instanceof Error ? error.message : 'Unknown error'
+          },
+          { status: 500 }
+        )
+      }
+
+    } else if (selection && selection.type === 'chapters' && selection.chapterIds) {
+      // CHAPTER MODE: Extract text from selected chapters
+      const { chapterIds, chapters } = selection
+      selectionDescription = `${chapterIds.length} selected chapters`
+
+      logger.info('Exam generation with chapter selection', {
+        userId,
+        documentId: document_id,
+        chapterCount: chapterIds.length,
+      })
+
+      try {
+        const { extractChapterText } = await import('@/lib/chapter-extractor')
+        const fullText = document.extracted_text || ''
+
+        if (!fullText || fullText.trim().length === 0) {
+          return NextResponse.json(
+            { error: 'No text content available for chapter extraction' },
+            { status: 400 }
+          )
+        }
+
+        contentText = extractChapterText(fullText, chapters, chapterIds)
+
+        if (!contentText || contentText.trim().length === 0) {
+          return NextResponse.json(
+            { error: 'No content found in selected chapters' },
+            { status: 400 }
+          )
+        }
+
+        // Truncate to token limit
+        contentText = contentText.substring(0, 48000)
+
+        logger.info('Chapter-based extraction successful', {
+          userId,
+          documentId: document_id,
+          chapterIds,
+          extractedLength: contentText.length,
+        })
+      } catch (error) {
+        logger.error('Chapter extraction failed', error, {
+          userId,
+          documentId: document_id,
+        })
+        return NextResponse.json(
+          {
+            error: 'Failed to extract content from selected chapters',
+            details: error instanceof Error ? error.message : 'Unknown error'
+          },
+          { status: 500 }
+        )
+      }
+
+    } else if (selection && selection.type === 'topic' && selection.topic) {
+      // TOPIC MODE: Use the topic title and description as context
+      const topicTitle = selection.topic.title
+      const topicDescription = selection.topic.description || ''
+      selectionDescription = `topic: ${topicTitle}`
+
+      logger.info('Exam generation with topic selection', {
+        userId,
+        documentId: document_id,
+        topic: topicTitle,
+      })
+
+      // For topics, we'll use page range from the topic if available
+      if (selection.topic.pageRange) {
+        const { start, end } = selection.topic.pageRange
+        try {
+          contentText = await extractTextFromPages(
+            document_id,
+            [{ start, end }],
+            { maxLength: 48000 }
+          )
+
+          logger.info('Topic page range extraction successful', {
+            userId,
+            documentId: document_id,
+            topic: topicTitle,
+            pageRange: `${start}-${end}`,
+            extractedLength: contentText.length,
+          })
+        } catch (error) {
+          logger.warn('Topic page range extraction failed, using full text', error, {
+            userId,
+            documentId: document_id,
+          })
+          contentText = document.extracted_text.substring(0, 48000)
+        }
+      } else {
+        // No page range, use full document
+        contentText = document.extracted_text.substring(0, 48000)
+      }
+
+    } else {
+      // FULL DOCUMENT MODE: Use full text
+      selectionDescription = 'full document'
+      contentText = document.extracted_text.substring(0, 48000)
+
+      logger.info('Exam generation for full document', {
+        userId,
+        documentId: document_id,
+      })
+    }
+
     logger.info('Starting exam generation', {
       userId,
       documentId: document_id,
       fileName: document.file_name,
       questionCount: question_count,
       difficulty,
-      textLength: document.extracted_text.length
+      selectionType: selection?.type || 'full',
+      selectionDescription,
+      textLength: contentText.length
     })
 
-    // 9. Generate exam questions using AI
+    // 10. Generate exam questions using AI
     const generationOptions: ExamGenerationOptions = {
       questionCount: question_count,
       difficulty: difficulty as ExamDifficulty,
@@ -151,7 +315,7 @@ export async function POST(request: NextRequest) {
       includeExplanations: include_explanations
     }
 
-    const result = await generateExamQuestions(document.extracted_text, generationOptions)
+    const result = await generateExamQuestions(contentText, generationOptions)
 
     logger.info('Exam questions generated successfully', {
       userId,
@@ -160,7 +324,7 @@ export async function POST(request: NextRequest) {
       questionCount: result.questions.length
     })
 
-    // 10. Track usage and cost
+    // 11. Track usage and cost
     const modelMap: Record<string, 'gpt-3.5-turbo' | 'claude-3-5-sonnet' | 'gemini-1.5-pro' | 'deepseek-chat'> = {
       'deepseek': 'deepseek-chat',
       'openai': 'gpt-3.5-turbo',
@@ -169,7 +333,7 @@ export async function POST(request: NextRequest) {
     }
 
     const modelForCost = modelMap[result.provider] || 'gpt-3.5-turbo'
-    const costEstimate = estimateRequestCost(modelForCost as any, document.extracted_text, 4000)
+    const costEstimate = estimateRequestCost(modelForCost as any, contentText, 4000)
     trackUsage(userId, modelForCost as any, costEstimate.inputTokens, costEstimate.outputTokens)
 
     // 11. Create exam record in database
@@ -251,7 +415,9 @@ export async function POST(request: NextRequest) {
       userId,
       examId: exam.id,
       questionCount: insertedQuestions.length,
-      textLength: document.extracted_text.length,
+      selectionType: selection?.type || 'full',
+      selectionDescription,
+      textLength: contentText.length,
       provider: result.provider
     })
 

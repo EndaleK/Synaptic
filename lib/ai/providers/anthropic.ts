@@ -36,7 +36,7 @@ export class AnthropicProvider implements AIProvider {
     const conversationMessages = messages.filter(m => m.role !== 'system');
 
     const response = await this.client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: options?.maxTokens ?? 2000,
       temperature: options?.temperature ?? 0.7,
       system: systemMessage?.content || undefined,
@@ -74,7 +74,7 @@ export class AnthropicProvider implements AIProvider {
     const conversationMessages = messages.filter(m => m.role !== 'system');
 
     const stream = await this.client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: options?.maxTokens ?? 2000,
       temperature: options?.temperature ?? 0.7,
       system: systemMessage?.content || undefined,

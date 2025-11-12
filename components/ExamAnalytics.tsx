@@ -187,82 +187,232 @@ export default function ExamAnalytics({ examId }: ExamAnalyticsProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Overall Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 rounded-lg p-6 border border-indigo-200 dark:border-indigo-800">
-          <div className="flex items-center justify-between mb-2">
-            <Trophy className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
-            <span className="text-3xl font-bold text-indigo-900 dark:text-indigo-100">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 rounded-lg p-3 border border-indigo-200 dark:border-indigo-800">
+          <div className="flex items-center justify-between mb-1">
+            <Trophy className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            <span className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
               {overallStats.averageScore.toFixed(1)}%
             </span>
           </div>
-          <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">Average Score</p>
-          <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+          <p className="text-xs font-medium text-indigo-800 dark:text-indigo-200">Average Score</p>
+          <p className="text-xs text-indigo-600 dark:text-indigo-400">
             {overallStats.totalAttempts} attempt{overallStats.totalAttempts !== 1 ? 's' : ''}
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-6 border border-green-200 dark:border-green-800">
-          <div className="flex items-center justify-between mb-2">
-            <Target className="w-8 h-8 text-green-600 dark:text-green-400" />
-            <span className="text-3xl font-bold text-green-900 dark:text-green-100">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
+          <div className="flex items-center justify-between mb-1">
+            <Target className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <span className="text-2xl font-bold text-green-900 dark:text-green-100">
               {overallStats.highestScore.toFixed(1)}%
             </span>
           </div>
-          <p className="text-sm font-medium text-green-800 dark:text-green-200">Highest Score</p>
-          <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+          <p className="text-xs font-medium text-green-800 dark:text-green-200">Highest Score</p>
+          <p className="text-xs text-green-600 dark:text-green-400">
             Best performance
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
-          <div className="flex items-center justify-between mb-2">
-            <Clock className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            <span className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+          <div className="flex items-center justify-between mb-1">
+            <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <span className="text-2xl font-bold text-blue-900 dark:text-blue-100">
               {formatTime(overallStats.averageTimePerQuestion)}
             </span>
           </div>
-          <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Avg Time/Question</p>
-          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+          <p className="text-xs font-medium text-blue-800 dark:text-blue-200">Avg Time/Question</p>
+          <p className="text-xs text-blue-600 dark:text-blue-400">
             Total: {formatTime(overallStats.totalTimeSpent)}
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-6 border border-purple-200 dark:border-purple-800">
-          <div className="flex items-center justify-between mb-2">
-            <BarChart3 className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-            <span className="text-3xl font-bold text-purple-900 dark:text-purple-100">
+        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 rounded-lg p-3 border border-indigo-200 dark:border-indigo-800">
+          <div className="flex items-center justify-between mb-1">
+            <BarChart3 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            <span className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
               {overallStats.totalAttempts}
             </span>
           </div>
-          <p className="text-sm font-medium text-purple-800 dark:text-purple-200">Total Attempts</p>
-          <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+          <p className="text-xs font-medium text-indigo-800 dark:text-indigo-200">Total Attempts</p>
+          <p className="text-xs text-indigo-600 dark:text-indigo-400">
             All time
           </p>
         </div>
       </div>
 
+      {/* Performance by Topic */}
+      {topicPerformance.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+          <button
+            onClick={() => toggleSection('topics')}
+            className="flex items-center justify-between w-full mb-2"
+          >
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <BookOpen className="w-4 h-4" />
+              Performance by Topic
+            </h3>
+            {expandedSection === 'topics' ? (
+              <ChevronUp className="w-4 h-4 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-gray-400" />
+            )}
+          </button>
+
+          {expandedSection === 'topics' && (
+            <>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={topicPerformance}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="topic" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" domain={[0, 100]} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1f2937',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: '#fff'
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="percentage" fill={COLORS.info} name="Success Rate (%)" />
+                </BarChart>
+              </ResponsiveContainer>
+
+              <div className="mt-3 space-y-1.5">
+                {topicPerformance.map((topic, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{topic.topic}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        {topic.correct} / {topic.total} correct
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${
+                            topic.percentage >= 70 ? 'bg-green-500' :
+                            topic.percentage >= 50 ? 'bg-yellow-500' :
+                            'bg-red-500'
+                          }`}
+                          style={{ width: `${topic.percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white min-w-[50px] text-right">
+                        {topic.percentage.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Most Challenging Questions */}
+      {questionAnalytics.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+          <button
+            onClick={() => toggleSection('questions')}
+            className="flex items-center justify-between w-full mb-2"
+          >
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              Most Challenging Questions
+            </h3>
+            {expandedSection === 'questions' ? (
+              <ChevronUp className="w-4 h-4 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-gray-400" />
+            )}
+          </button>
+
+          {expandedSection === 'questions' && (
+            <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+              {questionAnalytics
+                .sort((a, b) => a.success_rate - b.success_rate)
+                .slice(0, 10)
+                .map((question, index) => (
+                  <div
+                    key={question.question_id}
+                    className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                  >
+                    <div className="flex items-start justify-between mb-1">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
+                          {question.question_text}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {question.topic && (
+                            <span className="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-full">
+                              {question.topic}
+                            </span>
+                          )}
+                          {question.difficulty && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                              question.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200' :
+                              question.difficulty === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200' :
+                              'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200'
+                            }`}>
+                              {question.difficulty}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="ml-3 text-right">
+                        <p className={`text-lg font-bold ${
+                          question.success_rate >= 70 ? 'text-green-600 dark:text-green-400' :
+                          question.success_rate >= 50 ? 'text-yellow-600 dark:text-yellow-400' :
+                          'text-red-600 dark:text-red-400'
+                        }`}>
+                          {question.success_rate.toFixed(1)}%
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {question.correct_attempts}/{question.total_attempts}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${
+                          question.success_rate >= 70 ? 'bg-green-500' :
+                          question.success_rate >= 50 ? 'bg-yellow-500' :
+                          'bg-red-500'
+                        }`}
+                        style={{ width: `${question.success_rate}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Score Trend Over Time */}
       {attempts.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
           <button
             onClick={() => toggleSection('trend')}
-            className="flex items-center justify-between w-full mb-4"
+            className="flex items-center justify-between w-full mb-2"
           >
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
               Score Trend Over Time
             </h3>
             {expandedSection === 'trend' ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
+              <ChevronUp className="w-4 h-4 text-gray-400" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
+              <ChevronDown className="w-4 h-4 text-gray-400" />
             )}
           </button>
 
           {expandedSection === 'trend' && (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={200}>
               <LineChart data={scoreTrendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="date" stroke="#9ca3af" />
@@ -290,97 +440,27 @@ export default function ExamAnalytics({ examId }: ExamAnalyticsProps) {
         </div>
       )}
 
-      {/* Performance by Topic */}
-      {topicPerformance.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <button
-            onClick={() => toggleSection('topics')}
-            className="flex items-center justify-between w-full mb-4"
-          >
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <BookOpen className="w-5 h-5" />
-              Performance by Topic
-            </h3>
-            {expandedSection === 'topics' ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
-
-          {expandedSection === 'topics' && (
-            <>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={topicPerformance}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="topic" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" domain={[0, 100]} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1f2937',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: '#fff'
-                    }}
-                  />
-                  <Legend />
-                  <Bar dataKey="percentage" fill={COLORS.info} name="Success Rate (%)" />
-                </BarChart>
-              </ResponsiveContainer>
-
-              <div className="mt-6 space-y-2">
-                {topicPerformance.map((topic, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-white">{topic.topic}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {topic.correct} / {topic.total} correct
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-32 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${
-                            topic.percentage >= 70 ? 'bg-green-500' :
-                            topic.percentage >= 50 ? 'bg-yellow-500' :
-                            'bg-red-500'
-                          }`}
-                          style={{ width: `${topic.percentage}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white min-w-[50px] text-right">
-                        {topic.percentage.toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
       {/* Performance by Difficulty */}
       {difficultyPerformance.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
           <button
             onClick={() => toggleSection('difficulty')}
-            className="flex items-center justify-between w-full mb-4"
+            className="flex items-center justify-between w-full mb-2"
           >
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <Target className="w-5 h-5" />
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <Target className="w-4 h-4" />
               Performance by Difficulty
             </h3>
             {expandedSection === 'difficulty' ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
+              <ChevronUp className="w-4 h-4 text-gray-400" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
+              <ChevronDown className="w-4 h-4 text-gray-400" />
             )}
           </button>
 
           {expandedSection === 'difficulty' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ResponsiveContainer width="100%" height={300}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
                     data={difficultyPerformance}
@@ -409,25 +489,25 @@ export default function ExamAnalytics({ examId }: ExamAnalyticsProps) {
                 </PieChart>
               </ResponsiveContainer>
 
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {difficultyPerformance.map((diff, index) => (
-                  <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${
+                  <div key={index} className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
                         diff.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200' :
                         diff.difficulty === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200' :
                         'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200'
                       }`}>
                         {diff.difficulty}
                       </span>
-                      <span className="text-xl font-bold text-gray-900 dark:text-white">
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">
                         {diff.percentage.toFixed(1)}%
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
                       {diff.correct} correct out of {diff.total} questions
                     </p>
-                    <div className="mt-2 w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                    <div className="mt-1 w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                       <div
                         className={`h-full ${
                           diff.difficulty === 'easy' ? 'bg-green-500' :
@@ -445,126 +525,46 @@ export default function ExamAnalytics({ examId }: ExamAnalyticsProps) {
         </div>
       )}
 
-      {/* Most Challenging Questions */}
-      {questionAnalytics.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <button
-            onClick={() => toggleSection('questions')}
-            className="flex items-center justify-between w-full mb-4"
-          >
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
-              Most Challenging Questions
-            </h3>
-            {expandedSection === 'questions' ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
-
-          {expandedSection === 'questions' && (
-            <div className="space-y-3">
-              {questionAnalytics
-                .sort((a, b) => a.success_rate - b.success_rate)
-                .slice(0, 10)
-                .map((question, index) => (
-                  <div
-                    key={question.question_id}
-                    className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 dark:text-white line-clamp-2">
-                          {question.question_text}
-                        </p>
-                        <div className="flex items-center gap-3 mt-1">
-                          {question.topic && (
-                            <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-full">
-                              {question.topic}
-                            </span>
-                          )}
-                          {question.difficulty && (
-                            <span className={`text-xs px-2 py-1 rounded-full ${
-                              question.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200' :
-                              question.difficulty === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200' :
-                              'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200'
-                            }`}>
-                              {question.difficulty}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="ml-4 text-right">
-                        <p className={`text-2xl font-bold ${
-                          question.success_rate >= 70 ? 'text-green-600 dark:text-green-400' :
-                          question.success_rate >= 50 ? 'text-yellow-600 dark:text-yellow-400' :
-                          'text-red-600 dark:text-red-400'
-                        }`}>
-                          {question.success_rate.toFixed(1)}%
-                        </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                          {question.correct_attempts}/{question.total_attempts}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${
-                          question.success_rate >= 70 ? 'bg-green-500' :
-                          question.success_rate >= 50 ? 'bg-yellow-500' :
-                          'bg-red-500'
-                        }`}
-                        style={{ width: `${question.success_rate}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Recent Attempts */}
       {attempts.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
           <button
             onClick={() => toggleSection('attempts')}
-            className="flex items-center justify-between w-full mb-4"
+            className="flex items-center justify-between w-full mb-2"
           >
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <Award className="w-5 h-5" />
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <Award className="w-4 h-4" />
               Recent Attempts
             </h3>
             {expandedSection === 'attempts' ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
+              <ChevronUp className="w-4 h-4 text-gray-400" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
+              <ChevronDown className="w-4 h-4 text-gray-400" />
             )}
           </button>
 
           {expandedSection === 'attempts' && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {attempts.slice(0, 10).map((attempt) => (
                 <div
                   key={attempt.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                  className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
                 >
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900 dark:text-white">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {attempt.exam_title || 'Exam'}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
                       {formatDate(attempt.completed_at)} • {formatTime(attempt.time_taken_seconds)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
                         {attempt.correct_answers}/{attempt.total_questions}
                       </p>
                     </div>
-                    <div className={`px-4 py-2 rounded-lg font-bold text-lg ${
+                    <div className={`px-3 py-1 rounded-lg font-bold text-sm ${
                       attempt.score >= 70 ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200' :
                       attempt.score >= 50 ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200' :
                       'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200'

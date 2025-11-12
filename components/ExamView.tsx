@@ -13,7 +13,9 @@ import {
   Loader2,
   AlertCircle,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  Star,
+  Trash2
 } from "lucide-react"
 import ExamSetupModal from "./ExamSetupModal"
 import ExamInterface from "./ExamInterface"
@@ -57,6 +59,8 @@ export default function ExamView() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false)
+  const [examToDelete, setExamToDelete] = useState<ExamWithAttempts | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Load exams on component mount
   useEffect(() => {
@@ -143,6 +147,60 @@ export default function ExamView() {
     loadExams() // Refresh the list
   }
 
+  const handleToggleFavorite = async (exam: ExamWithAttempts, event: React.MouseEvent) => {
+    event.stopPropagation() // Prevent card click
+
+    try {
+      const newFavoritedState = !exam.is_favorited
+
+      // Optimistic UI update
+      setExams(prevExams =>
+        prevExams.map(e => e.id === exam.id ? { ...e, is_favorited: newFavoritedState } : e)
+      )
+
+      const response = await fetch(`/api/exams/${exam.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_favorited: newFavoritedState })
+      })
+
+      if (!response.ok) {
+        // Revert on failure
+        setExams(prevExams =>
+          prevExams.map(e => e.id === exam.id ? { ...e, is_favorited: exam.is_favorited } : e)
+        )
+        throw new Error('Failed to toggle favorite')
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+    }
+  }
+
+  const handleDeleteExam = async () => {
+    if (!examToDelete) return
+
+    setIsDeleting(true)
+
+    try {
+      const response = await fetch(`/api/exams/${examToDelete.id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete exam')
+      }
+
+      // Remove from list
+      setExams(prevExams => prevExams.filter(e => e.id !== examToDelete.id))
+      setExamToDelete(null)
+    } catch (error) {
+      console.error('Error deleting exam:', error)
+      setError(error instanceof Error ? error.message : 'Failed to delete exam')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -225,7 +283,7 @@ export default function ExamView() {
           </div>
           <button
             onClick={handleCreateExam}
-            className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/30"
+            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30"
           >
             <Plus className="w-5 h-5" />
             Create New Exam
@@ -236,7 +294,7 @@ export default function ExamView() {
         {isLoading && (
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
+              <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mx-auto mb-4" />
               <p className="text-gray-600 dark:text-gray-400">Loading exams...</p>
             </div>
           </div>
@@ -271,7 +329,7 @@ export default function ExamView() {
               </p>
               <button
                 onClick={handleCreateExam}
-                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors inline-flex items-center gap-2"
+                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors inline-flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
                 Create Your First Exam
@@ -286,7 +344,7 @@ export default function ExamView() {
             {exams.map((exam) => (
               <div
                 key={exam.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 transition-all"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all"
               >
                 {/* Exam Header */}
                 <div className="flex items-start justify-between mb-4">
@@ -300,7 +358,35 @@ export default function ExamView() {
                       </p>
                     )}
                   </div>
-                  <div className="ml-4">
+                  <div className="ml-4 flex items-center gap-2">
+                    {/* Favorite/Bookmark Button */}
+                    <button
+                      onClick={(e) => handleToggleFavorite(exam, e)}
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      title={exam.is_favorited ? "Remove from favorites" : "Add to favorites"}
+                    >
+                      <Star
+                        className={`w-5 h-5 ${
+                          exam.is_favorited
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-gray-400 dark:text-gray-500'
+                        }`}
+                      />
+                    </button>
+
+                    {/* Delete Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setExamToDelete(exam)
+                      }}
+                      className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      title="Delete exam"
+                    >
+                      <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    </button>
+
+                    {/* Difficulty Badge */}
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                       exam.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200' :
                       exam.difficulty === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200' :
@@ -343,7 +429,7 @@ export default function ExamView() {
                       {exam.best_score !== undefined && (
                         <div>
                           <p className="text-sm text-gray-600 dark:text-gray-400">Best Score</p>
-                          <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                          <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
                             {exam.best_score.toFixed(1)}%
                           </p>
                         </div>
@@ -368,7 +454,7 @@ export default function ExamView() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => handleStartExam(exam)}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                   >
                     <Play className="w-5 h-5" />
                     {exam.attempt_count && exam.attempt_count > 0 ? 'Retake' : 'Start'} Exam
@@ -412,7 +498,7 @@ export default function ExamView() {
             <div className="p-6">
               {isLoadingDocuments ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
+                  <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
                 </div>
               ) : documents.length === 0 ? (
                 <div className="text-center py-12">
@@ -427,9 +513,9 @@ export default function ExamView() {
                     <button
                       key={doc.id}
                       onClick={() => handleDocumentSelect(doc)}
-                      className="flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-purple-500 dark:hover:border-purple-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-left"
+                      className="flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-left"
                     >
-                      <FileText className="w-10 h-10 text-purple-600 flex-shrink-0" />
+                      <FileText className="w-10 h-10 text-indigo-600 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 dark:text-white truncate">
                           {doc.file_name}
@@ -466,7 +552,67 @@ export default function ExamView() {
             setSelectedDocument(null)
           }}
           document={selectedDocument}
+          onExamCreated={loadExams}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {examToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-full">
+                  <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Delete Exam
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    This action cannot be undone
+                  </p>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-700 dark:text-gray-300">
+                  Are you sure you want to delete <span className="font-semibold">"{examToDelete.title}"</span>?
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  This will permanently delete the exam and all associated attempts and analytics data.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setExamToDelete(null)}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteExam}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

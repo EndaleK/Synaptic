@@ -55,7 +55,7 @@ export async function generateGeminiCompletion(
   try {
     const genAI = getGeminiClient()
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-pro',
+      model: 'gemini-2.5-pro',
       generationConfig: {
         temperature: options.temperature ?? 0.3,
         topP: options.topP ?? 0.95,

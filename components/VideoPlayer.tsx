@@ -17,61 +17,102 @@ export default function VideoPlayer({ videoId, transcript, onTimeUpdate }: Video
   const [duration, setDuration] = useState(0)
   const [activeTranscriptIndex, setActiveTranscriptIndex] = useState(0)
   const iframeRef = useRef<HTMLIFrameElement>(null)
-  const transcriptRef = useRef<HTMLDivElement>(null)
+  const transcriptContainerRef = useRef<HTMLDivElement>(null)
+  const transcriptItemsRef = useRef<{ [key: number]: HTMLDivElement | null }>({})
+  const playerRef = useRef<any>(null)
 
   // YouTube IFrame API
   useEffect(() => {
-    // Load YouTube IFrame API
-    const tag = document.createElement('script')
-    tag.src = 'https://www.youtube.com/iframe_api'
-    const firstScriptTag = document.getElementsByTagName('script')[0]
-    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
-
-    // Initialize player when API is ready
-    ;(window as any).onYouTubeIframeAPIReady = () => {
-      new (window as any).YT.Player(`youtube-player-${videoId}`, {
-        videoId,
-        playerVars: {
-          autoplay: 0,
-          controls: 1,
-          modestbranding: 1,
-          rel: 0
-        },
-        events: {
-          onReady: onPlayerReady,
-          onStateChange: onPlayerStateChange
+    const initPlayer = () => {
+      if ((window as any).YT && (window as any).YT.Player) {
+        // API already loaded, create player directly
+        playerRef.current = new (window as any).YT.Player(`youtube-player-${videoId}`, {
+          videoId,
+          playerVars: {
+            autoplay: 0,
+            controls: 1,
+            modestbranding: 1,
+            rel: 0
+          },
+          events: {
+            onReady: onPlayerReady,
+            onStateChange: onPlayerStateChange
+          }
+        })
+      } else {
+        // Load YouTube IFrame API if not loaded
+        if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+          const tag = document.createElement('script')
+          tag.src = 'https://www.youtube.com/iframe_api'
+          const firstScriptTag = document.getElementsByTagName('script')[0]
+          firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
         }
-      })
+
+        // Initialize player when API is ready
+        ;(window as any).onYouTubeIframeAPIReady = () => {
+          playerRef.current = new (window as any).YT.Player(`youtube-player-${videoId}`, {
+            videoId,
+            playerVars: {
+              autoplay: 0,
+              controls: 1,
+              modestbranding: 1,
+              rel: 0
+            },
+            events: {
+              onReady: onPlayerReady,
+              onStateChange: onPlayerStateChange
+            }
+          })
+        }
+      }
+    }
+
+    initPlayer()
+
+    // Cleanup
+    return () => {
+      if (playerRef.current && playerRef.current.destroy) {
+        playerRef.current.destroy()
+      }
     }
   }, [videoId])
 
   const onPlayerReady = (event: any) => {
-    setDuration(event.target.getDuration())
+    const player = event.target
+    setDuration(player.getDuration())
 
     // Poll for current time
-    setInterval(() => {
-      const currentTime = event.target.getCurrentTime()
-      setCurrentTime(currentTime)
-      onTimeUpdate?.(currentTime)
+    const interval = setInterval(() => {
+      if (!playerRef.current) {
+        clearInterval(interval)
+        return
+      }
 
-      // Find active transcript line
-      const activeIndex = transcript.findIndex(
-        (line, index) => {
-          const nextLine = transcript[index + 1]
-          return currentTime >= line.start_time && (!nextLine || currentTime < nextLine.start_time)
-        }
-      )
+      try {
+        const currentTime = player.getCurrentTime()
+        setCurrentTime(currentTime)
+        onTimeUpdate?.(currentTime)
 
-      if (activeIndex !== -1 && activeIndex !== activeTranscriptIndex) {
-        setActiveTranscriptIndex(activeIndex)
+        // Find active transcript line
+        const activeIndex = transcript.findIndex(
+          (line, index) => {
+            const nextLine = transcript[index + 1]
+            return currentTime >= line.start_time && (!nextLine || currentTime < nextLine.start_time)
+          }
+        )
 
-        // Auto-scroll to active transcript
-        if (transcriptRef.current) {
-          const activeElement = transcriptRef.current.children[activeIndex] as HTMLElement
+        if (activeIndex !== -1 && activeIndex !== activeTranscriptIndex) {
+          setActiveTranscriptIndex(activeIndex)
+
+          // Auto-scroll to active transcript
+          const activeElement = transcriptItemsRef.current[activeIndex]
           if (activeElement) {
             activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
           }
         }
+      } catch (err) {
+        // Player might be destroyed
+        clearInterval(interval)
       }
     }, 100)
   }
@@ -95,10 +136,9 @@ export default function VideoPlayer({ videoId, transcript, onTimeUpdate }: Video
 
   const handleTranscriptClick = (startTime: number) => {
     // Seek to timestamp in YouTube player
-    const player = (window as any).YT?.get(`youtube-player-${videoId}`)
-    if (player) {
-      player.seekTo(startTime, true)
-      player.playVideo()
+    if (playerRef.current && playerRef.current.seekTo) {
+      playerRef.current.seekTo(startTime, true)
+      playerRef.current.playVideo()
     }
   }
 
@@ -132,7 +172,7 @@ export default function VideoPlayer({ videoId, transcript, onTimeUpdate }: Video
       </div>
 
       {/* Synchronized Transcript */}
-      <div className="flex-1 overflow-y-auto p-4" ref={transcriptRef}>
+      <div className="flex-1 overflow-y-auto p-4" ref={transcriptContainerRef}>
         <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
           <Clock className="w-4 h-4" />
           Transcript
@@ -149,6 +189,7 @@ export default function VideoPlayer({ videoId, transcript, onTimeUpdate }: Video
             {transcript.map((line, index) => (
               <div
                 key={index}
+                ref={(el) => (transcriptItemsRef.current[index] = el)}
                 onClick={() => handleTranscriptClick(line.start_time)}
                 className={`p-3 rounded-lg cursor-pointer transition-all ${
                   index === activeTranscriptIndex

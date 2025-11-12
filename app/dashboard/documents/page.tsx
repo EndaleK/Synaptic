@@ -55,23 +55,69 @@ export default function DocumentsPage() {
     fetchDocuments()
   }, [fetchDocuments])
 
-  // Auto-refresh polling for documents with "processing" status
+  // Selective polling for documents with "processing" status
+  // Only updates the specific processing documents, not the entire list
   useEffect(() => {
-    const hasProcessing = documents.some(doc => doc.processing_status === 'processing')
+    const processingDocs = documents.filter(doc => doc.processing_status === 'processing')
 
-    if (hasProcessing) {
-      console.log('📊 Auto-refresh enabled: Found documents with "processing" status')
-      const interval = setInterval(() => {
-        console.log('🔄 Auto-refreshing documents (processing status detected)...')
-        fetchDocuments()
-      }, 3000) // Poll every 3 seconds
+    if (processingDocs.length === 0) return
 
-      return () => {
-        console.log('⏹️ Auto-refresh stopped')
+    console.log(`📊 Auto-refresh enabled: Polling ${processingDocs.length} processing document(s)`)
+
+    let pollCount = 0
+    const MAX_POLLS = 300 // 15 minutes at 3-second intervals
+
+    const interval = setInterval(async () => {
+      pollCount++
+
+      // Check for timeout
+      if (pollCount >= MAX_POLLS) {
+        console.warn('⚠️ Polling timeout reached after 15 minutes. Document may be stuck.')
         clearInterval(interval)
+
+        toast.warning(
+          'Document processing is taking longer than expected. Please refresh the page or contact support if it continues.',
+          { duration: 10000 }
+        )
+        return
       }
+
+      console.log(`🔄 Polling ${processingDocs.length} processing document(s) (${pollCount}/${MAX_POLLS})...`)
+
+      // Fetch only the processing documents
+      try {
+        const updates = await Promise.all(
+          processingDocs.map(async (doc) => {
+            const response = await fetch(`/api/documents/${doc.id}`)
+            if (!response.ok) return null
+            return response.json()
+          })
+        )
+
+        // Update only the changed documents in state
+        setDocuments(prevDocs => {
+          const newDocs = [...prevDocs]
+          updates.forEach((updatedDoc) => {
+            if (!updatedDoc) return
+
+            const index = newDocs.findIndex(d => d.id === updatedDoc.id)
+            if (index !== -1 && newDocs[index].processing_status !== updatedDoc.processing_status) {
+              console.log(`✅ Document ${updatedDoc.file_name} status changed: ${newDocs[index].processing_status} → ${updatedDoc.processing_status}`)
+              newDocs[index] = updatedDoc
+            }
+          })
+          return newDocs
+        })
+      } catch (error) {
+        console.error('Error polling documents:', error)
+      }
+    }, 3000)
+
+    return () => {
+      console.log('⏹️ Auto-refresh stopped')
+      clearInterval(interval)
     }
-  }, [documents, fetchDocuments])
+  }, [documents, toast])
 
   const handleSelectMode = async (documentId: string, mode: PreferredMode) => {
     try {

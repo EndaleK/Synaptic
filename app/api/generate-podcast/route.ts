@@ -119,6 +119,8 @@ export async function POST(req: NextRequest) {
             id,
             file_name,
             extracted_text,
+            storage_path,
+            metadata,
             user_id,
             user_profiles!inner (
               id,
@@ -193,6 +195,8 @@ export async function POST(req: NextRequest) {
           id: documentWithProfile.id,
           file_name: documentWithProfile.file_name,
           extracted_text: documentWithProfile.extracted_text,
+          storage_path: documentWithProfile.storage_path,
+          metadata: documentWithProfile.metadata,
           user_id: documentWithProfile.user_id
         }
 
@@ -200,9 +204,60 @@ export async function POST(req: NextRequest) {
           id: (documentWithProfile.user_profiles as any).id
         }
 
+        // If no extracted text, try to extract it now (for old documents or large files)
+        if (!document.extracted_text && document.storage_path) {
+          logger.info('No extracted text found, extracting on-demand', { userId, documentId })
+          tracker.completeStep(1, 'Extracting text from PDF...')
+
+          try {
+            // Download file from storage
+            const { data: fileBlob, error: downloadError} = await supabase
+              .storage
+              .from('documents')
+              .download(document.storage_path)
+
+            if (!downloadError && fileBlob) {
+              // Convert Blob to File
+              const arrayBuffer = await fileBlob.arrayBuffer()
+              const file = new File([arrayBuffer], document.file_name, { type: 'application/pdf' })
+
+              // Extract text using pdf2json
+              const { parseServerPDF } = await import('@/lib/server-pdf-parser')
+              const parseResult = await parseServerPDF(file)
+
+              if (parseResult.text && parseResult.text.length > 0) {
+                document.extracted_text = parseResult.text
+                logger.info('On-demand extraction successful', {
+                  userId,
+                  documentId,
+                  textLength: parseResult.text.length,
+                  pageCount: parseResult.pageCount
+                })
+
+                // Save the extracted text to database for future use
+                await supabase
+                  .from('documents')
+                  .update({
+                    extracted_text: parseResult.text,
+                    metadata: {
+                      ...document.metadata,
+                      page_count: parseResult.pageCount || document.metadata?.page_count,
+                      extracted_on_demand: true
+                    }
+                  })
+                  .eq('id', documentId)
+              } else {
+                logger.warn('On-demand extraction yielded no text', { userId, documentId })
+              }
+            }
+          } catch (extractError) {
+            logger.error('On-demand extraction failed', extractError, { userId, documentId })
+          }
+        }
+
         if (!document.extracted_text) {
-          logger.warn('Document has no extracted text', { userId, documentId })
-          throw new Error('Document has no extracted text')
+          logger.warn('Document has no extracted text (even after on-demand attempt)', { userId, documentId })
+          throw new Error('Document has no extracted text. This may be a scanned PDF or image-based document that requires OCR.')
         }
 
     // Extract text based on selection (full document, page range, topic, structure, or suggestion)

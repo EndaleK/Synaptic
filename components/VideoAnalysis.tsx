@@ -1,14 +1,18 @@
 "use client"
 
 import { useState } from 'react'
-import { FileText, Lightbulb, AlertCircle, Sparkles, Clock, ChevronDown, ChevronUp } from 'lucide-react'
+import { FileText, Lightbulb, AlertCircle, Sparkles, Clock, ChevronDown, ChevronUp, Brain, FileQuestion, MessageCircle } from 'lucide-react'
 import type { VideoKeyPoint } from '@/lib/supabase/types'
 
 interface VideoAnalysisProps {
   summary?: string
   keyPoints: VideoKeyPoint[]
   flashcardCount?: number
+  hasTranscript?: boolean
   onGenerateFlashcards?: () => void
+  onGenerateMindMap?: () => void
+  onGenerateExam?: () => void
+  onChatWithVideo?: () => void
   onJumpToTimestamp?: (timestamp: number) => void
 }
 
@@ -16,7 +20,11 @@ export default function VideoAnalysis({
   summary,
   keyPoints,
   flashcardCount = 0,
+  hasTranscript = true,
   onGenerateFlashcards,
+  onGenerateMindMap,
+  onGenerateExam,
+  onChatWithVideo,
   onJumpToTimestamp
 }: VideoAnalysisProps) {
   const [expandedPoints, setExpandedPoints] = useState<Set<number>>(new Set([0])) // First point expanded by default
@@ -100,16 +108,86 @@ export default function VideoAnalysis({
         </div>
       </div>
 
-      {/* Generate Flashcards Button */}
-      {flashcardCount === 0 && onGenerateFlashcards && (
-        <button
-          onClick={onGenerateFlashcards}
-          className="w-full mb-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2"
-        >
-          <Sparkles className="w-5 h-5" />
-          Generate Flashcards from Video
-        </button>
-      )}
+      {/* Content Generation Section */}
+      <div className="mb-6">
+        <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm">
+          Generate Learning Materials
+        </h3>
+
+        {!hasTranscript ? (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-yellow-900 dark:text-yellow-100 text-sm mb-1">
+                  No Transcript Available
+                </h4>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                  This video does not have captions or transcript available. Content generation requires a transcript. Please try a video with captions enabled.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {/* Flashcards */}
+            {flashcardCount === 0 && onGenerateFlashcards && (
+              <button
+                onClick={onGenerateFlashcards}
+                className="p-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-accent-primary dark:hover:border-accent-primary transition-all"
+              >
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <Sparkles className="w-6 h-6 text-accent-primary" />
+                  <span className="font-semibold text-sm text-gray-900 dark:text-white">Flashcards</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Study cards</span>
+                </div>
+              </button>
+            )}
+
+            {/* Mind Map */}
+            {onGenerateMindMap && (
+              <button
+                onClick={onGenerateMindMap}
+                className="p-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-purple-500 dark:hover:border-purple-500 transition-all"
+              >
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <Brain className="w-6 h-6 text-purple-500" />
+                  <span className="font-semibold text-sm text-gray-900 dark:text-white">Mind Map</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Visual concepts</span>
+                </div>
+              </button>
+            )}
+
+            {/* Mock Exam */}
+            {onGenerateExam && (
+              <button
+                onClick={onGenerateExam}
+                className="p-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-500 dark:hover:border-blue-500 transition-all"
+              >
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <FileQuestion className="w-6 h-6 text-blue-500" />
+                  <span className="font-semibold text-sm text-gray-900 dark:text-white">Mock Exam</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Test yourself</span>
+                </div>
+              </button>
+            )}
+
+            {/* Chat with Video */}
+            {onChatWithVideo && (
+              <button
+                onClick={onChatWithVideo}
+                className="p-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-green-500 dark:hover:border-green-500 transition-all"
+              >
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <MessageCircle className="w-6 h-6 text-green-500" />
+                  <span className="font-semibold text-sm text-gray-900 dark:text-white">Chat</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Ask questions</span>
+                </div>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Key Points */}
       <div className="space-y-4">
@@ -150,16 +228,16 @@ export default function VideoAnalysis({
                       >
                         {point.importance}
                       </span>
-                      <button
+                      <div
                         onClick={(e) => {
                           e.stopPropagation()
                           onJumpToTimestamp?.(point.timestamp)
                         }}
-                        className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
                       >
                         <Clock className="w-3 h-3" />
                         {formatTimestamp(point.timestamp)}
-                      </button>
+                      </div>
                     </div>
                     <h4 className="font-semibold text-gray-900 dark:text-white">
                       {point.title}

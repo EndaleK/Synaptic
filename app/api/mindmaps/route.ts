@@ -39,17 +39,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
     }
 
-    // 4. Build query
+    // 4. Build query (without join to avoid schema cache issues)
     let query = supabase
       .from('mindmaps')
-      .select(`
-        *,
-        documents!document_id (
-          id,
-          file_name,
-          file_type
-        )
-      `)
+      .select('*')
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
       .limit(limit)
