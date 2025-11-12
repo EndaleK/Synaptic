@@ -48,3 +48,8 @@ VERCEL_ENV_SETUP.md
 /venv/
 *.pyc
 __pycache__/
+
+# ChromaDB
+chromadb.log
+chromadb_server.py
+chromadb_data/

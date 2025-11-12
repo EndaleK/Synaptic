@@ -139,7 +139,9 @@ export default function DocumentsPage() {
         name: document.file_name,
         content: document.extracted_text || '',
         fileType: document.file_type,
-        storagePath: document.storage_path
+        storagePath: document.storage_path,
+        fileSize: document.file_size,
+        metadata: document.metadata
       })
 
       // Set the active mode

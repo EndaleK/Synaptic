@@ -1,0 +1,17 @@
+{
+  "name": "Synaptic - Learning That Adapts to You",
+  "short_name": "Synaptic",
+  "description": "8 intelligent study tools in one platform",
+  "icons": [
+    {
+      "src": "/logo-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#8b5cf6",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/"
+}

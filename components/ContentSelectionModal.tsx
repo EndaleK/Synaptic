@@ -80,21 +80,28 @@ export default function ContentSelectionModal({
         selection
       }
 
-      // Call appropriate API based on generation type
+      // Check if document is RAG-indexed
+      const isRAGIndexed = document.metadata?.rag_indexed === true
+      const isLargeDocument = document.file_size > 10 * 1024 * 1024
+
+      // Call appropriate API based on generation type and document state
       switch (generationType) {
         case 'flashcards':
-          apiEndpoint = '/api/generate-flashcards-rag'
+          // Use RAG endpoint for large/indexed documents, regular endpoint for small documents
+          apiEndpoint = (isRAGIndexed || isLargeDocument) ? '/api/generate-flashcards-rag' : '/api/generate-flashcards'
           requestBody.count = 10 // Default count
           break
 
         case 'podcast':
-          apiEndpoint = '/api/generate-podcast'
+          // Use RAG endpoint for large/indexed documents
+          apiEndpoint = (isRAGIndexed || isLargeDocument) ? '/api/generate-podcast-rag' : '/api/generate-podcast'
           requestBody.format = 'deep-dive'
           requestBody.targetDuration = 10
           break
 
         case 'mindmap':
-          apiEndpoint = '/api/generate-mindmap'
+          // Use RAG endpoint for large/indexed documents
+          apiEndpoint = (isRAGIndexed || isLargeDocument) ? '/api/generate-mindmap-rag' : '/api/generate-mindmap'
           // Mind map uses auto-detected params, but accepts selection
           break
       }
@@ -122,11 +129,17 @@ export default function ContentSelectionModal({
 
         let buffer = ''
         let receivedData = false
+        let eventCount = 0
+
+        console.log('[ContentSelectionModal] Starting SSE stream reading for', generationType)
 
         while (true) {
           const { done, value } = await reader.read()
 
-          if (done) break
+          if (done) {
+            console.log('[ContentSelectionModal] SSE stream ended', { eventCount, receivedData })
+            break
+          }
 
           buffer += decoder.decode(value, { stream: true })
           const lines = buffer.split('\n\n')
@@ -141,14 +154,20 @@ export default function ContentSelectionModal({
 
               try {
                 const event = JSON.parse(eventData)
+                eventCount++
 
                 if (event.type === 'progress') {
                   // Could update UI with progress here if needed
-                  console.log(`Progress: ${event.progress}% - ${event.message}`)
+                  console.log(`[ContentSelectionModal] Progress: ${event.progress}% - ${event.message}`)
                 } else if (event.type === 'complete') {
+                  console.log('[ContentSelectionModal] Received complete event:', {
+                    hasData: !!event.data,
+                    dataKeys: event.data ? Object.keys(event.data) : []
+                  })
                   data = event.data
                   receivedData = true
                 } else if (event.type === 'error') {
+                  console.error('[ContentSelectionModal] Received error event:', event.error)
                   throw new Error(event.error)
                 }
               } catch (parseError) {
@@ -163,6 +182,13 @@ export default function ContentSelectionModal({
         }
 
         if (!receivedData || !data) {
+          console.error('[ContentSelectionModal] SSE stream ended without complete event', {
+            receivedData,
+            data,
+            generationType,
+            responseStatus: response.status,
+            responseHeaders: Object.fromEntries(response.headers.entries())
+          })
           throw new Error('No data received from stream')
         }
       } else {

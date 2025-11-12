@@ -36,8 +36,10 @@ interface DocumentState {
     fileType: string
     storagePath?: string
     sections?: SectionStructure
+    fileSize?: number
+    metadata?: any
   } | null
-  setCurrentDocument: (doc: { id: string; name: string; content: string; fileType: string; storagePath?: string; sections?: SectionStructure } | null) => void
+  setCurrentDocument: (doc: { id: string; name: string; content: string; fileType: string; storagePath?: string; sections?: SectionStructure; fileSize?: number; metadata?: any } | null) => void
   documentHistory: Array<{ id: string; name: string; timestamp: string }>
   addToHistory: (doc: { id: string; name: string }) => void
 }

@@ -2,24 +2,33 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { FileText, File, FileType, Trash2, Download, Loader2, CheckCircle2, AlertCircle, Eye, Sparkles, Zap, Map, MessageCircle, BookOpen, Mic, Network } from "lucide-react"
+import { FileText, File, FileType, Trash2, Download, Loader2, CheckCircle2, AlertCircle, Eye, Sparkles, Zap, Map, MessageCircle, BookOpen, Mic, Network, Database } from "lucide-react"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { cn } from "@/lib/utils"
 import ContentSelectionModal from "./ContentSelectionModal"
+import IndexDocumentButton from "./IndexDocumentButton"
 
 interface DocumentCardProps {
   document: Document
   onSelectMode: (documentId: string, mode: PreferredMode) => void
   onDelete: (documentId: string) => void
+  onRefresh?: () => void
 }
 
-export default function DocumentCard({ document, onSelectMode, onDelete }: DocumentCardProps) {
+export default function DocumentCard({ document, onSelectMode, onDelete, onRefresh }: DocumentCardProps) {
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedGenerationType, setSelectedGenerationType] = useState<'flashcards' | 'podcast' | 'mindmap'>('flashcards')
   const [contentCounts, setContentCounts] = useState({ flashcards: 0, podcasts: 0, mindmaps: 0 })
   const [isDragging, setIsDragging] = useState(false)
+
+  // Callback when RAG indexing completes
+  const handleIndexComplete = () => {
+    if (onRefresh) {
+      onRefresh()
+    }
+  }
 
   // Fetch content counts for this document
   useEffect(() => {
@@ -64,6 +73,29 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
   }
 
   const getStatusBadge = () => {
+    // Check if this is a large document that needs RAG indexing
+    const isLargeDocument = document.file_size > 10 * 1024 * 1024 // >10MB
+    const needsRAGIndexing = isLargeDocument && !document.extracted_text && !document.metadata?.rag_indexed
+    const isRAGIndexed = document.metadata?.rag_indexed === true
+
+    if (needsRAGIndexing && document.processing_status === 'completed') {
+      return (
+        <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-md text-xs font-medium">
+          <Database className="w-3 h-3" />
+          Index Required
+        </div>
+      )
+    }
+
+    if (isRAGIndexed && document.processing_status === 'completed') {
+      return (
+        <div className="flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-md text-xs font-medium">
+          <Database className="w-3 h-3" />
+          RAG Indexed
+        </div>
+      )
+    }
+
     switch (document.processing_status) {
       case 'completed':
         return (
@@ -201,6 +233,22 @@ export default function DocumentCard({ document, onSelectMode, onDelete }: Docum
                 {contentCounts.mindmaps}
               </div>
             )}
+          </div>
+        )}
+
+        {/* RAG Indexing Required - Show Index Button */}
+        {isReady && document.file_size > 10 * 1024 * 1024 && !document.extracted_text && !document.metadata?.rag_indexed && (
+          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <p className="text-xs text-yellow-800 dark:text-yellow-300 mb-2">
+              This document is large and requires indexing for AI features.
+            </p>
+            <IndexDocumentButton
+              documentId={document.id}
+              documentName={document.file_name}
+              onIndexComplete={handleIndexComplete}
+              variant="primary"
+              size="sm"
+            />
           </div>
         )}
 
