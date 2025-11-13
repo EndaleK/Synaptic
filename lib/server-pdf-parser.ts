@@ -8,6 +8,7 @@ import { promisify } from 'util'
 import path from 'path'
 import fs from 'fs'
 import { extractPDFWithGemini } from './gemini-pdf-extractor'
+import { processLargePDFInChunks } from './chunked-pdf-processor'
 
 const execAsync = promisify(exec)
 
@@ -23,7 +24,7 @@ interface PDFParseResult {
   pageCount?: number
   pages?: PageData[]  // NEW: per-page data with character offsets
   error?: string
-  method?: 'pdf-parse' | 'pymupdf' | 'gemini-vision'
+  method?: 'pdf-parse' | 'pymupdf' | 'gemini-vision' | 'chunked-gemini'
 }
 
 // Helper: Create timeout promise that rejects after specified milliseconds
@@ -207,24 +208,42 @@ export async function parseServerPDF(file: File): Promise<PDFParseResult> {
     const isMediumFile = file.size >= 10 * 1024 * 1024 && file.size < 60 * 1024 * 1024
     const isLargeFile = file.size >= 60 * 1024 * 1024
 
-    // For medium files (10-60MB), try Gemini first (has OCR, handles complex layouts, serverless-friendly)
+    // For medium files (10-60MB), try Gemini with chunking for large files
     if (isMediumFile && process.env.GEMINI_API_KEY) {
-      console.log('🤖 Medium-sized file detected (10-60MB), trying Gemini Vision API...')
-      const geminiResult = await extractPDFWithGemini(buffer, file.name)
+      // For files >25MB, use chunked processing to bypass Gemini's file size limit
+      if (file.size > 25 * 1024 * 1024) {
+        console.log(`🤖 Large file detected (${fileSizeMB.toFixed(2)}MB), using chunked Gemini extraction...`)
+        const chunkedResult = await processLargePDFInChunks(buffer, file.name)
 
-      // Validate extraction quality (should extract at least 1% of file size as text)
-      const minExpectedChars = Math.max(1000, file.size * 0.01 / 10) // ~1% of file size (rough estimate)
-      const isGoodExtraction = !geminiResult.error && geminiResult.text && geminiResult.text.length > minExpectedChars
+        if (!chunkedResult.error && chunkedResult.text && chunkedResult.text.length > 1000) {
+          console.log(`✅ Chunked Gemini extraction successful: ${chunkedResult.text.length} chars from ${chunkedResult.chunks} chunks`)
+          return {
+            text: chunkedResult.text,
+            pageCount: chunkedResult.pageCount,
+            method: 'chunked-gemini' as any
+          }
+        }
 
-      if (isGoodExtraction) {
-        console.log('✅ Gemini extraction successful with good quality')
-        return geminiResult
-      }
-
-      if (geminiResult.text && geminiResult.text.length > 100) {
-        console.warn(`⚠️ Gemini extraction suspicious (only ${geminiResult.text.length} chars from ${fileSizeMB.toFixed(2)}MB file), trying PyMuPDF...`)
+        console.warn(`⚠️ Chunked Gemini extraction failed: ${chunkedResult.error}, trying PyMuPDF fallback...`)
       } else {
-        console.warn('⚠️ Gemini extraction failed, falling back to PyMuPDF...')
+        // For files 10-25MB, use direct Gemini extraction
+        console.log('🤖 Medium-sized file detected (10-25MB), trying Gemini Vision API...')
+        const geminiResult = await extractPDFWithGemini(buffer, file.name)
+
+        // Validate extraction quality (should extract at least 1% of file size as text)
+        const minExpectedChars = Math.max(1000, file.size * 0.01 / 10) // ~1% of file size (rough estimate)
+        const isGoodExtraction = !geminiResult.error && geminiResult.text && geminiResult.text.length > minExpectedChars
+
+        if (isGoodExtraction) {
+          console.log('✅ Gemini extraction successful with good quality')
+          return geminiResult
+        }
+
+        if (geminiResult.text && geminiResult.text.length > 100) {
+          console.warn(`⚠️ Gemini extraction suspicious (only ${geminiResult.text.length} chars from ${fileSizeMB.toFixed(2)}MB file), trying PyMuPDF...`)
+        } else {
+          console.warn('⚠️ Gemini extraction failed, falling back to PyMuPDF...')
+        }
       }
     }
 
