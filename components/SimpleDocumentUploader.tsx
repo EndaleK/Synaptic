@@ -42,6 +42,7 @@ export default function SimpleDocumentUploader({
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'uploading' | 'processing' | 'completed' | 'error'>('idle')
+  const [uploadedDocumentId, setUploadedDocumentId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   if (!isOpen) return null
@@ -113,6 +114,7 @@ export default function SimpleDocumentUploader({
       }
 
       const { uploadUrl, documentId } = await prepareResponse.json()
+      setUploadedDocumentId(documentId)
 
       console.log(`✅ Upload URL received, uploading to Supabase...`)
 
@@ -173,6 +175,19 @@ export default function SimpleDocumentUploader({
       setStatus('completed')
       setUploadProgress(100)
 
+      // If document is in 'processing' status (large file), auto-trigger indexing
+      if (result.processingStatus === 'processing' && uploadedDocumentId) {
+        console.log(`🚀 Auto-triggering indexing for large file...`)
+
+        // Trigger indexing in background (don't wait for it)
+        fetch(`/api/documents/${uploadedDocumentId}/index`, {
+          method: 'POST'
+        }).catch(err => {
+          console.warn('Failed to auto-trigger indexing (non-fatal):', err)
+          // Non-fatal - user can manually trigger later
+        })
+      }
+
       // Wait a moment to show success message, then close
       setTimeout(() => {
         onSuccess()
@@ -194,6 +209,7 @@ export default function SimpleDocumentUploader({
     setUploadProgress(0)
     setError(null)
     setStatus('idle')
+    setUploadedDocumentId(null)
   }
 
   const handleClose = () => {

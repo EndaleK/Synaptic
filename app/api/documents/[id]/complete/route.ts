@@ -6,13 +6,13 @@
  * Actions:
  * 1. Verify file exists in Supabase Storage
  * 2. Get actual file size from storage
- * 3. For small PDFs (<20MB): Extract text synchronously + index into ChromaDB
- * 4. For large PDFs (≥20MB): Trigger async Inngest background job
+ * 3. For small PDFs (<30MB): Extract text synchronously + index into ChromaDB
+ * 4. For large PDFs (≥30MB): Trigger async Inngest background job
  * 5. For non-PDFs: Mark as completed immediately
  *
  * Processing Strategy:
- * - Small PDFs (<20MB): Synchronous extraction + ChromaDB indexing → Ready in 1-3 minutes
- * - Large PDFs (≥20MB): Async Inngest job with multi-tier extraction + RAG indexing
+ * - Small PDFs (<30MB): Synchronous extraction + ChromaDB indexing → Ready in 1-3 minutes
+ * - Large PDFs (≥30MB): Async Inngest job with multi-tier extraction + RAG indexing
  * - Non-PDFs: Immediate completion (no processing needed)
  */
 
@@ -25,10 +25,10 @@ export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 minutes (Vercel Pro max) for PDF extraction and ChromaDB indexing
 
 // File size threshold for sync vs async processing
-// Files ≥20MB will use async Inngest processing to avoid timeouts
-// Files <20MB will be processed synchronously (extraction + indexing in this request)
-// Note: Sync processing tested up to ~15MB reliably within 300s timeout
-const LARGE_FILE_THRESHOLD = 20 * 1024 * 1024 // 20MB
+// Files ≥30MB will use async Inngest processing to avoid timeouts
+// Files <30MB will be processed synchronously (extraction + indexing in this request)
+// Note: Sync processing tested up to ~25MB reliably within 300s timeout
+const LARGE_FILE_THRESHOLD = 30 * 1024 * 1024 // 30MB
 
 export async function POST(
   request: NextRequest,
@@ -123,7 +123,7 @@ export async function POST(
     let extractionMethod: string = 'none'
 
     if (isPDF && !isLargeFile) {
-      // Small PDFs (<10MB): Process synchronously for immediate availability
+      // Small PDFs (<30MB): Process synchronously for immediate availability
       console.log(`📄 Processing small PDF synchronously: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
 
       try {
@@ -200,7 +200,7 @@ export async function POST(
       console.log(`✅ Small PDF processed synchronously, ready for immediate use`)
 
     } else if (isPDF && isLargeFile) {
-      // Large PDFs (≥10MB): Trigger async Inngest background job
+      // Large PDFs (≥30MB): Trigger async Inngest background job
       console.log(`🚀 Triggering async processing for large PDF: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
 
       processingStatus = 'processing'
