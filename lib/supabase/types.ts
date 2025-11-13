@@ -71,6 +71,12 @@ export interface Document {
   source_type?: SourceType
   metadata?: Record<string, any>
   sections?: SectionStructure
+  // RAG (Retrieval-Augmented Generation) fields for large document indexing
+  rag_indexed?: boolean
+  rag_collection_name?: string
+  rag_chunk_count?: number
+  rag_indexed_at?: string
+  rag_indexing_error?: string
   created_at: string
   updated_at: string
 }

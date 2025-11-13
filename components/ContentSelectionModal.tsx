@@ -81,7 +81,7 @@ export default function ContentSelectionModal({
       }
 
       // Check if document is RAG-indexed
-      const isRAGIndexed = document.metadata?.rag_indexed === true
+      const isRAGIndexed = document.rag_indexed === true
       const isLargeDocument = document.file_size > 10 * 1024 * 1024
 
       // Call appropriate API based on generation type and document state

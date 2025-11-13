@@ -199,17 +199,17 @@ export async function parseServerPDF(file: File): Promise<PDFParseResult> {
 
     // Smart routing based on file size:
     // - Small files (<10MB): Try pdf-parse → PyMuPDF → Gemini
-    // - Medium files (10-20MB): Try pdf-parse → PyMuPDF (skip Gemini - API limit ~20MB)
-    // - Large files (20MB+): PyMuPDF only (most reliable for large files)
+    // - Medium files (10-25MB): Try Gemini first (serverless-friendly, has OCR)
+    // - Large files (25MB+): PyMuPDF only (requires local Python, most reliable for very large files)
     // - Very large files (100MB+): PyMuPDF with streaming (future optimization)
 
     const isSmallFile = file.size < 10 * 1024 * 1024
-    const isMediumFile = file.size >= 10 * 1024 * 1024 && file.size < 20 * 1024 * 1024
-    const isLargeFile = file.size >= 20 * 1024 * 1024
+    const isMediumFile = file.size >= 10 * 1024 * 1024 && file.size < 25 * 1024 * 1024
+    const isLargeFile = file.size >= 25 * 1024 * 1024
 
-    // For medium files (10-20MB), try Gemini first (has OCR, handles complex layouts)
+    // For medium files (10-25MB), try Gemini first (has OCR, handles complex layouts, serverless-friendly)
     if (isMediumFile && process.env.GEMINI_API_KEY) {
-      console.log('🤖 Medium-sized file detected (10-20MB), trying Gemini Vision API...')
+      console.log('🤖 Medium-sized file detected (10-25MB), trying Gemini Vision API...')
       const geminiResult = await extractPDFWithGemini(buffer, file.name)
 
       // Validate extraction quality (should extract at least 1% of file size as text)
@@ -228,7 +228,7 @@ export async function parseServerPDF(file: File): Promise<PDFParseResult> {
       }
     }
 
-    // For large files (>20MB), skip pdf-parse and Gemini, go directly to PyMuPDF
+    // For large files (>25MB), skip pdf-parse, go directly to PyMuPDF
     if (isLargeFile) {
       console.log(`📦 Large file detected (${fileSizeMB.toFixed(2)}MB), using PyMuPDF directly (most reliable for large files)...`)
       const pymupdfResult = await parsePDFWithPyMuPDF(buffer)
@@ -238,14 +238,25 @@ export async function parseServerPDF(file: File): Promise<PDFParseResult> {
         return pymupdfResult
       }
 
-      // PyMuPDF failed - return error (don't try pdf-parse for large files, it will timeout)
+      // PyMuPDF failed - try Gemini as fallback if file isn't too large (Gemini has ~25MB limit)
+      if (process.env.GEMINI_API_KEY && file.size < 30 * 1024 * 1024) {
+        console.warn(`⚠️ PyMuPDF failed for large file (${fileSizeMB.toFixed(2)}MB), trying Gemini Vision as fallback...`)
+        const geminiResult = await extractPDFWithGemini(buffer, file.name)
+
+        if (!geminiResult.error && geminiResult.text && geminiResult.text.length > 100) {
+          console.log('✅ Gemini extraction successful (fallback for large file)')
+          return geminiResult
+        }
+      }
+
+      // All methods failed - return error (don't try pdf-parse for large files, it will timeout)
       return {
         text: "",
         error: `Failed to extract text from large PDF (${fileSizeMB.toFixed(2)}MB). ${pymupdfResult.error || 'Unknown error'}. The file may be scanned or contain only images. Consider using OCR software.`
       }
     }
 
-    // Multi-tier extraction strategy for small files (<20MB):
+    // Multi-tier extraction strategy for small files (<10MB):
     // 1. Try pdf-parse first (fast, works for most PDFs)
     // 2. If pdf-parse fails, try PyMuPDF (robust, handles complex PDFs)
     // 3. If PyMuPDF fails AND file is small enough (<15MB), try Gemini (OCR, handles scanned PDFs)

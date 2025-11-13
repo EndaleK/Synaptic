@@ -101,8 +101,8 @@ export async function GET(
         error: document.metadata?.error,
         fileHash: document.metadata?.file_hash,
         isLargeFile: document.metadata?.is_large_file || false,
-        ragIndexed: document.metadata?.rag_indexed || false,
-        ragChunkCount: document.metadata?.rag_chunk_count || 0,
+        ragIndexed: document.rag_indexed || false,
+        ragChunkCount: document.rag_chunk_count || 0,
       },
       timestamps: {
         createdAt: document.created_at,
