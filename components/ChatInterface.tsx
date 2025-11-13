@@ -130,6 +130,35 @@ export default function ChatInterface() {
       if (currentDocument && !hasLoadedDocument.current && !chatDocument.file) {
         hasLoadedDocument.current = true
 
+        // Fetch full document with extracted_text from API
+        // (List query doesn't include content to keep responses small)
+        let documentWithContent = { ...currentDocument, content: '' }
+
+        try {
+          console.log('📥 Fetching full document with content:', currentDocument.id)
+          const docResponse = await fetch(`/api/documents/${currentDocument.id}`)
+
+          if (!docResponse.ok) {
+            throw new Error('Failed to fetch document details')
+          }
+
+          const { document: fullDocument } = await docResponse.json()
+          console.log('✅ Full document fetched:', {
+            id: fullDocument.id,
+            name: fullDocument.file_name,
+            hasExtractedText: !!fullDocument.extracted_text,
+            textLength: fullDocument.extracted_text?.length || 0
+          })
+
+          // Update current document reference with content
+          documentWithContent = {
+            ...currentDocument,
+            content: fullDocument.extracted_text || ''
+          }
+        } catch (fetchError) {
+          console.error('Failed to fetch full document, using empty content:', fetchError)
+        }
+
         try {
           let file: File
 
@@ -154,7 +183,7 @@ export default function ChatInterface() {
 
             setChatDocument({
               file: null,
-              content: currentDocument.content,
+              content: documentWithContent.content,
               isProcessing: true
             })
 
@@ -194,7 +223,7 @@ export default function ChatInterface() {
 
           setChatDocument({
             file,
-            content: currentDocument.content,
+            content: documentWithContent.content,
             isProcessing: false
           })
 
@@ -210,12 +239,12 @@ export default function ChatInterface() {
           console.error('Error loading document:', error)
 
           // Fallback to text-only display
-          const textBlob = new Blob([currentDocument.content], { type: 'text/plain' })
+          const textBlob = new Blob([documentWithContent.content], { type: 'text/plain' })
           const textFile = new File([textBlob], currentDocument.name, { type: 'text/plain' })
 
           setChatDocument({
             file: textFile,
-            content: currentDocument.content,
+            content: documentWithContent.content,
             isProcessing: false
           })
 
