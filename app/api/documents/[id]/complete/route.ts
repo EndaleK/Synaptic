@@ -25,10 +25,10 @@ export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 minutes (Vercel Pro max) for PDF extraction and ChromaDB indexing
 
 // File size threshold for sync vs async processing
-// Files ≥30MB will use async Inngest processing to avoid timeouts
-// Files <30MB will be processed synchronously (extraction + indexing in this request)
-// Note: Sync processing tested up to ~25MB reliably within 300s timeout
-const LARGE_FILE_THRESHOLD = 30 * 1024 * 1024 // 30MB
+// Files ≥60MB will use async Inngest processing to avoid timeouts
+// Files <60MB will be processed synchronously with Gemini extraction (no ChromaDB needed)
+// Note: Gemini can handle files up to ~60MB within 300s timeout
+const LARGE_FILE_THRESHOLD = 60 * 1024 * 1024 // 60MB
 
 export async function POST(
   request: NextRequest,
@@ -123,8 +123,8 @@ export async function POST(
     let extractionMethod: string = 'none'
 
     if (isPDF && !isLargeFile) {
-      // Small PDFs (<30MB): Process synchronously for immediate availability
-      console.log(`📄 Processing small PDF synchronously: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
+      // Small-to-medium PDFs (<60MB): Process synchronously for immediate availability
+      console.log(`📄 Processing PDF synchronously with Gemini: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
 
       try {
         // Download file from storage
@@ -204,8 +204,8 @@ export async function POST(
       console.log(`✅ Small PDF processed synchronously, ready for immediate use`)
 
     } else if (isPDF && isLargeFile) {
-      // Large PDFs (≥30MB): Trigger async Inngest background job
-      console.log(`🚀 Triggering async processing for large PDF: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
+      // Very large PDFs (≥60MB): Trigger async Inngest background job
+      console.log(`🚀 Triggering async processing for very large PDF: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
 
       processingStatus = 'processing'
 
