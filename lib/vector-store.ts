@@ -106,16 +106,27 @@ export async function indexDocument(
       ...metadata,
     }))
 
-    // Store in ChromaDB
-    console.log(`[Vector Store] Storing ${chunks.length} chunks in ChromaDB...`)
-    await collection.add({
-      ids,
-      embeddings: embeddingVectors,
-      metadatas,
-      documents: chunks,
-    })
+    // Store in ChromaDB with batching (max 5000 chunks per batch to avoid ChromaDB limits)
+    const BATCH_SIZE = 5000
+    const totalChunks = chunks.length
+    console.log(`[Vector Store] Storing ${totalChunks} chunks in ChromaDB (batch size: ${BATCH_SIZE})...`)
 
-    console.log(`✅ Indexed ${chunks.length} chunks for document ${documentId}`)
+    for (let i = 0; i < totalChunks; i += BATCH_SIZE) {
+      const batchEnd = Math.min(i + BATCH_SIZE, totalChunks)
+      const batchNumber = Math.floor(i / BATCH_SIZE) + 1
+      const totalBatches = Math.ceil(totalChunks / BATCH_SIZE)
+
+      console.log(`[Vector Store] Adding batch ${batchNumber}/${totalBatches} (chunks ${i + 1}-${batchEnd})...`)
+
+      await collection.add({
+        ids: ids.slice(i, batchEnd),
+        embeddings: embeddingVectors.slice(i, batchEnd),
+        metadatas: metadatas.slice(i, batchEnd),
+        documents: chunks.slice(i, batchEnd),
+      })
+    }
+
+    console.log(`✅ Indexed ${totalChunks} chunks for document ${documentId}`)
 
     return { chunks: chunks.length, success: true }
   } catch (error) {
