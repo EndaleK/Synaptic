@@ -151,6 +151,7 @@ export async function getUserDocuments(
         folder_id,
         rag_indexed_at,
         rag_chunk_count,
+        rag_collection_name,
         created_at,
         updated_at
       `)
