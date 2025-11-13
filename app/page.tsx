@@ -176,11 +176,11 @@ export default function LandingPage() {
                 <Database className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
-                500MB+ Documents
+                80MB+ Documents
               </h3>
               <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-3">vs Competitors' 20MB Limits</p>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Process massive textbooks, research papers, and training manuals. RAG architecture handles documents others can't.
+                Process massive textbooks, research papers, and training manuals. Chunked processing handles documents others can't.
               </p>
             </div>
 
@@ -282,7 +282,7 @@ export default function LandingPage() {
               <ul className="space-y-3 mb-6">
                 <li className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
                   <Check className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                  <span>500MB+ textbooks & research papers</span>
+                  <span>80MB+ textbooks & research papers</span>
                 </li>
                 <li className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
                   <Check className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
@@ -299,7 +299,7 @@ export default function LandingPage() {
               </ul>
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center">
                 <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                  "500-page textbook → Interactive study guide"
+                  "Large textbook → Interactive study guide"
                 </p>
               </div>
             </div>
@@ -361,7 +361,7 @@ export default function LandingPage() {
             <div className="text-center p-8 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl border border-purple-200 dark:border-purple-800">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Database className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                <p className="text-4xl font-bold text-black dark:text-white">500MB+</p>
+                <p className="text-4xl font-bold text-black dark:text-white">80MB+</p>
               </div>
               <p className="text-gray-600 dark:text-gray-400 font-medium">Documents Supported</p>
               <p className="text-sm text-purple-600 dark:text-purple-400 mt-1">vs competitors' 20MB limits</p>
@@ -502,7 +502,7 @@ export default function LandingPage() {
                   </tr>
                   <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                     <td className="p-4 font-medium text-gray-900 dark:text-white">Document Size Limit</td>
-                    <td className="p-4 text-center font-bold text-purple-600 dark:text-purple-400">500MB+</td>
+                    <td className="p-4 text-center font-bold text-purple-600 dark:text-purple-400">80MB+</td>
                     <td className="p-4 text-center text-gray-600 dark:text-gray-400">N/A</td>
                     <td className="p-4 text-center text-gray-600 dark:text-gray-400">20MB</td>
                     <td className="p-4 text-center text-gray-600 dark:text-gray-400">100MB</td>
@@ -648,7 +648,7 @@ export default function LandingPage() {
                     Upload Any Content
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    PDFs, YouTube URLs, arXiv papers, or 500MB+ textbooks—we handle it all
+                    PDFs, YouTube URLs, arXiv papers, or 80MB+ textbooks—we handle it all
                   </p>
                 </div>
               </div>
@@ -797,7 +797,7 @@ export default function LandingPage() {
 
                 {/* Title */}
                 <h3 className="text-2xl font-bold text-black dark:text-white mb-3 text-center">
-                  500-Page Textbook → Mind Map
+                  Large Textbook → Mind Map
                 </h3>
 
                 {/* Description */}
@@ -809,11 +809,11 @@ export default function LandingPage() {
                 <div className="space-y-2 mb-6">
                   <div className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
                     <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                    <span>Upload 500MB+ PDF textbook</span>
+                    <span>Upload 80MB+ PDF textbook</span>
                   </div>
                   <div className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
                     <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                    <span>RAG architecture processes chapters</span>
+                    <span>Chunked processing handles large files</span>
                   </div>
                   <div className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
                     <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />

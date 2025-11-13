@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Synaptic** is a Next.js 15 TypeScript application that provides AI-powered personalized learning with support for documents up to 500MB+:
+**Synaptic** is a Next.js 15 TypeScript application that provides AI-powered personalized learning with support for documents up to 80MB+:
 
 **Core Features**:
 - **Learning Style Assessment**: Quiz-based detection of user preferences (VAK model)
