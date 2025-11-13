@@ -106,8 +106,10 @@ export async function indexDocument(
       ...metadata,
     }))
 
-    // Store in ChromaDB with batching (max 5000 chunks per batch to avoid ChromaDB limits)
-    const BATCH_SIZE = 5000
+    // Store in ChromaDB with batching (1000 chunks per batch to avoid request size limits)
+    // ChromaDB has both a count limit (~5461) and a request size limit
+    // With embeddings (1536 dims × 4 bytes = ~6KB each), 1000 chunks ≈ 6-10MB per request
+    const BATCH_SIZE = 1000
     const totalChunks = chunks.length
     console.log(`[Vector Store] Storing ${totalChunks} chunks in ChromaDB (batch size: ${BATCH_SIZE})...`)
 
