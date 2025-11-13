@@ -12,7 +12,7 @@ export interface KeyboardShortcut {
 
 const shortcuts: KeyboardShortcut[] = [
   // Navigation
-  { key: "?", description: "Show keyboard shortcuts", category: "Navigation" },
+  { key: "Cmd+/", description: "Show keyboard shortcuts", category: "Navigation" },
   { key: "Esc", description: "Close modal or menu", category: "Navigation" },
 
   // Flashcards
@@ -126,7 +126,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShor
           {/* Footer */}
           <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 rounded-b-2xl border-t border-gray-200 dark:border-gray-800">
             <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
-              Press <kbd className="px-2 py-1 text-xs font-semibold bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">?</kbd> anytime to view this guide
+              Press <kbd className="px-2 py-1 text-xs font-semibold bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">Cmd+/</kbd> anytime to view this guide
             </p>
           </div>
         </div>
@@ -141,8 +141,8 @@ export function useKeyboardShortcuts() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Show shortcuts on "?" key (Shift + /)
-      if (e.key === "?" && !isOpen) {
+      // Show shortcuts on "Cmd+/" or "Ctrl+/"
+      if (e.key === "/" && (e.metaKey || e.ctrlKey) && !isOpen) {
         e.preventDefault()
         setIsOpen(true)
       }

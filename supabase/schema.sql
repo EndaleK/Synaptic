@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS documents (
   extracted_text TEXT, -- Extracted text content
   document_summary TEXT, -- AI-generated summary
   storage_path TEXT, -- Path in Supabase storage
-  processing_status TEXT DEFAULT 'pending' CHECK (processing_status IN ('pending', 'processing', 'completed', 'failed')),
+  processing_status TEXT DEFAULT 'pending' CHECK (processing_status IN ('pending', 'processing', 'completed', 'failed', 'needs_ocr')),
   error_message TEXT,
   source_url TEXT, -- Original URL if imported from web
   source_type TEXT CHECK (source_type IN ('arxiv', 'youtube', 'web', 'medium', 'pdf-url', 'unknown')),

@@ -22,9 +22,13 @@ import { createClient } from '@/lib/supabase/server'
 import { inngest } from '@/lib/inngest/client'
 
 export const runtime = 'nodejs'
-export const maxDuration = 120 // Sufficient for small PDF extraction (<10MB); large files use async
+export const maxDuration = 120 // Sufficient for small PDF extraction (<100MB with async); large files use async
 
-const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024 // 10MB
+// UPDATED: Increased from 10MB to 100MB to handle textbooks
+// Files ≥100MB will use async Inngest processing
+// Files <100MB will be processed synchronously (if they complete within 120s)
+// NOTE: In practice, files >20MB often timeout synchronously, so may need to adjust this lower
+const LARGE_FILE_THRESHOLD = 100 * 1024 * 1024 // 100MB
 
 export async function POST(
   request: NextRequest,

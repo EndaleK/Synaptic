@@ -19,8 +19,10 @@ export const processPDFFunction = inngest.createFunction(
     name: 'Process PDF Document',
     // Retry configuration
     retries: 3,
-    // Allow up to 15 minutes for very large PDFs
-    maxDuration: 900, // 15 minutes
+    // IMPORTANT: Vercel Pro max is 300s (5 minutes) per function execution
+    // For 100MB PDFs that need longer processing, we'll need to chain multiple jobs
+    // or use a self-hosted Inngest instance with longer timeouts
+    maxDuration: 300, // 5 minutes (Vercel Pro limit)
 
     // CRITICAL: Handle failures (including timeouts) to prevent stuck documents
     onFailure: async ({ event, error }) => {
@@ -96,6 +98,16 @@ export const processPDFFunction = inngest.createFunction(
         .from('documents')
         .update({
           processing_status: 'processing',
+          processing_progress: {
+            current_step: 1,
+            total_steps: 4,
+            step_name: 'Initializing',
+            progress_percent: 10,
+            message: 'Starting PDF processing...',
+            updated_at: new Date().toISOString(),
+            steps_completed: [],
+            current_step_started_at: new Date().toISOString(),
+          },
           metadata: {
             processing_started_at: new Date().toISOString(),
             processing_method: 'async-inngest',
@@ -112,6 +124,24 @@ export const processPDFFunction = inngest.createFunction(
       'extract-pdf-text',
       async () => {
         try {
+          // Update progress: Extracting text
+          const supabase = await createClient()
+          await supabase
+            .from('documents')
+            .update({
+              processing_progress: {
+                current_step: 2,
+                total_steps: 4,
+                step_name: 'Extracting Text',
+                progress_percent: 30,
+                message: 'Downloading and extracting text from PDF...',
+                updated_at: new Date().toISOString(),
+                steps_completed: ['update-status-processing'],
+                current_step_started_at: new Date().toISOString(),
+              },
+            })
+            .eq('id', documentId)
+
           logger.info('[Inngest] Downloading and extracting PDF', { documentId })
 
           // Download file from storage
@@ -205,8 +235,9 @@ export const processPDFFunction = inngest.createFunction(
           }
         }
       },
-      // CRITICAL: Set 20-minute timeout for download + extraction (very large/complex PDFs need more time)
-      { timeout: '20m' }
+      // IMPORTANT: Set 4-minute timeout for download + extraction to fit within 5-minute function limit
+      // Very large PDFs (>50MB) may still timeout and need to be split into multiple jobs
+      { timeout: '4m' }
     )
 
     let extractionSuccess = extractionResult.success
@@ -222,8 +253,25 @@ export const processPDFFunction = inngest.createFunction(
         'rag-index',
         async () => {
           try {
-            // Fetch extracted text from database
+            // Update progress: RAG indexing
             const supabase = await createClient()
+            await supabase
+              .from('documents')
+              .update({
+                processing_progress: {
+                  current_step: 3,
+                  total_steps: 4,
+                  step_name: 'Creating Search Index',
+                  progress_percent: 60,
+                  message: 'Indexing document for semantic search...',
+                  updated_at: new Date().toISOString(),
+                  steps_completed: ['update-status-processing', 'extract-pdf-text'],
+                  current_step_started_at: new Date().toISOString(),
+                },
+              })
+              .eq('id', documentId)
+
+            // Fetch extracted text from database
             const { data: doc, error: fetchError } = await supabase
               .from('documents')
               .select('extracted_text')
@@ -259,8 +307,9 @@ export const processPDFFunction = inngest.createFunction(
             return { success: false, chunks: 0, error: String(error) }
           }
         },
-        // Set 15-minute timeout for RAG indexing (large documents can take significant time)
-        { timeout: '15m' }
+        // IMPORTANT: Reduced timeout to 3 minutes to fit within 5-minute function limit
+        // For very large documents, RAG indexing may need to be split across multiple jobs
+        { timeout: '3m' }
       )
 
       ragChunks = ragResult.chunks
@@ -276,6 +325,16 @@ export const processPDFFunction = inngest.createFunction(
           .from('documents')
           .update({
             processing_status: 'completed',
+            processing_progress: {
+              current_step: 4,
+              total_steps: 4,
+              step_name: 'Completed',
+              progress_percent: 100,
+              message: 'Processing complete! Document ready to use.',
+              updated_at: new Date().toISOString(),
+              steps_completed: ['update-status-processing', 'extract-pdf-text', 'rag-index', 'update-results'],
+              current_step_started_at: new Date().toISOString(),
+            },
             rag_indexed_at: ragChunks > 0 ? new Date().toISOString() : null,
             rag_chunk_count: ragChunks,
             rag_collection_name: ragChunks > 0 ? `doc_${documentId.replace(/[^a-zA-Z0-9]/g, '_')}` : null,

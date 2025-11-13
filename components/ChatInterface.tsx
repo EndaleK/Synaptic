@@ -397,25 +397,45 @@ export default function ChatInterface() {
     setIsLoading(true)
 
     try {
-      // Detect if this is a large file that needs RAG (no extracted content)
-      const isLargeFile = !chatDocument.content || chatDocument.content.trim().length === 0
+      // Smart detection: Use RAG for large documents
+      // Threshold: 100K characters ≈ 25K tokens (well under 128K limit with room for response)
+      const CONTENT_SIZE_THRESHOLD = 100000
+      const contentLength = chatDocument.content?.trim().length || 0
+
+      // Use RAG if:
+      // 1. No content extracted yet (document still processing or very large)
+      // 2. Content exceeds threshold (would exceed AI context window)
+      // 3. Document has RAG indexing (indicates large file)
+      const isLargeFile =
+        !chatDocument.content ||
+        contentLength === 0 ||
+        contentLength > CONTENT_SIZE_THRESHOLD ||
+        (currentDocument?.rag_indexed_at && currentDocument?.rag_chunk_count && currentDocument.rag_chunk_count > 0)
 
       // Validate we have the necessary data
       if (isLargeFile && !currentDocument?.id) {
         throw new Error("NO_DOCUMENT_ID")
       }
 
-      // Determine which endpoint to use based on file size
+      // Determine which endpoint to use based on content size
       const endpoint = isLargeFile ? "/api/chat-rag" : "/api/chat-with-document"
 
       console.log('[ChatInterface] Sending chat request:', {
         messageLength: inputMessage.length,
         contentLength: chatDocument.content?.length || 0,
+        contentLengthFormatted: `${(contentLength / 1000).toFixed(1)}K chars`,
         fileName: chatDocument.file?.name || currentDocument?.name,
         teachingMode,
         endpoint,
         isLargeFile,
-        documentId: currentDocument?.id
+        ragIndexed: currentDocument?.rag_indexed_at ? 'yes' : 'no',
+        ragChunks: currentDocument?.rag_chunk_count || 0,
+        documentId: currentDocument?.id,
+        reason: isLargeFile
+          ? contentLength > CONTENT_SIZE_THRESHOLD
+            ? `Content too large (${(contentLength / 1000).toFixed(1)}K > 100K chars)`
+            : 'Using RAG for large document'
+          : `Content fits in context (${(contentLength / 1000).toFixed(1)}K chars)`
       })
 
       // Prepare request body based on endpoint
