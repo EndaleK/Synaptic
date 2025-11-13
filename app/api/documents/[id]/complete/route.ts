@@ -6,13 +6,13 @@
  * Actions:
  * 1. Verify file exists in Supabase Storage
  * 2. Get actual file size from storage
- * 3. For small PDFs (<10MB): Extract text synchronously + index into ChromaDB
- * 4. For large PDFs (≥10MB): Trigger async Inngest background job
+ * 3. For small PDFs (<20MB): Extract text synchronously + index into ChromaDB
+ * 4. For large PDFs (≥20MB): Trigger async Inngest background job
  * 5. For non-PDFs: Mark as completed immediately
  *
  * Processing Strategy:
- * - Small PDFs (<10MB): Synchronous pdf2json extraction + ChromaDB indexing → Ready immediately
- * - Large PDFs (≥10MB): Async Inngest job with multi-tier extraction + RAG indexing
+ * - Small PDFs (<20MB): Synchronous extraction + ChromaDB indexing → Ready in 1-3 minutes
+ * - Large PDFs (≥20MB): Async Inngest job with multi-tier extraction + RAG indexing
  * - Non-PDFs: Immediate completion (no processing needed)
  */
 
@@ -22,13 +22,13 @@ import { createClient } from '@/lib/supabase/server'
 import { inngest } from '@/lib/inngest/client'
 
 export const runtime = 'nodejs'
-export const maxDuration = 120 // Sufficient for small PDF extraction (<100MB with async); large files use async
+export const maxDuration = 300 // 5 minutes (Vercel Pro max) for PDF extraction and ChromaDB indexing
 
-// UPDATED: Increased from 10MB to 100MB to handle textbooks
-// Files ≥100MB will use async Inngest processing
-// Files <100MB will be processed synchronously (if they complete within 120s)
-// NOTE: In practice, files >20MB often timeout synchronously, so may need to adjust this lower
-const LARGE_FILE_THRESHOLD = 100 * 1024 * 1024 // 100MB
+// File size threshold for sync vs async processing
+// Files ≥20MB will use async Inngest processing to avoid timeouts
+// Files <20MB will be processed synchronously (extraction + indexing in this request)
+// Note: Sync processing tested up to ~15MB reliably within 300s timeout
+const LARGE_FILE_THRESHOLD = 20 * 1024 * 1024 // 20MB
 
 export async function POST(
   request: NextRequest,
