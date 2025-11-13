@@ -60,6 +60,9 @@ def extract_text_from_pdf(pdf_path):
             page = doc[page_num]
             text = page.get_text()
 
+            # Remove null bytes (PostgreSQL TEXT columns cannot store \x00)
+            text = text.replace('\x00', '')
+
             if text.strip():
                 # Calculate character offsets for this page
                 start_offset = current_offset
