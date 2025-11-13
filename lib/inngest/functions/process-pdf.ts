@@ -144,8 +144,7 @@ export const processPDFFunction = inngest.createFunction(
 
           logger.info('[Inngest] Downloading and extracting PDF', { documentId })
 
-          // Download file from storage
-          const supabase = await createClient()
+          // Download file from storage (reuse supabase client from above)
           const { data: fileBlob, error: downloadError} = await supabase
             .storage
             .from('documents')
