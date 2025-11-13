@@ -98,6 +98,7 @@ Begin extraction:`
 
     // Clean the extracted text
     const cleanedText = extractedText
+      .replace(/\x00/g, '')  // Remove null bytes (PostgreSQL TEXT columns cannot store \u0000)
       .replace(/\s+/g, ' ')
       .replace(/\n{3,}/g, '\n\n')
       .trim()

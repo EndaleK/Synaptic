@@ -66,6 +66,7 @@ async function parsePDFWithPdfParse(buffer: Buffer): Promise<PDFParseResult> {
 
     // Clean up the extracted text but DO NOT truncate - RAG systems handle large documents
     let cleanedText = extractedText
+      .replace(/\x00/g, '')  // Remove null bytes (PostgreSQL TEXT columns cannot store \u0000)
       .replace(/\s+/g, ' ') // Replace multiple spaces with single space
       .replace(/\n{3,}/g, '\n\n') // Replace multiple newlines with double newline
       .trim()
@@ -141,6 +142,7 @@ async function parsePDFWithPyMuPDF(buffer: Buffer): Promise<PDFParseResult> {
 
         // Clean text but DO NOT truncate - RAG systems (ChromaDB/Gemini) handle large documents
         let cleanedText = result.text
+          .replace(/\x00/g, '')  // Remove null bytes (PostgreSQL TEXT columns cannot store \u0000)
           .replace(/\s+/g, ' ')
           .replace(/\n{3,}/g, '\n\n')
           .trim()
