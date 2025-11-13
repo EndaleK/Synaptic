@@ -26,7 +26,7 @@ export default function IndexDocumentButton({
   const [status, setStatus] = useState<'idle' | 'indexing' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
-  const [result, setResult] = useState<{ chunkCount?: number; collectionName?: string; alreadyIndexed?: boolean } | null>(null)
+  const [result, setResult] = useState<{ chunkCount?: number; textLength?: number; collectionName?: string; alreadyIndexed?: boolean; alreadyExtracted?: boolean; method?: string } | null>(null)
 
   const startIndexing = async () => {
     setShowDialog(true)
@@ -38,9 +38,9 @@ export default function IndexDocumentButton({
     setResult(null)
 
     try {
-      // Use fetch() with manual SSE parsing instead of EventSource
-      // EventSource only supports GET, but this endpoint requires POST
-      const response = await fetch(`/api/documents/${documentId}/index`, {
+      // Use text extraction endpoint (no ChromaDB required) for production
+      // Falls back to full RAG indexing if ChromaDB is available
+      const response = await fetch(`/api/documents/${documentId}/extract-text`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
@@ -93,9 +93,11 @@ export default function IndexDocumentButton({
                   setProgress(100)
                   setResult(event.data)
 
-                  if (event.data.alreadyIndexed) {
-                    setMessage('Document was already indexed!')
-                  } else {
+                  if (event.data.alreadyIndexed || event.data.alreadyExtracted) {
+                    setMessage('Document text already extracted!')
+                  } else if (event.data.textLength) {
+                    setMessage(`Successfully extracted ${Math.floor(event.data.textLength / 1000)}K characters!`)
+                  } else if (event.data.chunkCount) {
                     setMessage(`Successfully indexed ${event.data.chunkCount} chunks!`)
                   }
 
@@ -132,7 +134,11 @@ export default function IndexDocumentButton({
         setStatus('success')
         setProgress(100)
         setResult(data)
-        setMessage(`Successfully indexed ${data.chunkCount} chunks!`)
+        if (data.textLength) {
+          setMessage(`Successfully extracted ${Math.floor(data.textLength / 1000)}K characters!`)
+        } else if (data.chunkCount) {
+          setMessage(`Successfully indexed ${data.chunkCount} chunks!`)
+        }
         setIsIndexing(false)
 
         if (onIndexComplete) {
@@ -252,11 +258,13 @@ export default function IndexDocumentButton({
                   <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <p className="font-semibold text-green-900 dark:text-green-100">
-                      {result.alreadyIndexed ? 'Already Indexed' : 'Successfully Indexed'}
+                      {result.alreadyIndexed || result.alreadyExtracted ? 'Already Processed' : result.textLength ? 'Text Extracted' : 'Successfully Indexed'}
                     </p>
                     <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                      {result.alreadyIndexed
-                        ? 'This document has already been indexed. You can now use all features!'
+                      {result.alreadyIndexed || result.alreadyExtracted
+                        ? 'This document has already been processed. You can now use all features!'
+                        : result.textLength
+                        ? `Extracted ${Math.floor(result.textLength / 1000)}K characters using ${result.method || 'AI'}. You can now use chat, flashcards, podcast, and mind map features!`
                         : `Document processed into ${result.chunkCount} searchable chunks. You can now use chat, flashcards, podcast, and mind map features!`
                       }
                     </p>
@@ -279,8 +287,8 @@ export default function IndexDocumentButton({
                       Common causes:
                     </p>
                     <ul className="text-xs text-red-600 dark:text-red-400 mt-1 list-disc list-inside space-y-1">
-                      <li>ChromaDB not running (docker run -d -p 8000:8000 chromadb/chroma)</li>
-                      <li>OpenAI API key not configured</li>
+                      <li>Gemini API key not configured in Vercel</li>
+                      <li>File too large for API (try smaller file or split into chapters)</li>
                       <li>Network connection issues</li>
                     </ul>
                   </div>
