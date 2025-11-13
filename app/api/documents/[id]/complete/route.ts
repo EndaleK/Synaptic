@@ -25,10 +25,11 @@ export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 minutes (Vercel Pro max) for PDF extraction and ChromaDB indexing
 
 // File size threshold for sync vs async processing
-// Files ≥60MB will use async Inngest processing to avoid timeouts
-// Files <60MB will be processed synchronously with Gemini extraction (no ChromaDB needed)
-// Note: Gemini can handle files up to ~60MB within 300s timeout
-const LARGE_FILE_THRESHOLD = 60 * 1024 * 1024 // 60MB
+// Files ≥80MB will use async Inngest processing to avoid timeouts
+// Files <80MB will be processed synchronously with chunked Gemini extraction
+// Note: Chunked Gemini (~15MB chunks, ~30s each) can handle up to ~100MB within 300s timeout
+// Using 80MB threshold for safety margin
+const LARGE_FILE_THRESHOLD = 80 * 1024 * 1024 // 80MB
 
 export async function POST(
   request: NextRequest,
@@ -123,7 +124,7 @@ export async function POST(
     let extractionMethod: string = 'none'
 
     if (isPDF && !isLargeFile) {
-      // Small-to-medium PDFs (<60MB): Process synchronously for immediate availability
+      // Small-to-medium PDFs (<80MB): Process synchronously for immediate availability
       console.log(`📄 Processing PDF synchronously with Gemini: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
 
       try {
@@ -204,7 +205,7 @@ export async function POST(
       console.log(`✅ Small PDF processed synchronously, ready for immediate use`)
 
     } else if (isPDF && isLargeFile) {
-      // Very large PDFs (≥60MB): Trigger async Inngest background job
+      // Very large PDFs (≥80MB): Trigger async Inngest background job
       console.log(`🚀 Triggering async processing for very large PDF: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
 
       processingStatus = 'processing'
