@@ -171,21 +171,25 @@ export async function POST(
           hasExtractedText = true
           console.log(`✅ Extracted ${parseResult.text.length} characters from PDF using ${extractionMethod}`)
 
-          // Index into ChromaDB for RAG
-          try {
-            const { indexDocument } = await import('@/lib/vector-store')
-            const indexResult = await indexDocument(documentId, extractedText, {
-              fileName: document.file_name,
-              fileType: document.file_type,
-              userId: profile.id,
-            })
+          // Index into ChromaDB for RAG (only if configured)
+          if (process.env.CHROMA_URL) {
+            try {
+              const { indexDocument } = await import('@/lib/vector-store')
+              const indexResult = await indexDocument(documentId, extractedText, {
+                fileName: document.file_name,
+                fileType: document.file_type,
+                userId: profile.id,
+              })
 
-            ragIndexed = true
-            ragChunkCount = indexResult.chunks
-            console.log(`✅ Indexed ${indexResult.chunks} chunks into ChromaDB`)
-          } catch (ragError) {
-            console.error('ChromaDB indexing failed (non-fatal):', ragError)
-            // Not fatal - document still usable without RAG
+              ragIndexed = true
+              ragChunkCount = indexResult.chunks
+              console.log(`✅ Indexed ${indexResult.chunks} chunks into ChromaDB`)
+            } catch (ragError) {
+              console.error('ChromaDB indexing failed (non-fatal):', ragError)
+              // Not fatal - document still usable without RAG
+            }
+          } else {
+            console.log(`ℹ️ ChromaDB not configured, skipping vector indexing (document still usable with extracted text)`)
           }
         } else {
           console.log(`⚠️ No text extracted from PDF (may be scanned or image-based)`)
