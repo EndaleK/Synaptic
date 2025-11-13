@@ -135,7 +135,25 @@ export async function getUserDocuments(
 
     const { data, error } = await supabase
       .from('documents')
-      .select('*')
+      .select(`
+        id,
+        user_id,
+        file_name,
+        file_type,
+        file_size,
+        storage_path,
+        processing_status,
+        processing_progress,
+        error_message,
+        source_url,
+        source_type,
+        metadata,
+        folder_id,
+        rag_indexed_at,
+        rag_chunk_count,
+        created_at,
+        updated_at
+      `)
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
