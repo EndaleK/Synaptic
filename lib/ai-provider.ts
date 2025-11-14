@@ -163,21 +163,28 @@ export async function generateFlashcardsAuto(
       const wordCount = text.split(/\s+/).length
       const targetCards = Math.max(5, Math.min(Math.floor(wordCount / 250), 50))
 
+      logger.info('Attempting DeepSeek flashcard generation', { targetCards, textLength: text.length })
       rawFlashcards = await generateFlashcardsWithDeepSeek(text, targetCards)
+      logger.info('DeepSeek flashcard generation successful', { count: rawFlashcards.length })
     } else if (selection.provider === 'gemini') {
       // Calculate target cards based on content
       const wordCount = text.split(/\s+/).length
       const targetCards = Math.max(5, Math.min(Math.floor(wordCount / 250), 50))
 
+      logger.info('Attempting Gemini flashcard generation', { targetCards, textLength: text.length })
       rawFlashcards = await generateFlashcardsWithGemini(text, targetCards)
+      logger.info('Gemini flashcard generation successful', { count: rawFlashcards.length })
     } else if (selection.provider === 'claude') {
       // Calculate target cards based on content
       const wordCount = text.split(/\s+/).length
       const targetCards = Math.max(5, Math.min(Math.floor(wordCount / 250), 50))
 
+      logger.info('Attempting Claude flashcard generation', { targetCards, textLength: text.length })
       rawFlashcards = await generateFlashcardsWithClaude(text, targetCards)
+      logger.info('Claude flashcard generation successful', { count: rawFlashcards.length })
     } else {
       // Use existing OpenAI implementation
+      logger.info('Using OpenAI flashcard generation', { textLength: text.length })
       return {
         flashcards: await generateFlashcards(text, options),
         provider: 'openai',
@@ -199,23 +206,56 @@ export async function generateFlashcardsAuto(
       providerReason: selection.reason,
     }
   } catch (error) {
-    logger.error(`Flashcard generation failed with ${selection.provider}, falling back to OpenAI`, error)
+    // Log the error with full details for debugging
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorStack = error instanceof Error ? error.stack : undefined
+
+    logger.error(`Flashcard generation failed with ${selection.provider}, attempting fallback to OpenAI`, error, {
+      provider: selection.provider,
+      errorMessage,
+      textLength: text.length,
+      hasOpenAIKey: !!process.env.OPENAI_API_KEY
+    })
+
+    // ALWAYS log to console in production for visibility
+    if (process.env.NODE_ENV === 'production') {
+      console.error('🔴 PRODUCTION ERROR - Flashcard generation:', {
+        provider: selection.provider,
+        error: errorMessage,
+        stack: errorStack,
+        timestamp: new Date().toISOString()
+      })
+    }
 
     // Fallback to OpenAI if selected provider fails
     if (selection.provider !== 'openai') {
       try {
+        logger.warn('Attempting OpenAI fallback after primary provider failure')
+        const fallbackResult = await generateFlashcards(text, options)
+        logger.info('OpenAI fallback successful', { count: fallbackResult.length })
+
         return {
-          flashcards: await generateFlashcards(text, options),
+          flashcards: fallbackResult,
           provider: 'openai',
-          providerReason: `Fallback to OpenAI after ${selection.provider} failure`,
+          providerReason: `Fallback to OpenAI after ${selection.provider} failure: ${errorMessage}`,
         }
       } catch (fallbackError) {
+        const fallbackErrorMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
         logger.error('OpenAI fallback also failed', fallbackError)
-        throw new Error(`Both ${selection.provider} and OpenAI fallback failed. Please check API keys.`)
+
+        if (process.env.NODE_ENV === 'production') {
+          console.error('🔴 PRODUCTION ERROR - OpenAI fallback failed:', {
+            error: fallbackErrorMessage,
+            timestamp: new Date().toISOString()
+          })
+        }
+
+        throw new Error(`Both ${selection.provider} and OpenAI fallback failed. ${selection.provider} error: ${errorMessage}. OpenAI error: ${fallbackErrorMessage}. Please check your API keys in environment variables.`)
       }
     }
 
-    throw error
+    // If OpenAI was the original selection and it failed, throw detailed error
+    throw new Error(`OpenAI flashcard generation failed: ${errorMessage}. Please check your OPENAI_API_KEY environment variable.`)
   }
 }
 

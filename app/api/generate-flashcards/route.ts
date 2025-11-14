@@ -18,10 +18,12 @@ export const maxDuration = 300 // 5 minutes for complex documents
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
+  let userId: string | null = null
 
   try {
     // Get authenticated user
-    const { userId } = await auth()
+    const authResult = await auth()
+    userId = authResult.userId
     if (!userId) {
       return NextResponse.json(
         { error: "Authentication required" },
@@ -57,82 +59,159 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const formData = await request.formData()
-    const mode = formData.get("mode") as string
-    const variation = parseInt(formData.get("variation") as string || "0")
+    // Check Content-Type to determine request format
+    const contentType = request.headers.get('content-type') || ''
     let textContent = ""
+    let variation = 0
+    let documentId: string | null = null
+    let mode: string | null = null
+    let uploadedFile: File | null = null
 
-    if (mode === "file") {
-      const file = formData.get("file") as File
-      if (!file) {
-        logger.warn("No file provided in flashcard generation request", { userId })
-        return NextResponse.json(
-          { error: "No file provided" },
-          { status: 400 }
-        )
-      }
+    if (contentType.includes('application/json')) {
+      // NEW FORMAT: JSON request from ContentSelectionModal (document-based)
+      const body = await request.json()
+      documentId = body.documentId
+      const selection = body.selection
 
-      // Validate file
-      try {
-        FileUploadSchema.parse({
-          name: file.name,
-          size: file.size,
-          type: file.type,
-        })
-      } catch (validationError) {
-        logger.warn("File validation failed", { userId, fileName: file.name, error: validationError })
-        return NextResponse.json(
-          { error: "Invalid file. Must be PDF, DOCX, DOC, TXT, or JSON under 500MB" },
-          { status: 400 }
-        )
-      }
-
-      logger.debug("Processing file upload", {
+      logger.info('Processing JSON flashcard request', {
         userId,
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size
+        documentId,
+        selectionType: selection?.type
       })
 
-      const parseResult = await parseDocument(file)
-      if (parseResult.error) {
-        logger.error("File parsing failed", new Error(parseResult.error), {
-          userId,
-          fileName: file.name
-        })
+      if (!documentId) {
         return NextResponse.json(
-          { error: parseResult.error },
+          { error: "No document ID provided" },
           { status: 400 }
         )
       }
 
-      textContent = parseResult.text
-      logger.debug("File parsed successfully", {
-        userId,
-        fileName: file.name,
-        textLength: textContent.length
-      })
+      // Fetch document from database
+      const supabase = await createClient()
+      const { data: doc, error: fetchError } = await supabase
+        .from('documents')
+        .select('extracted_text, title')
+        .eq('id', documentId)
+        .single()
 
-      if (textContent.length === 0) {
-        logger.warn("File produced no text content", { userId, fileName: file.name })
+      if (fetchError || !doc) {
+        logger.error('Failed to fetch document', fetchError, { userId, documentId })
         return NextResponse.json(
-          { error: "File contains no readable text content" },
+          { error: "Document not found" },
+          { status: 404 }
+        )
+      }
+
+      // Use selected text or full document
+      if (selection?.type === 'topics' && selection.selectedTopics && doc.extracted_text) {
+        // Filter text by selected topics (simple approach: use full text for now)
+        // TODO: Implement topic-based text filtering
+        textContent = doc.extracted_text
+        logger.debug('Using selected topics', { userId, documentId, topicCount: selection.selectedTopics.length })
+      } else if (selection?.type === 'pages' && selection.selectedPages && doc.extracted_text) {
+        // Filter by pages (for now, use full text)
+        // TODO: Implement page-based text filtering
+        textContent = doc.extracted_text
+        logger.debug('Using selected pages', { userId, documentId, pageCount: selection.selectedPages.length })
+      } else {
+        // Use full document text
+        textContent = doc.extracted_text || ''
+      }
+
+      if (!textContent || textContent.length === 0) {
+        logger.warn('Document has no extracted text', { userId, documentId })
+        return NextResponse.json(
+          { error: "Document has no text content. Please re-upload or try a different document." },
           { status: 400 }
         )
       }
-    } else if (mode === "text") {
-      textContent = formData.get("text") as string
-      if (!textContent) {
-        return NextResponse.json(
-          { error: "No text provided" },
-          { status: 400 }
-        )
-      }
+
+      logger.debug('Document text loaded', { userId, documentId, textLength: textContent.length })
+
     } else {
-      return NextResponse.json(
-        { error: "Invalid mode" },
-        { status: 400 }
-      )
+      // OLD FORMAT: FormData request (direct file/text upload)
+      const formData = await request.formData()
+      mode = formData.get("mode") as string
+      variation = parseInt(formData.get("variation") as string || "0")
+
+      logger.info('Processing FormData flashcard request', {
+        userId,
+        mode
+      })
+
+      if (mode === "file") {
+        uploadedFile = formData.get("file") as File
+        const file = uploadedFile
+        if (!file) {
+          logger.warn("No file provided in flashcard generation request", { userId })
+          return NextResponse.json(
+            { error: "No file provided" },
+            { status: 400 }
+          )
+        }
+
+        // Validate file
+        try {
+          FileUploadSchema.parse({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+          })
+        } catch (validationError) {
+          logger.warn("File validation failed", { userId, fileName: file.name, error: validationError })
+          return NextResponse.json(
+            { error: "Invalid file. Must be PDF, DOCX, DOC, TXT, or JSON under 500MB" },
+            { status: 400 }
+          )
+        }
+
+        logger.debug("Processing file upload", {
+          userId,
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size
+        })
+
+        const parseResult = await parseDocument(file)
+        if (parseResult.error) {
+          logger.error("File parsing failed", new Error(parseResult.error), {
+            userId,
+            fileName: file.name
+          })
+          return NextResponse.json(
+            { error: parseResult.error },
+            { status: 400 }
+          )
+        }
+
+        textContent = parseResult.text
+        logger.debug("File parsed successfully", {
+          userId,
+          fileName: file.name,
+          textLength: textContent.length
+        })
+
+        if (textContent.length === 0) {
+          logger.warn("File produced no text content", { userId, fileName: file.name })
+          return NextResponse.json(
+            { error: "File contains no readable text content" },
+            { status: 400 }
+          )
+        }
+      } else if (mode === "text") {
+        textContent = formData.get("text") as string
+        if (!textContent) {
+          return NextResponse.json(
+            { error: "No text provided" },
+            { status: 400 }
+          )
+        }
+      } else {
+        return NextResponse.json(
+          { error: "Invalid mode. Must be 'file' or 'text'" },
+          { status: 400 }
+        )
+      }
     }
 
     // Validate document length
@@ -164,13 +243,12 @@ export async function POST(request: NextRequest) {
 
     // Convert text to structured JSON first
     let documentJSON = null
-    if (mode === "file") {
-      const file = formData.get("file") as File
+    if (mode === "file" && uploadedFile) {
       documentJSON = convertTextToDocumentJSON(
         textContent,
-        file.name,
-        file.type,
-        file.size
+        uploadedFile.name,
+        uploadedFile.type,
+        uploadedFile.size
       )
       console.log(`Created JSON structure with ${documentJSON.sections.length} sections`)
     }
@@ -268,7 +346,7 @@ export async function POST(request: NextRequest) {
         // Save each flashcard to database
         const flashcardsToInsert = flashcards.map(card => ({
           user_id: userProfileId,
-          document_id: null, // No document association for direct text/file generation
+          document_id: documentId, // Link to document if generated from uploaded document
           front: card.front,
           back: card.back,
           mastery_level: 'learning' as const,
@@ -284,7 +362,7 @@ export async function POST(request: NextRequest) {
 
         if (!insertError && insertedCards) {
           // Update flashcards with database IDs and timestamps
-          savedFlashcards = insertedCards.map((dbCard, index) => ({
+          savedFlashcards = insertedCards.map((dbCard) => ({
             id: dbCard.id,
             front: dbCard.front,
             back: dbCard.back,
@@ -347,6 +425,18 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     const duration = Date.now() - startTime
+
+    // CRITICAL: Always log errors in production for visibility
+    if (process.env.NODE_ENV === 'production') {
+      console.error('🔴 PRODUCTION ERROR - /api/generate-flashcards:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        userId,
+        duration: `${duration}ms`,
+        timestamp: new Date().toISOString()
+      })
+    }
+
     logger.error("Flashcard generation failed", error, {
       userId,
       duration: `${duration}ms`
@@ -363,9 +453,23 @@ export async function POST(request: NextRequest) {
       error: errorDetails
     })
 
-    return NextResponse.json(
-      { error: `Failed to generate flashcards: ${errorDetails}` },
-      { status: 500 }
-    )
+    // CRITICAL: Ensure we ALWAYS return a valid JSON response
+    try {
+      return NextResponse.json(
+        {
+          error: `Failed to generate flashcards: ${errorDetails}`,
+          details: errorMessage,
+          timestamp: new Date().toISOString()
+        },
+        { status: 500 }
+      )
+    } catch (jsonError) {
+      // Last resort: Return plain text error if JSON.stringify fails
+      console.error('🔴 CRITICAL: Failed to create JSON error response:', jsonError)
+      return new Response(
+        `Error: Failed to generate flashcards. ${errorMessage}`,
+        { status: 500, headers: { 'Content-Type': 'text/plain' } }
+      )
+    }
   }
 }

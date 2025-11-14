@@ -93,10 +93,24 @@ class Logger {
 
   /**
    * Info logs - only in development or with explicit flag
+   * Exception: Always log in production for critical operations
    */
   info(message: string, context?: LogContext) {
-    if (!IS_PRODUCTION && IS_SERVER) {
-      console.log(formatLog('info', message, context))
+    if (IS_SERVER) {
+      // In production, only log critical info messages
+      if (IS_PRODUCTION) {
+        // Log critical operations in production for debugging
+        const criticalKeywords = ['failed', 'error', 'attempting', 'fallback', 'successful']
+        const isCritical = criticalKeywords.some(keyword =>
+          message.toLowerCase().includes(keyword)
+        )
+        if (isCritical) {
+          console.log(formatLog('info', message, context))
+        }
+      } else {
+        // Log everything in development
+        console.log(formatLog('info', message, context))
+      }
     }
   }
 
