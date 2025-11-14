@@ -28,6 +28,8 @@ export default function DashboardLayout({
   const [studyToolsExpanded, setStudyToolsExpanded] = useState(true)
   const [showShareModal, setShowShareModal] = useState(false)
   const { activeMode, setActiveMode } = useUIStore()
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
 
   // Initialize theme from localStorage (defaults to light mode)
   useEffect(() => {
@@ -123,21 +125,51 @@ export default function DashboardLayout({
     }
   }
 
+  // Swipe-to-close gesture handlers
+  const minSwipeDistance = 50 // minimum distance for swipe to register
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+
+    // Close sidebar on left swipe
+    if (isLeftSwipe && sidebarOpen) {
+      setSidebarOpen(false)
+    }
+
+    setTouchStart(null)
+    setTouchEnd(null)
+  }
+
   return (
     <div className="min-h-screen bg-white dark:bg-black">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-all duration-300 ease-in-out ${
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        className={`fixed top-0 left-0 z-50 h-full bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-all duration-300 ease-in-out pl-[env(safe-area-inset-left)] ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        } ${sidebarCollapsed ? "w-20" : "w-64"}`}
+        } ${sidebarCollapsed ? "lg:w-20" : "w-full sm:max-w-xs lg:w-64"}`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -472,6 +504,13 @@ export default function DashboardLayout({
             </button>
 
             <Link href="/dashboard" className="flex items-center gap-2">
+              <Image
+                src="/logo-brain.png"
+                alt="Synaptic"
+                width={32}
+                height={32}
+                className="w-8 h-8"
+              />
               <span className="font-bold text-black dark:text-white">
                 Synaptic
               </span>
