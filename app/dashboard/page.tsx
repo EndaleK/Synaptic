@@ -13,6 +13,7 @@ import MindMapView from "@/components/MindMapView"
 import QuizPromptModal from "@/components/QuizPromptModal"
 import InlineDocumentPicker from "@/components/InlineDocumentPicker"
 import ContentSelectionModal from "@/components/ContentSelectionModal"
+import Breadcrumb from "@/components/Breadcrumb"
 import { Flashcard } from "@/lib/types"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import { useDocumentStore } from "@/lib/store/useStore"
@@ -498,8 +499,13 @@ function DashboardContent() {
 
   return (
     <>
-      <div className="h-screen overflow-hidden">
-        {renderModeContent()}
+      <div className="h-screen overflow-hidden flex flex-col">
+        <div className="flex-shrink-0 container-padding-x pt-4">
+          <Breadcrumb />
+        </div>
+        <div className="flex-1 overflow-hidden">
+          {renderModeContent()}
+        </div>
       </div>
 
       {/* Content Selection Modal for Flashcards/Podcast/Mind Map */}
