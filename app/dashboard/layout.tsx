@@ -178,7 +178,7 @@ export default function DashboardLayout({
             {/* Collapse button - desktop only */}
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="hidden lg:flex p-2 text-gray-600 dark:text-gray-400 hover:text-accent-primary rounded-lg hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 transition-colors"
+              className="hidden lg:flex btn-touch-icon text-gray-600 dark:text-gray-400 hover:text-accent-primary rounded-lg hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 transition-colors"
               title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {sidebarCollapsed ? (
@@ -207,14 +207,14 @@ export default function DashboardLayout({
                         setActiveMode("home")
                       }
                     }}
-                    className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       isActive
                         ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
                         : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
                     } ${sidebarCollapsed ? "justify-center" : ""}`}
                     title={sidebarCollapsed ? item.name : undefined}
                   >
-                    <item.icon className="w-4 h-4" />
+                    <item.icon className="w-5 h-5" />
                     {!sidebarCollapsed && item.name}
                   </Link>
                 )
@@ -254,7 +254,7 @@ export default function DashboardLayout({
                           <button
                             key={mode.id}
                             onClick={() => handleModeClick(mode.id, mode.comingSoon)}
-                            className={`w-full flex items-center gap-2.5 px-4 py-2 rounded-lg text-sm font-medium transition-all text-left ${
+                            className={`w-full flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
                               isActive
                                 ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
                                 : mode.comingSoon
@@ -262,7 +262,7 @@ export default function DashboardLayout({
                                 : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
                             }`}
                           >
-                            <mode.icon className="w-4 h-4" />
+                            <mode.icon className="w-5 h-5" />
                             <span className="flex-1">{mode.name}</span>
                             {mode.comingSoon && (
                               <span className="px-1.5 py-0.5 text-xs bg-gray-300 dark:bg-gray-700 rounded-full">
@@ -287,7 +287,7 @@ export default function DashboardLayout({
                       <button
                         key={mode.id}
                         onClick={() => handleModeClick(mode.id, mode.comingSoon)}
-                        className={`w-full flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all ${
+                        className={`btn-touch-icon w-full rounded-lg font-medium transition-all ${
                           isActive
                             ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
                             : mode.comingSoon
@@ -296,7 +296,7 @@ export default function DashboardLayout({
                         }`}
                         title={mode.name}
                       >
-                        <mode.icon className="w-4 h-4" />
+                        <mode.icon className="w-5 h-5" />
                       </button>
                     )
                   })}
@@ -338,13 +338,13 @@ export default function DashboardLayout({
                             key={tool.href}
                             href={tool.href}
                             onClick={() => setSidebarOpen(false)}
-                            className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                               isActive
                                 ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
                                 : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
                             }`}
                           >
-                            <tool.icon className="w-4 h-4" />
+                            <tool.icon className="w-5 h-5" />
                             <span className="flex-1">{tool.name}</span>
                           </Link>
                         )
@@ -365,14 +365,14 @@ export default function DashboardLayout({
                         key={tool.href}
                         href={tool.href}
                         onClick={() => setSidebarOpen(false)}
-                        className={`flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all ${
+                        className={`btn-touch-icon rounded-lg font-medium transition-all ${
                           isActive
                             ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
                             : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
                         }`}
                         title={tool.name}
                       >
-                        <tool.icon className="w-4 h-4" />
+                        <tool.icon className="w-5 h-5" />
                       </Link>
                     )
                   })}
@@ -462,7 +462,7 @@ export default function DashboardLayout({
           <div className="flex items-center justify-between px-4 py-3">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
+              className="btn-touch-icon text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
             >
               {sidebarOpen ? (
                 <X className="w-6 h-6" />
@@ -480,7 +480,7 @@ export default function DashboardLayout({
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleTheme}
-                className="p-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
+                className="btn-touch-icon text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                 title={isDarkMode ? "Light mode" : "Dark mode"}
               >
                 {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}

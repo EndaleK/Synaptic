@@ -467,6 +467,24 @@ html.font-size-large {
   transform: translateY(-1px);
 }
 
+/* Touch Target Utilities - WCAG 2.5.5 (44×44px minimum) */
+.btn-touch {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-touch-icon {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Custom utility classes */
 .animate-float {
   animation: float 3s ease-in-out infinite;
