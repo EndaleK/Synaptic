@@ -485,7 +485,11 @@ export async function POST(req: NextRequest) {
         title: mindMapData.title,
         nodes: mindMapData.nodes,
         edges: mindMapData.edges,
-        layout_data: mindMapData.metadata
+        layout_data: {
+          ...mindMapData.metadata,
+          template: mindMapData.template,
+          templateReason: mindMapData.templateReason
+        }
       })
       .select()
       .single()

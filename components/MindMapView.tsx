@@ -348,7 +348,7 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
             title={mindMapData.title || 'Untitled Mind Map'}
             nodes={mindMapData.nodes || []}
             edges={mindMapData.edges || []}
-            template='hierarchical'
+            template={mindMapData.template || 'hierarchical'}
             templateReason={mindMapData.templateReason}
             documentText={documentText}
           />
