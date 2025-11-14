@@ -107,15 +107,40 @@ export async function POST(request: NextRequest) {
       // Fetch document with user_id filter (required for RLS)
       const { data: doc, error: fetchError } = await supabase
         .from('documents')
-        .select('extracted_text, title, file_name')
+        .select('extracted_text, file_name')
         .eq('id', documentId)
         .eq('user_id', profile.id)
         .single()
 
       if (fetchError || !doc) {
-        logger.error('Failed to fetch document', fetchError, { userId, documentId, userProfileId: profile.id })
+        // Improve error logging to see actual Supabase error
+        const errorDetails = fetchError ? {
+          message: fetchError.message,
+          code: fetchError.code,
+          details: fetchError.details,
+          hint: fetchError.hint
+        } : 'No document returned'
+
+        logger.error('Failed to fetch document', fetchError, {
+          userId,
+          documentId,
+          userProfileId: profile.id,
+          errorDetails
+        })
+
+        // Log to console for debugging
+        console.error('🔴 Document fetch failed:', {
+          documentId,
+          userId,
+          userProfileId: profile.id,
+          error: errorDetails
+        })
+
         return NextResponse.json(
-          { error: "Document not found or you don't have permission to access it" },
+          {
+            error: "Document not found or you don't have permission to access it",
+            details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+          },
           { status: 404 }
         )
       }
