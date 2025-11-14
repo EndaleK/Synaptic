@@ -18,7 +18,7 @@ interface QRCodeGeneratorProps {
  *
  * Features:
  * - Generates QR code for specified URL
- * - Embeds logo-icon.svg in center
+ * - Embeds logo-brain.png in center
  * - Downloadable as PNG
  * - Customizable size and styling
  */
@@ -33,29 +33,31 @@ export function QRCodeGenerator({
   const canvasRef = useRef<HTMLDivElement>(null)
   const [logoDataUrl, setLogoDataUrl] = useState<string>('')
 
-  // Load and convert logo SVG to data URL
+  // Load and convert logo PNG to data URL
   useEffect(() => {
     const loadLogo = async () => {
       try {
-        const response = await fetch('/logo-icon.svg')
-        const svgText = await response.text()
-        const blob = new Blob([svgText], { type: 'image/svg+xml' })
-        const url = URL.createObjectURL(blob)
-
-        // Convert SVG to data URL for embedding
+        // Load the brain logo PNG
         const img = new Image()
+        img.crossOrigin = 'anonymous'
         img.onload = () => {
           const canvas = document.createElement('canvas')
           canvas.width = logoSize
           canvas.height = logoSize
           const ctx = canvas.getContext('2d')
           if (ctx) {
+            // Draw white background circle for better contrast
+            ctx.fillStyle = '#FFFFFF'
+            ctx.beginPath()
+            ctx.arc(logoSize / 2, logoSize / 2, logoSize / 2, 0, Math.PI * 2)
+            ctx.fill()
+
+            // Draw logo
             ctx.drawImage(img, 0, 0, logoSize, logoSize)
             setLogoDataUrl(canvas.toDataURL('image/png'))
           }
-          URL.revokeObjectURL(url)
         }
-        img.src = url
+        img.src = '/logo-brain.png'
       } catch (error) {
         console.error('Failed to load logo:', error)
       }
@@ -109,7 +111,7 @@ export function QRCodeGenerator({
           value={url}
           size={size}
           level="H" // High error correction for logo embedding
-          includeMargin={true}
+          marginSize={4}
           imageSettings={
             logoDataUrl
               ? {
