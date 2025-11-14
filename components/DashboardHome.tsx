@@ -392,7 +392,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
         {learningStyle && (
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Your Learning Profile</h2>
+              <h2 className="text-headline-responsive text-gray-900 dark:text-white">Your Learning Profile</h2>
               <button
                 onClick={() => window.location.href = '/dashboard/settings'}
                 className="text-sm text-accent-primary hover:underline"
@@ -471,7 +471,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                 <div className="w-16 h-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-full flex items-center justify-center mx-auto mb-4">
                   <Upload className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Get Started with Your Documents</h3>
+                <h3 className="text-headline-responsive text-gray-900 dark:text-white mb-2">Get Started with Your Documents</h3>
                 <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
                   Upload documents or import from URLs to start generating flashcards, mind maps, podcasts, and interactive learning experiences
                 </p>

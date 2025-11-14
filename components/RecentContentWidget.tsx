@@ -154,7 +154,7 @@ export default function RecentContentWidget() {
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 h-full flex flex-col">
         <div className="flex items-center gap-2 mb-4">
           <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recent Content</h3>
+          <h3 className="text-title-responsive text-gray-900 dark:text-white">Recent Content</h3>
         </div>
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-accent-primary" />
@@ -168,7 +168,7 @@ export default function RecentContentWidget() {
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 h-full flex flex-col">
         <div className="flex items-center gap-2 mb-4">
           <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recent Content</h3>
+          <h3 className="text-title-responsive text-gray-900 dark:text-white">Recent Content</h3>
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 text-center py-8">
           No content generated yet. Start by creating flashcards, podcasts, or mind maps!
@@ -182,7 +182,7 @@ export default function RecentContentWidget() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recent Content</h3>
+          <h3 className="text-title-responsive text-gray-900 dark:text-white">Recent Content</h3>
         </div>
         <button
           onClick={() => router.push('/dashboard/library')}

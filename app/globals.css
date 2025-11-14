@@ -555,6 +555,93 @@ html.font-size-large {
   }
 }
 
+/* Responsive Typography Scale - Mobile-first */
+/* Responsive Display - Hero headings */
+.text-display-responsive {
+  font-size: 2rem;        /* 32px mobile (down from 48px) */
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 768px) {
+  .text-display-responsive {
+    font-size: 2.5rem;    /* 40px tablet */
+  }
+}
+
+@media (min-width: 1024px) {
+  .text-display-responsive {
+    font-size: 3rem;      /* 48px desktop */
+  }
+}
+
+/* Responsive Headline - Section headers */
+.text-headline-responsive {
+  font-size: 1.5rem;      /* 24px mobile (down from 30px) */
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+@media (min-width: 768px) {
+  .text-headline-responsive {
+    font-size: 1.75rem;   /* 28px tablet */
+  }
+}
+
+@media (min-width: 1024px) {
+  .text-headline-responsive {
+    font-size: 1.875rem;  /* 30px desktop */
+  }
+}
+
+/* Responsive Title - Card headers */
+.text-title-responsive {
+  font-size: 1.125rem;    /* 18px mobile (down from 20px) */
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+@media (min-width: 1024px) {
+  .text-title-responsive {
+    font-size: 1.25rem;   /* 20px desktop */
+  }
+}
+
+/* Responsive Body - Main content */
+.text-body-responsive {
+  font-size: 0.9375rem;   /* 15px mobile (down from 16px) */
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+@media (min-width: 1024px) {
+  .text-body-responsive {
+    font-size: 1rem;      /* 16px desktop */
+  }
+}
+
+/* Responsive Caption - Meta info */
+.text-caption-responsive {
+  font-size: 0.8125rem;   /* 13px mobile (down from 14px) */
+  font-weight: 400;
+  line-height: 1.4;
+  color: rgb(var(--text-caption-light));
+}
+
+@media (min-width: 1024px) {
+  .text-caption-responsive {
+    font-size: 0.875rem;  /* 14px desktop */
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .text-caption-responsive {
+    color: rgb(var(--text-caption-dark));
+  }
+}
+
 /* Custom utility classes */
 .animate-float {
   animation: float 3s ease-in-out infinite;
