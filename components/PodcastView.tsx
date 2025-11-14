@@ -188,6 +188,7 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
         )}
 
         <PodcastPlayer
+          podcastId={podcast.id}
           audioUrl={podcast.audioUrl}
           title={podcast.title}
           description={podcast.description}

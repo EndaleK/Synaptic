@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { Play, Pause, Download, RotateCcw, Volume2, VolumeX, Loader2, BookmarkPlus, BookmarkCheck } from "lucide-react"
 import { formatDetailedTime } from "@/lib/audio-utils"
 import { cn } from "@/lib/utils"
+import { usePodcastStore } from "@/lib/store/usePodcastStore"
 
 export interface TranscriptEntry {
   speaker: 'host_a' | 'host_b'
@@ -14,6 +15,7 @@ export interface TranscriptEntry {
 }
 
 interface PodcastPlayerProps {
+  podcastId: string
   audioUrl: string
   title: string
   description?: string
@@ -24,6 +26,7 @@ interface PodcastPlayerProps {
 }
 
 export default function PodcastPlayer({
+  podcastId,
   audioUrl,
   title,
   description,
@@ -32,6 +35,7 @@ export default function PodcastPlayer({
   onRegenerate,
   isRegenerating = false
 }: PodcastPlayerProps) {
+  const { getPosition, setPosition } = usePodcastStore()
   const audioRef = useRef<HTMLAudioElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -40,6 +44,22 @@ export default function PodcastPlayer({
   const [showTranscript, setShowTranscript] = useState(true)
   const [isSaved, setIsSaved] = useState(true) // Podcasts are auto-saved during generation
   const transcriptRef = useRef<HTMLDivElement>(null)
+
+  // 🔄 CONTINUITY: Load saved playback position when podcast changes
+  useEffect(() => {
+    if (!podcastId || !audioRef.current) return
+
+    const savedPosition = getPosition(podcastId)
+    if (savedPosition > 0) {
+      console.log('[PodcastPlayer] Restoring playback position:', savedPosition, 'seconds for podcast:', podcastId)
+      audioRef.current.currentTime = savedPosition
+      setCurrentTime(savedPosition)
+    } else {
+      console.log('[PodcastPlayer] No saved position, starting from beginning')
+      audioRef.current.currentTime = 0
+      setCurrentTime(0)
+    }
+  }, [podcastId, getPosition])
 
   // Update current time
   useEffect(() => {
@@ -51,6 +71,19 @@ export default function PodcastPlayer({
 
     return () => audio.removeEventListener('timeupdate', updateTime)
   }, [])
+
+  // 🔄 CONTINUITY: Save playback position with debouncing
+  useEffect(() => {
+    if (!podcastId || currentTime === 0) return
+
+    // Debounce: Only save every 2 seconds to avoid too many writes
+    const timeoutId = setTimeout(() => {
+      console.log('[PodcastPlayer] Saving playback position:', currentTime.toFixed(1), 'seconds')
+      setPosition(podcastId, currentTime, duration)
+    }, 2000)
+
+    return () => clearTimeout(timeoutId)
+  }, [currentTime, podcastId, duration, setPosition])
 
   // Handle play/pause
   const togglePlay = () => {

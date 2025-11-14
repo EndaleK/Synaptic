@@ -5,6 +5,7 @@ import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, Message
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 import { useDocumentStore } from "@/lib/store/useStore"
+import { useChatStore } from "@/lib/store/useChatStore"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
 import SectionNavigator from "./SectionNavigator"
 import type { DocumentSection } from "@/lib/document-parser/section-detector"
@@ -76,6 +77,7 @@ export default function ChatInterface() {
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const modeDropdownRef = useRef<HTMLDivElement>(null)
   const { currentDocument, setCurrentDocument} = useDocumentStore()
+  const { loadSession, setMessages: saveMessages, clearMessages: clearStoredMessages, hasSession } = useChatStore()
   const hasLoadedDocument = useRef(false)
 
   useEffect(() => {
@@ -116,13 +118,41 @@ export default function ChatInterface() {
         if (messages.length > 0) {
           setMessages([])
           setInputMessage("")
+          // Also clear from store
+          if (currentDocument?.id) {
+            clearStoredMessages(currentDocument.id)
+          }
         }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [messages.length])
+  }, [messages.length, currentDocument?.id, clearStoredMessages])
+
+  // 🔄 CONTINUITY: Load chat history from store when document changes
+  useEffect(() => {
+    if (!isClient || !currentDocument?.id) return
+
+    console.log('[ChatInterface] Loading session for document:', currentDocument.id)
+    const storedMessages = loadSession(currentDocument.id)
+
+    if (storedMessages.length > 0) {
+      console.log('[ChatInterface] Restored', storedMessages.length, 'messages from session')
+      setMessages(storedMessages)
+    } else {
+      console.log('[ChatInterface] No existing session found')
+      // Don't clear messages here - let document load effect handle welcome message
+    }
+  }, [currentDocument?.id, isClient, loadSession])
+
+  // 🔄 CONTINUITY: Save chat history to store whenever messages change
+  useEffect(() => {
+    if (!isClient || !currentDocument?.id || messages.length === 0) return
+
+    console.log('[ChatInterface] Saving', messages.length, 'messages to session')
+    saveMessages(currentDocument.id, messages)
+  }, [messages, currentDocument?.id, isClient, saveMessages])
 
   // Load document from store if available
   useEffect(() => {
@@ -398,6 +428,10 @@ export default function ChatInterface() {
   const handleClearChat = () => {
     setMessages([])
     setInputMessage("")
+    // 🔄 CONTINUITY: Clear from store as well
+    if (currentDocument?.id) {
+      clearStoredMessages(currentDocument.id)
+    }
   }
 
   const handleSendMessage = async () => {

@@ -7,6 +7,8 @@ import { Flashcard, MasteryLevel } from "@/lib/types"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
 import ShareModal from "./ShareModal"
 import { useToast } from "./ToastContainer"
+import { useDocumentStore } from "@/lib/store/useStore"
+import { useFlashcardStore } from "@/lib/store/useFlashcardStore"
 
 interface FlashcardDisplayProps {
   flashcards: Flashcard[]
@@ -17,6 +19,8 @@ interface FlashcardDisplayProps {
 
 export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, isRegenerating = false }: FlashcardDisplayProps) {
   const toast = useToast()
+  const { currentDocument } = useDocumentStore()
+  const { getPosition, setPosition, hasPosition } = useFlashcardStore()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [studiedCards, setStudiedCards] = useState<Set<string>>(new Set())
@@ -43,6 +47,29 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   const progress = ((studiedCards.size / flashcards.length) * 100).toFixed(0)
   const masteredCount = masteredCards.size
   const needsReviewCount = needsReviewCards.size
+
+  // 🔄 CONTINUITY: Load saved position when flashcards change
+  useEffect(() => {
+    if (!currentDocument?.id || flashcards.length === 0) return
+
+    const savedPosition = getPosition(currentDocument.id)
+    if (savedPosition !== undefined && savedPosition < flashcards.length) {
+      console.log('[FlashcardDisplay] Restored position:', savedPosition, 'for document:', currentDocument.id)
+      setCurrentIndex(savedPosition)
+      setFlipped(false) // Reset flip state when loading new position
+    } else {
+      console.log('[FlashcardDisplay] No saved position or out of range, starting at 0')
+      setCurrentIndex(0)
+    }
+  }, [currentDocument?.id, flashcards.length, getPosition])
+
+  // 🔄 CONTINUITY: Save position whenever it changes
+  useEffect(() => {
+    if (!currentDocument?.id || flashcards.length === 0) return
+
+    console.log('[FlashcardDisplay] Saving position:', currentIndex, 'of', flashcards.length)
+    setPosition(currentDocument.id, currentIndex, flashcards.length)
+  }, [currentIndex, currentDocument?.id, flashcards.length, setPosition])
 
   const handleNext = useCallback(() => {
     if (!studiedCards.has(currentCard.id)) {
