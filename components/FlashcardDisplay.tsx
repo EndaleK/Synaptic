@@ -1101,7 +1101,7 @@ ${'='.repeat(50)}`).join('\n')}`
           </div>
 
           <div
-            className="relative cursor-pointer h-80 md:h-80 lg:h-96 mb-3 md:mb-6"
+            className="relative cursor-pointer h-72 md:h-80 lg:h-96 mb-3 md:mb-6"
           >
             {/* Mastery Badge */}
             {masteredCards.has(currentCard.id) && (
