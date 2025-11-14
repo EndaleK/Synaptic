@@ -628,9 +628,9 @@ export default function ChatInterface() {
   return (
     <div className="h-full flex bg-white dark:bg-black border-gray-300 dark:border-gray-700 overflow-hidden">
       {/* Two Column Layout: PDF Viewer | Chat (50/50 split) */}
-        {!chatDocument.file ? (
-          <div className="flex-1 overflow-auto">
-            <div className="max-w-4xl mx-auto p-8">
+      {!chatDocument.file ? (
+        <div className="flex-1 overflow-auto">
+          <div className="max-w-4xl mx-auto p-8">
               {/* Header Section */}
               <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden mb-6">
                 <div className="p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
@@ -757,9 +757,8 @@ export default function ChatInterface() {
               </p>
             </div>
           </div>
-        ) : (
-          /* Responsive Layout: Full-screen on mobile, 50/50 on desktop */}
-          <>
+      ) : (
+        <>
             {/* Mobile View Toggle FAB */}
             <button
               onClick={() => setMobileView(mobileView === 'document' ? 'chat' : 'document')}
