@@ -86,8 +86,8 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/logo-icon.svg',
-    apple: '/logo-icon.svg',
+    icon: '/logo-brain.png',
+    apple: '/logo-brain.png',
   },
   manifest: '/site.webmanifest',
 };
