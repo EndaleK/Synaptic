@@ -1046,6 +1046,11 @@ export default function ChatInterface() {
                     onKeyPress={handleKeyPress}
                     placeholder="Ask a question about the document..."
                     disabled={chatDocument.isProcessing}
+                    autoComplete="off"
+                    autoCapitalize="sentences"
+                    autoCorrect="on"
+                    spellCheck="true"
+                    enterKeyHint="send"
                     className="flex-1 resize-none border border-accent-primary/30 dark:border-accent-primary/50 rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent-primary focus:border-transparent bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 text-sm min-h-[44px] max-h-[120px]"
                     rows={1}
                   />
