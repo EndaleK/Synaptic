@@ -4,13 +4,13 @@
   "description": "8 intelligent study tools in one platform",
   "icons": [
     {
-      "src": "/logo-brain.png",
-      "sizes": "512x512",
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
       "type": "image/png"
     },
     {
-      "src": "/logo-brain.png",
-      "sizes": "192x192",
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
       "type": "image/png"
     }
   ],
