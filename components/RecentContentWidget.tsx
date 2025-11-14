@@ -151,7 +151,7 @@ export default function RecentContentWidget() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 h-full flex flex-col">
         <div className="flex items-center gap-2 mb-4">
           <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recent Content</h3>
@@ -165,7 +165,7 @@ export default function RecentContentWidget() {
 
   if (recentItems.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 h-full flex flex-col">
         <div className="flex items-center gap-2 mb-4">
           <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recent Content</h3>
@@ -178,7 +178,7 @@ export default function RecentContentWidget() {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
@@ -193,7 +193,7 @@ export default function RecentContentWidget() {
         </button>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 flex-1">
         {(isExpanded ? recentItems : recentItems.slice(0, 3)).map((item) => {
           const config = getItemConfig(item.type)
           const Icon = config.icon

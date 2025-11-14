@@ -239,11 +239,14 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
           </div>
         </div>
 
-        {/* Recent Content Widget */}
-        <RecentContentWidget />
+        {/* Dashboard Widgets - Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Content Widget */}
+          <RecentContentWidget />
 
-        {/* Usage Widget */}
-        <UsageWidget />
+          {/* Usage Widget */}
+          <UsageWidget />
+        </div>
 
         {/* Study Scheduler Tools */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">

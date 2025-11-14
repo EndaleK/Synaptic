@@ -52,7 +52,7 @@ export default function UsageWidget() {
 
   if (loading) {
     return (
-      <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+      <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 h-full flex flex-col">
         <div className="flex items-center gap-3 mb-4">
           <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400 animate-pulse" />
           <h3 className="font-semibold text-gray-900 dark:text-white">Loading usage...</h3>
@@ -90,7 +90,7 @@ export default function UsageWidget() {
   )
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -127,7 +127,7 @@ export default function UsageWidget() {
       ) : (
         <>
           {/* Usage items */}
-          <div className="space-y-3">
+          <div className="space-y-3 flex-1">
             {displayItems.map((item) => {
               const percentage = item.limit === Infinity ? 0 : (item.used / item.limit) * 100
               const isNearLimit = percentage >= 80
