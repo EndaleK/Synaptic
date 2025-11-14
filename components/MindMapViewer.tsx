@@ -17,7 +17,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { Handle } from '@xyflow/react'
-import { Download, Maximize2, RefreshCw, ArrowLeft, BookmarkPlus, BookmarkCheck } from 'lucide-react'
+import { Download, Maximize2, RefreshCw, ArrowLeft, BookmarkPlus, BookmarkCheck, Save } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
