@@ -1021,35 +1021,30 @@ ${'='.repeat(50)}`).join('\n')}`
               <div className="relative" ref={exportMenuRef}>
                 <button
                   onClick={() => setShowExportMenu(!showExportMenu)}
-                  className="btn-secondary flex items-center"
-                  style={{
-                    gap: "var(--space-1)",
-                    padding: "var(--space-1) var(--space-2)",
-                    fontSize: "var(--font-size-xs)"
-                  }}
+                  className="btn-secondary btn-touch flex items-center gap-2 text-xs md:text-sm"
                 >
-                  <Download className="h-3.5 w-3.5" />
-                  Export
-                  <ChevronDown className="h-3 w-3" />
+                  <Download className="h-4 w-4 md:h-5 md:w-5" />
+                  <span>Export</span>
+                  <ChevronDown className="h-4 w-4" />
                 </button>
 
                 {showExportMenu && (
                   <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
                     <button
                       onClick={handleExportJSON}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded-t-lg text-gray-700 dark:text-gray-300"
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded-t-lg text-gray-700 dark:text-gray-300 min-h-[44px] flex items-center"
                     >
                       JSON
                     </button>
                     <button
                       onClick={handleExportHTML}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 min-h-[44px] flex items-center"
                     >
                       HTML
                     </button>
                     <button
                       onClick={handleExportText}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 min-h-[44px] flex items-center"
                     >
                       Text
                     </button>
@@ -1059,9 +1054,9 @@ ${'='.repeat(50)}`).join('\n')}`
                         setShowShareModal(true)
                         setShowExportMenu(false)
                       }}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded-b-lg text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded-b-lg text-gray-700 dark:text-gray-300 min-h-[44px] flex items-center gap-2"
                     >
-                      <Share2 className="h-3.5 w-3.5" />
+                      <Share2 className="h-4 w-4" />
                       Share QR Code
                     </button>
                   </div>
@@ -1167,18 +1162,18 @@ ${'='.repeat(50)}`).join('\n')}`
               <button
                 onClick={() => handleMastery('needs-review')}
                 disabled={isUpdatingMastery}
-                className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+                className="flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base min-h-[44px]"
               >
-                <X className="h-4 w-4 md:h-5 md:w-5" />
+                <X className="h-5 w-5" />
                 <span>Review Again</span>
               </button>
 
               <button
                 onClick={() => handleMastery('mastered')}
                 disabled={isUpdatingMastery}
-                className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+                className="flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base min-h-[44px]"
               >
-                <Check className="h-4 w-4 md:h-5 md:w-5" />
+                <Check className="h-5 w-5" />
                 <span>Got it!</span>
               </button>
             </div>
@@ -1194,24 +1189,24 @@ ${'='.repeat(50)}`).join('\n')}`
           <div className="flex justify-center items-center gap-2 md:gap-3">
             <button
               onClick={handlePrevious}
-              className="btn-secondary rounded-full p-2"
+              className="btn-secondary btn-touch-icon rounded-full"
             >
-              <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
+              <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
             </button>
 
             <button
               onClick={handleFlip}
-              className="btn-primary flex items-center gap-1 px-4 py-2 text-sm md:text-base"
+              className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm md:text-base min-h-[44px]"
             >
-              <RotateCcw className="h-3.5 w-3.5 md:h-4 md:w-4" />
-              Flip
+              <RotateCcw className="h-4 w-4 md:h-5 md:w-5" />
+              <span>Flip</span>
             </button>
 
             <button
               onClick={handleNext}
-              className="btn-secondary rounded-full p-2"
+              className="btn-secondary btn-touch-icon rounded-full"
             >
-              <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+              <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
             </button>
           </div>
 
