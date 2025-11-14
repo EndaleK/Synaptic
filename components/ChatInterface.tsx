@@ -629,7 +629,7 @@ export default function ChatInterface() {
     <div className="h-full flex bg-white dark:bg-black border-gray-300 dark:border-gray-700 overflow-hidden">
       {/* Two Column Layout: PDF Viewer | Chat (50/50 split) */}
         {!chatDocument.file ? (
-          /* Upload Area - Full Width with Header */
+          // Upload Area - Full Width with Header
           <div className="flex-1 overflow-auto">
             <div className="max-w-4xl mx-auto p-8">
               {/* Header Section */}
