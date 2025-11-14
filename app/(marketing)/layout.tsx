@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
 import { Menu, X } from "lucide-react"
 import { useState } from "react"
+import { usePathname } from "next/navigation"
 
 export default function MarketingLayout({
   children,
@@ -12,6 +13,10 @@ export default function MarketingLayout({
 }) {
   const { isSignedIn } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
+
+  // Use brain logo for pricing page, original logo for landing page
+  const logoSrc = pathname === "/pricing" ? "/logo-brain.png" : "/logo-full.png"
 
   return (
     <div className="min-h-screen bg-white dark:bg-black flex flex-col">
@@ -22,7 +27,7 @@ export default function MarketingLayout({
             {/* Logo */}
             <Link href="/" className="flex items-center group">
               <img
-                src="/logo-full.png"
+                src={logoSrc}
                 alt="Synaptic - Study Smarter"
                 className="h-10 w-auto group-hover:scale-105 transition-transform"
               />
@@ -160,7 +165,7 @@ export default function MarketingLayout({
             <div className="col-span-1 md:col-span-2">
               <div className="mb-4">
                 <img
-                  src="/logo-full.png"
+                  src={logoSrc}
                   alt="Synaptic - Study Smarter"
                   className="h-12 w-auto"
                 />
