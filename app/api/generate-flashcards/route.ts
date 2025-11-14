@@ -88,16 +88,34 @@ export async function POST(request: NextRequest) {
 
       // Fetch document from database
       const supabase = await createClient()
+
+      // First get user profile ID (required for RLS)
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('clerk_user_id', userId)
+        .single()
+
+      if (!profile) {
+        logger.error('User profile not found', undefined, { userId })
+        return NextResponse.json(
+          { error: "User profile not found. Please try signing out and back in." },
+          { status: 404 }
+        )
+      }
+
+      // Fetch document with user_id filter (required for RLS)
       const { data: doc, error: fetchError } = await supabase
         .from('documents')
-        .select('extracted_text, title')
+        .select('extracted_text, title, file_name')
         .eq('id', documentId)
+        .eq('user_id', profile.id)
         .single()
 
       if (fetchError || !doc) {
-        logger.error('Failed to fetch document', fetchError, { userId, documentId })
+        logger.error('Failed to fetch document', fetchError, { userId, documentId, userProfileId: profile.id })
         return NextResponse.json(
-          { error: "Document not found" },
+          { error: "Document not found or you don't have permission to access it" },
           { status: 404 }
         )
       }
