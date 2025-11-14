@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { ChevronLeft, ChevronRight, RotateCcw, Download, Home, ChevronDown, RefreshCw, BookOpen, Sparkles, Zap, TrendingUp, Check, X, Share2, BookmarkPlus, BookmarkCheck } from "lucide-react"
+import { useSwipeable } from "react-swipeable"
 import { cn } from "@/lib/utils"
 import { Flashcard, MasteryLevel } from "@/lib/types"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
@@ -90,6 +91,15 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
       setStudiedCards(new Set([...studiedCards, currentCard.id]))
     }
   }, [flipped, currentCard.id, studiedCards])
+
+  // Swipe gesture handlers for mobile
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => handleNext(),
+    onSwipedRight: () => handlePrevious(),
+    trackMouse: false, // Only track touch events, not mouse
+    preventScrollOnSwipe: true,
+    delta: 50, // Minimum distance for swipe to register (pixels)
+  })
 
   // Check if flashcard has a valid database ID
   const hasValidDatabaseId = useCallback((id: string | number) => {
@@ -1101,6 +1111,7 @@ ${'='.repeat(50)}`).join('\n')}`
           </div>
 
           <div
+            {...swipeHandlers}
             className="relative cursor-pointer h-72 md:h-80 lg:h-96 mb-3 md:mb-6"
           >
             {/* Mastery Badge */}
