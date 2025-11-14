@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain, ChevronDown, Trash2, Home } from "lucide-react"
+import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain, ChevronDown, Trash2, Home, ArrowLeft, File } from "lucide-react"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 import { useDocumentStore } from "@/lib/store/useStore"
@@ -73,6 +73,7 @@ export default function ChatInterface() {
   const [isClient, setIsClient] = useState(false)
   const [teachingMode, setTeachingMode] = useState<TeachingMode>('mixed')
   const [showModeDropdown, setShowModeDropdown] = useState(false)
+  const [mobileView, setMobileView] = useState<'document' | 'chat'>('document') // Mobile view toggle
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const modeDropdownRef = useRef<HTMLDivElement>(null)
@@ -758,16 +759,50 @@ export default function ChatInterface() {
             </div>
           </div>
         ) : (
-          /* Two Column Layout: Document Viewer | Chat (50/50) */
+          /* Responsive Layout: Full-screen on mobile, 50/50 on desktop */}
           <>
-            {/* Document Viewer Column - 50% width */}
-            <div className="w-1/2 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+            {/* Mobile View Toggle FAB */}
+            <button
+              onClick={() => setMobileView(mobileView === 'document' ? 'chat' : 'document')}
+              className="lg:hidden fixed bottom-20 right-4 z-50 w-14 h-14 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-full shadow-2xl flex items-center justify-center transition-transform active:scale-95 hover:scale-105"
+              aria-label={mobileView === 'document' ? 'Switch to chat' : 'Switch to document'}
+            >
+              {mobileView === 'document' ? (
+                <MessageSquare className="w-6 h-6" />
+              ) : (
+                <File className="w-6 h-6" />
+              )}
+            </button>
+
+            {/* Document Viewer Column - Full width on mobile, 50% on desktop */}
+            <div className={cn(
+              "border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900",
+              "w-full lg:w-1/2",
+              mobileView === 'chat' && "hidden lg:block"
+            )}>
+              {/* Mobile Header for Document View */}
+              <div className="lg:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+                <button
+                  onClick={() => setMobileView('chat')}
+                  className="flex items-center gap-2 px-3 py-2 bg-accent-primary/10 dark:bg-accent-primary/20 text-accent-primary rounded-lg text-sm font-medium"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Switch to Chat</span>
+                </button>
+                <div className="flex-1 flex items-center gap-2 min-w-0">
+                  <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                    {chatDocument.file?.name}
+                  </span>
+                </div>
+              </div>
+
               {isPDFFile ? (
                 <PDFViewer file={chatDocument.file} className="h-full" />
               ) : (
-                <div className="h-full overflow-auto p-6">
+                <div className="h-full overflow-auto p-4 lg:p-6">
                   <div className="max-w-3xl mx-auto">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-8">
                       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
                         <FileText className="w-6 h-6 text-gray-500 flex-shrink-0" />
                         <h2 className="text-lg font-semibold text-black dark:text-white truncate">
@@ -785,10 +820,31 @@ export default function ChatInterface() {
               )}
             </div>
 
-            {/* Chat Column - 50% width */}
-            <div className="w-1/2 flex flex-col">
-              {/* Document Header */}
-              <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-3">
+            {/* Chat Column - Full width on mobile, 50% on desktop */}
+            <div className={cn(
+              "flex flex-col",
+              "w-full lg:w-1/2",
+              mobileView === 'document' && "hidden lg:flex"
+            )}>
+              {/* Mobile Header for Chat View */}
+              <div className="lg:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+                <button
+                  onClick={() => setMobileView('document')}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Document</span>
+                </button>
+                <div className="flex-1 flex items-center gap-2 min-w-0">
+                  <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                    {chatDocument.file?.name}
+                  </span>
+                </div>
+              </div>
+
+              {/* Desktop Header */}
+              <div className="hidden lg:block bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
