@@ -8,6 +8,7 @@ import { logger } from "@/lib/logger"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { ChatMessageSchema, validateDocumentLength, validateContentSafety } from "@/lib/validation"
 import { getProviderForFeature } from "@/lib/ai"
+import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
 
 interface ChatRequest {
   message: string
@@ -35,6 +36,25 @@ export async function POST(request: NextRequest) {
     if (rateLimitResponse) {
       logger.warn("Rate limit exceeded for chat", { userId })
       return rateLimitResponse
+    }
+
+    // Check chat message usage limit (NEW - Nov 14, 2025: 50 messages/month for free tier)
+    const usageCheck = await checkUsageLimit(userId, 'chat_messages')
+    if (!usageCheck.allowed) {
+      logger.warn("Chat message limit exceeded", {
+        userId,
+        used: usageCheck.used,
+        limit: usageCheck.limit
+      })
+      return NextResponse.json(
+        {
+          error: usageCheck.message || 'Monthly chat limit reached',
+          used: usageCheck.used,
+          limit: usageCheck.limit,
+          upgradeUrl: '/pricing'
+        },
+        { status: 403 }
+      )
     }
 
     const body: ChatRequest = await request.json()
@@ -305,6 +325,9 @@ Please answer this question based only on the information provided in the docume
       // Fallback to estimate if actual usage not available
       trackUsage(userId, modelName as any, costEstimate.inputTokens, costEstimate.outputTokens)
     }
+
+    // Increment chat message usage count (NEW - Nov 14, 2025)
+    await incrementUsage(userId, 'chat_messages')
 
     const duration = Date.now() - startTime
 

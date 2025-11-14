@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
-import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar, Link2, Globe, CheckCircle2, ArrowRight, Brain, Clock, Bell, BarChart3, Target, PenTool, Youtube, GraduationCap, Library } from "lucide-react"
+import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar, Link2, Globe, CheckCircle2, ArrowRight, Brain, Clock, Bell, BarChart3, Target, PenTool, Youtube, GraduationCap, Library, Flame, Sparkles } from "lucide-react"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import LearningProfileBanner from "@/components/LearningProfileBanner"
 import SubscriptionStatus from "@/components/SubscriptionStatus"
 import RecentContentWidget from "@/components/RecentContentWidget"
+import UsageWidget from "@/components/UsageWidget"
 import type { Document } from "@/lib/supabase/types"
 
 interface DashboardHomeProps {
@@ -18,7 +19,9 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
   const { user } = useUser()
   const [recentDocuments, setRecentDocuments] = useState<Document[]>([])
   const [isLoadingDocs, setIsLoadingDocs] = useState(true)
-  const { learningStyle, assessmentScores } = useUserStore()
+  const [currentStreak, setCurrentStreak] = useState<number>(0)
+  const [isLoadingStreak, setIsLoadingStreak] = useState(true)
+  const { learningStyle, assessmentScores, userProfile } = useUserStore()
 
   // Fetch recent documents
   useEffect(() => {
@@ -39,6 +42,30 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
     }
 
     fetchRecentDocs()
+  }, [])
+
+  // Update and fetch streak on mount
+  useEffect(() => {
+    const updateStreak = async () => {
+      try {
+        // Update streak (increments if applicable)
+        const updateResponse = await fetch('/api/streak/update', {
+          method: 'POST',
+          credentials: 'include'
+        })
+
+        if (updateResponse.ok) {
+          const data = await updateResponse.json()
+          setCurrentStreak(data.currentStreak || 0)
+        }
+      } catch (error) {
+        console.error('Error updating streak:', error)
+      } finally {
+        setIsLoadingStreak(false)
+      }
+    }
+
+    updateStreak()
   }, [])
 
   const learningModes = [
@@ -161,10 +188,20 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-accent-primary to-accent-secondary rounded-2xl p-8 text-white">
           <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-display mb-3">
-                Welcome back, {user?.firstName || user?.username || 'Student'}! 👋
-              </h1>
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-3 flex-wrap">
+                <h1 className="text-display">
+                  Welcome back, {user?.firstName || user?.username || 'Student'}! 👋
+                </h1>
+                {/* Streak Indicator */}
+                {!isLoadingStreak && currentStreak > 0 && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">
+                    <Flame className="w-5 h-5 text-orange-300" />
+                    <span className="font-bold text-lg">{currentStreak}</span>
+                    <span className="text-sm font-medium">day streak!</span>
+                  </div>
+                )}
+              </div>
               <p className="text-white/90 text-lg font-medium">
                 Ready to continue your learning journey?
               </p>
@@ -174,11 +211,39 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                 <span className="md:hidden">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
               </div>
             </div>
+
+            {/* Upgrade/Manage Plan Button */}
+            <div className="ml-4">
+              {userProfile?.subscription_tier && userProfile.subscription_tier !== 'free' ? (
+                // Subscribed users - Show plan badge + manage button
+                <button
+                  onClick={() => window.location.href = '/dashboard/settings?tab=subscription'}
+                  className="flex items-center gap-2 px-6 py-3 bg-white text-accent-primary rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-105"
+                >
+                  <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-full font-bold uppercase">
+                    {userProfile.subscription_tier}
+                  </span>
+                  <span>Manage Plan</span>
+                </button>
+              ) : (
+                // Free users - Show upgrade button
+                <button
+                  onClick={() => window.location.href = '/pricing'}
+                  className="flex items-center gap-2 px-6 py-3 bg-white text-accent-primary rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-105"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  <span>Upgrade</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Recent Content Widget */}
         <RecentContentWidget />
+
+        {/* Usage Widget */}
+        <UsageWidget />
 
         {/* Study Scheduler Tools */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">

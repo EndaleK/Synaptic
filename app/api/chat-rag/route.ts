@@ -20,6 +20,7 @@ import { applyRateLimit, RateLimits } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
 import { estimateRequestCost, trackUsage } from '@/lib/cost-estimator'
 import { ChatMessageSchema } from '@/lib/validation'
+import { checkUsageLimit, incrementUsage } from '@/lib/usage-limits'
 
 interface ChatRAGRequest {
   message: string
@@ -54,6 +55,25 @@ export async function POST(request: NextRequest) {
     if (rateLimitResponse) {
       logger.warn('Rate limit exceeded for RAG chat', { userId })
       return rateLimitResponse
+    }
+
+    // 2.5. Check chat message usage limit (NEW - Nov 14, 2025: 50 messages/month for free tier)
+    const usageCheck = await checkUsageLimit(userId, 'chat_messages')
+    if (!usageCheck.allowed) {
+      logger.warn("RAG chat message limit exceeded", {
+        userId,
+        used: usageCheck.used,
+        limit: usageCheck.limit
+      })
+      return NextResponse.json(
+        {
+          error: usageCheck.message || 'Monthly chat limit reached',
+          used: usageCheck.used,
+          limit: usageCheck.limit,
+          upgradeUrl: '/pricing'
+        },
+        { status: 403 }
+      )
     }
 
     // 3. Validate input
@@ -378,6 +398,9 @@ Please answer this question based on the relevant excerpts provided above. The e
     } else {
       trackUsage(userId, modelName as any, costEstimate.inputTokens, costEstimate.outputTokens)
     }
+
+    // 14.5. Increment chat message usage count (NEW - Nov 14, 2025)
+    await incrementUsage(userId, 'chat_messages')
 
     const duration = Date.now() - startTime
 

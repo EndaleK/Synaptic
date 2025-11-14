@@ -6,32 +6,35 @@
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
 
-// Usage limits per tier
+// Usage limits per tier (Updated Nov 14, 2025 - Growth strategy)
 export const USAGE_LIMITS = {
   free: {
-    documents: 5,
-    flashcards: 50,
-    podcasts: 3,
-    mindmaps: 5,
-    exams: 3  // Free tier: 3 exams per month
+    documents: 10,        // Increased from 5 - matches student course load
+    flashcards: 100,      // Increased from 50 - allows 2-3 full study sets per course
+    podcasts: 5,          // Increased from 3 - one per major course
+    mindmaps: 10,         // Increased from 5 - consistency with documents
+    exams: 5,             // Increased from 3 - one per course for midterm/final
+    chat_messages: 50     // NEW - prevents abuse while maintaining core value
   },
   premium: {
     documents: Infinity,
     flashcards: Infinity,
     podcasts: Infinity,
     mindmaps: Infinity,
-    exams: Infinity
+    exams: Infinity,
+    chat_messages: Infinity
   },
   enterprise: {
     documents: Infinity,
     flashcards: Infinity,
     podcasts: Infinity,
     mindmaps: Infinity,
-    exams: Infinity
+    exams: Infinity,
+    chat_messages: Infinity
   }
 }
 
-export type FeatureType = 'documents' | 'flashcards' | 'podcasts' | 'mindmaps' | 'exams'
+export type FeatureType = 'documents' | 'flashcards' | 'podcasts' | 'mindmaps' | 'exams' | 'chat_messages'
 
 export interface UsageCheckResult {
   allowed: boolean
@@ -122,7 +125,8 @@ export async function checkUsageLimit(
         flashcards: ['flashcard_generation', 'flashcard'],
         podcasts: ['podcast_generation', 'podcast'],
         mindmaps: ['mindmap_generation', 'mindmap'],
-        exams: ['exam_creation', 'exam']
+        exams: ['exam_creation', 'exam'],
+        chat_messages: ['chat_message', 'chat']
       }
 
       const actionTypes = actionTypeMap[feature as keyof typeof actionTypeMap] || []
@@ -199,7 +203,8 @@ export async function incrementUsage(
       flashcards: 'flashcard_generation',
       podcasts: 'podcast_generation',
       mindmaps: 'mindmap_generation',
-      exams: 'exam_creation'
+      exams: 'exam_creation',
+      chat_messages: 'chat_message'
     }
 
     const actionType = actionTypeMap[feature]

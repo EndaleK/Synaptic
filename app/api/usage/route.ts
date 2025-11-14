@@ -3,25 +3,29 @@ import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
 
-// Usage limits per tier
+// Usage limits per tier (Updated Nov 14, 2025 - Growth strategy)
+// NOTE: These must match lib/usage-limits.ts
 const USAGE_LIMITS = {
   free: {
-    documents: 10,
-    flashcards: 50,
-    podcasts: 5,
-    mindmaps: 10
+    documents: 10,        // Increased from 5
+    flashcards: 100,      // Increased from 50
+    podcasts: 5,          // Increased from 3
+    mindmaps: 10,         // Increased from 5
+    chat_messages: 50     // NEW limit
   },
   premium: {
     documents: Infinity,
     flashcards: Infinity,
     podcasts: Infinity,
-    mindmaps: Infinity
+    mindmaps: Infinity,
+    chat_messages: Infinity
   },
   enterprise: {
     documents: Infinity,
     flashcards: Infinity,
     podcasts: Infinity,
-    mindmaps: Infinity
+    mindmaps: Infinity,
+    chat_messages: Infinity
   }
 }
 
@@ -76,7 +80,8 @@ export async function GET() {
       documents: profile.monthly_document_count || 0,
       flashcards: 0,
       podcasts: 0,
-      mindmaps: 0
+      mindmaps: 0,
+      chat_messages: 0
     }
 
     usageData?.forEach((record) => {
@@ -86,6 +91,8 @@ export async function GET() {
         usage.podcasts++
       } else if (record.action_type === 'mindmap_generation' || record.action_type.includes('mindmap')) {
         usage.mindmaps++
+      } else if (record.action_type === 'chat_message' || record.action_type.includes('chat')) {
+        usage.chat_messages++
       }
     })
 
@@ -103,7 +110,8 @@ export async function GET() {
         documents: { used: usage.documents, limit: limits.documents },
         flashcards: { used: usage.flashcards, limit: limits.flashcards },
         podcasts: { used: usage.podcasts, limit: limits.podcasts },
-        mindmaps: { used: usage.mindmaps, limit: limits.mindmaps }
+        mindmaps: { used: usage.mindmaps, limit: limits.mindmaps },
+        chat_messages: { used: usage.chat_messages, limit: limits.chat_messages }
       }
     })
 

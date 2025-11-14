@@ -47,13 +47,14 @@ export interface UsageCheck {
 // Tier Definitions
 // ============================================================================
 
+// Updated Nov 14, 2025 - Growth strategy
 export const FREE_TIER: UsageLimits = {
-  maxDocuments: 5,
+  maxDocuments: 10,              // Increased from 5
   maxCostPerMonth: 10.0,
   warningCostPerMonth: 5.0,
-  maxFlashcardsPerMonth: 50,
-  maxPodcastsPerMonth: 3,
-  maxMindMapsPerMonth: 5
+  maxFlashcardsPerMonth: 100,    // Increased from 50
+  maxPodcastsPerMonth: 5,        // Increased from 3
+  maxMindMapsPerMonth: 10        // Increased from 5
 }
 
 export const PREMIUM_TIER: UsageLimits = {
@@ -237,7 +238,7 @@ export function canGenerateFlashcards(
     return { allowed: true }
   }
 
-  const maxFlashcards = limits.maxFlashcardsPerMonth || 50
+  const maxFlashcards = limits.maxFlashcardsPerMonth || 100
 
   if (userData.flashcardsGenerated >= maxFlashcards) {
     logger.warn('Flashcard generation blocked - limit reached', {
@@ -280,7 +281,7 @@ export function canGeneratePodcast(
     return { allowed: true }
   }
 
-  const maxPodcasts = limits.maxPodcastsPerMonth || 5
+  const maxPodcasts = limits.maxPodcastsPerMonth || 5  // Kept at 5
 
   if (userData.podcastsGenerated >= maxPodcasts) {
     logger.warn('Podcast generation blocked - limit reached', {
@@ -421,7 +422,7 @@ export function canUseWriterAnalysis(
     return { allowed: true }
   }
 
-  const maxAnalysesPerDay = 5
+  const maxAnalysesPerDay = 10  // Increased from 5
 
   if (userData.writerAnalysesToday >= maxAnalysesPerDay) {
     logger.warn('Writer analysis blocked - daily limit reached', {
@@ -463,7 +464,7 @@ export function canProcessVideo(
     return { allowed: true }
   }
 
-  const maxVideosPerDay = 3
+  const maxVideosPerDay = 5  // Increased from 3
 
   if (userData.videoProcessesToday >= maxVideosPerDay) {
     logger.warn('Video processing blocked - daily limit reached', {

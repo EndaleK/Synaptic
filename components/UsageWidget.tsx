@@ -1,0 +1,207 @@
+"use client"
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { FileText, MessageSquare, Mic, Network, GraduationCap, Zap, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react'
+import { useAuth } from '@clerk/nextjs'
+
+interface UsageLimits {
+  documents: { used: number; limit: number }
+  flashcards: { used: number; limit: number }
+  podcasts: { used: number; limit: number }
+  mindmaps: { used: number; limit: number }
+  chat_messages: { used: number; limit: number }
+}
+
+interface UsageData {
+  tier: string
+  limits: UsageLimits
+}
+
+/**
+ * Usage Widget - Shows current usage stats on dashboard
+ * Displays progress bars for all free tier limits
+ * Encourages upgrades when approaching limits
+ */
+export default function UsageWidget() {
+  const { userId } = useAuth()
+  const [usage, setUsage] = useState<UsageData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  useEffect(() => {
+    if (!userId) return
+
+    const fetchUsage = async () => {
+      try {
+        const response = await fetch('/api/usage')
+        if (!response.ok) throw new Error('Failed to fetch usage')
+        const data = await response.json()
+        setUsage(data)
+      } catch (err) {
+        setError('Unable to load usage stats')
+        console.error('Usage fetch error:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUsage()
+  }, [userId])
+
+  if (loading) {
+    return (
+      <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+        <div className="flex items-center gap-3 mb-4">
+          <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400 animate-pulse" />
+          <h3 className="font-semibold text-gray-900 dark:text-white">Loading usage...</h3>
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-12 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !usage) {
+    return null // Silently fail - usage widget is not critical
+  }
+
+  const isPremium = usage.tier === 'premium' || usage.tier === 'enterprise'
+
+  // Calculate overall usage percentage
+  const usageItems = [
+    { name: 'Documents', icon: FileText, ...usage.limits.documents, color: 'blue' },
+    { name: 'Flashcards', icon: Zap, ...usage.limits.flashcards, color: 'purple' },
+    { name: 'Chat', icon: MessageSquare, ...usage.limits.chat_messages, color: 'green' },
+    { name: 'Podcasts', icon: Mic, ...usage.limits.podcasts, color: 'orange' },
+    { name: 'Mind Maps', icon: Network, ...usage.limits.mindmaps, color: 'pink' },
+  ]
+
+  // Show top 3 by default, all when expanded
+  const displayItems = isExpanded ? usageItems : usageItems.slice(0, 3)
+
+  // Calculate if any feature is above 80%
+  const hasWarning = usageItems.some(item =>
+    item.limit !== Infinity && (item.used / item.limit) * 100 >= 80
+  )
+
+  return (
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+            <TrendingUp className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white">
+              {isPremium ? 'Premium Usage' : 'Monthly Usage'}
+            </h3>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              {isPremium ? 'Unlimited access' : 'Resets on the 1st'}
+            </p>
+          </div>
+        </div>
+
+        {!isPremium && hasWarning && (
+          <Link
+            href="/pricing"
+            className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline"
+          >
+            Upgrade
+          </Link>
+        )}
+      </div>
+
+      {/* Premium status */}
+      {isPremium ? (
+        <div className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+          <p className="text-sm font-medium text-purple-900 dark:text-purple-100 text-center">
+            ✨ You have unlimited access to all features
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Usage items */}
+          <div className="space-y-3">
+            {displayItems.map((item) => {
+              const percentage = item.limit === Infinity ? 0 : (item.used / item.limit) * 100
+              const isNearLimit = percentage >= 80
+              const Icon = item.icon
+
+              const colorClasses = {
+                blue: 'bg-blue-500',
+                purple: 'bg-purple-500',
+                green: 'bg-green-500',
+                orange: 'bg-orange-500',
+                pink: 'bg-pink-500'
+              }
+
+              return (
+                <div key={item.name} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <Icon className={`w-4 h-4 ${isNearLimit ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                      <span className={`font-medium ${isNearLimit ? 'text-orange-900 dark:text-orange-100' : 'text-gray-700 dark:text-gray-300'}`}>
+                        {item.name}
+                      </span>
+                    </div>
+                    <span className={`text-xs font-semibold ${isNearLimit ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                      {item.used}/{item.limit === Infinity ? '∞' : item.limit}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        percentage >= 95 ? 'bg-red-500' :
+                        percentage >= 80 ? 'bg-orange-500' :
+                        colorClasses[item.color as keyof typeof colorClasses]
+                      }`}
+                      style={{ width: `${Math.min(percentage, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Expand/Collapse button */}
+          {usageItems.length > 3 && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="mt-3 w-full flex items-center justify-center gap-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="w-4 h-4" />
+                  Show less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  Show all ({usageItems.length - 3} more)
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Upgrade CTA if approaching any limit */}
+          {hasWarning && (
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Link
+                href="/pricing"
+                className="block w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-semibold rounded-xl text-center transition-all hover:scale-[1.02]"
+              >
+                Upgrade to Premium for Unlimited
+              </Link>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
