@@ -218,6 +218,17 @@ function DashboardContent() {
     checkUserProfile()
   }, [user, hasCompletedAssessment, setUserProfile, setLearningStyle, setHasCompletedAssessment])
 
+  // Reset active mode documents when currentDocument becomes null (e.g., via Home/Clear Chat buttons)
+  useEffect(() => {
+    if (!currentDocument) {
+      setActiveModeDocuments({
+        chat: false,
+        podcast: false,
+        mindmap: false
+      })
+    }
+  }, [currentDocument])
+
   // Handle assessment completion
   const handleAssessmentComplete = async (result: {
     dominant_style: LearningStyle

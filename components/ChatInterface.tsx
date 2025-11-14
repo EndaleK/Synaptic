@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain, ChevronDown, Trash2 } from "lucide-react"
+import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain, ChevronDown, Trash2, Home } from "lucide-react"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 import { useDocumentStore } from "@/lib/store/useStore"
@@ -257,14 +257,16 @@ export default function ChatInterface() {
             isProcessing: false
           })
 
-          // Set initial welcome message
-          const welcomeMessage: Message = {
-            id: Date.now().toString(),
-            content: `📄 Document loaded: ${currentDocument.name}. Ask me anything about this document!`,
-            type: "assistant",
-            timestamp: new Date()
+          // 🔄 CONTINUITY: Only set welcome message if no existing chat session
+          if (!hasSession(currentDocument.id)) {
+            const welcomeMessage: Message = {
+              id: Date.now().toString(),
+              content: `📄 Document loaded: ${currentDocument.name}. Ask me anything about this document!`,
+              type: "assistant",
+              timestamp: new Date()
+            }
+            setMessages([welcomeMessage])
           }
-          setMessages([welcomeMessage])
         } catch (error) {
           console.error('Error loading document:', error)
 
@@ -292,13 +294,16 @@ export default function ChatInterface() {
             userMessage += `Showing extracted text instead. You can still ask questions about the document!`
           }
 
-          const errorMessage: Message = {
-            id: Date.now().toString(),
-            content: userMessage,
-            type: "assistant",
-            timestamp: new Date()
+          // 🔄 CONTINUITY: Only set error message if no existing chat session
+          if (!hasSession(currentDocument.id)) {
+            const errorMessage: Message = {
+              id: Date.now().toString(),
+              content: userMessage,
+              type: "assistant",
+              timestamp: new Date()
+            }
+            setMessages([errorMessage])
           }
-          setMessages([errorMessage])
         }
       }
     }
@@ -587,9 +592,27 @@ export default function ChatInterface() {
     }
   }
 
+  // Navigate to document selection (preserves chat in sessionStorage)
+  const handleHome = () => {
+    setCurrentDocument(null)
+    hasLoadedDocument.current = false
+  }
+
+  // Clear chat and navigate to document selection
   const handleReset = () => {
-    const confirmed = window.confirm("Clear the chat and remove the document?")
+    if (!currentDocument) {
+      // If no document is loaded, just reset state
+      setCurrentDocument(null)
+      hasLoadedDocument.current = false
+      return
+    }
+
+    const confirmed = window.confirm("Clear the chat history for this document?")
     if (confirmed) {
+      // Clear from sessionStorage
+      clearStoredMessages(currentDocument.id)
+
+      // Clear local state
       setChatDocument({ file: null, content: "", isProcessing: false })
       setMessages([])
       setInputMessage("")
@@ -851,13 +874,25 @@ export default function ChatInterface() {
                       )}
                     </div>
 
-                    <button
-                      onClick={handleReset}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                      Change
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleHome}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        title="Select a different document (preserves chat history)"
+                      >
+                        <Home className="w-3.5 h-3.5" />
+                        Home
+                      </button>
+
+                      <button
+                        onClick={handleReset}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        title="Clear chat history for this document"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        Clear Chat
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
