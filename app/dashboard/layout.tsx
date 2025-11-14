@@ -11,6 +11,7 @@ import { useToast } from "@/components/ToastContainer"
 import { SignOutButton } from "@clerk/nextjs"
 import PomodoroWidget from "@/components/StudyScheduler/PomodoroWidget"
 import ShareModal from "@/components/ShareModal"
+import BottomNavigationBar from "@/components/BottomNavigationBar"
 
 export default function DashboardLayout({
   children,
@@ -530,13 +531,19 @@ export default function DashboardLayout({
         </header>
 
         {/* Page content */}
-        <main>{children}</main>
+        <main className="pb-16 md:pb-0">{children}</main>
 
         {/* Persistent Pomodoro Widget */}
         <PomodoroWidget
           onMaximize={() => {
             router.push('/dashboard/study/pomodoro')
           }}
+        />
+
+        {/* Bottom Navigation Bar - Mobile Only */}
+        <BottomNavigationBar
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+          isMenuOpen={sidebarOpen}
         />
       </div>
 
