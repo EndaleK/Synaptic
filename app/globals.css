@@ -485,6 +485,76 @@ html.font-size-large {
   justify-content: center;
 }
 
+/* Responsive Padding Utilities - Mobile-first approach */
+/* Container padding: px-4/py-4 on mobile, px-6/py-6 on desktop */
+.container-padding {
+  padding-left: 1rem;   /* 16px mobile */
+  padding-right: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .container-padding {
+    padding-left: 1.5rem;  /* 24px desktop */
+    padding-right: 1.5rem;
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+}
+
+.container-padding-x {
+  padding-left: 1rem;   /* 16px mobile */
+  padding-right: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .container-padding-x {
+    padding-left: 1.5rem;  /* 24px desktop */
+    padding-right: 1.5rem;
+  }
+}
+
+.container-padding-y {
+  padding-top: 1rem;    /* 16px mobile */
+  padding-bottom: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .container-padding-y {
+    padding-top: 1.5rem;  /* 24px desktop */
+    padding-bottom: 1.5rem;
+  }
+}
+
+/* Card padding: px-3/py-3 on mobile, px-5/py-4 on desktop */
+.card-padding {
+  padding-left: 0.75rem;   /* 12px mobile */
+  padding-right: 0.75rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .card-padding {
+    padding-left: 1.25rem;  /* 20px desktop */
+    padding-right: 1.25rem;
+    padding-top: 1rem;      /* 16px desktop */
+    padding-bottom: 1rem;
+  }
+}
+
+/* Section spacing: space-y-4 on mobile, space-y-6 on desktop */
+.section-spacing > * + * {
+  margin-top: 1rem;  /* 16px mobile */
+}
+
+@media (min-width: 1024px) {
+  .section-spacing > * + * {
+    margin-top: 1.5rem;  /* 24px desktop */
+  }
+}
+
 /* Custom utility classes */
 .animate-float {
   animation: float 3s ease-in-out infinite;

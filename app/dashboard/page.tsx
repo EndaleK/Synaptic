@@ -418,7 +418,7 @@ function DashboardContent() {
           )
         }
         return (
-          <div className="h-full overflow-y-auto p-6">
+          <div className="h-full overflow-y-auto container-padding">
             <PodcastView
               documentId={currentDocument.id}
               documentName={currentDocument.name}
@@ -437,7 +437,7 @@ function DashboardContent() {
           )
         }
         return (
-          <div className="h-full overflow-y-auto p-6">
+          <div className="h-full overflow-y-auto container-padding">
             <MindMapView
               documentId={currentDocument.id}
               documentName={currentDocument.name}
@@ -481,7 +481,7 @@ function DashboardContent() {
 
         // Show flashcards if we have them
         return (
-          <div className="h-full p-4">
+          <div className="h-full container-padding">
             <FlashcardDisplay
               flashcards={flashcards}
               onReset={() => {
