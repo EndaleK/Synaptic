@@ -24,6 +24,7 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [learningModesExpanded, setLearningModesExpanded] = useState(true)
   const [studyToolsExpanded, setStudyToolsExpanded] = useState(true)
   const [showShareModal, setShowShareModal] = useState(false)
   const { activeMode, setActiveMode } = useUIStore()
@@ -40,12 +41,23 @@ export default function DashboardLayout({
       document.documentElement.classList.remove('dark')
     }
 
+    // Load learning modes expanded state
+    const savedLearningModesState = localStorage.getItem('learningModesExpanded')
+    if (savedLearningModesState !== null) {
+      setLearningModesExpanded(savedLearningModesState === 'true')
+    }
+
     // Load study tools expanded state
     const savedStudyToolsState = localStorage.getItem('studyToolsExpanded')
     if (savedStudyToolsState !== null) {
       setStudyToolsExpanded(savedStudyToolsState === 'true')
     }
   }, [])
+
+  // Save learning modes expanded state
+  useEffect(() => {
+    localStorage.setItem('learningModesExpanded', learningModesExpanded.toString())
+  }, [learningModesExpanded])
 
   // Save study tools expanded state
   useEffect(() => {
@@ -211,48 +223,85 @@ export default function DashboardLayout({
 
             {/* Learning Modes Section */}
             <div>
-              {!sidebarCollapsed && (
-                <div className="px-4 mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-px flex-1 bg-gradient-to-r from-accent-primary/20 to-transparent"></div>
-                    <h3 className="text-[13.5px] font-semibold text-accent-primary uppercase tracking-wider">
-                      Learning Modes
-                    </h3>
-                    <div className="h-px flex-1 bg-gradient-to-l from-accent-primary/20 to-transparent"></div>
+              {!sidebarCollapsed ? (
+                // Full sidebar - collapsible section
+                <>
+                  <button
+                    onClick={() => setLearningModesExpanded(!learningModesExpanded)}
+                    className="w-full px-4 mb-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="h-px flex-1 bg-gradient-to-r from-accent-primary/20 to-transparent"></div>
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="text-[13.5px] font-semibold text-accent-primary uppercase tracking-wider">
+                          Learning Modes
+                        </h3>
+                        {learningModesExpanded ? (
+                          <ChevronUp className="w-3 h-3 text-accent-primary" />
+                        ) : (
+                          <ChevronDown className="w-3 h-3 text-accent-primary" />
+                        )}
+                      </div>
+                      <div className="h-px flex-1 bg-gradient-to-l from-accent-primary/20 to-transparent"></div>
+                    </div>
+                  </button>
+
+                  {learningModesExpanded && (
+                    <div className="space-y-0.5 animate-in slide-in-from-top-2 duration-200">
+                      {learningModes.map((mode) => {
+                        const isActive = pathname === "/dashboard" && activeMode === mode.id
+                        return (
+                          <button
+                            key={mode.id}
+                            onClick={() => handleModeClick(mode.id, mode.comingSoon)}
+                            className={`w-full flex items-center gap-2.5 px-4 py-2 rounded-lg text-sm font-medium transition-all text-left ${
+                              isActive
+                                ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
+                                : mode.comingSoon
+                                ? "text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
+                            }`}
+                          >
+                            <mode.icon className="w-4 h-4" />
+                            <span className="flex-1">{mode.name}</span>
+                            {mode.comingSoon && (
+                              <span className="px-1.5 py-0.5 text-xs bg-gray-300 dark:bg-gray-700 rounded-full">
+                                Soon
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </>
+              ) : (
+                // Collapsed sidebar - icon-only with tooltip
+                <div className="space-y-0.5">
+                  <div className="px-4 mb-2">
+                    <div className="h-px bg-gradient-to-r from-accent-primary/20 to-transparent"></div>
                   </div>
+                  {learningModes.map((mode) => {
+                    const isActive = pathname === "/dashboard" && activeMode === mode.id
+                    return (
+                      <button
+                        key={mode.id}
+                        onClick={() => handleModeClick(mode.id, mode.comingSoon)}
+                        className={`w-full flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all ${
+                          isActive
+                            ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
+                            : mode.comingSoon
+                            ? "text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                            : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
+                        }`}
+                        title={mode.name}
+                      >
+                        <mode.icon className="w-4 h-4" />
+                      </button>
+                    )
+                  })}
                 </div>
               )}
-              <div className="space-y-0.5">
-                {learningModes.map((mode) => {
-                  const isActive = pathname === "/dashboard" && activeMode === mode.id
-                  return (
-                    <button
-                      key={mode.id}
-                      onClick={() => handleModeClick(mode.id, mode.comingSoon)}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2 rounded-lg text-sm font-medium transition-all text-left ${
-                        isActive
-                          ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
-                          : mode.comingSoon
-                          ? "text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
-                          : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
-                      } ${sidebarCollapsed ? "justify-center" : ""}`}
-                      title={sidebarCollapsed ? mode.name : undefined}
-                    >
-                      <mode.icon className="w-4 h-4" />
-                      {!sidebarCollapsed && (
-                        <>
-                          <span className="flex-1">{mode.name}</span>
-                          {mode.comingSoon && (
-                            <span className="px-1.5 py-0.5 text-xs bg-gray-300 dark:bg-gray-700 rounded-full">
-                              Soon
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
             </div>
 
             {/* Study Tools & Scheduler Section */}
