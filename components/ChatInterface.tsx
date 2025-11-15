@@ -73,7 +73,7 @@ export default function ChatInterface() {
   const [isClient, setIsClient] = useState(false)
   const [teachingMode, setTeachingMode] = useState<TeachingMode>('mixed')
   const [showModeDropdown, setShowModeDropdown] = useState(false)
-  const [mobileView, setMobileView] = useState<'document' | 'chat'>('document') // Mobile view toggle
+  const [mobileView, setMobileView] = useState<'document' | 'chat'>('chat') // Mobile view toggle - default to chat
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const modeDropdownRef = useRef<HTMLDivElement>(null)
