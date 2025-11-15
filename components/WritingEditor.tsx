@@ -26,7 +26,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRealTimeAnalysis } from './WritingEditor/useRealTimeAnalysis'
 import { WritingSuggestionsExtension } from './WritingEditor/WritingSuggestionsExtension'
 import './WritingEditor/writing-suggestions.css'
-import type { WritingType, CitationStyle, WritingSuggestion } from '@/lib/supabase/types'
+import type { WritingType, CitationStyle, WritingSuggestion, WritingStage } from '@/lib/supabase/types'
 import ParaphrasingModal from './ParaphrasingModal'
 import ThesisAnalysisPanel from './ThesisAnalysisPanel'
 import SuggestionsPanel from './SuggestionsPanel'
@@ -39,6 +39,7 @@ interface WritingEditorProps {
   initialTitle?: string
   writingType?: WritingType
   citationStyle?: CitationStyle
+  writingStage?: WritingStage
   onSave?: (content: string, title: string) => void
   onAnalyze?: (content: string) => void
   onExport?: (format: 'pdf' | 'docx') => void
@@ -51,6 +52,7 @@ export default function WritingEditor({
   initialTitle = 'Untitled Essay',
   writingType = 'academic',
   citationStyle = 'APA',
+  writingStage = 'drafting',
   onSave,
   onAnalyze,
   onExport,
@@ -60,7 +62,11 @@ export default function WritingEditor({
   const [title, setTitle] = useState(initialTitle)
   const [isSaving, setIsSaving] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [realTimeEnabled, setRealTimeEnabled] = useState(false)
+
+  // Grammar checking should be disabled during drafting stage (Process Writing Theory)
+  // This helps students focus on getting ideas down without worrying about correctness
+  const isDraftingStage = writingStage === 'drafting'
+  const [realTimeEnabled, setRealTimeEnabled] = useState(!isDraftingStage)
   const [selectedSuggestion, setSelectedSuggestion] = useState<WritingSuggestion | null>(null)
   const [hasLoadedContent, setHasLoadedContent] = useState(false)
   const [isParaphraseModalOpen, setIsParaphraseModalOpen] = useState(false)
@@ -137,6 +143,16 @@ export default function WritingEditor({
     // Always update title when initialTitle changes
     setTitle(initialTitle)
   }, [initialTitle])
+
+  // Automatically disable real-time analysis during drafting stage
+  useEffect(() => {
+    if (writingStage === 'drafting') {
+      setRealTimeEnabled(false)
+    } else if (writingStage === 'editing' && !realTimeEnabled) {
+      // Automatically enable when entering editing stage (if not already enabled)
+      setRealTimeEnabled(true)
+    }
+  }, [writingStage])
 
   // Keyboard shortcuts for writing modes
   useEffect(() => {
@@ -348,16 +364,25 @@ export default function WritingEditor({
         {/* Top Actions Row */}
         <div className="flex items-center justify-end gap-2 mb-2">
           <button
-            onClick={() => setRealTimeEnabled(!realTimeEnabled)}
+            onClick={() => !isDraftingStage && setRealTimeEnabled(!realTimeEnabled)}
+            disabled={isDraftingStage}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg font-medium transition-all ${
               realTimeEnabled
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                : isDraftingStage
+                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 cursor-not-allowed'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
             }`}
-            title={realTimeEnabled ? 'Real-time analysis ON' : 'Real-time analysis OFF'}
+            title={
+              isDraftingStage
+                ? 'Grammar checking disabled during drafting - Focus on getting your ideas down!'
+                : realTimeEnabled
+                ? 'Real-time analysis ON'
+                : 'Real-time analysis OFF'
+            }
           >
             <Zap className={`w-3.5 h-3.5 ${isRealTimeAnalyzing ? 'animate-pulse' : ''}`} />
-            {realTimeEnabled ? 'Live' : 'Off'}
+            {isDraftingStage ? 'Drafting' : realTimeEnabled ? 'Live' : 'Off'}
           </button>
 
           <button
