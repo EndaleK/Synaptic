@@ -324,6 +324,15 @@ CREATE POLICY "Users can manage own mindmaps" ON mindmaps
 CREATE POLICY "Users can view own usage" ON usage_tracking
   FOR SELECT USING (user_id IN (SELECT id FROM user_profiles WHERE clerk_user_id = auth.jwt()->>'sub'));
 
+CREATE POLICY "Service can insert usage tracking" ON usage_tracking
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Service can update usage tracking" ON usage_tracking
+  FOR UPDATE USING (true) WITH CHECK (true);
+
+CREATE POLICY "Service can delete usage tracking" ON usage_tracking
+  FOR DELETE USING (true);
+
 -- Exams
 CREATE POLICY "Users can view own exams" ON exams
   FOR SELECT USING (user_id IN (SELECT id FROM user_profiles WHERE clerk_user_id = auth.jwt()->>'sub'));
