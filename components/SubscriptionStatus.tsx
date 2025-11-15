@@ -16,6 +16,9 @@ interface UsageLimits {
   flashcards: { used: number; limit: number }
   podcasts: { used: number; limit: number }
   mindmaps: { used: number; limit: number }
+  exams: { used: number; limit: number }
+  videos: { used: number; limit: number }
+  chat_messages: { used: number; limit: number }
 }
 
 export default function SubscriptionStatus() {
@@ -302,6 +305,50 @@ export default function SubscriptionStatus() {
                     : 'bg-gradient-to-r from-orange-500 to-red-500'
                 }`}
                 style={{ width: `${Math.min((usage.mindmaps.used / usage.mindmaps.limit) * 100, 100)}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Mock Exams */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Mock Exams</span>
+              <span className="text-sm font-semibold text-black dark:text-white">
+                {usage.exams.used} / {usage.exams.limit}
+              </span>
+            </div>
+            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all ${
+                  usage.exams.used >= usage.exams.limit
+                    ? 'bg-red-500'
+                    : usage.exams.used / usage.exams.limit > 0.8
+                    ? 'bg-yellow-500'
+                    : 'bg-gradient-to-r from-indigo-500 to-purple-500'
+                }`}
+                style={{ width: `${Math.min((usage.exams.used / usage.exams.limit) * 100, 100)}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Videos */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Videos</span>
+              <span className="text-sm font-semibold text-black dark:text-white">
+                {usage.videos.used} / {usage.videos.limit}
+              </span>
+            </div>
+            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all ${
+                  usage.videos.used >= usage.videos.limit
+                    ? 'bg-red-500'
+                    : usage.videos.used / usage.videos.limit > 0.8
+                    ? 'bg-yellow-500'
+                    : 'bg-gradient-to-r from-red-500 to-pink-500'
+                }`}
+                style={{ width: `${Math.min((usage.videos.used / usage.videos.limit) * 100, 100)}%` }}
               ></div>
             </div>
           </div>
