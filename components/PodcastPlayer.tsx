@@ -39,11 +39,33 @@ export default function PodcastPlayer({
   const audioRef = useRef<HTMLAudioElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
+  const [actualDuration, setActualDuration] = useState(duration) // Use actual audio duration
   const [isMuted, setIsMuted] = useState(false)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [showTranscript, setShowTranscript] = useState(true)
   const [isSaved, setIsSaved] = useState(true) // Podcasts are auto-saved during generation
   const transcriptRef = useRef<HTMLDivElement>(null)
+
+  // Load actual audio duration from audio element metadata
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    const handleLoadedMetadata = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        console.log('[PodcastPlayer] Loaded actual audio duration:', audio.duration, 'seconds (database duration:', duration, 'seconds)')
+        setActualDuration(audio.duration)
+      }
+    }
+
+    // If metadata is already loaded
+    if (audio.readyState >= 1 && audio.duration && isFinite(audio.duration)) {
+      handleLoadedMetadata()
+    }
+
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+    return () => audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+  }, [audioUrl, duration])
 
   // 🔄 CONTINUITY: Load saved playback position when podcast changes
   useEffect(() => {
@@ -79,11 +101,11 @@ export default function PodcastPlayer({
     // Debounce: Only save every 2 seconds to avoid too many writes
     const timeoutId = setTimeout(() => {
       console.log('[PodcastPlayer] Saving playback position:', currentTime.toFixed(1), 'seconds')
-      setPosition(podcastId, currentTime, duration)
+      setPosition(podcastId, currentTime, actualDuration)
     }, 2000)
 
     return () => clearTimeout(timeoutId)
-  }, [currentTime, podcastId, duration, setPosition])
+  }, [currentTime, podcastId, actualDuration, setPosition])
 
   // Handle play/pause
   const togglePlay = () => {
@@ -200,17 +222,17 @@ export default function PodcastPlayer({
           <input
             type="range"
             min="0"
-            max={duration}
+            max={actualDuration}
             value={currentTime}
             onChange={handleSeek}
             className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-accent-primary"
             style={{
-              background: `linear-gradient(to right, rgb(var(--accent-primary)) 0%, rgb(var(--accent-primary)) ${(currentTime / duration) * 100}%, rgb(229 231 235) ${(currentTime / duration) * 100}%, rgb(229 231 235) 100%)`
+              background: `linear-gradient(to right, rgb(var(--accent-primary)) 0%, rgb(var(--accent-primary)) ${(currentTime / actualDuration) * 100}%, rgb(229 231 235) ${(currentTime / actualDuration) * 100}%, rgb(229 231 235) 100%)`
             }}
           />
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
             <span>{formatDetailedTime(currentTime)}</span>
-            <span>{formatDetailedTime(duration)}</span>
+            <span>{formatDetailedTime(actualDuration)}</span>
           </div>
         </div>
 
