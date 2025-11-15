@@ -5,69 +5,119 @@
 
 import OpenAI from 'openai'
 import type { WritingType, CitationStyle, WritingSuggestion } from '@/lib/supabase/types'
+import { calculateReadability, type ReadabilityScores } from './readability'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 })
 
+export interface EnhancedAnalysisResult {
+  suggestions: WritingSuggestion[]
+  readabilityScores: ReadabilityScores
+  wordCount: number
+  characterCount: number
+  sentenceCount: number
+  paragraphCount: number
+}
+
 /**
  * Enhanced system prompt for academic writing analysis
  * Focuses on 6 key categories: grammar, spelling, structure, tone, citation, clarity
  */
-const ACADEMIC_WRITING_SYSTEM_PROMPT = `You are an expert academic writing assistant for college students. Your role is to provide constructive, educational feedback that helps students improve their writing skills.
+const ACADEMIC_WRITING_SYSTEM_PROMPT = `You are an expert academic writing assistant and educator specializing in college-level composition. Your role is to provide constructive, educational feedback that helps students develop strong writing skills.
 
-Analyze the provided text for the following categories:
+**Analysis Categories:**
 
-1. **Grammar**: Subject-verb agreement, verb tenses, pronouns, articles, prepositions
-2. **Spelling**: Typos, commonly confused words (their/there/they're, affect/effect)
-3. **Structure**: Paragraph organization, topic sentences, transitions, logical flow
-4. **Tone**: Academic formality, avoiding contractions, eliminating bias, passive vs active voice
-5. **Citation**: Missing citations for claims, improper citation format, citation placement
-6. **Clarity**: Wordiness, jargon, ambiguous pronouns, run-on sentences, sentence variety
+1. **Grammar**: Subject-verb agreement, verb tenses, pronoun usage, articles, prepositions, sentence fragments, run-ons
+2. **Spelling**: Typos, commonly confused words (their/there/they're, affect/effect, its/it's), homophone errors
+3. **Structure**: Paragraph organization, topic sentences, transitions, logical flow, essay organization (intro/body/conclusion)
+4. **Tone**: Academic formality, avoiding contractions, eliminating bias/informal language, appropriate passive vs active voice
+5. **Citation**: Missing citations for facts/statistics/quotes, improper citation format, citation placement, over-reliance on quotes
+6. **Clarity**: Wordiness, jargon without explanation, ambiguous pronouns, sentence variety, unclear antecedents, vague language
 
-For each issue found, provide:
+**For each issue, provide:**
 - **type**: One of: "grammar", "spelling", "structure", "tone", "citation", "clarity"
-- **severity**: "error" (must fix), "warning" (should fix), "suggestion" (consider fixing)
-- **message**: Brief, clear description of the issue (10-15 words)
-- **start_position**: Character position where issue starts
-- **end_position**: Character position where issue ends
-- **replacement**: Suggested fix (ONLY if you can provide exact replacement text)
-- **explanation**: Educational context explaining WHY this is an issue and HOW to fix it (2-3 sentences)
+- **severity**:
+  - "error" = critical issue that impairs understanding or violates grammar rules
+  - "warning" = should be fixed, impacts clarity or academic appropriateness
+  - "suggestion" = optional improvement for style or flow
+- **message**: Clear, actionable description (10-20 words max)
+- **start_position**: Approximate character position where issue starts (estimate if needed)
+- **end_position**: Approximate character position where issue ends (estimate if needed)
+- **replacement**: Suggested fix (ONLY if you can provide exact replacement text that improves the original)
+- **explanation**: Educational context explaining:
+  - WHY this is an issue (academic writing standards, clarity, professionalism)
+  - HOW to fix it (specific techniques or principles)
+  - WHEN to apply this rule (context matters)
+  - 2-4 sentences, focus on teaching
 
-Guidelines:
-- Be encouraging and constructive, not critical
-- Prioritize learning over perfection
-- Explain the "why" behind each suggestion
-- Focus on issues that genuinely impact clarity or correctness
-- For academic writing, emphasize:
-  * Strong thesis statements
-  * Evidence-based arguments
-  * Proper citation placement
-  * Formal academic tone
-  * Clear topic sentences
-  * Logical paragraph structure
+**Quality Guidelines:**
+✓ Be encouraging and constructive - celebrate strengths, frame issues as growth opportunities
+✓ Prioritize learning over perfection - explain principles, not just corrections
+✓ Focus on high-impact issues - don't nitpick stylistic preferences
+✓ Provide specific examples and context
+✓ Consider the writer's intent and audience
 
-Return your analysis as a JSON object with a "suggestions" array.`
+**Academic Writing Priorities:**
+1. Strong, specific thesis statements (argumentative, not descriptive)
+2. Evidence-based arguments with proper source integration
+3. Logical organization and clear topic sentences
+4. Formal academic tone (no contractions, slang, or colloquialisms)
+5. Proper citation of all borrowed ideas and facts
+6. Clear, concise writing (avoid unnecessary words)
+7. Smooth transitions between ideas and paragraphs
+8. Varied sentence structure for readability
+
+**Important:**
+- Return ONLY valid JSON (no markdown, no code blocks)
+- Limit to 10-15 most important suggestions (prioritize by severity and impact)
+- For minor issues, group similar problems into one suggestion with general guidance
+- If text is excellent, return empty suggestions array with compliment in a separate field
+
+Return format: {"suggestions": [array of suggestion objects]}`
 
 /**
- * Generate enhanced suggestions for academic writing
+ * Generate enhanced suggestions for academic writing with readability analysis
  * @param content - The text content to analyze
  * @param writingType - Type of writing (academic, professional, creative)
  * @param citationStyle - Citation format (APA, MLA, Chicago, etc.)
- * @returns Array of writing suggestions with detailed feedback
+ * @returns Enhanced analysis result with suggestions and readability scores
  */
-export async function analyzeWriting(
+export async function analyzeWritingEnhanced(
   content: string,
   writingType: WritingType = 'academic',
   citationStyle?: CitationStyle
-): Promise<WritingSuggestion[]> {
+): Promise<EnhancedAnalysisResult> {
+  // Calculate basic statistics
+  const wordCount = content.trim().split(/\s+/).filter(w => w.length > 0).length
+  const characterCount = content.length
+  const sentenceCount = content.split(/[.!?]+/).filter(s => s.trim().length > 0).length
+  const paragraphCount = content.split(/\n\n+/).filter(p => p.trim().length > 0).length
+
+  // Calculate readability scores
+  const readabilityScores = calculateReadability(content)
+
   if (!content || content.trim().length === 0) {
-    return []
+    return {
+      suggestions: [],
+      readabilityScores,
+      wordCount: 0,
+      characterCount: 0,
+      sentenceCount: 0,
+      paragraphCount: 0
+    }
   }
 
   // Don't analyze if content is too short (less than 50 characters)
   if (content.length < 50) {
-    return []
+    return {
+      suggestions: [],
+      readabilityScores,
+      wordCount,
+      characterCount,
+      sentenceCount,
+      paragraphCount
+    }
   }
 
   try {
@@ -84,6 +134,9 @@ export async function analyzeWriting(
 
 ${content}
 
+Target academic level: ${readabilityScores.academicLevel.replace('_', ' ')}
+Current readability: ${readabilityScores.readabilityAssessment}
+
 Focus on providing actionable, educational feedback that helps the student learn and improve.`
         }
       ],
@@ -95,10 +148,21 @@ Focus on providing actionable, educational feedback that helps the student learn
     const analysisText = completion.choices[0]?.message?.content
     if (!analysisText) {
       console.error('No analysis returned from OpenAI')
-      return []
+      return {
+        suggestions: [],
+        readabilityScores,
+        wordCount,
+        characterCount,
+        sentenceCount,
+        paragraphCount
+      }
     }
 
-    const analysis = JSON.parse(analysisText)
+    // Strip markdown code blocks if present (defensive parsing)
+    let cleanedContent = analysisText.trim()
+    cleanedContent = cleanedContent.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim()
+
+    const analysis = JSON.parse(cleanedContent)
     const suggestions: WritingSuggestion[] = (analysis.suggestions || []).map((s: any, index: number) => ({
       id: `suggestion-${Date.now()}-${index}`,
       type: s.type || 'clarity',
@@ -110,13 +174,40 @@ Focus on providing actionable, educational feedback that helps the student learn
       explanation: s.explanation
     }))
 
-    return suggestions
+    return {
+      suggestions,
+      readabilityScores,
+      wordCount,
+      characterCount,
+      sentenceCount,
+      paragraphCount
+    }
   } catch (error) {
     console.error('Grammar analysis error:', error)
 
-    // Return empty array on error, don't break the user experience
-    return []
+    // Return readability scores even if AI analysis fails
+    return {
+      suggestions: [],
+      readabilityScores,
+      wordCount,
+      characterCount,
+      sentenceCount,
+      paragraphCount
+    }
   }
+}
+
+/**
+ * Legacy function for backward compatibility
+ * @deprecated Use analyzeWritingEnhanced instead
+ */
+export async function analyzeWriting(
+  content: string,
+  writingType: WritingType = 'academic',
+  citationStyle?: CitationStyle
+): Promise<WritingSuggestion[]> {
+  const result = await analyzeWritingEnhanced(content, writingType, citationStyle)
+  return result.suggestions
 }
 
 /**
