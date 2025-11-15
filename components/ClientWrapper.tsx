@@ -6,6 +6,7 @@ import { ToastProvider } from "@/components/ToastContainer"
 import KeyboardShortcutsModal, { useKeyboardShortcuts } from "@/components/KeyboardShortcuts"
 import QuickActionButton from "@/components/QuickActionButton"
 import AccentColorInitializer from "@/components/AccentColorInitializer"
+import { useUIStore } from "@/lib/store/useStore"
 
 // Dynamic import to prevent SSR issues with PDF.js
 const PDFWorkerInitializer = dynamic(() => import("@/components/PDFWorkerInitializer"), {
@@ -15,9 +16,10 @@ const PDFWorkerInitializer = dynamic(() => import("@/components/PDFWorkerInitial
 function ClientWrapperContent({ children }: { children: React.ReactNode }) {
   const shortcuts = useKeyboardShortcuts()
   const pathname = usePathname()
+  const { activeMode } = useUIStore()
 
-  // Only show QuickActionButton on dashboard pages
-  const showQuickAction = pathname?.startsWith('/dashboard')
+  // Only show QuickActionButton on dashboard pages, but hide in chat mode
+  const showQuickAction = pathname?.startsWith('/dashboard') && activeMode !== 'chat'
 
   return (
     <>

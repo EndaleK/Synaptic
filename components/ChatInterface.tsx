@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain, ChevronDown, Trash2, Home, ArrowLeft, File as FileIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
-import { useDocumentStore } from "@/lib/store/useStore"
+import { useDocumentStore, useUIStore } from "@/lib/store/useStore"
 import { useChatStore } from "@/lib/store/useChatStore"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
 import SectionNavigator from "./SectionNavigator"
@@ -79,6 +79,7 @@ export default function ChatInterface() {
   const modeDropdownRef = useRef<HTMLDivElement>(null)
   const { currentDocument, setCurrentDocument} = useDocumentStore()
   const { loadSession, setMessages: saveMessages, clearMessages: clearStoredMessages, hasSession } = useChatStore()
+  const { activeMode } = useUIStore()
   const hasLoadedDocument = useRef(false)
 
   useEffect(() => {
@@ -1069,21 +1070,23 @@ export default function ChatInterface() {
           </>
         )}
 
-        {/* Document Switcher */}
-        <DocumentSwitcherModal
-          onDocumentSwitch={() => {
-            // Reload chat interface with new document
-            if (currentDocument) {
-              setChatDocument({
-                file: null,
-                content: currentDocument.content,
-                isProcessing: false
-              })
-              // Clear messages for new document conversation
-              setMessages([])
-            }
-          }}
-        />
+        {/* Document Switcher - Hidden in chat mode to reduce FAB clutter */}
+        {activeMode !== 'chat' && (
+          <DocumentSwitcherModal
+            onDocumentSwitch={() => {
+              // Reload chat interface with new document
+              if (currentDocument) {
+                setChatDocument({
+                  file: null,
+                  content: currentDocument.content,
+                  isProcessing: false
+                })
+                // Clear messages for new document conversation
+                setMessages([])
+              }
+            }}
+          />
+        )}
 
         {/* Section Navigator */}
         {currentDocument?.sections && currentDocument.sections.sections.length > 0 && (
