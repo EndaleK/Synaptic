@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { FileText, File, FileType, Trash2, Download, Loader2, CheckCircle2, AlertCircle, Eye, Sparkles, Zap, Map, MessageCircle, BookOpen, Mic, Network, Database } from "lucide-react"
+import { FileText, File as FileIcon, FileType, Trash2, Download, Loader2, CheckCircle2, AlertCircle, Eye, Sparkles, Zap, Map, MessageCircle, BookOpen, Mic, Network, Database } from "lucide-react"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { cn } from "@/lib/utils"
 import ContentSelectionModal from "./ContentSelectionModal"
@@ -68,7 +68,7 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
     } else if (type.includes('word') || type.includes('docx')) {
       return <FileType className="w-8 h-8 text-blue-500" />
     } else {
-      return <File className="w-8 h-8 text-gray-500" />
+      return <FileIcon className="w-8 h-8 text-gray-500" />
     }
   }
 

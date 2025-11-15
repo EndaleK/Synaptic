@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain, ChevronDown, Trash2, Home, ArrowLeft, File } from "lucide-react"
+import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain, ChevronDown, Trash2, Home, ArrowLeft, File as FileIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 import { useDocumentStore } from "@/lib/store/useStore"
@@ -768,7 +768,7 @@ export default function ChatInterface() {
               {mobileView === 'document' ? (
                 <MessageSquare className="w-6 h-6" />
               ) : (
-                <File className="w-6 h-6" />
+                <FileIcon className="w-6 h-6" />
               )}
             </button>
 
