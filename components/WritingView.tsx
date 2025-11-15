@@ -11,8 +11,11 @@ import ProgressTracker from './WritingView/ProgressTracker'
 import StageSpecificPanel from './WritingView/StageSpecificPanel'
 import AccessibilitySettings, { type AccessibilityConfig } from './WritingView/AccessibilitySettings'
 import TextToSpeechController from './WritingView/TextToSpeechController'
+import OnboardingTutorial from './WritingView/OnboardingTutorial'
+import StageTransitionManager from './WritingView/StageTransitionManager'
 import { useAccessibilityStyles } from './WritingView/useAccessibilityStyles'
 import './WritingView/accessibility.css'
+import './WritingView/stage-transitions.css'
 import type { WritingType, CitationStyle, WritingSuggestion, Citation, Essay, WritingStage, WritingGoals } from '@/lib/supabase/types'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@clerk/nextjs'
@@ -50,6 +53,9 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
     readingGuide: false,
     focusMode: false
   })
+
+  // Stage transition tracking
+  const [previousStage, setPreviousStage] = useState<WritingStage | null>(null)
 
   // Apply accessibility styles
   useAccessibilityStyles(accessibilityConfig)
@@ -411,6 +417,9 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
     if (!essay) return
 
     try {
+      // Track previous stage for transition animation
+      setPreviousStage(essay.writing_stage)
+
       const supabase = createClient()
       const { error } = await supabase
         .from('essays')
@@ -494,7 +503,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
       {/* Writing Stage Selector - Desktop */}
       {!isMobile && (
-        <nav aria-label="Writing stage navigation" className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <nav aria-label="Writing stage navigation" className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900" data-onboarding="stage-selector">
           <WritingStageSelector
             currentStage={essay.writing_stage}
             onStageChange={handleStageChange}
@@ -523,7 +532,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
           )}
 
           {/* Editor */}
-          <div id="writing-editor" className="flex-1 editor-container" role="article" aria-label="Essay editor">
+          <div id="writing-editor" className="flex-1 editor-container" role="article" aria-label="Essay editor" data-onboarding="editor">
             <WritingEditor
               essayId={essay.id}
               initialContent={essay.content}
@@ -566,6 +575,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
               aria-selected={activePanel === 'stage-tools'}
               aria-controls="panel-stage-tools"
               onClick={() => setActivePanel('stage-tools')}
+              data-onboarding="stage-tools-tab"
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-3 px-2 font-medium transition-colors text-sm whitespace-nowrap",
                 activePanel === 'stage-tools'
@@ -582,6 +592,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
               aria-selected={activePanel === 'progress'}
               aria-controls="panel-progress"
               onClick={() => setActivePanel('progress')}
+              data-onboarding="progress-tab"
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-3 px-2 font-medium transition-colors text-sm whitespace-nowrap",
                 activePanel === 'progress'
@@ -880,6 +891,17 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
         </>
       )}
       </div>
+
+      {/* Onboarding Tutorial */}
+      <OnboardingTutorial />
+
+      {/* Stage Transition Manager */}
+      {essay && (
+        <StageTransitionManager
+          previousStage={previousStage}
+          currentStage={essay.writing_stage}
+        />
+      )}
     </div>
   )
 }

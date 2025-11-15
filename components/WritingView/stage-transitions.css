@@ -1,0 +1,267 @@
+/* Stage Transition Animations */
+
+/* Fade and slide animations for stage changes */
+@keyframes stage-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes stage-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* Color transition for stage changes */
+@keyframes color-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Stage-specific color animations */
+.stage-transition-planning {
+  animation: stage-fade-in 0.4s ease-out;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.stage-transition-drafting {
+  animation: stage-fade-in 0.4s ease-out;
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.stage-transition-revising {
+  animation: stage-fade-in 0.4s ease-out;
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.stage-transition-editing {
+  animation: stage-fade-in 0.4s ease-out;
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.stage-transition-publishing {
+  animation: stage-fade-in 0.4s ease-out;
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Panel content transition */
+.panel-content-enter {
+  animation: stage-fade-in 0.3s ease-out;
+}
+
+.panel-content-exit {
+  animation: stage-fade-out 0.2s ease-in;
+}
+
+/* Confetti animation for completing stages */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.confetti {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.confetti-1 { animation: confetti-fall 3s linear; background: #3b82f6; }
+.confetti-2 { animation: confetti-fall 3.2s linear 0.1s; background: #f59e0b; }
+.confetti-3 { animation: confetti-fall 2.8s linear 0.2s; background: #10b981; }
+.confetti-4 { animation: confetti-fall 3.1s linear 0.3s; background: #8b5cf6; }
+.confetti-5 { animation: confetti-fall 2.9s linear 0.4s; background: #ec4899; }
+
+/* Success checkmark animation */
+@keyframes checkmark {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+.checkmark-path {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: checkmark 0.6s ease-out forwards;
+}
+
+/* Progress ring animation */
+@keyframes progress-ring {
+  from {
+    stroke-dashoffset: 283; /* 2 * PI * 45 (radius) */
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.progress-ring {
+  stroke-dasharray: 283;
+  stroke-dashoffset: 283;
+  animation: progress-ring 1s ease-out forwards;
+}
+
+/* Celebration modal animation */
+@keyframes celebration-bounce {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.1) rotate(5deg);
+  }
+  75% {
+    transform: scale(1.1) rotate(-5deg);
+  }
+}
+
+.celebration-modal {
+  animation: stage-fade-in 0.4s ease-out, celebration-bounce 0.6s ease-out 0.4s;
+}
+
+/* Tooltip fade in */
+@keyframes tooltip-fade {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tooltip-enter {
+  animation: tooltip-fade 0.2s ease-out;
+}
+
+/* Feature highlight pulse */
+@keyframes feature-highlight {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+  }
+}
+
+.feature-highlight {
+  animation: feature-highlight 2s ease-out infinite;
+  border: 2px solid #6366f1;
+  border-radius: 8px;
+}
+
+/* Smooth panel transitions */
+.panel-slide-enter {
+  animation: panel-slide-in 0.3s ease-out;
+}
+
+@keyframes panel-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Loading shimmer effect */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      #2d2d2d 25%,
+      #3d3d3d 50%,
+      #2d2d2d 75%
+    );
+    background-size: 1000px 100%;
+  }
+
+  .stage-transition-planning {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+
+  .stage-transition-drafting {
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+  }
+
+  .stage-transition-revising {
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  }
+
+  .stage-transition-editing {
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  }
+
+  .stage-transition-publishing {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
