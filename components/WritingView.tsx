@@ -9,6 +9,10 @@ import WritingStageSelector from './WritingView/WritingStageSelector'
 import AIContributionTracker from './WritingView/AIContributionTracker'
 import ProgressTracker from './WritingView/ProgressTracker'
 import StageSpecificPanel from './WritingView/StageSpecificPanel'
+import AccessibilitySettings, { type AccessibilityConfig } from './WritingView/AccessibilitySettings'
+import TextToSpeechController from './WritingView/TextToSpeechController'
+import { useAccessibilityStyles } from './WritingView/useAccessibilityStyles'
+import './WritingView/accessibility.css'
 import type { WritingType, CitationStyle, WritingSuggestion, Citation, Essay, WritingStage, WritingGoals } from '@/lib/supabase/types'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@clerk/nextjs'
@@ -33,6 +37,23 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
+  // Accessibility state
+  const [accessibilityConfig, setAccessibilityConfig] = useState<AccessibilityConfig>({
+    ttsEnabled: false,
+    ttsRate: 1.0,
+    ttsVoice: '',
+    dyslexicFont: false,
+    fontSize: 100,
+    lineSpacing: 1.5,
+    letterSpacing: 0,
+    highContrast: false,
+    readingGuide: false,
+    focusMode: false
+  })
+
+  // Apply accessibility styles
+  useAccessibilityStyles(accessibilityConfig)
+
   // Detect mobile
   useEffect(() => {
     const checkMobile = () => {
@@ -42,6 +63,43 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  // Keyboard navigation - WCAG 2.1 AA
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't interfere with typing in editor
+      const target = e.target as HTMLElement
+      if (target.closest('.ProseMirror') || target.closest('.tiptap')) {
+        return
+      }
+
+      const isMod = e.metaKey || e.ctrlKey
+
+      // Cmd/Ctrl+1-4: Switch panels
+      if (isMod && ['1', '2', '3', '4'].includes(e.key)) {
+        e.preventDefault()
+        const panels: ActivePanel[] = ['stage-tools', 'progress', 'suggestions', 'citations']
+        const index = parseInt(e.key) - 1
+        setActivePanel(panels[index])
+        if (!isPanelOpen) setIsPanelOpen(true)
+      }
+
+      // Cmd/Ctrl+B: Toggle panel
+      if (isMod && e.key.toLowerCase() === 'b') {
+        e.preventDefault()
+        setIsPanelOpen(!isPanelOpen)
+      }
+
+      // Escape: Close mobile drawer
+      if (e.key === 'Escape' && isMobileDrawerOpen) {
+        e.preventDefault()
+        setIsMobileDrawerOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isPanelOpen, isMobileDrawerOpen])
 
   // Helper function to ensure profile exists (calls API endpoint)
   const ensureProfileExists = async () => {
@@ -428,36 +486,57 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900" role="main" aria-label="Writing workspace">
+      {/* Skip to main content link - WCAG 2.1 AA */}
+      <a href="#writing-editor" className="skip-to-main">
+        Skip to editor
+      </a>
+
       {/* Writing Stage Selector - Desktop */}
       {!isMobile && (
-        <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <nav aria-label="Writing stage navigation" className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <WritingStageSelector
             currentStage={essay.writing_stage}
             onStageChange={handleStageChange}
             completedStages={[]}
           />
-        </div>
+        </nav>
       )}
 
       <div className="flex-1 flex overflow-hidden">
         {/* Main Editor Area */}
         <div className={cn(
-          "flex-1 transition-all duration-300",
-          !isMobile && isPanelOpen ? 'mr-96' : 'mr-0'
+          "flex-1 flex flex-col transition-all duration-300 accessibility-enabled",
+          !isMobile && isPanelOpen ? 'mr-96' : 'mr-0',
+          accessibilityConfig.dyslexicFont && 'dyslexic-font'
         )}>
-          <WritingEditor
-            essayId={essay.id}
-            initialContent={essay.content}
-            initialTitle={essay.title}
-            writingType={essay.writing_type}
-            citationStyle={essay.citation_style}
-            writingStage={essay.writing_stage}
-            onSave={handleSave}
-            onAnalyze={handleAnalyze}
-            onExport={handleExport}
-            suggestions={essay.ai_suggestions}
-          />
+          {/* Text-to-Speech Controller */}
+          {accessibilityConfig.ttsEnabled && (
+            <div className="px-4 pt-4">
+              <TextToSpeechController
+                content={essay.content}
+                enabled={accessibilityConfig.ttsEnabled}
+                rate={accessibilityConfig.ttsRate}
+                voiceName={accessibilityConfig.ttsVoice}
+              />
+            </div>
+          )}
+
+          {/* Editor */}
+          <div id="writing-editor" className="flex-1 editor-container" role="article" aria-label="Essay editor">
+            <WritingEditor
+              essayId={essay.id}
+              initialContent={essay.content}
+              initialTitle={essay.title}
+              writingType={essay.writing_type}
+              citationStyle={essay.citation_style}
+              writingStage={essay.writing_stage}
+              onSave={handleSave}
+              onAnalyze={handleAnalyze}
+              onExport={handleExport}
+              suggestions={essay.ai_suggestions}
+            />
+          </div>
         </div>
 
       {/* Side Panel - Desktop Only */}
@@ -481,8 +560,11 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
           </button>
 
           {/* Panel Tabs */}
-          <div className="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+          <div role="tablist" aria-label="Writing tools" className="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
             <button
+              role="tab"
+              aria-selected={activePanel === 'stage-tools'}
+              aria-controls="panel-stage-tools"
               onClick={() => setActivePanel('stage-tools')}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-3 px-2 font-medium transition-colors text-sm whitespace-nowrap",
@@ -491,11 +573,14 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               )}
             >
-              <Lightbulb className="w-4 h-4" />
+              <Lightbulb className="w-4 h-4" aria-hidden="true" />
               Stage Tools
             </button>
 
             <button
+              role="tab"
+              aria-selected={activePanel === 'progress'}
+              aria-controls="panel-progress"
               onClick={() => setActivePanel('progress')}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-3 px-2 font-medium transition-colors text-sm whitespace-nowrap",
@@ -504,11 +589,14 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               )}
             >
-              <TrendingUp className="w-4 h-4" />
+              <TrendingUp className="w-4 h-4" aria-hidden="true" />
               Progress
             </button>
 
             <button
+              role="tab"
+              aria-selected={activePanel === 'suggestions'}
+              aria-controls="panel-suggestions"
               onClick={() => setActivePanel('suggestions')}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-3 px-2 font-medium transition-colors text-sm whitespace-nowrap",
@@ -517,16 +605,19 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               )}
             >
-              <FileText className="w-4 h-4" />
+              <FileText className="w-4 h-4" aria-hidden="true" />
               Suggestions
               {essay.ai_suggestions.length > 0 && (
-                <span className="px-1.5 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold">
+                <span className="px-1.5 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold" aria-label={`${essay.ai_suggestions.length} suggestions`}>
                   {essay.ai_suggestions.length}
                 </span>
               )}
             </button>
 
             <button
+              role="tab"
+              aria-selected={activePanel === 'citations'}
+              aria-controls="panel-citations"
               onClick={() => setActivePanel('citations')}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-3 px-2 font-medium transition-colors text-sm whitespace-nowrap",
@@ -535,10 +626,10 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               )}
             >
-              <BookOpen className="w-4 h-4" />
+              <BookOpen className="w-4 h-4" aria-hidden="true" />
               Citations
               {essay.cited_sources.length > 0 && (
-                <span className="px-1.5 py-0.5 bg-gray-500 text-white rounded-full text-xs font-bold">
+                <span className="px-1.5 py-0.5 bg-gray-500 text-white rounded-full text-xs font-bold" aria-label={`${essay.cited_sources.length} citations`}>
                   {essay.cited_sources.length}
                 </span>
               )}
@@ -548,22 +639,24 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
         {/* Panel Content */}
         <div className="h-[calc(100%-49px)] overflow-hidden">
           {activePanel === 'stage-tools' && (
-            <StageSpecificPanel
-              currentStage={essay.writing_stage}
-              essayTopic={essay.title}
-              essayContent={essay.content}
-              writingType={essay.writing_type}
-              targetWordCount={essay.writing_goals?.target_word_count}
-              versions={essay.version_history}
-              onOutlineGenerated={(outline) => {
-                // Insert outline at cursor position in editor
-                console.log('Outline generated:', outline)
-              }}
-            />
+            <div id="panel-stage-tools" role="tabpanel" aria-labelledby="tab-stage-tools">
+              <StageSpecificPanel
+                currentStage={essay.writing_stage}
+                essayTopic={essay.title}
+                essayContent={essay.content}
+                writingType={essay.writing_type}
+                targetWordCount={essay.writing_goals?.target_word_count}
+                versions={essay.version_history}
+                onOutlineGenerated={(outline) => {
+                  // Insert outline at cursor position in editor
+                  console.log('Outline generated:', outline)
+                }}
+              />
+            </div>
           )}
 
           {activePanel === 'progress' && (
-            <div className="h-full overflow-y-auto p-6 space-y-6">
+            <div id="panel-progress" role="tabpanel" aria-labelledby="tab-progress" className="h-full overflow-y-auto p-6 space-y-6">
               <AIContributionTracker
                 aiContributionPercentage={essay.ai_contribution_percentage}
                 originalWordCount={essay.original_word_count}
@@ -579,27 +672,35 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
                 milestones={[]} // TODO: Load from writing_milestones table
                 onGoalsUpdate={handleGoalsUpdate}
               />
+
+              <AccessibilitySettings
+                onSettingsChange={setAccessibilityConfig}
+              />
             </div>
           )}
 
           {activePanel === 'suggestions' && (
-            <WritingSuggestionPanel
-              suggestions={essay.ai_suggestions}
-              onAcceptSuggestion={handleAcceptSuggestion}
-              onRejectSuggestion={(id) => {
-                const updated = essay.ai_suggestions.filter(s => s.id !== id)
-                setEssay({ ...essay, ai_suggestions: updated })
-              }}
-            />
+            <div id="panel-suggestions" role="tabpanel" aria-labelledby="tab-suggestions">
+              <WritingSuggestionPanel
+                suggestions={essay.ai_suggestions}
+                onAcceptSuggestion={handleAcceptSuggestion}
+                onRejectSuggestion={(id) => {
+                  const updated = essay.ai_suggestions.filter(s => s.id !== id)
+                  setEssay({ ...essay, ai_suggestions: updated })
+                }}
+              />
+            </div>
           )}
 
           {activePanel === 'citations' && (
-            <CitationManager
-              citations={essay.cited_sources}
-              citationStyle={essay.citation_style || 'APA'}
-              onAddCitation={handleAddCitation}
-              onDeleteCitation={handleDeleteCitation}
-            />
+            <div id="panel-citations" role="tabpanel" aria-labelledby="tab-citations">
+              <CitationManager
+                citations={essay.cited_sources}
+                citationStyle={essay.citation_style || 'APA'}
+                onAddCitation={handleAddCitation}
+                onDeleteCitation={handleDeleteCitation}
+              />
+            </div>
           )}
         </div>
       </div>
@@ -747,6 +848,10 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
                     currentStreak={0}
                     milestones={[]}
                     onGoalsUpdate={handleGoalsUpdate}
+                  />
+
+                  <AccessibilitySettings
+                    onSettingsChange={setAccessibilityConfig}
                   />
                 </div>
               )}

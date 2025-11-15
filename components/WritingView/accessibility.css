@@ -1,0 +1,290 @@
+/**
+ * Accessibility Styles for Writing Mode
+ * WCAG 2.1 AA Compliant
+ */
+
+/* OpenDyslexic Font */
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/otf/OpenDyslexic-Regular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/otf/OpenDyslexic-Bold.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/otf/OpenDyslexic-Italic.otf') format('opentype');
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* CSS Custom Properties for Accessibility */
+:root {
+  --editor-font-family: inherit;
+  --editor-font-size: 100%;
+  --editor-line-height: 1.5;
+  --editor-letter-spacing: 0px;
+}
+
+/* Apply accessibility styles to editor */
+.accessibility-enabled .ProseMirror,
+.accessibility-enabled .tiptap {
+  font-family: var(--editor-font-family) !important;
+  font-size: var(--editor-font-size) !important;
+  line-height: var(--editor-line-height) !important;
+  letter-spacing: var(--editor-letter-spacing) !important;
+}
+
+/* High Contrast Mode */
+.high-contrast-mode {
+  /* Increase contrast ratios to WCAG AAA (7:1) */
+  --color-text: #000000;
+  --color-background: #ffffff;
+  --color-primary: #0050d0;
+  --color-border: #333333;
+}
+
+.high-contrast-mode.dark {
+  --color-text: #ffffff;
+  --color-background: #000000;
+  --color-primary: #66b3ff;
+  --color-border: #cccccc;
+}
+
+.high-contrast-mode .ProseMirror {
+  color: var(--color-text) !important;
+  background-color: var(--color-background) !important;
+}
+
+.high-contrast-mode .border {
+  border-color: var(--color-border) !important;
+}
+
+.high-contrast-mode a,
+.high-contrast-mode .text-accent-primary {
+  color: var(--color-primary) !important;
+}
+
+/* Focus Mode - Dim everything except editor */
+.focus-mode .ProseMirror {
+  position: relative;
+  z-index: 10;
+}
+
+.focus-mode::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.focus-mode .editor-container {
+  position: relative;
+  z-index: 10;
+  background: white;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+}
+
+.dark.focus-mode .editor-container {
+  background: #1a1a1a;
+}
+
+/* Reading Guide Line */
+.reading-guide .ProseMirror {
+  position: relative;
+  cursor: none; /* Hide default cursor */
+}
+
+.reading-guide .ProseMirror::after {
+  content: '';
+  position: absolute;
+  top: var(--reading-guide-top, 50%);
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(99, 102, 241, 0.6) 10%,
+    rgba(99, 102, 241, 0.8) 50%,
+    rgba(99, 102, 241, 0.6) 90%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+}
+
+/* TTS Highlight */
+.tts-highlight {
+  background-color: rgba(251, 191, 36, 0.3) !important;
+  border-radius: 3px;
+  padding: 2px 0;
+  transition: background-color 0.3s ease;
+}
+
+.dark .tts-highlight {
+  background-color: rgba(251, 191, 36, 0.2) !important;
+}
+
+/* Keyboard Focus Indicators - WCAG 2.1 AA */
+*:focus-visible {
+  outline: 3px solid #6366f1 !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+
+.dark *:focus-visible {
+  outline-color: #818cf8 !important;
+}
+
+/* Skip to Main Content Link */
+.skip-to-main {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #6366f1;
+  color: white;
+  padding: 8px 16px;
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+  z-index: 9999;
+  font-weight: 600;
+  transition: top 0.3s;
+}
+
+.skip-to-main:focus {
+  top: 0;
+}
+
+/* Reduced Motion for Users with Vestibular Disorders */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Screen Reader Only Content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Large Click Targets - WCAG 2.5.5 */
+button,
+a,
+input[type="checkbox"],
+input[type="radio"] {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ensure text remains visible during font load */
+.font-loading {
+  font-display: swap;
+}
+
+/* Hover/Focus States for Better Visibility */
+.accessibility-enabled button:hover,
+.accessibility-enabled a:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+.accessibility-enabled button:active,
+.accessibility-enabled a:active {
+  transform: scale(0.98);
+}
+
+/* Dyslexic-Friendly Link Underlines */
+.accessibility-enabled.dyslexic-font a {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-decoration-color: currentColor;
+  text-underline-offset: 4px;
+}
+
+/* Increase Contrast for Placeholders */
+.high-contrast-mode ::placeholder {
+  color: #666666;
+  opacity: 1;
+}
+
+.high-contrast-mode.dark ::placeholder {
+  color: #999999;
+  opacity: 1;
+}
+
+/* Ensure form controls are accessible */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  outline: none;
+}
+
+.dark input[type="range"] {
+  background: #374151;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #6366f1;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #6366f1;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input[type="range"]:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
+
+input[type="range"]:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
