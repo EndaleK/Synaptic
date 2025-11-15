@@ -482,7 +482,7 @@ function DashboardContent() {
 
         // Show flashcards if we have them
         return (
-          <div className="h-full container-padding">
+          <div className="h-full overflow-y-auto container-padding">
             <FlashcardDisplay
               flashcards={flashcards}
               onReset={() => {
