@@ -71,6 +71,11 @@ const nextConfig: NextConfig = {
   // Disable server-side rendering for PDF components to avoid SSR issues
   transpilePackages: ['react-pdf', 'pdfjs-dist'],
 
+  // Disable barrel optimization for lucide-react to prevent import errors
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+  },
+
   // Production optimizations
   poweredByHeader: false,
   compress: true,
