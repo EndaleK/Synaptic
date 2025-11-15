@@ -20,6 +20,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 import { inngest } from '@/lib/inngest/client'
+import { incrementUsage } from '@/lib/usage-limits'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 minutes (Vercel Pro max) for PDF extraction and ChromaDB indexing
@@ -267,6 +268,8 @@ export async function POST(
       )
     }
 
+    // Track document upload in usage tracking
+    await incrementUsage(userId, 'documents')
     console.log(`✅ Upload completed successfully for: ${document.file_name}`)
 
     // 7. Return success response (processing continues in background for PDFs)

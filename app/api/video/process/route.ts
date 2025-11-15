@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 import { fetchTranscript } from '@egoist/youtube-transcript-plus'
 import OpenAI from 'openai'
+import { incrementUsage } from '@/lib/usage-limits'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -301,6 +302,11 @@ Analyze this educational video and extract comprehensive learning insights.`
 
     if (updateError) {
       throw updateError
+    }
+
+    // Track video processing in usage tracking (only if successfully completed)
+    if (finalStatus === 'completed') {
+      await incrementUsage(userId, 'videos')
     }
 
     console.log(`[Video ${videoId}] Video processing complete`)

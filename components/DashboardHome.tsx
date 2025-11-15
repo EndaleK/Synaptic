@@ -8,6 +8,7 @@ import LearningProfileBanner from "@/components/LearningProfileBanner"
 import SubscriptionStatus from "@/components/SubscriptionStatus"
 import RecentContentWidget from "@/components/RecentContentWidget"
 import UsageWidget from "@/components/UsageWidget"
+import UsageWarningNotification from "@/components/UsageWarningNotification"
 import type { Document } from "@/lib/supabase/types"
 
 interface DashboardHomeProps {
@@ -238,6 +239,9 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
             </div>
           </div>
         </div>
+
+        {/* Usage Warning Notification */}
+        <UsageWarningNotification />
 
         {/* Dashboard Widgets - Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

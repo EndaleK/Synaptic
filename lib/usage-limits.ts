@@ -14,6 +14,7 @@ export const USAGE_LIMITS = {
     podcasts: 5,          // Increased from 3 - one per major course
     mindmaps: 10,         // Increased from 5 - consistency with documents
     exams: 5,             // Increased from 3 - one per course for midterm/final
+    videos: 10,           // Matches documents - reasonable for course video analysis
     chat_messages: 50     // NEW - prevents abuse while maintaining core value
   },
   premium: {
@@ -22,6 +23,7 @@ export const USAGE_LIMITS = {
     podcasts: Infinity,
     mindmaps: Infinity,
     exams: Infinity,
+    videos: Infinity,
     chat_messages: Infinity
   },
   enterprise: {
@@ -30,11 +32,12 @@ export const USAGE_LIMITS = {
     podcasts: Infinity,
     mindmaps: Infinity,
     exams: Infinity,
+    videos: Infinity,
     chat_messages: Infinity
   }
 }
 
-export type FeatureType = 'documents' | 'flashcards' | 'podcasts' | 'mindmaps' | 'exams' | 'chat_messages'
+export type FeatureType = 'documents' | 'flashcards' | 'podcasts' | 'mindmaps' | 'exams' | 'videos' | 'chat_messages'
 
 export interface UsageCheckResult {
   allowed: boolean
@@ -126,6 +129,7 @@ export async function checkUsageLimit(
         podcasts: ['podcast_generation', 'podcast'],
         mindmaps: ['mindmap_generation', 'mindmap'],
         exams: ['exam_creation', 'exam'],
+        videos: ['video_processing', 'video'],
         chat_messages: ['chat_message', 'chat']
       }
 
@@ -205,6 +209,7 @@ export async function incrementUsage(
       podcasts: 'podcast_generation',
       mindmaps: 'mindmap_generation',
       exams: 'exam_creation',
+      videos: 'video_processing',
       chat_messages: 'chat_message'
     }
 

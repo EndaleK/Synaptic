@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { FileText, MessageSquare, Mic, Network, GraduationCap, Zap, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react'
+import { FileText, MessageSquare, Mic, Network, GraduationCap, Zap, ChevronDown, ChevronUp, TrendingUp, Youtube } from 'lucide-react'
 import { useAuth } from '@clerk/nextjs'
 
 interface UsageLimits {
@@ -10,6 +10,8 @@ interface UsageLimits {
   flashcards: { used: number; limit: number }
   podcasts: { used: number; limit: number }
   mindmaps: { used: number; limit: number }
+  exams: { used: number; limit: number }
+  videos: { used: number; limit: number }
   chat_messages: { used: number; limit: number }
 }
 
@@ -76,9 +78,11 @@ export default function UsageWidget() {
   const usageItems = [
     { name: 'Documents', icon: FileText, ...usage.limits.documents, color: 'blue' },
     { name: 'Flashcards', icon: Zap, ...usage.limits.flashcards, color: 'purple' },
-    { name: 'Chat', icon: MessageSquare, ...usage.limits.chat_messages, color: 'green' },
     { name: 'Podcasts', icon: Mic, ...usage.limits.podcasts, color: 'orange' },
     { name: 'Mind Maps', icon: Network, ...usage.limits.mindmaps, color: 'pink' },
+    { name: 'Mock Exams', icon: GraduationCap, ...usage.limits.exams, color: 'indigo' },
+    { name: 'Videos', icon: Youtube, ...usage.limits.videos, color: 'red' },
+    { name: 'Chat', icon: MessageSquare, ...usage.limits.chat_messages, color: 'green' },
   ]
 
   // Show top 3 by default, all when expanded
@@ -138,7 +142,9 @@ export default function UsageWidget() {
                 purple: 'bg-purple-500',
                 green: 'bg-green-500',
                 orange: 'bg-orange-500',
-                pink: 'bg-pink-500'
+                pink: 'bg-pink-500',
+                indigo: 'bg-indigo-500',
+                red: 'bg-red-500'
               }
 
               return (

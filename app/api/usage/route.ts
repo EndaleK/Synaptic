@@ -11,6 +11,8 @@ const USAGE_LIMITS = {
     flashcards: 100,      // Increased from 50
     podcasts: 5,          // Increased from 3
     mindmaps: 10,         // Increased from 5
+    exams: 5,             // Mock exam generation limit
+    videos: 10,           // Video processing limit
     chat_messages: 50     // NEW limit
   },
   premium: {
@@ -18,6 +20,8 @@ const USAGE_LIMITS = {
     flashcards: Infinity,
     podcasts: Infinity,
     mindmaps: Infinity,
+    exams: Infinity,
+    videos: Infinity,
     chat_messages: Infinity
   },
   enterprise: {
@@ -25,6 +29,8 @@ const USAGE_LIMITS = {
     flashcards: Infinity,
     podcasts: Infinity,
     mindmaps: Infinity,
+    exams: Infinity,
+    videos: Infinity,
     chat_messages: Infinity
   }
 }
@@ -81,6 +87,8 @@ export async function GET() {
       flashcards: 0,
       podcasts: 0,
       mindmaps: 0,
+      exams: 0,
+      videos: 0,
       chat_messages: 0
     }
 
@@ -91,6 +99,10 @@ export async function GET() {
         usage.podcasts++
       } else if (record.action_type === 'mindmap_generation' || record.action_type.includes('mindmap')) {
         usage.mindmaps++
+      } else if (record.action_type === 'exam_creation' || record.action_type.includes('exam')) {
+        usage.exams++
+      } else if (record.action_type === 'video_processing' || record.action_type.includes('video')) {
+        usage.videos++
       } else if (record.action_type === 'chat_message' || record.action_type.includes('chat')) {
         usage.chat_messages++
       }
@@ -111,6 +123,8 @@ export async function GET() {
         flashcards: { used: usage.flashcards, limit: limits.flashcards },
         podcasts: { used: usage.podcasts, limit: limits.podcasts },
         mindmaps: { used: usage.mindmaps, limit: limits.mindmaps },
+        exams: { used: usage.exams, limit: limits.exams },
+        videos: { used: usage.videos, limit: limits.videos },
         chat_messages: { used: usage.chat_messages, limit: limits.chat_messages }
       }
     })
