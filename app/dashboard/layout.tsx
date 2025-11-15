@@ -185,6 +185,7 @@ export default function DashboardLayout({
                       width={54}
                       height={54}
                       className="w-[54px] h-[54px]"
+                      priority
                     />
                   </div>
                   <div className="flex flex-col">
@@ -204,6 +205,7 @@ export default function DashboardLayout({
                     width={54}
                     height={54}
                     className="w-[54px] h-[54px]"
+                    priority
                   />
                 </div>
               )}
@@ -511,6 +513,7 @@ export default function DashboardLayout({
                 width={32}
                 height={32}
                 className="w-8 h-8"
+                priority
               />
               <span className="font-bold text-black dark:text-white">
                 Synaptic
