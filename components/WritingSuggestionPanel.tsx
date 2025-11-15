@@ -1,8 +1,9 @@
 "use client"
 
-import { AlertCircle, CheckCircle2, AlertTriangle, Lightbulb, X, Check } from 'lucide-react'
+import { AlertCircle, CheckCircle2, AlertTriangle, Lightbulb, X, Check, ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 import type { WritingSuggestion, SuggestionType, SuggestionSeverity } from '@/lib/supabase/types'
+import GrammarExplanation from './WritingView/GrammarExplanation'
 
 interface WritingSuggestionPanelProps {
   suggestions: WritingSuggestion[]
@@ -19,6 +20,7 @@ export default function WritingSuggestionPanel({
 }: WritingSuggestionPanelProps) {
   const [selectedType, setSelectedType] = useState<SuggestionType | 'all'>('all')
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set())
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   // Filter suggestions
   const filteredSuggestions = suggestions.filter(s => {
@@ -163,68 +165,107 @@ export default function WritingSuggestionPanel({
             </p>
           </div>
         ) : (
-          filteredSuggestions.map((suggestion) => (
-            <div
-              key={suggestion.id}
-              className={`border-l-4 rounded-lg p-3 cursor-pointer hover:shadow-md transition-all ${getSeverityColor(suggestion.severity)}`}
-              onClick={() => onSuggestionClick?.(suggestion)}
-            >
-              <div className="flex items-start gap-2 mb-2">
-                {getSeverityIcon(suggestion.severity)}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                      {getTypeLabel(suggestion.type)}
-                    </span>
+          filteredSuggestions.map((suggestion) => {
+            const isExpanded = expandedId === suggestion.id
+            return (
+              <div
+                key={suggestion.id}
+                className={`border-l-4 rounded-lg p-3 transition-all ${getSeverityColor(suggestion.severity)} ${
+                  isExpanded ? 'shadow-lg' : 'hover:shadow-md cursor-pointer'
+                }`}
+              >
+                <div
+                  className="flex items-start gap-2 mb-2"
+                  onClick={() => !isExpanded && onSuggestionClick?.(suggestion)}
+                >
+                  {getSeverityIcon(suggestion.severity)}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                        {getTypeLabel(suggestion.type)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-900 dark:text-white font-medium">
+                      {suggestion.message}
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-900 dark:text-white font-medium">
-                    {suggestion.message}
-                  </p>
                 </div>
-              </div>
 
-              {suggestion.replacement && (
-                <div className="ml-6 mb-2 p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Suggested:</p>
-                  <p className="text-sm text-gray-900 dark:text-white font-medium">
-                    "{suggestion.replacement}"
+                {suggestion.replacement && !isExpanded && (
+                  <div className="ml-6 mb-2 p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Suggested:</p>
+                    <p className="text-sm text-gray-900 dark:text-white font-medium">
+                      "{suggestion.replacement}"
+                    </p>
+                  </div>
+                )}
+
+                {suggestion.explanation && !isExpanded && (
+                  <p className="ml-6 text-xs text-gray-600 dark:text-gray-400 mb-2">
+                    {suggestion.explanation}
                   </p>
-                </div>
-              )}
+                )}
 
-              {suggestion.explanation && (
-                <p className="ml-6 text-xs text-gray-600 dark:text-gray-400 mb-2">
-                  {suggestion.explanation}
-                </p>
-              )}
+                {/* Grammar Explanation (Expanded) */}
+                {isExpanded && (
+                  <div className="mt-3">
+                    <GrammarExplanation
+                      suggestion={suggestion}
+                      onLearnMore={() => {
+                        // Could link to external grammar resources
+                        window.open(`https://www.grammarly.com/blog/${suggestion.category?.toLowerCase().replace(/\s+/g, '-')}`, '_blank')
+                      }}
+                    />
+                  </div>
+                )}
 
-              {/* Action Buttons */}
-              <div className="ml-6 flex items-center gap-2">
-                {suggestion.replacement && (
+                {/* Action Buttons */}
+                <div className="ml-6 flex items-center gap-2 flex-wrap">
+                  {suggestion.replacement && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleAccept(suggestion.id)
+                      }}
+                      className="flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded text-xs font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                    >
+                      <Check className="w-3 h-3" />
+                      Accept
+                    </button>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleAccept(suggestion.id)
+                      handleReject(suggestion.id)
                     }}
-                    className="flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded text-xs font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                    className="flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                   >
-                    <Check className="w-3 h-3" />
-                    Accept
+                    <X className="w-3 h-3" />
+                    Dismiss
                   </button>
-                )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleReject(suggestion.id)
-                  }}
-                  className="flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <X className="w-3 h-3" />
-                  Dismiss
-                </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setExpandedId(isExpanded ? null : suggestion.id)
+                    }}
+                    className="flex items-center gap-1 px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs font-medium hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors ml-auto"
+                  >
+                    {isExpanded ? (
+                      <>
+                        <ChevronUp className="w-3 h-3" />
+                        Hide Details
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-3 h-3" />
+                        Learn More
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
     </div>

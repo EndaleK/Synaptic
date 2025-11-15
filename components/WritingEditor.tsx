@@ -20,7 +20,8 @@ import {
   Maximize,
   Eye,
   AlignCenter,
-  X
+  X,
+  Mic
 } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import { useRealTimeAnalysis } from './WritingEditor/useRealTimeAnalysis'
@@ -32,6 +33,7 @@ import ThesisAnalysisPanel from './ThesisAnalysisPanel'
 import SuggestionsPanel from './SuggestionsPanel'
 import WritingStatsBar from './WritingStatsBar'
 import InlineSuggestion from './InlineSuggestion'
+import VoiceDictation from './WritingView/VoiceDictation'
 
 interface WritingEditorProps {
   essayId?: string
@@ -79,6 +81,7 @@ export default function WritingEditor({
   const [lastSaved, setLastSaved] = useState<Date | undefined>(undefined)
   const [activeSuggestionPopup, setActiveSuggestionPopup] = useState<WritingSuggestion | null>(null)
   const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 })
+  const [showVoiceDictation, setShowVoiceDictation] = useState(false)
   const editorContainerRef = useRef<HTMLDivElement>(null)
 
   const editor = useEditor({
@@ -320,6 +323,12 @@ export default function WritingEditor({
     // In a real implementation, you might want to mark this suggestion as dismissed
   }
 
+  const handleVoiceText = (text: string) => {
+    if (!editor) return
+    // Insert the transcribed text at the current cursor position
+    editor.chain().focus().insertContent(text).run()
+  }
+
   if (!editor) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -412,7 +421,26 @@ export default function WritingEditor({
           >
             <FileDown className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           </button>
+
+          <button
+            onClick={() => setShowVoiceDictation(!showVoiceDictation)}
+            className={`p-1.5 rounded-lg transition-colors ${
+              showVoiceDictation
+                ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+            }`}
+            title="Voice Dictation"
+          >
+            <Mic className="w-4 h-4" />
+          </button>
         </div>
+
+        {/* Voice Dictation Panel */}
+        {showVoiceDictation && (
+          <div className="mt-2 border-t border-gray-200 dark:border-gray-700 pt-2">
+            <VoiceDictation onTextReceived={handleVoiceText} />
+          </div>
+        )}
 
         {/* Formatting Toolbar */}
         <div className="flex items-center justify-between">

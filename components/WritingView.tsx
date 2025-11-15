@@ -13,6 +13,9 @@ import AccessibilitySettings, { type AccessibilityConfig } from './WritingView/A
 import TextToSpeechController from './WritingView/TextToSpeechController'
 import OnboardingTutorial from './WritingView/OnboardingTutorial'
 import StageTransitionManager from './WritingView/StageTransitionManager'
+import ExportPreviewModal from './WritingView/ExportPreviewModal'
+import CollaborativeEditing from './WritingView/CollaborativeEditing'
+import WritingAnalyticsDashboard from './WritingView/WritingAnalyticsDashboard'
 import { useAccessibilityStyles } from './WritingView/useAccessibilityStyles'
 import './WritingView/accessibility.css'
 import './WritingView/stage-transitions.css'
@@ -56,6 +59,9 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
   // Stage transition tracking
   const [previousStage, setPreviousStage] = useState<WritingStage | null>(null)
+
+  // Export preview modal
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false)
 
   // Apply accessibility styles
   useAccessibilityStyles(accessibilityConfig)
@@ -501,15 +507,24 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
         Skip to editor
       </a>
 
-      {/* Writing Stage Selector - Desktop */}
+      {/* Writing Stage Selector with Collaborative Editing - Desktop */}
       {!isMobile && (
-        <nav aria-label="Writing stage navigation" className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900" data-onboarding="stage-selector">
-          <WritingStageSelector
-            currentStage={essay.writing_stage}
-            onStageChange={handleStageChange}
-            completedStages={[]}
-          />
-        </nav>
+        <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+          <div className="flex items-center justify-between px-4 py-2">
+            <nav aria-label="Writing stage navigation" data-onboarding="stage-selector" className="flex-1">
+              <WritingStageSelector
+                currentStage={essay.writing_stage}
+                onStageChange={handleStageChange}
+                completedStages={[]}
+              />
+            </nav>
+            <CollaborativeEditing
+              essayId={essay.id}
+              currentUserId={user?.id || ''}
+              currentUserName={user?.fullName || user?.firstName || 'Anonymous'}
+            />
+          </div>
+        </div>
       )}
 
       <div className="flex-1 flex overflow-hidden">
@@ -542,7 +557,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
               writingStage={essay.writing_stage}
               onSave={handleSave}
               onAnalyze={handleAnalyze}
-              onExport={handleExport}
+              onExport={() => setIsExportModalOpen(true)}
               suggestions={essay.ai_suggestions}
             />
           </div>
@@ -686,6 +701,10 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
               <AccessibilitySettings
                 onSettingsChange={setAccessibilityConfig}
+              />
+
+              <WritingAnalyticsDashboard
+                userId={user?.id || ''}
               />
             </div>
           )}
@@ -902,6 +921,14 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
           currentStage={essay.writing_stage}
         />
       )}
+
+      {/* Export Preview Modal */}
+      <ExportPreviewModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        essay={essay}
+        onExport={handleExport}
+      />
     </div>
   )
 }

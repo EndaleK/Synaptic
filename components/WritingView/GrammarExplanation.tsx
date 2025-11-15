@@ -44,7 +44,7 @@ const GRAMMAR_EXPLANATIONS: Record<string, {
     rule: 'Sentence Fragment',
     explanation: 'A complete sentence needs a subject and a verb and expresses a complete thought. A fragment is missing one of these.',
     example: 'Fragment: Because I was tired. Complete: I went to bed because I was tired.',
-    tip: 'Read the sentence alone. Does it stand on its own? If not, it's a fragment.'
+    tip: 'Read the sentence alone. Does it stand on its own? If not, it\'s a fragment.'
   },
   'wordiness': {
     rule: 'Wordiness / Conciseness',

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { BookOpen, Plus, Trash2, Edit2, Copy, FileText, ExternalLink, Check } from 'lucide-react'
 import type { Citation, CitationStyle } from '@/lib/supabase/types'
+import CitationImport from './WritingView/CitationImport'
 
 interface CitationManagerProps {
   citations: Citation[]
@@ -202,52 +203,15 @@ export default function CitationManager({
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg border-2 border-accent-primary/30 p-4">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-3">New Citation</h3>
 
-            {/* Quick Add from DOI/URL */}
-            <div className="mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Quick Add from DOI or URL
-              </p>
-              <div className="space-y-2">
-                <div>
-                  <input
-                    type="text"
-                    value={doiInput}
-                    onChange={(e) => setDoiInput(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary focus:border-transparent"
-                    placeholder="Enter DOI (e.g., 10.1000/xyz123)"
-                    disabled={isFetchingMetadata || !!urlInput}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
-                  <span className="text-xs text-gray-500 dark:text-gray-400">OR</span>
-                  <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600" />
-                </div>
-                <div>
-                  <input
-                    type="url"
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary focus:border-transparent"
-                    placeholder="Enter article URL"
-                    disabled={isFetchingMetadata || !!doiInput}
-                  />
-                </div>
-                <button
-                  onClick={handleFetchMetadata}
-                  disabled={isFetchingMetadata || (!doiInput && !urlInput)}
-                  className="w-full py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isFetchingMetadata ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Fetching...
-                    </>
-                  ) : (
-                    'Auto-Fill Citation'
-                  )}
-                </button>
-              </div>
+            {/* Quick Add from DOI/ISBN */}
+            <div className="mb-4">
+              <CitationImport
+                citationStyle={citationStyle}
+                onImport={(citation) => {
+                  onAddCitation?.(citation)
+                  setIsAddingNew(false)
+                }}
+              />
             </div>
 
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 text-center">
