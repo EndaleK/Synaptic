@@ -939,7 +939,7 @@ ${'='.repeat(50)}`).join('\n')}`
   }, [showExportMenu])
 
   return (
-    <div ref={containerRef} className="max-w-4xl mx-auto">
+    <div ref={containerRef} className="max-w-4xl mx-auto pt-4 pb-8 md:pt-6 md:pb-12">
       {/* Header Section - Compact on Mobile */}
       <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden mb-3 md:mb-6">
         <div className="p-3 md:p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
