@@ -108,7 +108,7 @@ export default function DocumentSwitcherModal({ onDocumentSwitch }: DocumentSwit
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-28 right-6 z-40 w-14 h-14 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all flex items-center justify-center group"
+        className="hidden lg:flex fixed bottom-28 right-6 z-40 w-14 h-14 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all items-center justify-center group"
         title="Switch Document (Cmd+K)"
       >
         <FileText className="w-6 h-6" />

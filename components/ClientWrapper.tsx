@@ -26,7 +26,7 @@ function ClientWrapperContent({ children }: { children: React.ReactNode }) {
       <AccentColorInitializer />
       <PDFWorkerInitializer />
       {children}
-      {showQuickAction && <QuickActionButton />}
+      {showQuickAction && <QuickActionButton className="hidden lg:block" />}
       <KeyboardShortcutsModal isOpen={shortcuts.isOpen} onClose={shortcuts.close} />
     </>
   )
