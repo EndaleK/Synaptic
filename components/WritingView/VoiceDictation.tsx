@@ -25,7 +25,7 @@ export default function VoiceDictation({ onTextReceived, className }: VoiceDicta
       return
     }
 
-    // Initialize Speech Recognition
+    // Initialize Speech Recognition once
     const recognition = new SpeechRecognition()
     recognition.continuous = true
     recognition.interimResults = true
@@ -57,25 +57,31 @@ export default function VoiceDictation({ onTextReceived, className }: VoiceDicta
       console.error('Speech recognition error:', event.error)
       if (event.error === 'not-allowed') {
         alert('Microphone permission denied. Please allow microphone access to use voice dictation.')
+      } else if (event.error === 'no-speech') {
+        console.log('No speech detected, continuing to listen...')
+      } else {
+        alert(`Voice dictation error: ${event.error}. Please try again.`)
       }
       setIsListening(false)
     }
 
     recognition.onend = () => {
-      // Restart if still supposed to be listening
-      if (isListening) {
-        recognition.start()
-      }
+      console.log('Recognition ended')
+      setIsListening(false)
     }
 
     recognitionRef.current = recognition
 
     return () => {
       if (recognitionRef.current) {
-        recognitionRef.current.stop()
+        try {
+          recognitionRef.current.stop()
+        } catch (e) {
+          // Ignore stop errors on unmount
+        }
       }
     }
-  }, [isListening, onTextReceived])
+  }, [onTextReceived])
 
   const toggleListening = () => {
     if (!isSupported) {
@@ -84,14 +90,24 @@ export default function VoiceDictation({ onTextReceived, className }: VoiceDicta
     }
 
     if (isListening) {
-      recognitionRef.current?.stop()
-      setIsListening(false)
-      setInterimTranscript('')
+      try {
+        recognitionRef.current?.stop()
+        setIsListening(false)
+        setInterimTranscript('')
+      } catch (error) {
+        console.error('Error stopping recognition:', error)
+        setIsListening(false)
+      }
     } else {
-      setFinalTranscript('')
-      setInterimTranscript('')
-      recognitionRef.current?.start()
-      setIsListening(true)
+      try {
+        setFinalTranscript('')
+        setInterimTranscript('')
+        recognitionRef.current?.start()
+        setIsListening(true)
+      } catch (error) {
+        console.error('Error starting recognition:', error)
+        alert('Failed to start voice dictation. Please check microphone permissions and try again.')
+      }
     }
   }
 

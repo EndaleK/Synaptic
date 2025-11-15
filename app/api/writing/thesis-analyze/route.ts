@@ -132,16 +132,21 @@ CRITICAL: Return ONLY valid JSON (no markdown, no code blocks) with this exact s
 
     let analysis: ThesisAnalysisResponse
     try {
-      analysis = JSON.parse(completion.content || '{}')
+      // Strip markdown code blocks if present (```json ... ``` or ``` ... ```)
+      let cleanedContent = completion.content || '{}'
+      cleanedContent = cleanedContent.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim()
+
+      analysis = JSON.parse(cleanedContent)
 
       // Validate required fields
       if (typeof analysis.hasThesis === 'undefined') {
         throw new Error('Invalid response structure')
       }
     } catch (parseError) {
-      logger.error('Failed to parse thesis analysis response', parseError, {
+      logger.error('Failed to parse thesis analysis response', {
         userId,
-        response: completion.content
+        response: completion.content,
+        error: parseError
       })
       return NextResponse.json(
         { error: 'Failed to parse AI response. Please try again.' },

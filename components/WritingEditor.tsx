@@ -169,8 +169,11 @@ export default function WritingEditor({
                       target.closest('.ProseMirror') ||
                       target.closest('.tiptap')
 
-      // For regular typing (non-modifier keys), let the editor handle it
-      if (isTyping && !e.metaKey && !e.ctrlKey) {
+      // For regular typing (non-modifier keys, except Escape), let the editor handle it
+      const isModifierKey = e.metaKey || e.ctrlKey || e.altKey
+      const isShortcutKey = e.key === 'Escape'
+
+      if (isTyping && !isModifierKey && !isShortcutKey) {
         return
       }
 
@@ -194,7 +197,7 @@ export default function WritingEditor({
         setTypewriterMode(prev => !prev)
       }
 
-      // Escape: Exit Zen Mode
+      // Escape: Exit Zen Mode (only handle if in Zen mode and typing in editor)
       if (e.key === 'Escape' && zenMode) {
         e.preventDefault()
         setZenMode(false)
