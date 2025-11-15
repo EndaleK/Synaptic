@@ -47,6 +47,7 @@ export async function POST(
     }
 
     const { id: documentId } = await params
+    console.log('🎯 Document completion API called:', { userId, documentId, timestamp: new Date().toISOString() })
 
     // 2. Get user profile
     const supabase = await createClient()
@@ -269,8 +270,9 @@ export async function POST(
     }
 
     // Track document upload in usage tracking
+    console.log('📊 About to track document upload:', { userId, feature: 'documents', fileName: document.file_name })
     await incrementUsage(userId, 'documents')
-    console.log(`✅ Upload completed successfully for: ${document.file_name}`)
+    console.log(`✅ Upload completed successfully for: ${document.file_name} - Usage tracking completed`)
 
     // 7. Return success response (processing continues in background for PDFs)
     return NextResponse.json({

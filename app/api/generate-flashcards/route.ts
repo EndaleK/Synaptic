@@ -31,6 +31,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.log('🎯 Flashcard generation API called:', { userId, timestamp: new Date().toISOString() })
+
     // Apply rate limiting (10 requests per minute for AI endpoints)
     const rateLimitResponse = await applyRateLimit(request, RateLimits.ai, userId)
     if (rateLimitResponse) {
@@ -369,7 +371,9 @@ export async function POST(request: NextRequest) {
     trackUsage(userId, modelForCost as any, costEstimate.inputTokens, costEstimate.outputTokens)
 
     // Increment usage count for subscription tier limits
+    console.log('📊 About to track flashcard generation:', { userId, feature: 'flashcards' })
     await incrementUsage(userId, 'flashcards')
+    console.log('📊 Flashcard generation tracking completed for:', { userId })
 
     // Save flashcards to database for persistence and mastery tracking
     let savedFlashcards = flashcards
