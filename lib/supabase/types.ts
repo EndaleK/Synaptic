@@ -16,8 +16,11 @@ export type SourceType = 'arxiv' | 'youtube' | 'web' | 'medium' | 'pdf-url' | 'u
 export type WritingType = 'academic' | 'professional' | 'creative'
 export type CitationStyle = 'APA' | 'MLA' | 'Chicago' | 'Harvard' | 'IEEE' | 'Vancouver'
 export type EssayStatus = 'draft' | 'reviewing' | 'final'
+export type WritingStage = 'planning' | 'drafting' | 'revising' | 'editing' | 'publishing'
 export type SuggestionType = 'grammar' | 'spelling' | 'structure' | 'tone' | 'citation' | 'clarity'
 export type SuggestionSeverity = 'error' | 'warning' | 'suggestion'
+export type MilestoneType = 'word_count' | 'stage_complete' | 'streak' | 'first_draft' | 'revision_count' | 'ai_independence' | 'session_duration'
+export type CommentStatus = 'unresolved' | 'resolved'
 
 // Video Learning Types
 export type VideoProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed'
@@ -193,6 +196,19 @@ export interface EssayVersion {
   word_count: number
 }
 
+export interface WritingGoals {
+  target_word_count?: number
+  target_date?: string
+  daily_word_count_goal?: number
+}
+
+export interface SubmissionMetadata {
+  submitted_at?: string
+  submitted_to?: string
+  ai_disclosure?: string
+  turnitin_score?: number
+}
+
 export interface Essay {
   id: string
   user_id: string
@@ -203,11 +219,55 @@ export interface Essay {
   citation_style?: CitationStyle
   word_count: number
   status: EssayStatus
+  writing_stage: WritingStage
+  ai_contribution_percentage: number
+  original_word_count: number
+  ai_assisted_word_count: number
+  writing_goals: WritingGoals
+  submission_metadata: SubmissionMetadata
   ai_suggestions: WritingSuggestion[]
   cited_sources: Citation[]
   version_history: EssayVersion[]
   created_at: string
   updated_at: string
+}
+
+export interface WritingSession {
+  id: string
+  essay_id: string
+  user_id: string
+  writing_stage: WritingStage
+  started_at: string
+  ended_at?: string
+  words_written: number
+  ai_suggestions_accepted: number
+  ai_suggestions_dismissed: number
+  duration_seconds?: number
+  created_at: string
+}
+
+export interface WritingMilestone {
+  id: string
+  user_id: string
+  essay_id?: string
+  milestone_type: MilestoneType
+  metadata: Record<string, any>
+  achieved_at: string
+}
+
+export interface EssayComment {
+  id: string
+  essay_id: string
+  commenter_id: string
+  parent_comment_id?: string
+  text_selection_start?: number
+  text_selection_end?: number
+  comment_text: string
+  status: CommentStatus
+  created_at: string
+  updated_at: string
+  resolved_at?: string
+  resolved_by?: string
 }
 
 // ============================================================================
