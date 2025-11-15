@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from 'react'
-import { FileText, Lightbulb, AlertCircle, Sparkles, Clock, ChevronDown, ChevronUp, Brain, FileQuestion, MessageCircle, GraduationCap, Tag, BookOpen, Target } from 'lucide-react'
+import { FileText, Lightbulb, AlertCircle, Sparkles, Clock, ChevronDown, ChevronUp, Brain, FileQuestion, MessageCircle, GraduationCap, Tag, BookOpen, Target, RefreshCw } from 'lucide-react'
 import type { VideoKeyPoint } from '@/lib/supabase/types'
 
 interface VideoAnalysisProps {
+  videoId?: string
   summary?: string
   keyPoints: VideoKeyPoint[]
   flashcardCount?: number
@@ -19,9 +20,11 @@ interface VideoAnalysisProps {
   onGenerateExam?: () => void
   onChatWithVideo?: () => void
   onJumpToTimestamp?: (timestamp: number) => void
+  onReAnalyze?: () => void
 }
 
 export default function VideoAnalysis({
+  videoId,
   summary,
   keyPoints,
   flashcardCount = 0,
@@ -35,10 +38,26 @@ export default function VideoAnalysis({
   onGenerateMindMap,
   onGenerateExam,
   onChatWithVideo,
-  onJumpToTimestamp
+  onJumpToTimestamp,
+  onReAnalyze
 }: VideoAnalysisProps) {
   const [expandedPoints, setExpandedPoints] = useState<Set<number>>(new Set([0])) // First point expanded by default
   const [expandedVocabulary, setExpandedVocabulary] = useState(false)
+  const [isReAnalyzing, setIsReAnalyzing] = useState(false)
+
+  const handleReAnalyze = async () => {
+    if (!videoId || !onReAnalyze) return
+
+    setIsReAnalyzing(true)
+    try {
+      await onReAnalyze()
+    } finally {
+      setIsReAnalyzing(false)
+    }
+  }
+
+  // Check if enhanced metadata is missing
+  const needsEnhancedAnalysis = !difficultyLevel && keyPoints.length > 0 && hasTranscript
 
   const togglePoint = (index: number) => {
     const newExpanded = new Set(expandedPoints)
@@ -96,13 +115,54 @@ export default function VideoAnalysis({
     <div className="h-full overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-          <Sparkles className="w-6 h-6 text-accent-primary" />
-          AI Analysis
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          AI-generated summary and key learning points from this video
-        </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-accent-primary" />
+              AI Analysis
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              AI-generated summary and key learning points from this video
+            </p>
+          </div>
+
+          {/* Re-analyze Button */}
+          {needsEnhancedAnalysis && videoId && onReAnalyze && (
+            <button
+              onClick={handleReAnalyze}
+              disabled={isReAnalyzing}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-500 hover:opacity-90 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Get enhanced educational analysis with difficulty level, topics, prerequisites, and learning outcomes"
+            >
+              <RefreshCw className={`w-4 h-4 ${isReAnalyzing ? 'animate-spin' : ''}`} />
+              {isReAnalyzing ? 'Analyzing...' : 'Enhance Analysis'}
+            </button>
+          )}
+        </div>
+
+        {/* Enhanced Analysis Notice */}
+        {needsEnhancedAnalysis && (
+          <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-blue-900 dark:text-blue-100 text-sm mb-1">
+                  Enhanced Analysis Available
+                </h4>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                  Get comprehensive educational insights including difficulty level, topics covered, prerequisites, learning outcomes, and key vocabulary.
+                </p>
+                <button
+                  onClick={handleReAnalyze}
+                  disabled={isReAnalyzing}
+                  className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
+                >
+                  Click "Enhance Analysis" to upgrade →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Summary Section */}

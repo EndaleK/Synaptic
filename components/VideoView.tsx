@@ -242,6 +242,28 @@ export default function VideoView() {
     }
   }
 
+  const handleReAnalyze = async () => {
+    if (!video) return
+
+    try {
+      const response = await fetch(`/api/video/${video.id}/re-analyze`, {
+        method: 'POST'
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to re-analyze video')
+      }
+
+      const updatedVideo = await response.json()
+      setVideo(updatedVideo)
+      alert('Video analysis enhanced successfully!')
+    } catch (err) {
+      console.error('Re-analysis error:', err)
+      alert(err instanceof Error ? err.message : 'Failed to re-analyze video')
+    }
+  }
+
   const loadMyVideos = async (filter: 'all' | 'favorites' = 'all') => {
     setIsLoadingVideos(true)
     try {
@@ -429,6 +451,7 @@ export default function VideoView() {
           {/* Right Column: Analysis */}
           <div className="flex flex-col min-h-0">
             <VideoAnalysis
+              videoId={video.id}
               summary={video.summary}
               keyPoints={video.key_points}
               flashcardCount={video.generated_flashcard_ids.length}
@@ -443,6 +466,7 @@ export default function VideoView() {
               onGenerateExam={handleGenerateExam}
               onChatWithVideo={handleChatWithVideo}
               onJumpToTimestamp={handleJumpToTimestamp}
+              onReAnalyze={handleReAnalyze}
             />
           </div>
         </div>
