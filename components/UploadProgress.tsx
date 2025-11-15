@@ -122,7 +122,7 @@ export function UploadProgressContainer({ uploads, onCancelAll }: UploadProgress
   const hasActiveUploads = uploads.some(u => u.status === 'uploading' || u.status === 'processing')
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-96 max-w-[calc(100vw-2rem)] space-y-3">
+    <div className="fixed bottom-24 right-4 z-50 w-96 max-w-[calc(100vw-2rem)] space-y-3">
       {uploads.length > 1 && hasActiveUploads && (
         <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <p className="text-sm font-medium text-gray-900 dark:text-white">

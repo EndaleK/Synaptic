@@ -31,7 +31,7 @@ export default function FloatingSuggestionBadge({
       {!isExpanded && (
         <button
           onClick={() => setIsExpanded(true)}
-          className="fixed bottom-6 right-6 z-50 group"
+          className="fixed bottom-20 right-6 z-50 group"
         >
           <div className="relative">
             {/* Badge with suggestion count */}
@@ -65,7 +65,7 @@ export default function FloatingSuggestionBadge({
 
       {/* Expanded Panel - Slides up from bottom right */}
       {isExpanded && (
-        <div className="fixed bottom-6 right-6 z-50 w-96 max-h-[600px] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col animate-in slide-in-from-bottom-4 duration-200">
+        <div className="fixed bottom-20 right-6 z-50 w-96 max-h-[600px] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col animate-in slide-in-from-bottom-4 duration-200">
           {/* Panel Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-2">

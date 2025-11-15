@@ -81,7 +81,7 @@ export default function UsageWarningToast({
 
   return (
     <div
-      className={`fixed bottom-4 right-4 z-50 w-96 max-w-[calc(100vw-2rem)] rounded-lg border-2 shadow-lg ${config.bgColor} ${config.borderColor} ${
+      className={`fixed bottom-24 right-4 z-50 w-96 max-w-[calc(100vw-2rem)] rounded-lg border-2 shadow-lg ${config.bgColor} ${config.borderColor} ${
         isExiting ? 'animate-slide-out-right' : 'animate-slide-in-right'
       }`}
       role="alert"

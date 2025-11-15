@@ -762,7 +762,7 @@ export default function ChatInterface() {
             {/* Mobile View Toggle FAB */}
             <button
               onClick={() => setMobileView(mobileView === 'document' ? 'chat' : 'document')}
-              className="lg:hidden fixed bottom-20 right-4 z-50 w-14 h-14 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-full shadow-2xl flex items-center justify-center transition-transform active:scale-95 hover:scale-105"
+              className="lg:hidden fixed bottom-24 right-4 z-50 w-14 h-14 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-full shadow-2xl flex items-center justify-center transition-transform active:scale-95 hover:scale-105"
               aria-label={mobileView === 'document' ? 'Switch to chat' : 'Switch to document'}
             >
               {mobileView === 'document' ? (
@@ -1036,7 +1036,7 @@ export default function ChatInterface() {
               </div>
 
               {/* Input Area */}
-              <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+              <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 pb-20 md:pb-4">
                 <div className="flex gap-2">
                   <textarea
                     value={inputMessage}
