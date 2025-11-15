@@ -279,6 +279,7 @@ export interface VideoKeyPoint {
   title: string
   description: string
   importance: 'high' | 'medium' | 'low'
+  category?: 'concept' | 'example' | 'definition' | 'application' | 'insight'
 }
 
 export interface VideoTranscriptLine {
@@ -303,6 +304,11 @@ export interface Video {
   processing_status: VideoProcessingStatus
   error_message?: string
   is_favorited?: boolean
+  difficulty_level?: 'beginner' | 'intermediate' | 'advanced' | 'expert'
+  topics_covered?: string[]
+  prerequisites?: string[]
+  learning_outcomes?: string[]
+  key_vocabulary?: Array<{ term: string; definition: string }>
   created_at: string
   updated_at: string
 }

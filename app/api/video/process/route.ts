@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
     // Combine transcript text for AI analysis
     const fullTranscript = transcript.map(line => line.text).join(' ')
 
-    // Generate AI summary and key points
+    // Generate AI summary and key points with enhanced analysis
     let summary = ''
     let keyPoints: any[] = []
 
@@ -191,38 +191,90 @@ export async function POST(request: NextRequest) {
         messages: [
           {
             role: 'system',
-            content: `You are an educational content analyzer. Analyze video transcripts and extract key learning points.
+            content: `You are an expert educational content analyzer specializing in extracting learning value from video content.
 
-Return a JSON object with:
+Analyze the video transcript and extract comprehensive learning insights.
+
+Return ONLY valid JSON (no markdown blocks) with this structure:
 {
-  "summary": "A 2-3 sentence summary of the main topic and key takeaways",
+  "summary": "Comprehensive 3-5 sentence summary covering: (1) main topic, (2) key concepts taught, (3) intended audience, (4) primary takeaways",
+  "difficulty_level": "beginner" | "intermediate" | "advanced" | "expert",
+  "topics_covered": ["topic1", "topic2", "topic3"],
+  "prerequisites": ["concept1", "concept2"] or [] if none,
   "key_points": [
     {
-      "timestamp": 0 (approximate timestamp in seconds),
-      "title": "Brief title of this concept",
-      "description": "Detailed explanation of this learning point",
-      "importance": "high" | "medium" | "low"
+      "timestamp": 0,
+      "title": "Clear, specific title (5-10 words)",
+      "description": "Detailed explanation with context and examples (2-4 sentences)",
+      "importance": "high" | "medium" | "low",
+      "category": "concept" | "example" | "definition" | "application" | "insight"
     }
+  ],
+  "learning_outcomes": [
+    "What students will be able to do after watching (3-5 concrete outcomes)"
+  ],
+  "key_vocabulary": [
+    {"term": "technical term", "definition": "simple explanation"}
   ]
 }
 
-Focus on educational value. Extract 5-10 key learning points.`
+**Quality Guidelines**:
+- Extract 8-15 key learning points, prioritized by educational value
+- Focus on concepts, definitions, examples, and applications
+- Include timestamps to help students navigate to specific topics
+- Identify difficulty level based on complexity, terminology, and assumed knowledge
+- Extract prerequisite knowledge required to understand the content
+- Define key technical vocabulary for students
+- Write learning outcomes in measurable terms (understand, apply, analyze, create)
+
+**Categories**:
+- concept: Core ideas or principles being taught
+- example: Specific examples or case studies
+- definition: Important terms being defined
+- application: Practical uses or implementations
+- insight: Key insights, tips, or best practices`
           },
           {
             role: 'user',
-            content: `Video Title: ${videoData.snippet.title}\n\nTranscript:\n${fullTranscript.slice(0, 12000)}` // Limit to ~3000 tokens
+            content: `Video Title: ${videoData.snippet.title}
+Channel: ${videoData.snippet.channelTitle}
+Duration: ${Math.floor(durationSeconds / 60)} minutes
+
+Transcript:
+${fullTranscript.slice(0, 15000)}${fullTranscript.length > 15000 ? '\n\n[Transcript truncated for length - focus on extracting key concepts from the content shown]' : ''}
+
+Analyze this educational video and extract comprehensive learning insights.`
           }
         ],
         temperature: 0.3,
-        max_tokens: 2000,
+        max_tokens: 3000,
         response_format: { type: 'json_object' }
       })
 
       const analysisText = completion.choices[0]?.message?.content
       if (analysisText) {
-        const analysis = JSON.parse(analysisText)
+        // Strip markdown code blocks if present
+        let cleanedContent = analysisText.trim()
+        cleanedContent = cleanedContent.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim()
+
+        const analysis = JSON.parse(cleanedContent)
         summary = analysis.summary || ''
         keyPoints = analysis.key_points || []
+
+        // Store additional metadata in the video record
+        video.difficulty_level = analysis.difficulty_level
+        video.topics_covered = analysis.topics_covered || []
+        video.prerequisites = analysis.prerequisites || []
+        video.learning_outcomes = analysis.learning_outcomes || []
+        video.key_vocabulary = analysis.key_vocabulary || []
+
+        console.log(`[Video ${videoId}] AI analysis complete:`, {
+          keyPointsCount: keyPoints.length,
+          difficultyLevel: analysis.difficulty_level,
+          topicsCount: analysis.topics_covered?.length || 0,
+          learningOutcomesCount: analysis.learning_outcomes?.length || 0,
+          vocabularyCount: analysis.key_vocabulary?.length || 0
+        })
       }
     }
 

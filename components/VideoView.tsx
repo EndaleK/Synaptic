@@ -433,6 +433,11 @@ export default function VideoView() {
               keyPoints={video.key_points}
               flashcardCount={video.generated_flashcard_ids.length}
               hasTranscript={!!video.transcript && video.transcript.length > 0}
+              difficultyLevel={video.difficulty_level}
+              topicsCovered={video.topics_covered}
+              prerequisites={video.prerequisites}
+              learningOutcomes={video.learning_outcomes}
+              keyVocabulary={video.key_vocabulary}
               onGenerateFlashcards={handleGenerateFlashcards}
               onGenerateMindMap={handleGenerateMindMap}
               onGenerateExam={handleGenerateExam}

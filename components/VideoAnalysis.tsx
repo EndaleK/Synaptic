@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { FileText, Lightbulb, AlertCircle, Sparkles, Clock, ChevronDown, ChevronUp, Brain, FileQuestion, MessageCircle } from 'lucide-react'
+import { FileText, Lightbulb, AlertCircle, Sparkles, Clock, ChevronDown, ChevronUp, Brain, FileQuestion, MessageCircle, GraduationCap, Tag, BookOpen, Target } from 'lucide-react'
 import type { VideoKeyPoint } from '@/lib/supabase/types'
 
 interface VideoAnalysisProps {
@@ -9,6 +9,11 @@ interface VideoAnalysisProps {
   keyPoints: VideoKeyPoint[]
   flashcardCount?: number
   hasTranscript?: boolean
+  difficultyLevel?: 'beginner' | 'intermediate' | 'advanced' | 'expert'
+  topicsCovered?: string[]
+  prerequisites?: string[]
+  learningOutcomes?: string[]
+  keyVocabulary?: Array<{ term: string; definition: string }>
   onGenerateFlashcards?: () => void
   onGenerateMindMap?: () => void
   onGenerateExam?: () => void
@@ -21,6 +26,11 @@ export default function VideoAnalysis({
   keyPoints,
   flashcardCount = 0,
   hasTranscript = true,
+  difficultyLevel,
+  topicsCovered = [],
+  prerequisites = [],
+  learningOutcomes = [],
+  keyVocabulary = [],
   onGenerateFlashcards,
   onGenerateMindMap,
   onGenerateExam,
@@ -28,6 +38,7 @@ export default function VideoAnalysis({
   onJumpToTimestamp
 }: VideoAnalysisProps) {
   const [expandedPoints, setExpandedPoints] = useState<Set<number>>(new Set([0])) // First point expanded by default
+  const [expandedVocabulary, setExpandedVocabulary] = useState(false)
 
   const togglePoint = (index: number) => {
     const newExpanded = new Set(expandedPoints)
@@ -47,6 +58,21 @@ export default function VideoAnalysis({
         return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700'
       case 'low':
         return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+    }
+  }
+
+  const getDifficultyColor = (level?: string) => {
+    switch (level) {
+      case 'beginner':
+        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700'
+      case 'intermediate':
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+      case 'advanced':
+        return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700'
+      case 'expert':
+        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700'
+      default:
+        return 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700'
     }
   }
 
@@ -82,13 +108,130 @@ export default function VideoAnalysis({
       {/* Summary Section */}
       {summary && (
         <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-accent-primary" />
-            Summary
-          </h3>
+          <div className="flex items-start justify-between mb-3">
+            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <FileText className="w-5 h-5 text-accent-primary" />
+              Summary
+            </h3>
+            {difficultyLevel && (
+              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase border-2 ${getDifficultyColor(difficultyLevel)}`}>
+                {difficultyLevel}
+              </span>
+            )}
+          </div>
           <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
             {summary}
           </p>
+        </div>
+      )}
+
+      {/* Topics Covered */}
+      {topicsCovered.length > 0 && (
+        <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+            <Tag className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            Topics Covered
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {topicsCovered.map((topic, index) => (
+              <span
+                key={index}
+                className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium border border-blue-200 dark:border-blue-800"
+              >
+                {topic}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Prerequisites */}
+      {prerequisites.length > 0 && (
+        <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+            Prerequisites
+          </h3>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+            Background knowledge recommended to understand this content:
+          </p>
+          <ul className="space-y-2">
+            {prerequisites.map((prereq, index) => (
+              <li
+                key={index}
+                className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
+              >
+                <span className="text-orange-600 dark:text-orange-400 mt-1">•</span>
+                <span>{prereq}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Learning Outcomes */}
+      {learningOutcomes.length > 0 && (
+        <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+            <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
+            Learning Outcomes
+          </h3>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+            After watching this video, you will be able to:
+          </p>
+          <ul className="space-y-2">
+            {learningOutcomes.map((outcome, index) => (
+              <li
+                key={index}
+                className="flex items-start gap-3 text-sm text-gray-700 dark:text-gray-300"
+              >
+                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 border-2 border-green-600 dark:border-green-400 flex items-center justify-center mt-0.5">
+                  <span className="text-xs text-green-600 dark:text-green-400 font-bold">{index + 1}</span>
+                </div>
+                <span>{outcome}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Key Vocabulary */}
+      {keyVocabulary.length > 0 && (
+        <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <button
+            onClick={() => setExpandedVocabulary(!expandedVocabulary)}
+            className="w-full p-6 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          >
+            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              Key Vocabulary ({keyVocabulary.length} terms)
+            </h3>
+            {expandedVocabulary ? (
+              <ChevronUp className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            )}
+          </button>
+
+          {expandedVocabulary && (
+            <div className="px-6 pb-6 pt-0 border-t border-gray-200 dark:border-gray-700">
+              <div className="mt-4 space-y-3">
+                {keyVocabulary.map((vocab, index) => (
+                  <div
+                    key={index}
+                    className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800"
+                  >
+                    <dt className="font-semibold text-purple-900 dark:text-purple-100 text-sm mb-1">
+                      {vocab.term}
+                    </dt>
+                    <dd className="text-sm text-purple-700 dark:text-purple-300">
+                      {vocab.definition}
+                    </dd>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
