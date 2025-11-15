@@ -194,6 +194,7 @@ export async function incrementUsage(
 
     if (!profile) {
       logger.error('Cannot increment usage: profile not found', { clerkUserId, feature })
+      console.error('🔴 USAGE TRACKING FAILED - Profile not found:', { clerkUserId, feature })
       return
     }
 
@@ -220,9 +221,25 @@ export async function incrementUsage(
 
     if (error) {
       logger.error('Failed to increment usage', error, { clerkUserId, feature })
+      console.error('🔴 USAGE TRACKING FAILED - Database error:', {
+        clerkUserId,
+        feature,
+        actionType,
+        error: error.message,
+        hint: error.hint,
+        details: error.details
+      })
+    } else {
+      console.log('✅ Usage tracked successfully:', { clerkUserId, feature, actionType })
     }
 
   } catch (error: any) {
     logger.error('Usage increment failed', error, { clerkUserId, feature })
+    console.error('🔴 USAGE TRACKING EXCEPTION:', {
+      clerkUserId,
+      feature,
+      error: error.message,
+      stack: error.stack
+    })
   }
 }
