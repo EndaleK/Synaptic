@@ -1,12 +1,19 @@
 {
   "name": "Synaptic - Learning That Adapts to You",
   "short_name": "Synaptic",
-  "description": "8 intelligent study tools in one platform",
+  "description": "8 intelligent study tools: flashcards, mock exams, podcasts, mind maps, and more",
   "icons": [
     {
       "src": "/apple-touch-icon.png",
       "sizes": "180x180",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-brain.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/favicon-32x32.png",
@@ -14,9 +21,12 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "#8b5cf6",
+  "theme_color": "#7B3FF2",
   "background_color": "#ffffff",
   "display": "standalone",
-  "start_url": "/",
-  "scope": "/"
+  "orientation": "portrait-primary",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "categories": ["education", "productivity", "utilities"],
+  "prefer_related_applications": false
 }
