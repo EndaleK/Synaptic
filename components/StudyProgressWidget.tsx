@@ -167,9 +167,15 @@ export default function StudyProgressWidget() {
             <span className="text-3xl font-bold text-gray-900 dark:text-white">{stats.flashcardsReviewed}</span>
             <span className="text-sm text-gray-600 dark:text-gray-400">reviewed</span>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-            {Math.round(stats.averageAccuracy)}% accuracy
-          </p>
+          {stats.flashcardsReviewed > 0 ? (
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+              {Math.round(stats.averageAccuracy)}% accuracy
+            </p>
+          ) : (
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+              No reviews yet
+            </p>
+          )}
         </div>
 
         {/* Sessions */}
@@ -182,9 +188,15 @@ export default function StudyProgressWidget() {
             <span className="text-3xl font-bold text-gray-900 dark:text-white">{stats.totalSessions}</span>
             <span className="text-sm text-gray-600 dark:text-gray-400">total</span>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-            Avg {Math.round(stats.totalMinutes / stats.totalSessions || 0)} min/session
-          </p>
+          {stats.totalSessions > 0 ? (
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+              Avg {Math.round(stats.totalMinutes / stats.totalSessions)} min/session
+            </p>
+          ) : (
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+              Start studying to track
+            </p>
+          )}
         </div>
       </div>
 
