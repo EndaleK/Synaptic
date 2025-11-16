@@ -133,7 +133,11 @@ export default function VoiceDictation({ onTextReceived, className }: VoiceDicta
     }
 
     recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error)
+      // Don't log permission errors - these are normal user choices
+      if (event.error !== 'not-allowed' && event.error !== 'aborted') {
+        console.error('Speech recognition error:', event.error)
+      }
+
       if (event.error === 'not-allowed') {
         alert('Microphone permission denied. Please allow microphone access to use voice dictation.')
       } else if (event.error === 'no-speech') {
