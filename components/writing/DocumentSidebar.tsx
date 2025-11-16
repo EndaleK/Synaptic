@@ -42,12 +42,27 @@ export default function DocumentSidebar({
     try {
       setIsLoading(true)
       const response = await fetch("/api/essays?limit=5&sort=updated_at")
-      if (response.ok) {
-        const data = await response.json()
-        setRecentEssays(data.essays || [])
+
+      if (!response.ok) {
+        // API endpoint doesn't exist or returned error - that's okay, just show empty list
+        console.log("Essays API not available, showing empty list")
+        setRecentEssays([])
+        return
       }
+
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        // Response is not JSON (probably 404 HTML page)
+        console.log("Essays API returned non-JSON response, showing empty list")
+        setRecentEssays([])
+        return
+      }
+
+      const data = await response.json()
+      setRecentEssays(data.essays || [])
     } catch (error) {
       console.error("Failed to fetch recent essays:", error)
+      setRecentEssays([])
     } finally {
       setIsLoading(false)
     }
