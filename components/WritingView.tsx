@@ -109,16 +109,12 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
     try {
       setIsLoading(true)
-      await ensureProfileExists()
+      const profileResponse = await ensureProfileExists()
+      const profile = profileResponse.profile
+
+      if (!profile?.id) throw new Error('User profile not found')
 
       const supabase = createClient()
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('clerk_user_id', user.id)
-        .single()
-
-      if (!profile) throw new Error('User profile not found')
 
       const { data, error } = await supabase
         .from('essays')
@@ -143,16 +139,12 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
     try {
       setIsLoading(true)
-      await ensureProfileExists()
+      const profileResponse = await ensureProfileExists()
+      const profile = profileResponse.profile
+
+      if (!profile?.id) throw new Error('User profile not found')
 
       const supabase = createClient()
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('clerk_user_id', user.id)
-        .single()
-
-      if (!profile) throw new Error('User profile not found')
 
       const newEssay: Partial<Essay> = {
         user_id: profile.id,
