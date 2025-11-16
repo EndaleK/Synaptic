@@ -56,14 +56,28 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
         if (!profile) {
           const sessionClaims = await auth()
           const email = sessionClaims.sessionClaims?.email as string || ''
+          const fullName = (sessionClaims.sessionClaims?.firstName || '') + ' ' + (sessionClaims.sessionClaims?.lastName || '')
 
-          await supabase
+          const { error: insertError } = await supabase
             .from('user_profiles')
             .insert({
               clerk_user_id: userId,
               email: email,
+              full_name: fullName.trim() || undefined,
               created_at: new Date().toISOString()
             })
+
+          // Send welcome email if profile was successfully created
+          if (!insertError && email) {
+            // Send welcome email asynchronously (don't block the request)
+            const { sendWelcomeEmail } = await import('@/lib/email/send')
+            sendWelcomeEmail({
+              userEmail: email,
+              userName: fullName.trim() || undefined,
+            }).catch(err => {
+              console.error('Failed to send welcome email:', err)
+            })
+          }
         }
       } catch (error) {
         // Log error for debugging

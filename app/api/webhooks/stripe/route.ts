@@ -3,6 +3,11 @@ import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import Stripe from 'stripe'
 import { logger } from '@/lib/logger'
+import {
+  sendSubscriptionConfirmedEmail,
+  sendPaymentReceiptEmail,
+  sendPaymentFailedEmail,
+} from '@/lib/email/send'
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
@@ -79,6 +84,13 @@ export async function POST(req: NextRequest) {
           break
         }
 
+        // Get user profile for email
+        const { data: userProfile } = await supabase
+          .from('user_profiles')
+          .select('email, full_name')
+          .eq('clerk_user_id', clerkUserId)
+          .single()
+
         // Update user profile with subscription tier
         const { error: updateError } = await supabase
           .from('user_profiles')
@@ -101,6 +113,19 @@ export async function POST(req: NextRequest) {
             tier,
             subscriptionId: session.subscription
           })
+
+          // Send subscription confirmation email
+          if (userProfile?.email) {
+            await sendSubscriptionConfirmedEmail({
+              userEmail: userProfile.email,
+              userName: userProfile.full_name || undefined,
+              planName: tier === 'premium' ? 'Synaptic Premium' : 'Synaptic Pro',
+              billingInterval: session.metadata?.billing_interval as 'month' | 'year' || 'month',
+            })
+            logger.info('Subscription confirmation email sent', {
+              email: userProfile.email
+            })
+          }
         }
         break
       }
@@ -226,7 +251,7 @@ export async function POST(req: NextRequest) {
         // Get user by customer ID
         const { data: profile } = await supabase
           .from('user_profiles')
-          .select('clerk_user_id')
+          .select('clerk_user_id, email, full_name, subscription_tier')
           .eq('stripe_customer_id', invoice.customer as string)
           .single()
 
@@ -249,6 +274,26 @@ export async function POST(req: NextRequest) {
         logger.info('User subscription marked as past_due', {
           clerkUserId: profile.clerk_user_id
         })
+
+        // Send payment failed email
+        if (profile.email) {
+          const retryDate = invoice.next_payment_attempt
+            ? new Date(invoice.next_payment_attempt * 1000).toLocaleDateString()
+            : undefined
+
+          await sendPaymentFailedEmail({
+            userEmail: profile.email,
+            userName: profile.full_name || undefined,
+            amountDue: invoice.amount_due,
+            currency: invoice.currency,
+            planName: profile.subscription_tier === 'premium' ? 'Synaptic Premium' : 'Synaptic Pro',
+            retryDate,
+            failureReason: invoice.last_finalization_error?.message,
+          })
+          logger.info('Payment failed email sent', {
+            email: profile.email
+          })
+        }
         break
       }
 
@@ -259,6 +304,48 @@ export async function POST(req: NextRequest) {
           invoiceId: invoice.id,
           customerId: invoice.customer,
           amountPaid: invoice.amount_paid / 100
+        })
+
+        // Skip sending receipt for the first invoice (covered by checkout.session.completed)
+        if (invoice.billing_reason === 'subscription_create') {
+          break
+        }
+
+        // Get user by customer ID
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('clerk_user_id, email, full_name, subscription_tier')
+          .eq('stripe_customer_id', invoice.customer as string)
+          .single()
+
+        if (!profile?.email) {
+          logger.error('Cannot find user for payment receipt', {
+            customerId: invoice.customer
+          })
+          break
+        }
+
+        // Send payment receipt email
+        const billingPeriodStart = invoice.period_start
+          ? new Date(invoice.period_start * 1000).toLocaleDateString()
+          : ''
+        const billingPeriodEnd = invoice.period_end
+          ? new Date(invoice.period_end * 1000).toLocaleDateString()
+          : ''
+
+        await sendPaymentReceiptEmail({
+          userEmail: profile.email,
+          userName: profile.full_name || undefined,
+          amountPaid: invoice.amount_paid,
+          currency: invoice.currency,
+          planName: profile.subscription_tier === 'premium' ? 'Synaptic Premium' : 'Synaptic Pro',
+          billingPeriodStart,
+          billingPeriodEnd,
+          invoiceUrl: invoice.hosted_invoice_url || undefined,
+          cardLast4: (invoice.charge as any)?.payment_method_details?.card?.last4,
+        })
+        logger.info('Payment receipt email sent', {
+          email: profile.email
         })
         break
       }

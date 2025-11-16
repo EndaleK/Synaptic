@@ -94,7 +94,7 @@ export async function GET() {
 
     // Count usage by type
     const usage = {
-      documents: profile.monthly_document_count || 0,
+      documents: 0,
       flashcards: 0,
       podcasts: 0,
       mindmaps: 0,
@@ -104,7 +104,9 @@ export async function GET() {
     }
 
     usageData?.forEach((record) => {
-      if (record.action_type === 'flashcard_generation' || record.action_type.includes('flashcard')) {
+      if (record.action_type === 'document_upload' || record.action_type.includes('document')) {
+        usage.documents++
+      } else if (record.action_type === 'flashcard_generation' || record.action_type.includes('flashcard')) {
         usage.flashcards++
       } else if (record.action_type === 'podcast_generation' || record.action_type.includes('podcast')) {
         usage.podcasts++
