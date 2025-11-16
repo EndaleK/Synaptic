@@ -36,7 +36,7 @@ interface UploadedFile {
 }
 
 export default function WritingView({ essayId, documentId }: WritingViewProps) {
-  const { user } = useUser()
+  const { user, isLoaded } = useUser()
   const [essay, setEssay] = useState<Essay | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -90,12 +90,24 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
   // Load or create essay
   useEffect(() => {
+    if (!isLoaded) {
+      // Wait for Clerk to finish loading
+      return
+    }
+
+    if (!user) {
+      // User not authenticated (shouldn't happen in protected route)
+      setIsLoading(false)
+      setError('Please sign in to use the writing tool')
+      return
+    }
+
     if (essayId) {
       loadEssay()
     } else {
       createNewEssay()
     }
-  }, [essayId])
+  }, [essayId, user, isLoaded])
 
   // Update editor content when essay loads
   useEffect(() => {
