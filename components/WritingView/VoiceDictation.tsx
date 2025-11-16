@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 
 interface VoiceDictationProps {
   onTextReceived: (text: string) => void
+  onListeningChange?: (isListening: boolean) => void
   className?: string
 }
 
@@ -52,7 +53,7 @@ const FORMATTING_COMMANDS: Record<string, string> = {
   'space': ' ',
 }
 
-export default function VoiceDictation({ onTextReceived, className }: VoiceDictationProps) {
+export default function VoiceDictation({ onTextReceived, onListeningChange, className }: VoiceDictationProps) {
   const [isListening, setIsListening] = useState(false)
   const [isSupported, setIsSupported] = useState(true)
   const [interimTranscript, setInterimTranscript] = useState('')
@@ -61,6 +62,12 @@ export default function VoiceDictation({ onTextReceived, className }: VoiceDicta
   const [showLanguageSelector, setShowLanguageSelector] = useState(false)
   const [commandsEnabled, setCommandsEnabled] = useState(true)
   const recognitionRef = useRef<any>(null)
+  const shouldBeListeningRef = useRef(false)
+
+  // Notify parent when listening state changes
+  useEffect(() => {
+    onListeningChange?.(isListening)
+  }, [isListening, onListeningChange])
 
   // Process commands in transcribed text
   const processCommands = (text: string): string => {
@@ -140,19 +147,40 @@ export default function VoiceDictation({ onTextReceived, className }: VoiceDicta
 
       if (event.error === 'not-allowed') {
         alert('Microphone permission denied. Please allow microphone access to use voice dictation.')
+        shouldBeListeningRef.current = false
+        setIsListening(false)
       } else if (event.error === 'no-speech') {
         // This is normal - user paused or didn't speak within timeout
-        // Just log quietly and don't alert the user
-        console.log('No speech detected, continuing to listen...')
-      } else if (event.error !== 'aborted') {
+        // Automatically restart to keep listening (onend will handle this)
+        console.log('No speech detected, will restart on end event...')
+      } else if (event.error === 'aborted') {
+        // User stopped manually, don't restart
+        shouldBeListeningRef.current = false
+        setIsListening(false)
+      } else {
+        // Real error occurred
         alert(`Voice dictation error: ${event.error}. Please try again.`)
+        shouldBeListeningRef.current = false
+        setIsListening(false)
       }
-      setIsListening(false)
     }
 
     recognition.onend = () => {
-      console.log('Recognition ended')
-      setIsListening(false)
+      console.log('Recognition ended, shouldBeListening:', shouldBeListeningRef.current)
+      // If we're still supposed to be listening, restart automatically
+      // This handles cases where recognition ends naturally without error
+      if (shouldBeListeningRef.current) {
+        console.log('Restarting recognition after natural end...')
+        try {
+          recognitionRef.current?.start()
+        } catch (e) {
+          console.log('Could not restart recognition:', e)
+          shouldBeListeningRef.current = false
+          setIsListening(false)
+        }
+      } else {
+        setIsListening(false)
+      }
     }
 
     recognitionRef.current = recognition
@@ -176,11 +204,13 @@ export default function VoiceDictation({ onTextReceived, className }: VoiceDicta
 
     if (isListening) {
       try {
+        shouldBeListeningRef.current = false
         recognitionRef.current?.stop()
         setIsListening(false)
         setInterimTranscript('')
       } catch (error) {
         console.error('Error stopping recognition:', error)
+        shouldBeListeningRef.current = false
         setIsListening(false)
       }
     } else {
@@ -204,6 +234,7 @@ export default function VoiceDictation({ onTextReceived, className }: VoiceDicta
         // Now start speech recognition with permission granted
         setFinalTranscript('')
         setInterimTranscript('')
+        shouldBeListeningRef.current = true
         recognitionRef.current?.start()
         setIsListening(true)
         console.log('Speech recognition started successfully')

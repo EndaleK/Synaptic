@@ -46,6 +46,10 @@ export default function VoiceModal({
     setTranscribedText(text)
   }
 
+  const handleListeningChange = (listening: boolean) => {
+    setIsRecording(listening)
+  }
+
   const handleInsert = () => {
     if (transcribedText.trim()) {
       onInsertText(transcribedText)
@@ -114,6 +118,7 @@ export default function VoiceModal({
           <div className="mb-4">
             <VoiceDictation
               onTextReceived={handleTranscriptChange}
+              onListeningChange={handleListeningChange}
             />
           </div>
 
