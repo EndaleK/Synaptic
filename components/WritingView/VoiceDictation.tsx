@@ -166,7 +166,7 @@ export default function VoiceDictation({ onTextReceived, className }: VoiceDicta
     }
   }, [selectedLanguage, commandsEnabled, onTextReceived])
 
-  const toggleListening = () => {
+  const toggleListening = async () => {
     if (!isSupported) {
       alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.')
       return
@@ -183,13 +183,26 @@ export default function VoiceDictation({ onTextReceived, className }: VoiceDicta
       }
     } else {
       try {
+        // Request microphone permission explicitly first
+        // This triggers Chrome's permission popup if not already granted
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        // Stop the stream immediately - we just needed to trigger the permission request
+        stream.getTracks().forEach(track => track.stop())
+
+        // Now start speech recognition with permission granted
         setFinalTranscript('')
         setInterimTranscript('')
         recognitionRef.current?.start()
         setIsListening(true)
       } catch (error) {
         console.error('Error starting recognition:', error)
-        alert('Failed to start voice dictation. Please check microphone permissions and try again.')
+        if (error instanceof Error && error.name === 'NotAllowedError') {
+          alert('Microphone permission denied. Please allow microphone access in your browser settings and try again.')
+        } else if (error instanceof Error && error.name === 'NotFoundError') {
+          alert('No microphone found. Please connect a microphone and try again.')
+        } else {
+          alert('Failed to start voice dictation. Please check microphone permissions and try again.')
+        }
       }
     }
   }
