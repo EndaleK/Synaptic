@@ -113,8 +113,7 @@ export default function VoiceModal({
           {/* Voice Dictation Component */}
           <div className="mb-4">
             <VoiceDictation
-              onTranscriptChange={handleTranscriptChange}
-              onRecordingStateChange={setIsRecording}
+              onTextReceived={handleTranscriptChange}
             />
           </div>
 
