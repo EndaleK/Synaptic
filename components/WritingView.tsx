@@ -171,38 +171,33 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
     try {
       setIsLoading(true)
-      const profileResponse = await ensureProfileExists()
-      const profile = profileResponse.profile
 
-      if (!profile?.id) throw new Error('User profile not found')
+      // Call API to create essay (bypasses RLS with service role)
+      const response = await fetch('/api/essays', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Untitled Essay',
+          content: '',
+          writing_type: 'academic',
+          citation_style: 'APA',
+          word_count: 0,
+          status: 'draft',
+          document_id: documentId || null
+        })
+      })
 
-      const supabase = createClient()
-
-      const newEssay: Partial<Essay> = {
-        user_id: profile.id,
-        document_id: documentId || undefined,
-        title: 'Untitled Essay',
-        content: '',
-        writing_type: 'academic',
-        citation_style: 'APA',
-        word_count: 0,
-        status: 'draft'
+      if (!response.ok) {
+        const error = await response.json()
+        console.error('API error creating essay:', error)
+        throw new Error(error.error || 'Failed to create essay')
       }
 
-      const { data, error } = await supabase
-        .from('essays')
-        .insert(newEssay)
-        .select()
-        .single()
+      const { essay } = await response.json()
 
-      if (error) {
-        console.error('Supabase error creating essay:', error)
-        throw new Error(error.message || 'Failed to create essay')
-      }
+      if (!essay) throw new Error('No essay data returned from API')
 
-      if (!data) throw new Error('No data returned from essay creation')
-
-      setEssay(data)
+      setEssay(essay)
     } catch (err) {
       console.error('Error creating essay:', err)
       setError(err instanceof Error ? err.message : 'Failed to create essay')
