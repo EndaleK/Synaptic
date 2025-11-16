@@ -234,18 +234,26 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
         })
       })
 
-      if (!response.ok) {
-        const error = await response.json()
-        console.error('API error saving essay:', error)
-        throw new Error(error.error || 'Failed to save essay')
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('API returned non-JSON response:', response.status, response.statusText)
+        const text = await response.text()
+        console.error('Response text:', text.substring(0, 200))
+        throw new Error(`API endpoint returned ${response.status}: ${response.statusText}`)
       }
 
-      const { essay: updatedEssay } = await response.json()
+      const data = await response.json()
 
-      setEssay(updatedEssay)
+      if (!response.ok) {
+        console.error('API error saving essay:', data)
+        throw new Error(data.error || 'Failed to save essay')
+      }
+
+      setEssay(data.essay)
     } catch (err) {
       console.error('Error saving essay:', err)
-      alert('Failed to save essay')
+      alert('Failed to save essay: ' + (err instanceof Error ? err.message : 'Unknown error'))
     } finally {
       setIsSaving(false)
     }
