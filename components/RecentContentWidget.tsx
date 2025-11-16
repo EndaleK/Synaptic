@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Clock, Sparkles, Mic, Map as MapIcon, Loader2, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 
 interface RecentItem {
@@ -19,13 +20,20 @@ interface RecentItem {
 
 export default function RecentContentWidget() {
   const router = useRouter()
+  const { userId, isLoaded } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [recentItems, setRecentItems] = useState<RecentItem[]>([])
   const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
+    // Wait for auth to be loaded AND userId to be available
+    if (!isLoaded || !userId) {
+      setIsLoading(true)
+      return
+    }
+
     fetchRecentContent()
-  }, [])
+  }, [userId, isLoaded])
 
   const fetchRecentContent = async () => {
     setIsLoading(true)
@@ -33,9 +41,9 @@ export default function RecentContentWidget() {
     try {
       // Fetch recent items from all three types
       const [flashcardsRes, podcastsRes, mindmapsRes] = await Promise.all([
-        fetch('/api/flashcards?limit=5'),
-        fetch('/api/podcasts?limit=5'),
-        fetch('/api/mindmaps?limit=5')
+        fetch('/api/flashcards?limit=5', { credentials: 'include' }),
+        fetch('/api/podcasts?limit=5', { credentials: 'include' }),
+        fetch('/api/mindmaps?limit=5', { credentials: 'include' })
       ])
 
       const [flashcardsData, podcastsData, mindmapsData] = await Promise.all([

@@ -26,31 +26,42 @@ interface UsageData {
  * Encourages upgrades when approaching limits
  */
 export default function UsageWidget() {
-  const { userId } = useAuth()
+  const { userId, isLoaded } = useAuth()
   const [usage, setUsage] = useState<UsageData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
-    if (!userId) return
+    // Wait for auth to be loaded AND userId to be available
+    if (!isLoaded || !userId) {
+      setLoading(true)
+      return
+    }
 
     const fetchUsage = async () => {
       try {
-        const response = await fetch('/api/usage')
-        if (!response.ok) throw new Error('Failed to fetch usage')
+        const response = await fetch('/api/usage', {
+          credentials: 'include' // Ensure cookies are sent
+        })
+        if (!response.ok) {
+          console.error('Usage API responded with:', response.status, response.statusText)
+          throw new Error(`Failed to fetch usage: ${response.status}`)
+        }
         const data = await response.json()
         setUsage(data)
+        setError(null) // Clear any previous errors
       } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error'
         setError('Unable to load usage stats')
-        console.error('Usage fetch error:', err)
+        console.error('Usage fetch error:', errorMessage, err)
       } finally {
         setLoading(false)
       }
     }
 
     fetchUsage()
-  }, [userId])
+  }, [userId, isLoaded])
 
   if (loading) {
     return (
