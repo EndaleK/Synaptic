@@ -22,7 +22,7 @@ interface StudyProgress {
   longestStreak: number
   totalSessions: number
   totalMinutes: number
-  flashcardsReviewed: number
+  flashcardsReviewedWeek: number
   averageAccuracy: number
   todayMinutes: number
   weekMinutes: number
@@ -99,7 +99,7 @@ export default function StudyProgressWidget() {
     return null
   }
 
-  const progressPercentage = Math.min((stats.dailyGoalProgress / stats.dailyGoalMinutes) * 100, 100)
+  const progressPercentage = Math.min(stats.dailyGoalProgress, 100)
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
@@ -123,11 +123,11 @@ export default function StudyProgressWidget() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {/* Current Streak */}
+        {/* Study Session Streak */}
         <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
           <div className="flex items-center gap-2 mb-2">
             <Flame className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-            <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Streak</span>
+            <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Study Streak</span>
           </div>
           <div className="flex items-baseline gap-1">
             <span className="text-3xl font-bold text-gray-900 dark:text-white">{stats.currentStreak}</span>
@@ -164,10 +164,10 @@ export default function StudyProgressWidget() {
             <span className="text-xs font-medium text-purple-600 dark:text-purple-400">Cards</span>
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-bold text-gray-900 dark:text-white">{stats.flashcardsReviewed}</span>
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">{stats.flashcardsReviewedWeek}</span>
             <span className="text-sm text-gray-600 dark:text-gray-400">reviewed</span>
           </div>
-          {stats.flashcardsReviewed > 0 ? (
+          {stats.flashcardsReviewedWeek > 0 ? (
             <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
               {Math.round(stats.averageAccuracy)}% accuracy
             </p>

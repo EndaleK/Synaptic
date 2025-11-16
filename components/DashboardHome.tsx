@@ -196,12 +196,12 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                 <h1 className="text-display">
                   Welcome back, {user?.firstName || user?.username || 'Student'}! 👋
                 </h1>
-                {/* Streak Indicator */}
+                {/* Login Streak Indicator */}
                 {!isLoadingStreak && currentStreak > 0 && (
                   <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">
                     <Flame className="w-5 h-5 text-orange-300" />
                     <span className="font-bold text-lg">{currentStreak}</span>
-                    <span className="text-sm font-medium">day streak!</span>
+                    <span className="text-sm font-medium">day login streak!</span>
                   </div>
                 )}
               </div>

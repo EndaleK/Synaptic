@@ -7,6 +7,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
 import CharacterCount from '@tiptap/extension-character-count'
+import { createClient } from '@/lib/supabase/client'
 
 // Modern UI Components
 import ModernWritingHeader from './writing/ModernWritingHeader'
@@ -49,6 +50,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
   const [writingTone, setWritingTone] = useState('academic')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [showCitations, setShowCitations] = useState(false)
+  const [isEditorReady, setIsEditorReady] = useState(false)
 
   // TipTap Editor
   const editor = useEditor({
@@ -62,6 +64,10 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       CharacterCount
     ],
     content: essay?.content || '',
+    onCreate: ({ editor }) => {
+      console.log('✅ TipTap editor created and ready')
+      setIsEditorReady(true)
+    },
     onUpdate: ({ editor }) => {
       // Auto-update word count
       const content = editor.getHTML()
@@ -394,8 +400,28 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
   }
 
   const insertTextAtCursor = (text: string) => {
-    if (editor) {
-      editor.chain().focus().insertContent(text).run()
+    console.log('📝 insertTextAtCursor called with text:', text.substring(0, 100) + (text.length > 100 ? '...' : ''))
+
+    if (!editor) {
+      console.error('❌ Editor is null or undefined!')
+      alert('Editor not ready. Please wait a moment and try again.')
+      return
+    }
+
+    console.log('✅ Editor exists, attempting insertion...')
+
+    try {
+      const success = editor.chain().focus().insertContent(text).run()
+
+      if (success) {
+        console.log('✅ Text inserted successfully into editor')
+      } else {
+        console.error('❌ Editor.run() returned false - insertion failed')
+        alert('Failed to insert text. Please try clicking in the editor first.')
+      }
+    } catch (error) {
+      console.error('❌ Error inserting text:', error)
+      alert('Error inserting text: ' + (error instanceof Error ? error.message : 'Unknown error'))
     }
   }
 
@@ -411,6 +437,15 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
   const handleRemoveFile = (fileId: string) => {
     setUploadedFiles(prev => prev.filter(f => f.id !== fileId))
+  }
+
+  const handleVoiceClick = () => {
+    if (!isEditorReady) {
+      alert('Please wait for the editor to load before using voice dictation.')
+      return
+    }
+    console.log('🎤 Opening voice modal - editor is ready')
+    setShowVoiceModal(true)
   }
 
   if (isLoading) {
@@ -468,7 +503,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
           {/* Modern Toolbar */}
           <ModernToolbar
             editor={editor}
-            onVoiceClick={() => setShowVoiceModal(true)}
+            onVoiceClick={handleVoiceClick}
             onUploadClick={() => setShowUploadModal(true)}
             onAnalyze={handleAnalyze}
             onImprove={handleImprove}

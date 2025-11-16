@@ -63,6 +63,9 @@ export default function VoiceDictation({ onTextReceived, onListeningChange, clas
   const [commandsEnabled, setCommandsEnabled] = useState(true)
   const recognitionRef = useRef<any>(null)
   const shouldBeListeningRef = useRef(false)
+  const lastResultTimeRef = useRef<number>(0)
+  const restartCountRef = useRef(0)
+  const restartTimeoutRef = useRef<NodeJS.Timeout>()
 
   // Notify parent when listening state changes
   useEffect(() => {
@@ -151,6 +154,10 @@ export default function VoiceDictation({ onTextReceived, onListeningChange, clas
       setInterimTranscript(interim)
 
       if (final) {
+        // Track that we received speech - reset restart counter
+        lastResultTimeRef.current = Date.now()
+        restartCountRef.current = 0
+
         // Process commands if enabled
         const processedText = processCommands(final)
         setFinalTranscript(prev => prev + processedText)
@@ -159,8 +166,8 @@ export default function VoiceDictation({ onTextReceived, onListeningChange, clas
     }
 
     recognition.onerror = (event: any) => {
-      // Don't log normal/expected errors (permission denied, aborted, no speech detected)
-      if (event.error !== 'not-allowed' && event.error !== 'aborted' && event.error !== 'no-speech') {
+      // Don't log normal/expected errors (permission denied, aborted, no speech detected, audio capture)
+      if (event.error !== 'not-allowed' && event.error !== 'aborted' && event.error !== 'no-speech' && event.error !== 'audio-capture') {
         console.error('Speech recognition error:', event.error)
       }
 
@@ -176,6 +183,11 @@ export default function VoiceDictation({ onTextReceived, onListeningChange, clas
         // User stopped manually, don't restart
         shouldBeListeningRef.current = false
         setIsListening(false)
+      } else if (event.error === 'audio-capture') {
+        // Audio capture issue - usually transient, stop gracefully
+        console.log('⚠️ Audio capture issue detected, stopping voice dictation')
+        shouldBeListeningRef.current = false
+        setIsListening(false)
       } else {
         // Real error occurred
         alert(`Voice dictation error: ${event.error}. Please try again.`)
@@ -186,25 +198,58 @@ export default function VoiceDictation({ onTextReceived, onListeningChange, clas
 
     recognition.onend = () => {
       console.log('Recognition ended, shouldBeListening:', shouldBeListeningRef.current)
-      // If we're still supposed to be listening, restart automatically
-      // This handles cases where recognition ends naturally without error
+
+      // Clear any existing restart timeout
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current)
+      }
+
+      // If we're still supposed to be listening, implement smart restart logic
       if (shouldBeListeningRef.current) {
-        console.log('Restarting recognition after natural end...')
-        try {
-          recognitionRef.current?.start()
-        } catch (e) {
-          console.log('Could not restart recognition:', e)
+        // Check if we've exceeded max restart attempts
+        if (restartCountRef.current >= 3) {
+          console.log('⚠️ Max restart attempts (3) reached. Stopping to prevent infinite loop.')
+          console.log('User may be idle. They can manually restart if needed.')
           shouldBeListeningRef.current = false
           setIsListening(false)
+          restartCountRef.current = 0
+          return
         }
+
+        // Increment restart counter
+        restartCountRef.current++
+        console.log(`🔄 Scheduling restart attempt ${restartCountRef.current}/3 in 1 second...`)
+
+        // Wait 1 second before restarting to prevent rapid-fire loops
+        restartTimeoutRef.current = setTimeout(() => {
+          // Double-check we should still be listening
+          if (shouldBeListeningRef.current) {
+            console.log(`▶️ Executing restart attempt ${restartCountRef.current}/3`)
+            try {
+              recognitionRef.current?.start()
+            } catch (e) {
+              console.log('Could not restart recognition:', e)
+              shouldBeListeningRef.current = false
+              setIsListening(false)
+              restartCountRef.current = 0
+            }
+          }
+        }, 1000)
       } else {
         setIsListening(false)
+        restartCountRef.current = 0
       }
     }
 
     recognitionRef.current = recognition
 
     return () => {
+      // Clear any pending restart timeout
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current)
+      }
+
+      // Stop recognition
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop()
@@ -227,10 +272,15 @@ export default function VoiceDictation({ onTextReceived, onListeningChange, clas
         recognitionRef.current?.stop()
         setIsListening(false)
         setInterimTranscript('')
+        restartCountRef.current = 0 // Reset restart counter when manually stopped
+        if (restartTimeoutRef.current) {
+          clearTimeout(restartTimeoutRef.current)
+        }
       } catch (error) {
         console.error('Error stopping recognition:', error)
         shouldBeListeningRef.current = false
         setIsListening(false)
+        restartCountRef.current = 0
       }
     } else {
       try {
@@ -248,12 +298,18 @@ export default function VoiceDictation({ onTextReceived, onListeningChange, clas
 
         // Stop the stream immediately - we just needed to trigger the permission request
         stream.getTracks().forEach(track => track.stop())
-        console.log('Stopped microphone stream, starting speech recognition...')
+        console.log('Stopped microphone stream, waiting 100ms before starting speech recognition...')
+
+        // Wait a brief moment for the audio device to be released
+        // This prevents "audio-capture" errors from race conditions
+        await new Promise(resolve => setTimeout(resolve, 100))
 
         // Now start speech recognition with permission granted
         setFinalTranscript('')
         setInterimTranscript('')
         shouldBeListeningRef.current = true
+        restartCountRef.current = 0 // Reset restart counter for new session
+        lastResultTimeRef.current = 0 // Reset last result time
         recognitionRef.current?.start()
         setIsListening(true)
         console.log('Speech recognition started successfully')

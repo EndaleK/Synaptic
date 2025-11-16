@@ -107,24 +107,25 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   // 📊 STATISTICS: Complete study session when component unmounts
   useEffect(() => {
     return () => {
-      // Complete session on unmount
+      // Complete session on unmount using sendBeacon to avoid memory leaks
       if (sessionId && sessionStartTime.current) {
         const durationMinutes = Math.round((Date.now() - sessionStartTime.current.getTime()) / 60000)
 
         // Only record if session lasted at least 1 minute
         if (durationMinutes >= 1) {
-          fetch('/api/study-sessions/complete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sessionId,
-              durationMinutes
-            })
-          }).then(() => {
-            console.log('[FlashcardDisplay] Study session completed:', durationMinutes, 'minutes')
-          }).catch(error => {
-            console.error('Failed to complete study session:', error)
+          // Use sendBeacon for cleanup requests - prevents memory leaks and works even during page unload
+          const data = JSON.stringify({
+            sessionId,
+            durationMinutes
           })
+          const blob = new Blob([data], { type: 'application/json' })
+          const sent = navigator.sendBeacon('/api/study-sessions/complete', blob)
+
+          if (sent) {
+            console.log('[FlashcardDisplay] Study session completion queued:', durationMinutes, 'minutes')
+          } else {
+            console.warn('[FlashcardDisplay] Failed to queue study session completion')
+          }
         }
       }
     }

@@ -85,6 +85,7 @@ export default function WritingEditor({
   const editorContainerRef = useRef<HTMLDivElement>(null)
 
   const editor = useEditor({
+    immediatelyRender: false, // Prevent SSR hydration issues and reduce Fast Refresh warnings
     extensions: [
       StarterKit.configure({
         heading: {

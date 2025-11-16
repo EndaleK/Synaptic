@@ -43,7 +43,10 @@ export default function VoiceModal({
   }
 
   const handleTranscriptChange = (text: string) => {
-    setTranscribedText(text)
+    setTranscribedText(prev => {
+      // Append new text with a space separator if there's existing text
+      return prev ? `${prev} ${text}` : text
+    })
   }
 
   const handleListeningChange = (listening: boolean) => {
@@ -52,8 +55,12 @@ export default function VoiceModal({
 
   const handleInsert = () => {
     if (transcribedText.trim()) {
+      console.log('🔵 VoiceModal: Calling onInsertText with text:', transcribedText.substring(0, 100) + (transcribedText.length > 100 ? '...' : ''))
       onInsertText(transcribedText)
+      console.log('🔵 VoiceModal: onInsertText call completed, closing modal')
       handleClose()
+    } else {
+      console.log('⚠️ VoiceModal: No text to insert (transcribedText is empty)')
     }
   }
 
