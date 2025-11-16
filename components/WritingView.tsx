@@ -53,6 +53,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
   // TipTap Editor
   const editor = useEditor({
+    immediatelyRender: false, // Fix SSR hydration mismatch
     extensions: [
       StarterKit,
       Underline,
