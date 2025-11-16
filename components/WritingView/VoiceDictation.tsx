@@ -116,12 +116,30 @@ export default function VoiceDictation({ onTextReceived, onListeningChange, clas
     recognition.lang = selectedLanguage
     recognition.maxAlternatives = 1
 
+    recognition.onstart = () => {
+      console.log('🎤 Speech recognition started, language:', selectedLanguage)
+    }
+
+    recognition.onaudiostart = () => {
+      console.log('🔊 Audio capture started')
+    }
+
+    recognition.onsoundstart = () => {
+      console.log('🔉 Sound detected')
+    }
+
+    recognition.onspeechstart = () => {
+      console.log('🗣️ Speech detected')
+    }
+
     recognition.onresult = (event: any) => {
+      console.log('📝 Speech recognition result:', event)
       let interim = ''
       let final = ''
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript
+        console.log(`Result ${i}: "${transcript}" (final: ${event.results[i].isFinal})`)
         if (event.results[i].isFinal) {
           final += transcript + ' '
         } else {
@@ -129,6 +147,7 @@ export default function VoiceDictation({ onTextReceived, onListeningChange, clas
         }
       }
 
+      console.log('Interim:', interim, 'Final:', final)
       setInterimTranscript(interim)
 
       if (final) {
