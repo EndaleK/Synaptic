@@ -223,36 +223,26 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       const title = essay.title
       const wordCount = editor.storage.characterCount.words()
 
-      const supabase = createClient()
-
-      // Create version snapshot
-      const newVersion = {
-        version_number: essay.version_history.length + 1,
-        content: essay.content,
-        timestamp: new Date().toISOString(),
-        word_count: essay.word_count
-      }
-
-      const { error } = await supabase
-        .from('essays')
-        .update({
+      // Call API to update essay (bypasses RLS with service role)
+      const response = await fetch(`/api/essays/${essay.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           content,
           title,
-          word_count: wordCount,
-          version_history: [...essay.version_history, newVersion],
-          updated_at: new Date().toISOString()
+          word_count: wordCount
         })
-        .eq('id', essay.id)
-
-      if (error) throw error
-
-      setEssay({
-        ...essay,
-        content,
-        title,
-        word_count: wordCount,
-        version_history: [...essay.version_history, newVersion]
       })
+
+      if (!response.ok) {
+        const error = await response.json()
+        console.error('API error saving essay:', error)
+        throw new Error(error.error || 'Failed to save essay')
+      }
+
+      const { essay: updatedEssay } = await response.json()
+
+      setEssay(updatedEssay)
     } catch (err) {
       console.error('Error saving essay:', err)
       alert('Failed to save essay')
