@@ -133,14 +133,16 @@ export default function VoiceDictation({ onTextReceived, className }: VoiceDicta
     }
 
     recognition.onerror = (event: any) => {
-      // Don't log permission errors - these are normal user choices
-      if (event.error !== 'not-allowed' && event.error !== 'aborted') {
+      // Don't log normal/expected errors (permission denied, aborted, no speech detected)
+      if (event.error !== 'not-allowed' && event.error !== 'aborted' && event.error !== 'no-speech') {
         console.error('Speech recognition error:', event.error)
       }
 
       if (event.error === 'not-allowed') {
         alert('Microphone permission denied. Please allow microphone access to use voice dictation.')
       } else if (event.error === 'no-speech') {
+        // This is normal - user paused or didn't speak within timeout
+        // Just log quietly and don't alert the user
         console.log('No speech detected, continuing to listen...')
       } else if (event.error !== 'aborted') {
         alert(`Voice dictation error: ${event.error}. Please try again.`)
