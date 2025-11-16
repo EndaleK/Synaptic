@@ -107,25 +107,32 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   // 📊 STATISTICS: Complete study session when component unmounts
   useEffect(() => {
     return () => {
-      // Complete session on unmount using sendBeacon to avoid memory leaks
+      // Complete session on unmount using fetch with keepalive
       if (sessionId && sessionStartTime.current) {
         const durationMinutes = Math.round((Date.now() - sessionStartTime.current.getTime()) / 60000)
 
         // Only record if session lasted at least 1 minute
         if (durationMinutes >= 1) {
-          // Use sendBeacon for cleanup requests - prevents memory leaks and works even during page unload
-          const data = JSON.stringify({
-            sessionId,
-            durationMinutes
+          // Use fetch with keepalive: works during page unload and sets proper Content-Type header
+          fetch('/api/study-sessions/complete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              sessionId,
+              durationMinutes
+            }),
+            keepalive: true // Ensures request completes even during page unload
+          }).then(response => {
+            if (response.ok) {
+              console.log('[FlashcardDisplay] Study session completed:', durationMinutes, 'minutes')
+            } else {
+              console.warn('[FlashcardDisplay] Failed to complete study session:', response.status)
+            }
+          }).catch(error => {
+            console.error('[FlashcardDisplay] Error completing study session:', error)
           })
-          const blob = new Blob([data], { type: 'application/json' })
-          const sent = navigator.sendBeacon('/api/study-sessions/complete', blob)
-
-          if (sent) {
-            console.log('[FlashcardDisplay] Study session completion queued:', durationMinutes, 'minutes')
-          } else {
-            console.warn('[FlashcardDisplay] Failed to queue study session completion')
-          }
         }
       }
     }
