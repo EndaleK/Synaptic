@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { FileText, Plus, Clock } from "lucide-react"
+import { FileText, Plus, Clock, Trash2 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
 interface Essay {
@@ -16,6 +16,7 @@ interface DocumentSidebarProps {
   onSelectEssay?: (essayId: string) => void
   onNewEssay?: () => void
   onSelectTemplate?: (template: string) => void
+  onDeleteEssay?: (essayId: string) => void
 }
 
 const TEMPLATES = [
@@ -29,10 +30,12 @@ export default function DocumentSidebar({
   activeEssayId,
   onSelectEssay,
   onNewEssay,
-  onSelectTemplate
+  onSelectTemplate,
+  onDeleteEssay
 }: DocumentSidebarProps) {
   const [recentEssays, setRecentEssays] = useState<Essay[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [deletingEssayId, setDeletingEssayId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchRecentEssays()
@@ -76,6 +79,38 @@ export default function DocumentSidebar({
     }
   }
 
+  const handleDeleteEssay = async (essayId: string, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent triggering essay select
+
+    if (!confirm('Are you sure you want to delete this essay? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      setDeletingEssayId(essayId)
+      const response = await fetch(`/api/essays/${essayId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete essay')
+      }
+
+      // Refresh essay list
+      await fetchRecentEssays()
+
+      // Notify parent component if this was the active essay
+      if (essayId === activeEssayId) {
+        onDeleteEssay?.(essayId)
+      }
+    } catch (error) {
+      console.error('Failed to delete essay:', error)
+      alert('Failed to delete essay. Please try again.')
+    } finally {
+      setDeletingEssayId(null)
+    }
+  }
+
   return (
     <aside className="w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto">
       {/* New Essay Button */}
@@ -104,34 +139,53 @@ export default function DocumentSidebar({
         ) : recentEssays.length > 0 ? (
           <div className="space-y-2">
             {recentEssays.map(essay => (
-              <button
+              <div
                 key={essay.id}
-                onClick={() => onSelectEssay?.(essay.id)}
-                className={`w-full text-left px-3 py-3 rounded-lg transition-all duration-200 border-l-3 ${
+                className={`relative group rounded-lg transition-all duration-200 border-l-3 ${
                   activeEssayId === essay.id
                     ? "bg-gray-100 dark:bg-gray-700 border-l-purple-600"
                     : "bg-white dark:bg-gray-800 border-l-transparent hover:bg-gray-50 dark:hover:bg-gray-700"
                 }`}
               >
-                <div className="flex items-start gap-2">
-                  <FileText className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                    activeEssayId === essay.id ? "text-purple-600" : "text-gray-400"
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm text-gray-900 dark:text-white truncate">
-                      {essay.title || "Untitled Essay"}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      <span>{essay.word_count.toLocaleString()} words</span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDate(essay.updated_at)}
-                      </span>
+                <button
+                  onClick={() => onSelectEssay?.(essay.id)}
+                  className="w-full text-left px-3 py-3"
+                  disabled={deletingEssayId === essay.id}
+                >
+                  <div className="flex items-start gap-2">
+                    <FileText className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                      activeEssayId === essay.id ? "text-purple-600" : "text-gray-400"
+                    }`} />
+                    <div className="flex-1 min-w-0 pr-6">
+                      <div className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                        {essay.title || "Untitled Essay"}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <span>{essay.word_count.toLocaleString()} words</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDate(essay.updated_at)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </button>
+                </button>
+
+                {/* Delete Button */}
+                <button
+                  onClick={(e) => handleDeleteEssay(essay.id, e)}
+                  disabled={deletingEssayId === essay.id}
+                  className="absolute top-3 right-3 p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  title="Delete essay"
+                >
+                  {deletingEssayId === essay.id ? (
+                    <div className="w-4 h-4 border-2 border-gray-300 border-t-red-600 rounded-full animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
             ))}
           </div>
         ) : (

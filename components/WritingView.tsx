@@ -207,6 +207,13 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
     }
   }
 
+  const handleDeleteEssay = async (deletedEssayId: string) => {
+    // When the active essay is deleted, create a new one
+    if (deletedEssayId === essay?.id) {
+      await createNewEssay()
+    }
+  }
+
   const handleSave = async () => {
     if (!essay || !user || !editor) return
 
@@ -455,6 +462,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
           onSelectEssay={(id) => window.location.href = `/dashboard/writer?essayId=${id}`}
           onNewEssay={createNewEssay}
           onSelectTemplate={(template) => console.log('Template selected:', template)}
+          onDeleteEssay={handleDeleteEssay}
         />
 
         {/* Main Editor Area */}
