@@ -5,7 +5,7 @@ import { X, Mic, Square } from "lucide-react"
 import dynamic from "next/dynamic"
 
 // Dynamically import VoiceDictation to avoid SSR issues
-const VoiceDictation = dynamic(() => import("@/components/VoiceDictation"), {
+const VoiceDictation = dynamic(() => import("@/components/WritingView/VoiceDictation"), {
   ssr: false
 })
 
