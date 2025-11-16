@@ -10,6 +10,7 @@ import RecentContentWidget from "@/components/RecentContentWidget"
 import UsageWidget from "@/components/UsageWidget"
 import UsageWarningNotification from "@/components/UsageWarningNotification"
 import StudyProgressWidget from "@/components/StudyProgressWidget"
+import NotificationBanner from "@/components/NotificationBanner"
 import type { Document } from "@/lib/supabase/types"
 
 interface DashboardHomeProps {
@@ -243,6 +244,9 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
 
         {/* Usage Warning Notification */}
         <UsageWarningNotification />
+
+        {/* Notification Permission Banner */}
+        <NotificationBanner />
 
         {/* Study Progress Widget - Full Width */}
         <StudyProgressWidget />

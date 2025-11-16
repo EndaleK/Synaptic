@@ -15,6 +15,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useNotifications } from '@/lib/notifications'
 
 interface StudyProgress {
   currentStreak: number
@@ -33,10 +34,37 @@ export default function StudyProgressWidget() {
   const router = useRouter()
   const [stats, setStats] = useState<StudyProgress | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const notifications = useNotifications()
+  const [lastNotifiedStreak, setLastNotifiedStreak] = useState<number | null>(null)
+  const [lastNotifiedGoal, setLastNotifiedGoal] = useState<string | null>(null)
 
   useEffect(() => {
     fetchProgress()
   }, [])
+
+  // Check for milestone notifications
+  useEffect(() => {
+    if (!stats) return
+
+    // Streak milestones: 3, 7, 14, 30, 60, 90, 180, 365
+    const streakMilestones = [3, 7, 14, 30, 60, 90, 180, 365]
+    if (
+      streakMilestones.includes(stats.currentStreak) &&
+      stats.currentStreak !== lastNotifiedStreak
+    ) {
+      notifications.showStreakReminder(stats.currentStreak)
+      setLastNotifiedStreak(stats.currentStreak)
+    }
+
+    // Daily goal completion
+    if (
+      stats.dailyGoalProgress >= stats.dailyGoalMinutes &&
+      lastNotifiedGoal !== `daily-${new Date().toDateString()}`
+    ) {
+      notifications.showSessionComplete(stats.todayMinutes)
+      setLastNotifiedGoal(`daily-${new Date().toDateString()}`)
+    }
+  }, [stats, lastNotifiedStreak, lastNotifiedGoal, notifications])
 
   const fetchProgress = async () => {
     try {
