@@ -38,6 +38,10 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   const [cardMasteryLevels, setCardMasteryLevels] = useState<Map<string, MasteryLevel>>(new Map())
   const [isUpdatingMastery, setIsUpdatingMastery] = useState(false)
 
+  // Study session tracking
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const sessionStartTime = useRef<Date | null>(null)
+
   // Deck ordering state - maintains order of cards with mastered cards at the end
   const [cardOrder, setCardOrder] = useState<number[]>(() =>
     Array.from({ length: flashcards.length }, (_, i) => i)
@@ -71,6 +75,60 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
     console.log('[FlashcardDisplay] Saving position:', currentIndex, 'of', flashcards.length)
     setPosition(currentDocument.id, currentIndex, flashcards.length)
   }, [currentIndex, currentDocument?.id, flashcards.length, setPosition])
+
+  // 📊 STATISTICS: Start study session when component mounts
+  useEffect(() => {
+    const startSession = async () => {
+      try {
+        const response = await fetch('/api/study-sessions/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            documentId: currentDocument?.id,
+            sessionType: 'review',
+            plannedDurationMinutes: 30 // Default estimate for flashcard review
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setSessionId(data.sessionId)
+          sessionStartTime.current = new Date()
+          console.log('[FlashcardDisplay] Study session started:', data.sessionId)
+        }
+      } catch (error) {
+        console.error('Failed to start study session:', error)
+      }
+    }
+
+    startSession()
+  }, [currentDocument?.id])
+
+  // 📊 STATISTICS: Complete study session when component unmounts
+  useEffect(() => {
+    return () => {
+      // Complete session on unmount
+      if (sessionId && sessionStartTime.current) {
+        const durationMinutes = Math.round((Date.now() - sessionStartTime.current.getTime()) / 60000)
+
+        // Only record if session lasted at least 1 minute
+        if (durationMinutes >= 1) {
+          fetch('/api/study-sessions/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId,
+              durationMinutes
+            })
+          }).then(() => {
+            console.log('[FlashcardDisplay] Study session completed:', durationMinutes, 'minutes')
+          }).catch(error => {
+            console.error('Failed to complete study session:', error)
+          })
+        }
+      }
+    }
+  }, [sessionId])
 
   const handleNext = useCallback(() => {
     if (!studiedCards.has(currentCard.id)) {
