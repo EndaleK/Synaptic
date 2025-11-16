@@ -166,16 +166,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
         writing_type: 'academic',
         citation_style: 'APA',
         word_count: 0,
-        status: 'draft',
-        writing_stage: 'drafting',
-        ai_contribution_percentage: 0,
-        original_word_count: 0,
-        ai_assisted_word_count: 0,
-        writing_goals: {},
-        submission_metadata: {},
-        ai_suggestions: [],
-        cited_sources: [],
-        version_history: []
+        status: 'draft'
       }
 
       const { data, error } = await supabase
@@ -184,7 +175,13 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error creating essay:', error)
+        throw new Error(error.message || 'Failed to create essay')
+      }
+
+      if (!data) throw new Error('No data returned from essay creation')
+
       setEssay(data)
     } catch (err) {
       console.error('Error creating essay:', err)
