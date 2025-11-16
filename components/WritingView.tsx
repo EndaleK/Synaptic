@@ -80,12 +80,32 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
   // Helper function to ensure profile exists
   const ensureProfileExists = async () => {
-    const response = await fetch('/api/user/ensure-profile', { method: 'POST' })
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to create user profile')
+    try {
+      const response = await fetch('/api/user/ensure-profile', { method: 'POST' })
+
+      if (!response.ok) {
+        const text = await response.text()
+        console.error('Profile API error response:', text)
+
+        try {
+          const error = JSON.parse(text)
+          throw new Error(error.error || 'Failed to create user profile')
+        } catch {
+          throw new Error(`Failed to create user profile: ${response.status} ${response.statusText}`)
+        }
+      }
+
+      const text = await response.text()
+      try {
+        return JSON.parse(text)
+      } catch (e) {
+        console.error('Invalid JSON response from ensure-profile:', text)
+        throw new Error('Invalid response from server')
+      }
+    } catch (error) {
+      console.error('Error in ensureProfileExists:', error)
+      throw error
     }
-    return await response.json()
   }
 
   // Load or create essay
