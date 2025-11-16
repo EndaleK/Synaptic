@@ -183,25 +183,45 @@ export default function VoiceDictation({ onTextReceived, className }: VoiceDicta
       }
     } else {
       try {
+        // Check if microphone permission API is available
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('getUserMedia API not available. Please use HTTPS or localhost.')
+        }
+
+        console.log('Requesting microphone permission...')
+
         // Request microphone permission explicitly first
         // This triggers Chrome's permission popup if not already granted
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        console.log('Microphone permission granted, stream:', stream)
+
         // Stop the stream immediately - we just needed to trigger the permission request
         stream.getTracks().forEach(track => track.stop())
+        console.log('Stopped microphone stream, starting speech recognition...')
 
         // Now start speech recognition with permission granted
         setFinalTranscript('')
         setInterimTranscript('')
         recognitionRef.current?.start()
         setIsListening(true)
+        console.log('Speech recognition started successfully')
       } catch (error) {
-        console.error('Error starting recognition:', error)
+        console.error('Detailed error starting recognition:', {
+          error,
+          errorType: error instanceof Error ? error.constructor.name : typeof error,
+          errorName: error instanceof Error ? error.name : 'unknown',
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined
+        })
+
         if (error instanceof Error && error.name === 'NotAllowedError') {
-          alert('Microphone permission denied. Please allow microphone access in your browser settings and try again.')
+          alert('Microphone permission denied. Please:\n1. Click the lock icon in the address bar\n2. Set Microphone to "Allow"\n3. Refresh the page and try again')
         } else if (error instanceof Error && error.name === 'NotFoundError') {
           alert('No microphone found. Please connect a microphone and try again.')
+        } else if (error instanceof Error && error.name === 'NotSupportedError') {
+          alert('Microphone access requires HTTPS. Please access via https:// or use localhost.')
         } else {
-          alert('Failed to start voice dictation. Please check microphone permissions and try again.')
+          alert('Failed to start voice dictation: ' + (error instanceof Error ? error.message : 'Unknown error'))
         }
       }
     }
