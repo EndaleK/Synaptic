@@ -21,7 +21,6 @@ import WritingSuggestionPanel from './WritingSuggestionPanel'
 import CitationManager from './CitationManager'
 
 import type { Essay, CitationStyle, WritingSuggestion, Citation } from '@/lib/supabase/types'
-import { createClient } from '@/lib/supabase/client'
 
 interface WritingViewProps {
   essayId?: string
@@ -141,23 +140,25 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
     try {
       setIsLoading(true)
-      const profileResponse = await ensureProfileExists()
-      const profile = profileResponse.profile
 
-      if (!profile?.id) throw new Error('User profile not found')
+      // Call API to fetch essay (bypasses RLS with service role)
+      const response = await fetch(`/api/essays/${essayId}`)
 
-      const supabase = createClient()
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Essay not found or access denied')
+        }
+        const error = await response.json()
+        console.error('API error loading essay:', error)
+        throw new Error(error.error || 'Failed to load essay')
+      }
 
-      const { data, error } = await supabase
-        .from('essays')
-        .select('*')
-        .eq('id', essayId)
-        .eq('user_id', profile.id)
-        .single()
+      const { essay } = await response.json()
 
-      if (error) throw error
-      setEssay(data)
-      setCitationStyle(data.citation_style || 'APA')
+      if (!essay) throw new Error('No essay data returned from API')
+
+      setEssay(essay)
+      setCitationStyle(essay.citation_style || 'APA')
     } catch (err) {
       console.error('Error loading essay:', err)
       setError(err instanceof Error ? err.message : 'Failed to load essay')
