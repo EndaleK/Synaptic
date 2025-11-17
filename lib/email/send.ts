@@ -23,7 +23,7 @@ export async function sendWelcomeEmail({
 }) {
   return sendEmail({
     to: userEmail,
-    subject: 'Welcome to Synaptic - Your AI-Powered Learning Platform',
+    subject: 'Welcome to Synaptic™ - Your AI-Powered Learning Platform',
     react: WelcomeEmail({
       userName,
       userEmail,
@@ -50,7 +50,7 @@ export async function sendSubscriptionConfirmedEmail({
 }) {
   return sendEmail({
     to: userEmail,
-    subject: '🎉 Welcome to Synaptic Premium!',
+    subject: '🎉 Welcome to Synaptic™ Premium!',
     react: SubscriptionConfirmedEmail({
       userName,
       planName,
@@ -88,7 +88,7 @@ export async function sendPaymentReceiptEmail({
 }) {
   return sendEmail({
     to: userEmail,
-    subject: 'Payment Receipt - Synaptic Subscription',
+    subject: 'Payment Receipt - Synaptic™ Subscription',
     react: PaymentReceiptEmail({
       userName,
       amountPaid,
@@ -126,7 +126,7 @@ export async function sendPaymentFailedEmail({
 }) {
   return sendEmail({
     to: userEmail,
-    subject: 'Action Required: Payment Failed for Synaptic Subscription',
+    subject: 'Action Required: Payment Failed for Synaptic™ Subscription',
     react: PaymentFailedEmail({
       userName,
       amountDue,

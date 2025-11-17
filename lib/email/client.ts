@@ -20,8 +20,8 @@ export const resend = process.env.RESEND_API_KEY
  */
 export const EMAIL_CONFIG = {
   from: {
-    hello: 'Synaptic <hello@synaptic.study>',
-    support: 'Synaptic Support <support@synaptic.study>',
+    hello: 'Synaptic™ <hello@synaptic.study>',
+    support: 'Synaptic™ Support <support@synaptic.study>',
   },
   replyTo: 'support@synaptic.study',
   baseUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',

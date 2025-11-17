@@ -64,7 +64,7 @@
   </g>
 
   <!-- "Synaptic" Text -->
-  <text x="210" y="95" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="68" font-weight="700" fill="url(#textGradient)">Synaptic</text>
+  <text x="210" y="95" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="68" font-weight="700" fill="url(#textGradient)">Synaptic™</text>
 
   <!-- "Study Smarter" Tagline -->
   <text x="210" y="145" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif" font-size="32" font-weight="400" fill="#6B7280">Study Smarter</text>

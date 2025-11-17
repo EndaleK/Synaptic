@@ -25,7 +25,7 @@ export default function LandingPage() {
             <div className="mb-0 flex justify-center">
               <img
                 src="/logo-full.png"
-                alt="Synaptic - Study Smarter"
+                alt="Synaptic™ - Study Smarter"
                 width={486}
                 height={486}
                 className="object-contain w-[354px] h-[354px] sm:w-[443px] sm:h-[443px] md:w-[486px] md:h-[486px]"
@@ -41,7 +41,7 @@ export default function LandingPage() {
 
             {/* Subheadline */}
             <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-6 max-w-3xl mx-auto leading-relaxed">
-              From flashcards to mock exams, podcasts to mind maps—master any subject with Synaptic adapting to your learning style.
+              From flashcards to mock exams, podcasts to mind maps—master any subject with Synaptic™ adapting to your learning style.
             </p>
 
             {/* Stats Badges */}

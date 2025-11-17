@@ -28,7 +28,7 @@ export default function MarketingLayout({
             <Link href="/" className="flex items-center group">
               <img
                 src={logoSrc}
-                alt="Synaptic - Study Smarter"
+                alt="Synaptic™ - Study Smarter"
                 className="h-10 w-auto group-hover:scale-105 transition-transform"
               />
             </Link>
@@ -166,7 +166,7 @@ export default function MarketingLayout({
               <div className="mb-4">
                 <img
                   src={logoSrc}
-                  alt="Synaptic - Study Smarter"
+                  alt="Synaptic™ - Study Smarter"
                   className="h-12 w-auto"
                 />
               </div>
@@ -174,7 +174,7 @@ export default function MarketingLayout({
                 Transform your documents into personalized learning experiences. Powered by AI to adapt to your unique learning style.
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-500">
-                © 2025 Synaptic. All rights reserved. ካንእ
+                © 2025 Synaptic™. All rights reserved. ካንእ
               </p>
             </div>
 

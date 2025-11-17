@@ -17,7 +17,7 @@ export default function Logo({ variant = 'full', size = 40, className = '' }: Lo
   return (
     <img
       src={logoSrc[variant]}
-      alt="Synaptic"
+      alt="Synaptic™"
       width={size}
       height={size}
       className={className}
