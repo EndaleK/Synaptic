@@ -59,3 +59,10 @@ chromadb_data/
 /public/sw.js.map
 /public/workbox-*.js
 /public/workbox-*.js.map
+
+# Android app build files
+/android-app/
+*.keystore
+*.jks
+*.aab
+*.apk
