@@ -60,18 +60,18 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* CTA Buttons */}
+            {/* CTA Buttons - Enhanced visibility per beta feedback */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
               <Link
-                href={isSignedIn ? "/dashboard" : "/sign-in"}
-                className="group px-8 py-4 bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-orange text-white rounded-xl font-semibold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2 min-w-[220px] justify-center"
+                href={isSignedIn ? "/dashboard" : "/sign-up"}
+                className="group relative px-10 py-5 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white rounded-2xl font-bold text-xl hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-3 min-w-[260px] justify-center ring-4 ring-green-500/20 hover:ring-green-500/40"
               >
-                {isSignedIn ? "Go to Dashboard" : "Start Learning Smarter - Free"}
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <span className="relative z-10">{isSignedIn ? "Go to Dashboard" : "Get Started Free →"}</span>
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-400 to-emerald-400 opacity-0 group-hover:opacity-20 transition-opacity" />
               </Link>
               <Link
                 href="#features"
-                className="px-8 py-4 bg-white dark:bg-gray-800 text-accent-primary dark:text-white border-2 border-accent-secondary/30 dark:border-gray-700 rounded-xl font-semibold text-lg hover:bg-purple-50 dark:hover:bg-gray-700 hover:border-accent-secondary/50 transition-all min-w-[220px] justify-center"
+                className="px-8 py-4 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-2 border-gray-300 dark:border-gray-700 rounded-2xl font-semibold text-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-600 transition-all min-w-[220px] justify-center"
               >
                 See All Features
               </Link>

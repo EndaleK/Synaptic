@@ -186,11 +186,13 @@ export function estimateRetention(daysSinceLastReview: number, interval: number)
 
 /**
  * Determine if a card is "young" (recently learned) or "mature" (well-learned)
+ * Updated: Requires 3+ consecutive correct reviews before "mature" status (per user feedback)
  */
 export function getCardMaturity(repetitions: number, interval: number): 'new' | 'learning' | 'young' | 'mature' {
   if (repetitions === 0) {
     return 'new'
-  } else if (repetitions < 2) {
+  } else if (repetitions < 3) {
+    // Requires 3 correct reviews before advancing to young/mature
     return 'learning'
   } else if (interval < 21) {
     return 'young'

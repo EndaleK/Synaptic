@@ -18,6 +18,7 @@
 
 import { useState, useRef, ChangeEvent } from "react"
 import { X, Upload, FileText, Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import UploadDisclaimer from "./UploadDisclaimer"
 
 interface SimpleDocumentUploaderProps {
   isOpen: boolean
@@ -238,6 +239,9 @@ export default function SimpleDocumentUploader({
 
         {/* Content */}
         <div className="p-6">
+          {/* Privacy & Copyright Disclaimer */}
+          <UploadDisclaimer />
+
           {!file ? (
             // File selector
             <div
