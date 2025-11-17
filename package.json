@@ -48,6 +48,7 @@
     "dotenv": "^17.2.0",
     "file-saver": "^2.0.5",
     "fit-curve": "^0.2.0",
+    "googleapis": "^166.0.0",
     "html2canvas": "^1.4.1",
     "inngest": "^3.45.0",
     "jsdom": "^27.0.1",

@@ -10,6 +10,7 @@ import Breadcrumb, { documentsBreadcrumb } from "@/components/Breadcrumb"
 import { useToast } from "@/components/ToastContainer"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { useDocumentStore, useUIStore } from "@/lib/store/useStore"
+import GoogleDocsImport from "@/components/GoogleDocsImport"
 
 // Use new simplified uploader (no chunking, direct Supabase upload)
 const SimpleDocumentUploader = dynamic(() => import("@/components/SimpleDocumentUploader"), {
@@ -23,6 +24,7 @@ export default function DocumentsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [isGoogleDocsModalOpen, setIsGoogleDocsModalOpen] = useState(false)
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const { setCurrentDocument } = useDocumentStore()
   const { setActiveMode } = useUIStore()
@@ -221,6 +223,19 @@ export default function DocumentsPage() {
             </button>
 
             <button
+              onClick={() => setIsGoogleDocsModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg font-semibold hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
+              title="Import from Google Docs"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" fill="#4285F4"/>
+                <path d="M14 2v6h6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M8 13h8M8 17h8M8 9h2" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <span className="hidden sm:inline">Google Docs</span>
+            </button>
+
+            <button
               onClick={handleUploadClick}
               className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-semibold hover:shadow-xl transition-all shadow-lg"
             >
@@ -276,6 +291,33 @@ export default function DocumentsPage() {
         onClose={() => setIsUploadModalOpen(false)}
         onSuccess={handleUploadSuccess}
       />
+
+      {/* Google Docs Import Modal */}
+      {isGoogleDocsModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fadeIn"
+          onClick={() => setIsGoogleDocsModalOpen(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl mx-4 p-6 animate-slideUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GoogleDocsImport
+              onImportComplete={(documentId) => {
+                toast.success('Google Doc imported successfully!')
+                setIsGoogleDocsModalOpen(false)
+                fetchDocuments()
+              }}
+            />
+            <button
+              onClick={() => setIsGoogleDocsModalOpen(false)}
+              className="mt-4 w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
