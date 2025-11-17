@@ -296,7 +296,12 @@ Analyze this educational video and extract comprehensive learning insights.`
         transcript,
         summary,
         key_points: keyPoints,
-        processing_status: finalStatus
+        processing_status: finalStatus,
+        difficulty_level: video.difficulty_level || null,
+        topics_covered: video.topics_covered || [],
+        prerequisites: video.prerequisites || [],
+        learning_outcomes: video.learning_outcomes || [],
+        key_vocabulary: video.key_vocabulary || []
       })
       .eq('id', video.id)
       .select()
