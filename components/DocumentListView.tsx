@@ -47,7 +47,7 @@ export default function DocumentListView({
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
       {/* Table Header */}
-      <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+      <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
         <div className="col-span-1 flex items-center">
           <input
             type="checkbox"
@@ -64,10 +64,14 @@ export default function DocumentListView({
             className="w-4 h-4 rounded border-gray-300 dark:border-gray-600"
           />
         </div>
-        <div className="col-span-5">Name</div>
-        <div className="col-span-2">Status</div>
+        <div className="col-span-3">Name</div>
+        <div className="col-span-1 text-center" title="Flashcards">⚡</div>
+        <div className="col-span-1 text-center" title="Chat">💬</div>
+        <div className="col-span-1 text-center" title="Mind Map">🗺️</div>
+        <div className="col-span-1 text-center" title="Podcast">🎧</div>
+        <div className="col-span-1">Status</div>
         <div className="col-span-1">Size</div>
-        <div className="col-span-2">Modified</div>
+        <div className="col-span-1">Modified</div>
         <div className="col-span-1"></div>
       </div>
 
@@ -96,40 +100,94 @@ export default function DocumentListView({
               </div>
 
               {/* Name + Icon */}
-              <div className="col-span-5 flex items-center gap-3 min-w-0">
+              <div className="col-span-12 md:col-span-3 flex items-center gap-3 min-w-0">
                 {getFileIcon(document.file_type)}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                     {document.file_name}
                   </p>
-                  {document.metadata?.flashcards_count !== undefined && (
-                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {document.metadata.flashcards_count > 0 && (
-                        <span>⚡ {document.metadata.flashcards_count} cards</span>
-                      )}
-                      {document.metadata.podcasts_count > 0 && (
-                        <span>🎧 {document.metadata.podcasts_count}</span>
-                      )}
-                      {document.metadata.mindmaps_count > 0 && (
-                        <span>📊 {document.metadata.mindmaps_count}</span>
-                      )}
-                    </div>
-                  )}
+                  {/* Mobile: Show content badges inline */}
+                  <div className="flex md:hidden items-center gap-2 mt-1 text-xs">
+                    {document.metadata?.flashcards_count > 0 && (
+                      <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded">
+                        ⚡ {document.metadata.flashcards_count}
+                      </span>
+                    )}
+                    {document.metadata?.chat_messages_count > 0 && (
+                      <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+                        💬 {document.metadata.chat_messages_count}
+                      </span>
+                    )}
+                    {document.metadata?.mindmaps_count > 0 && (
+                      <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded">
+                        🗺️ {document.metadata.mindmaps_count}
+                      </span>
+                    )}
+                    {document.metadata?.podcasts_count > 0 && (
+                      <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
+                        🎧 {document.metadata.podcasts_count}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Status */}
-              <div className="col-span-2">
+              {/* Flashcards Column - Desktop only */}
+              <div className="hidden md:flex col-span-1 items-center justify-center">
+                {document.metadata?.flashcards_count > 0 ? (
+                  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full min-w-[32px]">
+                    {document.metadata.flashcards_count}
+                  </span>
+                ) : (
+                  <span className="text-gray-300 dark:text-gray-700">—</span>
+                )}
+              </div>
+
+              {/* Chat Column - Desktop only */}
+              <div className="hidden md:flex col-span-1 items-center justify-center">
+                {document.metadata?.chat_messages_count > 0 ? (
+                  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full min-w-[32px]">
+                    {document.metadata.chat_messages_count}
+                  </span>
+                ) : (
+                  <span className="text-gray-300 dark:text-gray-700">—</span>
+                )}
+              </div>
+
+              {/* Mind Map Column - Desktop only */}
+              <div className="hidden md:flex col-span-1 items-center justify-center">
+                {document.metadata?.mindmaps_count > 0 ? (
+                  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full min-w-[32px]">
+                    {document.metadata.mindmaps_count}
+                  </span>
+                ) : (
+                  <span className="text-gray-300 dark:text-gray-700">—</span>
+                )}
+              </div>
+
+              {/* Podcast Column - Desktop only */}
+              <div className="hidden md:flex col-span-1 items-center justify-center">
+                {document.metadata?.podcasts_count > 0 ? (
+                  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full min-w-[32px]">
+                    {document.metadata.podcasts_count}
+                  </span>
+                ) : (
+                  <span className="text-gray-300 dark:text-gray-700">—</span>
+                )}
+              </div>
+
+              {/* Status - Desktop only */}
+              <div className="hidden md:flex col-span-1 items-center">
                 {getStatusBadge(document.processing_status || 'completed')}
               </div>
 
-              {/* Size */}
-              <div className="col-span-1 text-sm text-gray-600 dark:text-gray-400">
+              {/* Size - Desktop only */}
+              <div className="hidden md:flex col-span-1 items-center text-sm text-gray-600 dark:text-gray-400">
                 {formatFileSize(document.file_size)}
               </div>
 
-              {/* Modified */}
-              <div className="col-span-2 text-sm text-gray-600 dark:text-gray-400">
+              {/* Modified - Desktop only */}
+              <div className="hidden md:flex col-span-1 items-center text-sm text-gray-600 dark:text-gray-400">
                 {formatRelativeTime(document.updated_at)}
               </div>
 

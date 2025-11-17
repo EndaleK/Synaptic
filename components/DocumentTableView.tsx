@@ -84,13 +84,22 @@ export default function DocumentTableView({
             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
               <SortableHeader field="date" label="Modified" />
             </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-              Content
+            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider w-16" title="Flashcards">
+              ⚡
+            </th>
+            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider w-16" title="Chat">
+              💬
+            </th>
+            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider w-16" title="Mind Map">
+              🗺️
+            </th>
+            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider w-16" title="Podcast">
+              🎧
             </th>
             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
               Status
             </th>
-            <th className="px-4 py-3 text-right w-24"></th>
+            <th className="px-4 py-3 text-right w-20"></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -162,25 +171,48 @@ export default function DocumentTableView({
                   {formatRelativeTime(document.updated_at)}
                 </td>
 
-                {/* Content Generated */}
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2 text-xs">
-                    {document.metadata?.flashcards_count > 0 && (
-                      <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded">
-                        ⚡ {document.metadata.flashcards_count}
-                      </span>
-                    )}
-                    {document.metadata?.podcasts_count > 0 && (
-                      <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
-                        🎧 {document.metadata.podcasts_count}
-                      </span>
-                    )}
-                    {document.metadata?.mindmaps_count > 0 && (
-                      <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
-                        📊 {document.metadata.mindmaps_count}
-                      </span>
-                    )}
-                  </div>
+                {/* Flashcards Column */}
+                <td className="px-4 py-3 text-center">
+                  {document.metadata?.flashcards_count > 0 ? (
+                    <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full min-w-[32px]">
+                      {document.metadata.flashcards_count}
+                    </span>
+                  ) : (
+                    <span className="text-gray-300 dark:text-gray-700">—</span>
+                  )}
+                </td>
+
+                {/* Chat Column */}
+                <td className="px-4 py-3 text-center">
+                  {document.metadata?.chat_messages_count > 0 ? (
+                    <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full min-w-[32px]">
+                      {document.metadata.chat_messages_count}
+                    </span>
+                  ) : (
+                    <span className="text-gray-300 dark:text-gray-700">—</span>
+                  )}
+                </td>
+
+                {/* Mind Map Column */}
+                <td className="px-4 py-3 text-center">
+                  {document.metadata?.mindmaps_count > 0 ? (
+                    <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full min-w-[32px]">
+                      {document.metadata.mindmaps_count}
+                    </span>
+                  ) : (
+                    <span className="text-gray-300 dark:text-gray-700">—</span>
+                  )}
+                </td>
+
+                {/* Podcast Column */}
+                <td className="px-4 py-3 text-center">
+                  {document.metadata?.podcasts_count > 0 ? (
+                    <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full min-w-[32px]">
+                      {document.metadata.podcasts_count}
+                    </span>
+                  ) : (
+                    <span className="text-gray-300 dark:text-gray-700">—</span>
+                  )}
                 </td>
 
                 {/* Status */}

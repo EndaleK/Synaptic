@@ -398,29 +398,29 @@ export default function VideoView() {
   // Player View
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-4">
+      {/* Header - Mobile optimized */}
+      <div className="p-3 sm:p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-start sm:items-center gap-2 sm:gap-4">
           <button
             onClick={handleBackToSearch}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-300" />
           </button>
-          <div className="flex-1">
-            <h2 className="font-semibold text-gray-900 dark:text-white">
+          <div className="flex-1 min-w-0">
+            <h2 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white line-clamp-2 sm:line-clamp-1">
               {video?.title || 'Loading...'}
             </h2>
             {video?.channel_name && (
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate mt-0.5">
                 {video.channel_name}
               </p>
             )}
           </div>
-          {video?.processing_status && (
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            {video?.processing_status && (
               <span
-                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
                   video.processing_status === 'completed'
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                     : video.processing_status === 'processing'
@@ -432,35 +432,35 @@ export default function VideoView() {
               >
                 {video.processing_status}
               </span>
-            </div>
-          )}
-          {video && (
-            <div className="flex items-center gap-2">
-              {/* Favorite/Bookmark Button */}
-              <button
-                onClick={handleToggleFavorite}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                title={video.is_favorited ? "Remove from favorites" : "Add to favorites"}
-              >
-                <Star
-                  className={`w-5 h-5 ${
-                    video.is_favorited
-                      ? 'fill-yellow-400 text-yellow-400'
-                      : 'text-gray-400 dark:text-gray-500'
-                  }`}
-                />
-              </button>
+            )}
+            {video && (
+              <>
+                {/* Favorite/Bookmark Button */}
+                <button
+                  onClick={handleToggleFavorite}
+                  className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title={video.is_favorited ? "Remove from favorites" : "Add to favorites"}
+                >
+                  <Star
+                    className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                      video.is_favorited
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'text-gray-400 dark:text-gray-500'
+                    }`}
+                  />
+                </button>
 
-              {/* Delete Button */}
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                title="Delete video"
-              >
-                <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
-              </button>
-            </div>
-          )}
+                {/* Delete Button */}
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="p-1.5 sm:p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  title="Delete video"
+                >
+                  <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 dark:text-red-400" />
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -502,11 +502,11 @@ export default function VideoView() {
         </div>
       )}
 
-      {/* Video Content - Two Column Layout */}
+      {/* Video Content - Responsive Layout: Single column on mobile, two columns on desktop */}
       {!isProcessing && !error && video && selectedVideoId && (
-        <div className="flex-1 grid grid-cols-2 gap-6 p-6 min-h-0">
-          {/* Left Column: Player + Transcript */}
-          <div className="flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col lg:grid lg:grid-cols-2 gap-4 md:gap-6 p-3 sm:p-4 md:p-6 min-h-0 overflow-y-auto lg:overflow-hidden">
+          {/* Player Section - Full width on mobile, left column on desktop */}
+          <div className="flex flex-col min-h-0 w-full">
             <VideoPlayer
               videoId={selectedVideoId}
               transcript={video.transcript}
@@ -514,8 +514,8 @@ export default function VideoView() {
             />
           </div>
 
-          {/* Right Column: Analysis */}
-          <div className="flex flex-col min-h-0">
+          {/* Analysis Section - Full width on mobile, right column on desktop */}
+          <div className="flex flex-col min-h-0 w-full">
             <VideoAnalysis
               videoId={video.id}
               summary={video.summary}

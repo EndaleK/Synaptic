@@ -376,7 +376,7 @@ function DocumentsPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-3 sm:p-4 md:p-6">
       {/* Keyboard Shortcuts Handler */}
       <KeyboardShortcutsHandler
         onUpload={() => setIsUploadModalOpen(true)}
@@ -386,16 +386,16 @@ function DocumentsPageContent() {
       />
 
       <div className="max-w-[1800px] mx-auto">
-        {/* Breadcrumb */}
-        <Breadcrumb items={documentsBreadcrumb} className="mb-6" />
+        {/* Breadcrumb - Hidden on mobile */}
+        <Breadcrumb items={documentsBreadcrumb} className="mb-6 hidden md:block" />
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-          <div className="flex items-center gap-4">
-            {/* Sidebar Toggle */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 md:mb-6 gap-3 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
+            {/* Sidebar Toggle - Only visible on desktop */}
             <button
               onClick={() => setIsSidebarCollapsed(prev => !prev)}
-              className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              className="hidden md:block p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
               title={isSidebarCollapsed ? "Show sidebar (Cmd+B)" : "Hide sidebar (Cmd+B)"}
             >
               {isSidebarCollapsed ? (
@@ -406,46 +406,53 @@ function DocumentsPageContent() {
             </button>
 
             <div>
-              <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-accent-secondary">
+              <h1 className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-accent-secondary">
                 My Documents
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+              <p className="text-gray-600 dark:text-gray-400 text-xs md:text-sm mt-0.5 md:mt-1">
                 {sortedDocuments.length} {sortedDocuments.length === 1 ? 'document' : 'documents'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* View Toggle */}
-            <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+          {/* Mobile-optimized action buttons */}
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* View Toggle - Hidden on mobile */}
+            <div className="hidden md:block">
+              <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+            </div>
 
+            {/* Refresh Button - Icon only on mobile */}
             <button
               onClick={fetchDocuments}
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2.5 bg-accent-primary/10 dark:bg-accent-primary/20 text-accent-primary rounded-lg font-medium hover:bg-accent-primary/20 dark:hover:bg-accent-primary/30 transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-3 md:px-4 py-2 md:py-2.5 bg-accent-primary/10 dark:bg-accent-primary/20 text-accent-primary rounded-lg font-medium hover:bg-accent-primary/20 dark:hover:bg-accent-primary/30 transition-all disabled:opacity-50"
             >
-              <RefreshCw className={cn("w-5 h-5", isLoading && "animate-spin")} />
+              <RefreshCw className={cn("w-4 h-4 md:w-5 md:h-5", isLoading && "animate-spin")} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
 
+            {/* Google Docs Button - Icon only on mobile */}
             <button
               onClick={() => setIsGoogleDocsModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg font-semibold hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
+              className="flex items-center gap-2 px-3 md:px-4 py-2 md:py-2.5 bg-white dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg font-semibold hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
+              title="Import from Google Docs"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+              <svg className="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none">
                 <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" fill="#4285F4"/>
                 <path d="M14 2v6h6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M8 13h8M8 17h8M8 9h2" stroke="white" strokeWidth="2" strokeLinecap="round"/>
               </svg>
-              <span className="hidden sm:inline">Google Docs</span>
+              <span className="hidden lg:inline">Google Docs</span>
             </button>
 
+            {/* Upload Button - Primary action, always visible with text */}
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-semibold hover:shadow-xl transition-all shadow-lg"
+              className="flex items-center gap-1.5 md:gap-2 px-4 md:px-6 py-2 md:py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-semibold hover:shadow-xl transition-all shadow-lg text-sm md:text-base"
             >
-              <Upload className="w-5 h-5" />
-              Upload
+              <Upload className="w-4 h-4 md:w-5 md:h-5" />
+              <span>Upload</span>
             </button>
           </div>
         </div>
@@ -475,12 +482,12 @@ function DocumentsPageContent() {
         )}
 
         {/* Main Content */}
-        <div className="flex gap-6">
-          {/* Sidebar */}
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+          {/* Sidebar - Hidden on mobile, shown on desktop */}
           {!isSidebarCollapsed && (
             <div className={cn(
-              "flex-shrink-0 transition-all duration-300",
-              isSidebarCollapsed ? "w-0 overflow-hidden" : "w-[320px]"
+              "flex-shrink-0 transition-all duration-300 hidden md:block",
+              isSidebarCollapsed ? "w-0 overflow-hidden" : "w-[280px] lg:w-[320px]"
             )}>
               <div className="sticky top-6 bg-white dark:bg-gray-900 rounded-xl shadow-xl border-2 border-gray-200 dark:border-gray-700 overflow-hidden">
                 <QuickAccess

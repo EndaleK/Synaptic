@@ -742,14 +742,16 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Document Sidebar */}
-        <DocumentSidebar
-          activeEssayId={essay.id}
-          onSelectEssay={(id) => window.location.href = `/dashboard/writer?essayId=${id}`}
-          onNewEssay={createNewEssay}
-          onSelectTemplate={handleSelectTemplate}
-          onDeleteEssay={handleDeleteEssay}
-        />
+        {/* Document Sidebar - Hidden on mobile, shown on large screens */}
+        <div className="hidden lg:block">
+          <DocumentSidebar
+            activeEssayId={essay.id}
+            onSelectEssay={(id) => window.location.href = `/dashboard/writer?essayId=${id}`}
+            onNewEssay={createNewEssay}
+            onSelectTemplate={handleSelectTemplate}
+            onDeleteEssay={handleDeleteEssay}
+          />
+        </div>
 
         {/* Main Editor Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -772,10 +774,10 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
             onWritingToneChange={setWritingTone}
           />
 
-          {/* Editor + Side Panel */}
-          <div className="flex flex-1 overflow-hidden">
+          {/* Editor + Side Panel - Responsive layout */}
+          <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
             {/* Editor Content with Paper Background */}
-            <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 p-8">
+            <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 p-3 sm:p-6 lg:p-8">
               <div className="max-w-4xl mx-auto">
                 {/* Paper Sheet Container */}
                 <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-lg overflow-hidden min-h-[calc(100vh-10rem)] relative">
@@ -786,26 +788,26 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
                        }}
                   />
 
-                  {/* Top Margin Line (like ruled paper) */}
-                  <div className="absolute top-24 left-0 right-0 h-px bg-red-200 dark:bg-red-900/30 opacity-20" />
+                  {/* Top Margin Line (like ruled paper) - Hidden on mobile */}
+                  <div className="hidden md:block absolute top-24 left-0 right-0 h-px bg-red-200 dark:bg-red-900/30 opacity-20" />
 
-                  {/* Left Margin Line */}
-                  <div className="absolute top-0 bottom-0 left-20 w-px bg-red-200 dark:bg-red-900/30 opacity-20" />
+                  {/* Left Margin Line - Hidden on mobile */}
+                  <div className="hidden md:block absolute top-0 bottom-0 left-20 w-px bg-red-200 dark:bg-red-900/30 opacity-20" />
 
-                  {/* Content Area */}
-                  <div className="relative px-24 py-16">
+                  {/* Content Area - Reduced padding on mobile */}
+                  <div className="relative px-4 sm:px-8 md:px-12 lg:px-24 py-6 sm:py-12 lg:py-16">
                     {/* Title Input */}
                     <input
                       type="text"
                       value={essay.title}
                       onChange={(e) => setEssay({ ...essay, title: e.target.value })}
-                      className="w-full text-4xl font-bold mb-8 bg-transparent border-none focus:outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600 font-serif"
+                      className="w-full text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 lg:mb-8 bg-transparent border-none focus:outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600 font-serif"
                       placeholder="Untitled Essay"
                       style={{ letterSpacing: '0.01em' }}
                     />
 
                     {/* TipTap Editor with Paper Styling */}
-                    <div className="tiptap-editor">
+                    <div className="tiptap-editor prose-sm sm:prose lg:prose-lg">
                       <EditorContent editor={editor} />
                     </div>
                   </div>
@@ -816,18 +818,20 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
               </div>
             </div>
 
-            {/* Writing Side Panel */}
-            <WritingSidePanel
-              wordCount={editor?.storage.characterCount.words() || 0}
-              characterCount={editor?.storage.characterCount.characters() || 0}
-              goalWordCount={essay.writing_goals?.target_word_count || 2000}
-              uploadedFiles={uploadedFiles}
-              onRemoveFile={handleRemoveFile}
-              onGenerateOutline={() => console.log('Generate outline')}
-              onImproveTone={handleImprove}
-              onCheckPlagiarism={() => console.log('Check plagiarism')}
-              onAddCitations={() => setShowCitations(true)}
-            />
+            {/* Writing Side Panel - Hidden on mobile and tablets, shown on xl screens */}
+            <div className="hidden xl:block">
+              <WritingSidePanel
+                wordCount={editor?.storage.characterCount.words() || 0}
+                characterCount={editor?.storage.characterCount.characters() || 0}
+                goalWordCount={essay.writing_goals?.target_word_count || 2000}
+                uploadedFiles={uploadedFiles}
+                onRemoveFile={handleRemoveFile}
+                onGenerateOutline={() => console.log('Generate outline')}
+                onImproveTone={handleImprove}
+                onCheckPlagiarism={() => console.log('Check plagiarism')}
+                onAddCitations={() => setShowCitations(true)}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -846,12 +850,16 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
         onFilesSelected={handleFilesSelected}
       />
 
-      {/* AI Suggestions Panel (Slide-over) */}
+      {/* AI Suggestions Panel (Slide-over) - Responsive width */}
       {showSuggestions && (
-        <div className="fixed inset-y-0 right-0 w-96 bg-white dark:bg-gray-800 shadow-2xl z-50 overflow-y-auto">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <h3 className="font-bold text-lg">AI Suggestions</h3>
-            <button onClick={() => setShowSuggestions(false)} className="text-gray-500 hover:text-gray-700">
+        <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white dark:bg-gray-800 shadow-2xl z-50 overflow-y-auto">
+          <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h3 className="font-bold text-base sm:text-lg">AI Suggestions</h3>
+            <button
+              onClick={() => setShowSuggestions(false)}
+              className="text-gray-500 hover:text-gray-700 text-2xl px-2"
+              aria-label="Close"
+            >
               ×
             </button>
           </div>
@@ -869,12 +877,16 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
         </div>
       )}
 
-      {/* Citations Panel (Slide-over) */}
+      {/* Citations Panel (Slide-over) - Responsive width */}
       {showCitations && (
-        <div className="fixed inset-y-0 right-0 w-96 bg-white dark:bg-gray-800 shadow-2xl z-50 overflow-y-auto">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <h3 className="font-bold text-lg">Citations</h3>
-            <button onClick={() => setShowCitations(false)} className="text-gray-500 hover:text-gray-700">
+        <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white dark:bg-gray-800 shadow-2xl z-50 overflow-y-auto">
+          <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h3 className="font-bold text-base sm:text-lg">Citations</h3>
+            <button
+              onClick={() => setShowCitations(false)}
+              className="text-gray-500 hover:text-gray-700 text-2xl px-2"
+              aria-label="Close"
+            >
               ×
             </button>
           </div>
