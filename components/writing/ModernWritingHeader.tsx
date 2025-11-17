@@ -1,12 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { BookOpen, Share2, Save, Download } from "lucide-react"
+import { BookOpen, Share2, Save, Download, Upload } from "lucide-react"
 
 interface ModernWritingHeaderProps {
   onSave?: () => void
   onExport?: () => void
   onShare?: () => void
+  onUpload?: () => void
   isSaving?: boolean
   showResearch?: boolean
 }
@@ -15,6 +16,7 @@ export default function ModernWritingHeader({
   onSave,
   onExport,
   onShare,
+  onUpload,
   isSaving = false,
   showResearch = true
 }: ModernWritingHeaderProps) {
@@ -31,6 +33,16 @@ export default function ModernWritingHeader({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
+          {onUpload && (
+            <button
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 border border-white/30 transition-all duration-200 text-sm font-semibold"
+              onClick={onUpload}
+            >
+              <Upload className="w-4 h-4" />
+              <span>Upload</span>
+            </button>
+          )}
+
           {showResearch && (
             <button
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 border border-white/30 transition-all duration-200 text-sm font-semibold"

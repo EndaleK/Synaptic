@@ -1,5 +1,4 @@
 import mammoth from "mammoth"
-import { parseServerPDF, isPDFFile } from "./server-pdf-parser"
 
 interface ParseResult {
   text: string
@@ -10,9 +9,9 @@ interface ParseResult {
 export async function parseDocument(file: File): Promise<ParseResult> {
   const fileExtension = file.name.split('.').pop()?.toLowerCase()
   const mimeType = file.type
-  
+
   console.log(`Parsing file: ${file.name}, MIME: ${mimeType}, Extension: ${fileExtension}`)
-  
+
   // Enhanced file type detection with better fallbacks
   const getFileType = () => {
     if (mimeType === "application/pdf" || fileExtension === "pdf") return "pdf"
@@ -22,7 +21,7 @@ export async function parseDocument(file: File): Promise<ParseResult> {
     if (mimeType === "application/json" || fileExtension === "json") return "json"
     return "unknown"
   }
-  
+
   const fileType = getFileType()
   console.log(`Detected file type: ${fileType}`)
 
@@ -30,19 +29,22 @@ export async function parseDocument(file: File): Promise<ParseResult> {
     switch (fileType) {
       case "txt":
         return await parseTextFile(file)
-      
+
       case "json":
         return await parseJsonFile(file)
-      
+
       case "docx":
         return await parseDocxFile(file)
-      
+
       case "doc":
         return await parseDocFile(file)
-      
+
       case "pdf":
-        return await parseServerPDF(file)
-      
+        return {
+          text: "",
+          error: "PDF files must be uploaded through the main document upload feature for proper extraction. Please use the document uploader instead."
+        }
+
       default:
         return { text: "", error: `Unsupported file type: ${fileType} (MIME: ${mimeType}, Extension: ${fileExtension})` }
     }
@@ -96,16 +98,14 @@ async function parseDocFile(file: File): Promise<ParseResult> {
     const result = await mammoth.extractRawText({ arrayBuffer })
 
     console.log(`DOC extraction result: ${result.value.length} characters`)
-    
+
     if (!result.value || result.value.trim().length === 0) {
       return { text: "", error: "DOC file appears to be empty or contains no extractable text" }
     }
-    
+
     return { text: result.value }
   } catch (error) {
     console.error("DOC parsing error:", error)
-    return { text: "", error: `Failed to parse DOC: ${error instanceof Error ? error.message : "Legacy DOC format may not be fully supported"}` }
+    return { text: "", error: `Failed to parse DOC: ${error instanceof Error ? error.message : "Unknown error"}` }
   }
 }
-
-// PDF parsing is now handled by server-pdf-parser.ts

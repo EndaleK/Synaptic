@@ -22,7 +22,7 @@ export default function FileUploadModal({
   onClose,
   onFilesSelected,
   maxSizeMB = 2,
-  acceptedTypes = ['.pdf', '.doc', '.docx', '.txt', '.png', '.jpg', '.jpeg', '.gif']
+  acceptedTypes = ['.doc', '.docx', '.txt']
 }: FileUploadModalProps) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
@@ -141,7 +141,7 @@ export default function FileUploadModal({
               Drop files here or click to browse
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              Supported: PDF, Word, Images ({maxSizeMB}MB max)
+              Supported: Word, Text files ({maxSizeMB}MB max)
             </div>
           </div>
 

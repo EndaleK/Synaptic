@@ -8,6 +8,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
 import CharacterCount from '@tiptap/extension-character-count'
 import { createClient } from '@/lib/supabase/client'
+import { parseDocument } from '@/lib/client-document-parser'
 
 // Modern UI Components
 import ModernWritingHeader from './writing/ModernWritingHeader'
@@ -63,7 +64,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       StarterKit,
       Underline,
       Placeholder.configure({
-        placeholder: "Start writing your essay here... 📝 Or use voice-to-text and file upload above!"
+        placeholder: "Begin writing here..."
       }),
       CharacterCount
     ],
@@ -82,7 +83,8 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
     },
     editorProps: {
       attributes: {
-        class: 'prose dark:prose-invert max-w-none focus:outline-none min-h-[500px] p-8 bg-gray-50 dark:bg-gray-900',
+        class: 'prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[600px] text-gray-800 dark:text-gray-200 leading-relaxed font-serif',
+        style: 'line-height: 1.8; font-size: 16px;',
       },
     },
   })
@@ -491,14 +493,198 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
     }
   }
 
-  const handleFilesSelected = (files: File[]) => {
-    const newFiles: UploadedFile[] = files.map(file => ({
-      id: Math.random().toString(36).substring(7),
-      name: file.name,
-      size: file.size,
-      type: file.type
-    }))
-    setUploadedFiles(prev => [...prev, ...newFiles])
+  const handleSelectTemplate = (templateId: string) => {
+    if (!editor || !essay) return
+
+    const templates: Record<string, { title: string; content: string }> = {
+      '5-paragraph': {
+        title: '5-Paragraph Essay',
+        content: `<h2>Introduction</h2>
+<p>Begin with a hook that grabs the reader's attention. Provide background information on your topic and clearly state your thesis statement.</p>
+<p><strong>Thesis Statement:</strong> [Your main argument goes here]</p>
+
+<h2>Body Paragraph 1</h2>
+<p><strong>Topic Sentence:</strong> [First supporting point]</p>
+<p>Provide evidence, examples, and analysis to support your first main point. Use specific details and explain how they relate to your thesis.</p>
+
+<h2>Body Paragraph 2</h2>
+<p><strong>Topic Sentence:</strong> [Second supporting point]</p>
+<p>Present your second piece of evidence with thorough analysis. Connect this point back to your thesis statement.</p>
+
+<h2>Body Paragraph 3</h2>
+<p><strong>Topic Sentence:</strong> [Third supporting point]</p>
+<p>Develop your final supporting argument with concrete examples and detailed explanation.</p>
+
+<h2>Conclusion</h2>
+<p>Restate your thesis in a new way. Summarize your main points and leave the reader with a final thought or call to action.</p>`
+      },
+      'research': {
+        title: 'Research Paper',
+        content: `<h1>Research Paper Title</h1>
+<p><em>Your Name</em></p>
+<p><em>Course Name and Number</em></p>
+<p><em>Date</em></p>
+
+<h2>Abstract</h2>
+<p>A brief summary (150-250 words) of your research question, methodology, key findings, and conclusions.</p>
+
+<h2>Introduction</h2>
+<p>Present your research question or problem statement. Provide context and background information. State your thesis or research objective clearly.</p>
+
+<h2>Literature Review</h2>
+<p>Summarize and analyze existing research on your topic. Identify gaps in current knowledge that your research will address.</p>
+
+<h2>Methodology</h2>
+<p>Describe your research methods, data collection processes, and analytical approaches. Explain why these methods are appropriate for your research question.</p>
+
+<h2>Results</h2>
+<p>Present your findings objectively. Use tables, figures, and charts where appropriate. Organize results logically.</p>
+
+<h2>Discussion</h2>
+<p>Interpret your results and explain their significance. Compare your findings with existing research. Address limitations of your study.</p>
+
+<h2>Conclusion</h2>
+<p>Summarize your key findings. Discuss implications for the field. Suggest directions for future research.</p>
+
+<h2>References</h2>
+<p>[Your citations in APA, MLA, or Chicago format]</p>`
+      },
+      'book-review': {
+        title: 'Book Review',
+        content: `<h1>[Book Title] by [Author Name]</h1>
+
+<h2>Introduction</h2>
+<p><strong>Book Details:</strong></p>
+<ul>
+<li>Author: [Author name]</li>
+<li>Publisher: [Publisher name]</li>
+<li>Year: [Publication year]</li>
+<li>Pages: [Number of pages]</li>
+<li>Genre: [Fiction/Non-fiction, specific category]</li>
+</ul>
+<p>Brief overview of the book's premise and your initial impressions.</p>
+
+<h2>Summary</h2>
+<p>Provide a concise summary of the book's main plot points or arguments. Avoid spoilers for major plot twists. Focus on the central themes and key ideas.</p>
+
+<h2>Analysis</h2>
+<h3>Strengths</h3>
+<p>What did the author do well? Consider writing style, character development, argumentation, research quality, etc.</p>
+
+<h3>Weaknesses</h3>
+<p>What could have been improved? Were there gaps in logic, underdeveloped characters, or unclear arguments?</p>
+
+<h3>Themes and Significance</h3>
+<p>Discuss the major themes and their relevance. How does this book contribute to its genre or field?</p>
+
+<h2>Personal Reflection</h2>
+<p>Share your personal response to the book. What impact did it have on you? Who would you recommend it to?</p>
+
+<h2>Conclusion</h2>
+<p>Final assessment and recommendation. Rate the book (if applicable) and summarize your overall opinion.</p>`
+      },
+      'argumentative': {
+        title: 'Argumentative Essay',
+        content: `<h2>Introduction</h2>
+<p>Present the controversial issue or debate. Provide necessary background information. Clearly state your position with a strong thesis statement.</p>
+<p><strong>Thesis:</strong> [Your clear position on the issue]</p>
+
+<h2>Background and Context</h2>
+<p>Explain the history or context of the issue. Define key terms. Establish why this topic matters and why readers should care.</p>
+
+<h2>Argument 1: [First Supporting Point]</h2>
+<p><strong>Claim:</strong> [State your point clearly]</p>
+<p><strong>Evidence:</strong> [Statistics, expert opinions, research findings]</p>
+<p><strong>Analysis:</strong> [Explain how this evidence supports your thesis]</p>
+
+<h2>Argument 2: [Second Supporting Point]</h2>
+<p><strong>Claim:</strong> [State your point clearly]</p>
+<p><strong>Evidence:</strong> [Statistics, expert opinions, research findings]</p>
+<p><strong>Analysis:</strong> [Explain how this evidence supports your thesis]</p>
+
+<h2>Argument 3: [Third Supporting Point]</h2>
+<p><strong>Claim:</strong> [State your point clearly]</p>
+<p><strong>Evidence:</strong> [Statistics, expert opinions, research findings]</p>
+<p><strong>Analysis:</strong> [Explain how this evidence supports your thesis]</p>
+
+<h2>Counterargument and Rebuttal</h2>
+<p><strong>Opposing View:</strong> [Present the strongest counterargument fairly]</p>
+<p><strong>Rebuttal:</strong> [Refute the counterargument with evidence and logic]</p>
+
+<h2>Conclusion</h2>
+<p>Restate your thesis powerfully. Summarize your strongest arguments. End with a call to action or thought-provoking statement.</p>`
+      }
+    }
+
+    const template = templates[templateId]
+    if (!template) return
+
+    // Confirm before replacing content if there's existing text
+    const currentContent = editor.getText().trim()
+    if (currentContent && currentContent !== '') {
+      if (!confirm('Applying a template will replace your current content. Continue?')) {
+        return
+      }
+    }
+
+    // Apply template
+    editor.commands.setContent(template.content)
+    setEssay({ ...essay, title: template.title })
+  }
+
+  const handleFilesSelected = async (files: File[]) => {
+    if (!editor || !essay) return
+
+    // Confirm before replacing content if there's existing text
+    const currentContent = editor.getText().trim()
+    if (currentContent && currentContent !== '') {
+      if (!confirm('Importing a document will replace your current content. Continue?')) {
+        return
+      }
+    }
+
+    try {
+      // Process only the first file for now
+      const file = files[0]
+      if (!file) return
+
+      // Use the existing parseDocument utility
+      const result = await parseDocument(file)
+
+      if (result.error) {
+        alert(`Failed to parse file: ${result.error}`)
+        return
+      }
+
+      if (result.text) {
+        // Convert plain text to HTML paragraphs
+        const htmlContent = result.text
+          .split('\n\n')
+          .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
+          .join('')
+
+        // Insert into editor
+        editor.commands.setContent(htmlContent)
+
+        // Update essay title if it's "Untitled Essay"
+        if (essay.title === 'Untitled Essay') {
+          const fileName = file.name.replace(/\.[^/.]+$/, '') // Remove extension
+          setEssay({ ...essay, title: fileName })
+        }
+
+        // Add to uploaded files list for tracking
+        const newFile: UploadedFile = {
+          id: Math.random().toString(36).substring(7),
+          name: file.name,
+          size: file.size,
+          type: file.type
+        }
+        setUploadedFiles(prev => [...prev, newFile])
+      }
+    } catch (error) {
+      console.error('Error processing file:', error)
+      alert('Failed to extract text from the file. Please try a different file.')
+    }
   }
 
   const handleRemoveFile = (fileId: string) => {
@@ -550,6 +736,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
         onSave={handleSave}
         onExport={handleExport}
         onShare={() => console.log('Share clicked')}
+        onUpload={() => setShowUploadModal(true)}
         isSaving={isSaving}
         showResearch={false}
       />
@@ -560,7 +747,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
           activeEssayId={essay.id}
           onSelectEssay={(id) => window.location.href = `/dashboard/writer?essayId=${id}`}
           onNewEssay={createNewEssay}
-          onSelectTemplate={(template) => console.log('Template selected:', template)}
+          onSelectTemplate={handleSelectTemplate}
           onDeleteEssay={handleDeleteEssay}
         />
 
@@ -587,21 +774,44 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
           {/* Editor + Side Panel */}
           <div className="flex flex-1 overflow-hidden">
-            {/* Editor Content */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="max-w-4xl mx-auto py-8 px-6">
-                {/* Title Input */}
-                <input
-                  type="text"
-                  value={essay.title}
-                  onChange={(e) => setEssay({ ...essay, title: e.target.value })}
-                  className="w-full text-3xl font-bold mb-6 bg-transparent border-none focus:outline-none text-gray-900 dark:text-white placeholder-gray-400"
-                  placeholder="Essay Title"
-                />
+            {/* Editor Content with Paper Background */}
+            <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 p-8">
+              <div className="max-w-4xl mx-auto">
+                {/* Paper Sheet Container */}
+                <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-lg overflow-hidden min-h-[calc(100vh-10rem)] relative">
+                  {/* Paper Texture Overlay */}
+                  <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.02] pointer-events-none"
+                       style={{
+                         backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E")`,
+                       }}
+                  />
 
-                {/* TipTap Editor */}
-                <div className="tiptap-editor">
-                  <EditorContent editor={editor} />
+                  {/* Top Margin Line (like ruled paper) */}
+                  <div className="absolute top-24 left-0 right-0 h-px bg-red-200 dark:bg-red-900/30 opacity-20" />
+
+                  {/* Left Margin Line */}
+                  <div className="absolute top-0 bottom-0 left-20 w-px bg-red-200 dark:bg-red-900/30 opacity-20" />
+
+                  {/* Content Area */}
+                  <div className="relative px-24 py-16">
+                    {/* Title Input */}
+                    <input
+                      type="text"
+                      value={essay.title}
+                      onChange={(e) => setEssay({ ...essay, title: e.target.value })}
+                      className="w-full text-4xl font-bold mb-8 bg-transparent border-none focus:outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600 font-serif"
+                      placeholder="Untitled Essay"
+                      style={{ letterSpacing: '0.01em' }}
+                    />
+
+                    {/* TipTap Editor with Paper Styling */}
+                    <div className="tiptap-editor">
+                      <EditorContent editor={editor} />
+                    </div>
+                  </div>
+
+                  {/* Bottom Shadow (paper curl effect) */}
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-t from-gray-200/50 dark:from-gray-900/50 to-transparent" />
                 </div>
               </div>
             </div>
