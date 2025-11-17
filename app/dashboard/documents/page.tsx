@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import dynamic from "next/dynamic"
 import { Upload, RefreshCw, PanelLeftClose, PanelLeft } from "lucide-react"
@@ -37,7 +37,7 @@ const DEFAULT_FILTERS: FilterOptions = {
   }
 }
 
-export default function DocumentsPageNew() {
+function DocumentsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const toast = useToast()
@@ -594,5 +594,21 @@ export default function DocumentsPageNew() {
         </div>
       )}
     </div>
+  )
+}
+
+// Wrap in Suspense for Next.js 15 compatibility
+export default function DocumentsPageNew() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading documents...</p>
+        </div>
+      </div>
+    }>
+      <DocumentsPageContent />
+    </Suspense>
   )
 }
