@@ -25,13 +25,20 @@ export default function FloatingPomodoroTimer() {
     setCurrentStudySessionId
   } = usePomodoroStore()
 
-  const [isMinimized, setIsMinimized] = useState(false)
+  const [isMinimized, setIsMinimized] = useState(true) // Start minimized by default
   const [showSettings, setShowSettings] = useState(false)
-  const [position, setPosition] = useState({ x: 20, y: 20 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Calculate default position (bottom-right corner)
+  const getDefaultPosition = () => {
+    if (typeof window === 'undefined') return { bottom: 24, right: 24 }
+    return { bottom: 24, right: 24 }
+  }
+
+  const [position, setPosition] = useState<{ bottom: number; right: number }>(getDefaultPosition())
 
   // Tick every second when running
   useEffect(() => {
@@ -194,40 +201,11 @@ export default function FloatingPomodoroTimer() {
     }
   }
 
-  // Dragging handlers
+  // Simplified - no dragging to avoid scroll issues
   const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button')) return
-    setIsDragging(true)
-    setDragOffset({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y
-    })
+    // Prevent dragging to avoid interfering with scroll
+    e.stopPropagation()
   }
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging) {
-        setPosition({
-          x: e.clientX - dragOffset.x,
-          y: e.clientY - dragOffset.y
-        })
-      }
-    }
-
-    const handleMouseUp = () => {
-      setIsDragging(false)
-    }
-
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-    }
-  }, [isDragging, dragOffset])
 
   if (status === 'idle' && timeRemaining === getTotalDuration()) {
     // Don't show timer if it hasn't been started yet
@@ -236,57 +214,64 @@ export default function FloatingPomodoroTimer() {
 
   return (
     <>
-      {/* Minimized Timer */}
+      {/* Minimized Timer - Bottom Right, No Scroll Blocking */}
       {isMinimized && (
         <div
-          className="fixed bottom-6 right-6 z-50 cursor-move"
-          style={{ left: `${position.x}px`, top: `${position.y}px` }}
-          onMouseDown={handleMouseDown}
+          className="fixed z-40 pointer-events-none"
+          style={{ bottom: `${position.bottom}px`, right: `${position.right}px` }}
         >
           <button
-            onClick={() => setIsMinimized(false)}
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsMinimized(false)
+            }}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-full shadow-2xl transition-all hover:scale-105",
-              "bg-gradient-to-r text-white font-semibold",
+              "flex items-center gap-2 px-3 py-1.5 rounded-full shadow-lg transition-all hover:scale-105 pointer-events-auto",
+              "bg-gradient-to-r text-white font-medium text-sm",
               getTimerColor()
             )}
           >
-            <span className="text-lg font-mono">{formatTime(timeRemaining)}</span>
+            <span className="font-mono">{formatTime(timeRemaining)}</span>
             {status === 'running' && (
-              <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
             )}
           </button>
         </div>
       )}
 
-      {/* Expanded Timer */}
+      {/* Expanded Timer - Compact & Elegant */}
       {!isMinimized && (
         <div
-          className="fixed bottom-6 right-6 z-50 cursor-move"
-          style={{ left: `${position.x}px`, top: `${position.y}px` }}
-          onMouseDown={handleMouseDown}
+          className="fixed z-40 pointer-events-none"
+          style={{ bottom: `${position.bottom}px`, right: `${position.right}px` }}
         >
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border-2 border-gray-200 dark:border-gray-700 overflow-hidden min-w-[280px]">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden w-[240px] pointer-events-auto">
             {/* Header */}
             <div className={cn(
-              "px-4 py-3 bg-gradient-to-r text-white flex items-center justify-between",
+              "px-3 py-2 bg-gradient-to-r text-white flex items-center justify-between",
               getTimerColor()
             )}>
-              <span className="font-semibold text-sm">{getTimerLabel()}</span>
-              <div className="flex items-center gap-1">
+              <span className="font-medium text-xs">{getTimerLabel()}</span>
+              <div className="flex items-center gap-0.5">
                 <button
-                  onClick={() => setShowSettings(!showSettings)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowSettings(!showSettings)
+                  }}
                   className="p-1 hover:bg-white/20 rounded transition-colors"
                   title="Settings"
                 >
-                  <Settings className="w-4 h-4" />
+                  <Settings className="w-3.5 h-3.5" />
                 </button>
                 <button
-                  onClick={() => setIsMinimized(true)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsMinimized(true)
+                  }}
                   className="p-1 hover:bg-white/20 rounded transition-colors"
                   title="Minimize"
                 >
-                  <Minimize2 className="w-4 h-4" />
+                  <Minimize2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -295,6 +280,81 @@ export default function FloatingPomodoroTimer() {
             {showSettings && (
               <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <div className="space-y-3 text-sm">
+                  {/* Quick Presets */}
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 mb-2 font-semibold text-xs">
+                      QUICK PRESETS
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => {
+                          setFocusDuration(15)
+                          setShortBreakDuration(3)
+                          setLongBreakDuration(10)
+                        }}
+                        className="px-2 py-1.5 text-xs bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        15 min
+                      </button>
+                      <button
+                        onClick={() => {
+                          setFocusDuration(25)
+                          setShortBreakDuration(5)
+                          setLongBreakDuration(15)
+                        }}
+                        className="px-2 py-1.5 text-xs bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors font-semibold"
+                      >
+                        25 ⭐
+                      </button>
+                      <button
+                        onClick={() => {
+                          setFocusDuration(45)
+                          setShortBreakDuration(10)
+                          setLongBreakDuration(20)
+                        }}
+                        className="px-2 py-1.5 text-xs bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        45 min
+                      </button>
+                      <button
+                        onClick={() => {
+                          setFocusDuration(30)
+                          setShortBreakDuration(5)
+                          setLongBreakDuration(20)
+                        }}
+                        className="px-2 py-1.5 text-xs bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        30 min
+                      </button>
+                      <button
+                        onClick={() => {
+                          setFocusDuration(60)
+                          setShortBreakDuration(10)
+                          setLongBreakDuration(30)
+                        }}
+                        className="px-2 py-1.5 text-xs bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        60 min
+                      </button>
+                      <button
+                        onClick={() => {
+                          setFocusDuration(90)
+                          setShortBreakDuration(15)
+                          setLongBreakDuration(30)
+                        }}
+                        className="px-2 py-1.5 text-xs bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        90 min
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                    <label className="block text-gray-700 dark:text-gray-300 mb-2 font-semibold text-xs">
+                      CUSTOM SETTINGS
+                    </label>
+                  </div>
+
                   <div>
                     <label className="block text-gray-700 dark:text-gray-300 mb-1">
                       Focus Duration (min)
@@ -302,7 +362,7 @@ export default function FloatingPomodoroTimer() {
                     <input
                       type="number"
                       min="1"
-                      max="60"
+                      max="120"
                       value={focusDuration}
                       onChange={(e) => setFocusDuration(Number(e.target.value))}
                       className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
@@ -338,34 +398,13 @@ export default function FloatingPomodoroTimer() {
               </div>
             )}
 
-            {/* Timer Display */}
-            <div className="p-6">
-              {/* Circular Progress */}
-              <div className="relative w-32 h-32 mx-auto mb-4">
-                <svg className="transform -rotate-90 w-32 h-32">
-                  {/* Background circle */}
-                  <circle
-                    cx="64"
-                    cy="64"
-                    r="56"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    fill="none"
-                    className="text-gray-200 dark:text-gray-700"
-                  />
-                  {/* Progress circle */}
-                  <circle
-                    cx="64"
-                    cy="64"
-                    r="56"
-                    stroke="url(#gradient)"
-                    strokeWidth="8"
-                    fill="none"
-                    strokeDasharray={`${2 * Math.PI * 56}`}
-                    strokeDashoffset={`${2 * Math.PI * 56 * (1 - getProgress() / 100)}`}
-                    className="transition-all duration-1000 ease-linear"
-                    strokeLinecap="round"
-                  />
+            {/* Timer Display - Compact */}
+            <div className="p-4">
+              {/* Circular Progress - Smaller */}
+              <div className="relative w-24 h-24 mx-auto mb-3">
+                <svg className="transform -rotate-90 w-24 h-24">
+                  <circle cx="48" cy="48" r="42" stroke="currentColor" strokeWidth="6" fill="none" className="text-gray-200 dark:text-gray-700" />
+                  <circle cx="48" cy="48" r="42" stroke="url(#gradient)" strokeWidth="6" fill="none" strokeDasharray={`${2 * Math.PI * 42}`} strokeDashoffset={`${2 * Math.PI * 42 * (1 - getProgress() / 100)}`} className="transition-all duration-1000 ease-linear" strokeLinecap="round" />
                   <defs>
                     <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="0%" className={timerType === 'focus' ? 'text-red-500' : timerType === 'shortBreak' ? 'text-green-500' : 'text-blue-500'} stopColor="currentColor" />
@@ -373,59 +412,54 @@ export default function FloatingPomodoroTimer() {
                     </linearGradient>
                   </defs>
                 </svg>
-                {/* Time in center */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-3xl font-bold font-mono text-gray-900 dark:text-white">
+                  <span className="text-2xl font-bold font-mono text-gray-900 dark:text-white">
                     {formatTime(timeRemaining)}
                   </span>
                 </div>
               </div>
 
-              {/* Controls */}
-              <div className="flex items-center justify-center gap-2">
+              {/* Controls - Compact */}
+              <div className="flex items-center justify-center gap-2 mb-3">
                 {status === 'idle' || status === 'paused' ? (
                   <button
-                    onClick={startTimer}
-                    className={cn(
-                      "p-3 rounded-full transition-all hover:scale-110",
-                      "bg-gradient-to-r text-white shadow-lg",
-                      getTimerColor()
-                    )}
+                    onClick={(e) => { e.stopPropagation(); startTimer(); }}
+                    className={cn("p-2 rounded-full transition-all hover:scale-110 bg-gradient-to-r text-white shadow-md", getTimerColor())}
                     title="Start"
                   >
-                    <Play className="w-5 h-5" fill="white" />
+                    <Play className="w-4 h-4" fill="white" />
                   </button>
                 ) : (
                   <button
-                    onClick={pauseTimer}
-                    className="p-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full transition-all hover:scale-110 shadow-lg"
+                    onClick={(e) => { e.stopPropagation(); pauseTimer(); }}
+                    className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full transition-all hover:scale-110 shadow-md"
                     title="Pause"
                   >
-                    <Pause className="w-5 h-5" fill="white" />
+                    <Pause className="w-4 h-4" fill="white" />
                   </button>
                 )}
                 <button
-                  onClick={stopTimer}
-                  className="p-3 bg-gray-500 hover:bg-gray-600 text-white rounded-full transition-all hover:scale-110 shadow-lg"
+                  onClick={(e) => { e.stopPropagation(); stopTimer(); }}
+                  className="p-2 bg-gray-500 hover:bg-gray-600 text-white rounded-full transition-all hover:scale-110 shadow-md"
                   title="Stop"
                 >
-                  <Square className="w-5 h-5" fill="white" />
+                  <Square className="w-4 h-4" fill="white" />
                 </button>
               </div>
 
-              {/* Session Counter */}
-              <div className="mt-4 text-center">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Sessions completed: <span className="font-semibold text-gray-900 dark:text-white">{sessionsCompleted}</span>
+              {/* Session Counter - Compact */}
+              <div className="text-center mb-3">
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  <span className="font-semibold text-gray-900 dark:text-white">{sessionsCompleted}</span> sessions
                 </p>
               </div>
 
-              {/* Timer Type Selector */}
-              <div className="mt-4 flex items-center gap-2 text-xs">
+              {/* Timer Type Selector - Compact */}
+              <div className="flex items-center gap-1.5 text-xs">
                 <button
-                  onClick={() => switchTimerType('focus')}
+                  onClick={(e) => { e.stopPropagation(); switchTimerType('focus'); }}
                   className={cn(
-                    "flex-1 py-2 rounded-lg transition-colors",
+                    "flex-1 py-1.5 rounded-lg transition-colors font-medium",
                     timerType === 'focus'
                       ? "bg-red-500 text-white"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -434,9 +468,9 @@ export default function FloatingPomodoroTimer() {
                   Focus
                 </button>
                 <button
-                  onClick={() => switchTimerType('shortBreak')}
+                  onClick={(e) => { e.stopPropagation(); switchTimerType('shortBreak'); }}
                   className={cn(
-                    "flex-1 py-2 rounded-lg transition-colors",
+                    "flex-1 py-1.5 rounded-lg transition-colors font-medium",
                     timerType === 'shortBreak'
                       ? "bg-green-500 text-white"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -445,9 +479,9 @@ export default function FloatingPomodoroTimer() {
                   Break
                 </button>
                 <button
-                  onClick={() => switchTimerType('longBreak')}
+                  onClick={(e) => { e.stopPropagation(); switchTimerType('longBreak'); }}
                   className={cn(
-                    "flex-1 py-2 rounded-lg transition-colors",
+                    "flex-1 py-1.5 rounded-lg transition-colors font-medium",
                     timerType === 'longBreak'
                       ? "bg-blue-500 text-white"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"

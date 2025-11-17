@@ -107,7 +107,7 @@ async function parsePDFWithPdfParse(buffer: Buffer): Promise<PDFParseResult> {
 }
 
 // Fallback: PyMuPDF extraction (more robust for complex PDFs)
-async function parsePDFWithPyMuPDF(buffer: Buffer): Promise<PDFParseResult> {
+export async function parsePDFWithPyMuPDF(buffer: Buffer): Promise<PDFParseResult> {
   try {
     console.log('🐍 Attempting PyMuPDF extraction (fallback)...')
 
@@ -395,6 +395,3 @@ export async function parseServerPDF(file: File): Promise<PDFParseResult> {
 export function isPDFFile(file: File): boolean {
   return file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf')
 }
-
-// Export PyMuPDF parser for direct fallback use (e.g., in production when pdf-parse fails)
-export { parsePDFWithPyMuPDF }
