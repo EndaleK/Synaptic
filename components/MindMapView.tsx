@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { Network, Loader2, AlertCircle, Sparkles, RefreshCw, History } from 'lucide-react'
 import type { MindMapNode, MindMapEdge } from '@/lib/mindmap-generator'
@@ -63,6 +63,10 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
   const [progress, setProgress] = useState(0)
   const [progressMessage, setProgressMessage] = useState('')
 
+  // 📊 Study session tracking
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const sessionStartTime = useRef<Date | null>(null)
+
   // Check for existing mind maps on mount
   useEffect(() => {
     const fetchExistingMindMaps = async () => {
@@ -111,6 +115,68 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
 
     fetchExistingMindMaps()
   }, [documentId])
+
+  // 📊 STATISTICS: Start study session when component mounts
+  useEffect(() => {
+    const startSession = async () => {
+      try {
+        const response = await fetch('/api/study-sessions/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            documentId: documentId,
+            sessionType: 'mindmap',
+            plannedDurationMinutes: 30 // Default estimate for mindmap session
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setSessionId(data.sessionId)
+          sessionStartTime.current = new Date()
+          console.log('[MindMapView] Study session started:', data.sessionId)
+        }
+      } catch (error) {
+        console.error('[MindMapView] Failed to start study session:', error)
+      }
+    }
+
+    startSession()
+  }, [documentId])
+
+  // 📊 STATISTICS: Complete study session when component unmounts
+  useEffect(() => {
+    return () => {
+      // Complete session on unmount using fetch with keepalive
+      if (sessionId && sessionStartTime.current) {
+        const durationMinutes = Math.round((Date.now() - sessionStartTime.current.getTime()) / 60000)
+
+        // Only record if session lasted at least 1 minute
+        if (durationMinutes >= 1) {
+          // Use fetch with keepalive: works during page unload and sets proper Content-Type header
+          fetch('/api/study-sessions/complete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              sessionId,
+              durationMinutes
+            }),
+            keepalive: true // Ensures request completes even during page unload
+          }).then(response => {
+            if (response.ok) {
+              console.log('[MindMapView] Study session completed:', durationMinutes, 'minutes')
+            } else {
+              console.warn('[MindMapView] Failed to complete study session:', response.status)
+            }
+          }).catch(error => {
+            console.error('[MindMapView] Error completing study session:', error)
+          })
+        }
+      }
+    }
+  }, [sessionId])
 
   const generateMindMap = async () => {
     setIsGenerating(true)

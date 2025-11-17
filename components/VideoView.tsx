@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Loader2, AlertCircle, ArrowLeft, Star, Trash2 } from 'lucide-react'
 import VideoSearch from './VideoSearch'
 import VideoPlayer from './VideoPlayer'
@@ -25,6 +25,72 @@ export default function VideoView() {
   const [currentTime, setCurrentTime] = useState(0)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // 📊 Study session tracking
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const sessionStartTime = useRef<Date | null>(null)
+
+  // 📊 STATISTICS: Start study session when component mounts
+  useEffect(() => {
+    const startSession = async () => {
+      try {
+        const response = await fetch('/api/study-sessions/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            documentId: undefined, // VideoView doesn't always have a document
+            sessionType: 'video',
+            plannedDurationMinutes: 30 // Default estimate for video session
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setSessionId(data.sessionId)
+          sessionStartTime.current = new Date()
+          console.log('[VideoView] Study session started:', data.sessionId)
+        }
+      } catch (error) {
+        console.error('[VideoView] Failed to start study session:', error)
+      }
+    }
+
+    startSession()
+  }, [])
+
+  // 📊 STATISTICS: Complete study session when component unmounts
+  useEffect(() => {
+    return () => {
+      // Complete session on unmount using fetch with keepalive
+      if (sessionId && sessionStartTime.current) {
+        const durationMinutes = Math.round((Date.now() - sessionStartTime.current.getTime()) / 60000)
+
+        // Only record if session lasted at least 1 minute
+        if (durationMinutes >= 1) {
+          // Use fetch with keepalive: works during page unload and sets proper Content-Type header
+          fetch('/api/study-sessions/complete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              sessionId,
+              durationMinutes
+            }),
+            keepalive: true // Ensures request completes even during page unload
+          }).then(response => {
+            if (response.ok) {
+              console.log('[VideoView] Study session completed:', durationMinutes, 'minutes')
+            } else {
+              console.warn('[VideoView] Failed to complete study session:', response.status)
+            }
+          }).catch(error => {
+            console.error('[VideoView] Error completing study session:', error)
+          })
+        }
+      }
+    }
+  }, [sessionId])
 
   const handleVideoSelect = async (videoId: string, videoUrl: string) => {
     if (!user) return

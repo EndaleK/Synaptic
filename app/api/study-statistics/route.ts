@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const range = searchParams.get('range') || 'month' // week, month, year
+    const timezoneOffset = parseInt(searchParams.get('timezoneOffset') || '0') // Timezone offset in minutes (e.g., -300 for EST)
 
     const supabase = await createClient()
 
@@ -79,12 +80,14 @@ export async function GET(req: NextRequest) {
      * - Date stored in database (start_time, last_reviewed_at) should be in UTC
      */
 
-    // Calculate date ranges (in server local timezone)
+    // Calculate date ranges (with timezone support)
     const now = new Date()
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    // Apply timezone offset to get user's local "now"
+    const userNow = new Date(now.getTime() + timezoneOffset * 60000)
+    const todayStart = new Date(Date.UTC(userNow.getUTCFullYear(), userNow.getUTCMonth(), userNow.getUTCDate()))
     const weekStart = new Date(todayStart)
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay())
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    weekStart.setUTCDate(weekStart.getUTCDate() - weekStart.getUTCDay())
+    const monthStart = new Date(Date.UTC(userNow.getUTCFullYear(), userNow.getUTCMonth(), 1))
 
     // Determine heatmap range
     let heatmapDays = 30
@@ -92,7 +95,7 @@ export async function GET(req: NextRequest) {
     if (range === 'year') heatmapDays = 365
 
     const heatmapStart = new Date(todayStart)
-    heatmapStart.setDate(heatmapStart.getDate() - heatmapDays)
+    heatmapStart.setUTCDate(heatmapStart.getUTCDate() - heatmapDays)
 
     // Fetch all completed study sessions
     const { data: sessions, error: sessionsError } = await supabase
@@ -110,11 +113,14 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Calculate streak
+    // Calculate streak (with timezone support)
     const sessionDates = new Set<string>()
     sessions?.forEach(session => {
-      const date = new Date(session.start_time).toDateString()
-      sessionDates.add(date)
+      // Convert session start_time to user's timezone
+      const sessionTime = new Date(session.start_time)
+      const userSessionTime = new Date(sessionTime.getTime() + timezoneOffset * 60000)
+      const dateStr = userSessionTime.toISOString().split('T')[0] // YYYY-MM-DD format
+      sessionDates.add(dateStr)
     })
 
     // Sort dates chronologically (most recent first)
@@ -123,24 +129,27 @@ export async function GET(req: NextRequest) {
     })
 
     let currentStreak = 0
-    let checkDate = new Date()
-    checkDate.setHours(0, 0, 0, 0)
 
-    // Check if user studied today or yesterday to start streak count
-    const today = checkDate.toDateString()
-    const yesterday = new Date(checkDate)
-    yesterday.setDate(yesterday.getDate() - 1)
-    const yesterdayStr = yesterday.toDateString()
+    // Check if user studied today or yesterday to start streak count (using user's timezone)
+    const todayStr = userNow.toISOString().split('T')[0]
+    const yesterday = new Date(userNow)
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1)
+    const yesterdayStr = yesterday.toISOString().split('T')[0]
 
-    if (sortedDates[0] === today || sortedDates[0] === yesterdayStr) {
-      // Use Set for O(1) lookup instead of Array.includes() which is O(n)
+    if (sortedDates[0] === todayStr || sortedDates[0] === yesterdayStr) {
+      // Calculate consecutive days backwards from today
+      let checkDate = new Date(userNow)
+      if (sortedDates[0] === yesterdayStr) {
+        checkDate.setUTCDate(checkDate.getUTCDate() - 1)
+      }
+
+      // Count consecutive days
       for (let i = 0; i < sortedDates.length; i++) {
-        const expectedDate = new Date(checkDate)
-        expectedDate.setDate(expectedDate.getDate() - i)
-        const expectedDateStr = expectedDate.toDateString()
+        const expectedDateStr = checkDate.toISOString().split('T')[0]
 
         if (sessionDates.has(expectedDateStr)) {
           currentStreak++
+          checkDate.setUTCDate(checkDate.getUTCDate() - 1)
         } else {
           break
         }
@@ -251,12 +260,15 @@ export async function GET(req: NextRequest) {
       logger.error('Failed to fetch week\'s flashcard reviews', reviewsWeekError, { userId })
     }
 
-    // Generate heatmap data
+    // Generate heatmap data (with timezone support)
     const heatmapData = []
     const sessionsByDate = new Map<string, { count: number; minutes: number }>()
 
     sessions?.forEach(session => {
-      const date = new Date(session.start_time).toISOString().split('T')[0]
+      // Convert session time to user's timezone
+      const sessionTime = new Date(session.start_time)
+      const userSessionTime = new Date(sessionTime.getTime() + timezoneOffset * 60000)
+      const date = userSessionTime.toISOString().split('T')[0]
       if (!sessionsByDate.has(date)) {
         sessionsByDate.set(date, { count: 0, minutes: 0 })
       }
@@ -267,7 +279,7 @@ export async function GET(req: NextRequest) {
 
     for (let i = 0; i < heatmapDays; i++) {
       const date = new Date(heatmapStart)
-      date.setDate(date.getDate() + i)
+      date.setUTCDate(date.getUTCDate() + i)
       const dateStr = date.toISOString().split('T')[0]
       const data = sessionsByDate.get(dateStr) || { count: 0, minutes: 0 }
 
@@ -310,36 +322,50 @@ export async function GET(req: NextRequest) {
      * - Combine with study_sessions table for more accurate tracking
      */
 
-    // Calculate learning mode breakdown based on usage tracking
-    const { data: usageData, error: usageError } = await supabase
-      .from('usage_tracking')
-      .select('action_type, created_at')
-      .eq('user_id', userProfileId)
-      .gte('created_at', heatmapStart.toISOString())
-
-    if (usageError) {
-      logger.error('Failed to fetch usage tracking data', usageError, { userId })
-      // Continue without mode breakdown - it's optional
-    }
-
-    // Aggregate by mode (estimate minutes based on action counts - see limitations above)
-    const modeBreakdown = {
+    // Calculate mode breakdown from actual study sessions (IMPROVED: uses real data instead of estimates)
+    const modeBreakdown: Record<string, number> = {
       flashcards: 0,
       chat: 0,
       mindmap: 0,
-      podcast: 0
+      podcast: 0,
+      video: 0,
+      writing: 0,
+      exam: 0,
+      other: 0
     }
 
-    usageData?.forEach(action => {
-      // Estimate time per action type (in minutes)
-      if (action.action_type === 'flashcard_generation' || action.action_type.includes('flashcard')) {
-        modeBreakdown.flashcards += 5 // Avg 5 min per flashcard session
-      } else if (action.action_type === 'chat_message' || action.action_type.includes('chat')) {
-        modeBreakdown.chat += 3 // Avg 3 min per chat interaction
-      } else if (action.action_type === 'mindmap_generation' || action.action_type.includes('mindmap')) {
-        modeBreakdown.mindmap += 8 // Avg 8 min per mind map
-      } else if (action.action_type === 'podcast_generation' || action.action_type.includes('podcast')) {
-        modeBreakdown.podcast += 10 // Avg 10 min per podcast
+    // Group sessions by type and sum duration
+    if (sessions && sessions.length > 0) {
+      sessions.forEach(session => {
+        const minutes = session.duration_minutes || 0
+        const type = session.session_type
+
+        // Map session types to mode breakdown categories
+        if (type === 'review') {
+          modeBreakdown.flashcards += minutes
+        } else if (type === 'chat') {
+          modeBreakdown.chat += minutes
+        } else if (type === 'mindmap') {
+          modeBreakdown.mindmap += minutes
+        } else if (type === 'podcast') {
+          modeBreakdown.podcast += minutes
+        } else if (type === 'video') {
+          modeBreakdown.video += minutes
+        } else if (type === 'writing') {
+          modeBreakdown.writing += minutes
+        } else if (type === 'exam') {
+          modeBreakdown.exam += minutes
+        } else {
+          // pomodoro, custom, or other types
+          modeBreakdown.other += minutes
+        }
+      })
+    }
+
+    // Remove zero-value entries for cleaner output
+    Object.keys(modeBreakdown).forEach(key => {
+      if (modeBreakdown[key] === 0) {
+        delete modeBreakdown[key]
       }
     })
 

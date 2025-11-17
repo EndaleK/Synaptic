@@ -68,7 +68,9 @@ export default function StudyProgressWidget() {
 
   const fetchProgress = async () => {
     try {
-      const response = await fetch('/api/study-statistics?range=week')
+      // Get user's timezone offset (in minutes, negative for timezones ahead of UTC)
+      const timezoneOffset = new Date().getTimezoneOffset()
+      const response = await fetch(`/api/study-statistics?range=week&timezoneOffset=${-timezoneOffset}`)
       if (response.ok) {
         const data = await response.json()
         setStats(data.stats)

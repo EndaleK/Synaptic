@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -51,6 +51,10 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [showCitations, setShowCitations] = useState(false)
   const [isEditorReady, setIsEditorReady] = useState(false)
+
+  // 📊 Study session tracking
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const sessionStartTime = useRef<Date | null>(null)
 
   // TipTap Editor
   const editor = useEditor({
@@ -140,6 +144,68 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       editor.commands.setContent(essay.content)
     }
   }, [essay?.content, editor])
+
+  // 📊 STATISTICS: Start study session when component mounts
+  useEffect(() => {
+    const startSession = async () => {
+      try {
+        const response = await fetch('/api/study-sessions/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            documentId: documentId,
+            sessionType: 'writing',
+            plannedDurationMinutes: 60 // Default estimate for writing session (longer than other modes)
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setSessionId(data.sessionId)
+          sessionStartTime.current = new Date()
+          console.log('[WritingView] Study session started:', data.sessionId)
+        }
+      } catch (error) {
+        console.error('[WritingView] Failed to start study session:', error)
+      }
+    }
+
+    startSession()
+  }, [documentId])
+
+  // 📊 STATISTICS: Complete study session when component unmounts
+  useEffect(() => {
+    return () => {
+      // Complete session on unmount using fetch with keepalive
+      if (sessionId && sessionStartTime.current) {
+        const durationMinutes = Math.round((Date.now() - sessionStartTime.current.getTime()) / 60000)
+
+        // Only record if session lasted at least 1 minute
+        if (durationMinutes >= 1) {
+          // Use fetch with keepalive: works during page unload and sets proper Content-Type header
+          fetch('/api/study-sessions/complete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              sessionId,
+              durationMinutes
+            }),
+            keepalive: true // Ensures request completes even during page unload
+          }).then(response => {
+            if (response.ok) {
+              console.log('[WritingView] Study session completed:', durationMinutes, 'minutes')
+            } else {
+              console.warn('[WritingView] Failed to complete study session:', response.status)
+            }
+          }).catch(error => {
+            console.error('[WritingView] Error completing study session:', error)
+          })
+        }
+      }
+    }
+  }, [sessionId])
 
   const loadEssay = async () => {
     if (!essayId || !user) return

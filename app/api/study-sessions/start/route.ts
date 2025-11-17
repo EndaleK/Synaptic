@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 interface StartSessionRequestBody {
   documentId?: string
-  sessionType: 'pomodoro' | 'custom' | 'review'
+  sessionType: 'pomodoro' | 'custom' | 'review' | 'chat' | 'podcast' | 'mindmap' | 'video' | 'writing' | 'exam'
   plannedDurationMinutes: number
 }
 

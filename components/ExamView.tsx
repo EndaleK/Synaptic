@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   Plus,
   FileText,
@@ -62,10 +62,76 @@ export default function ExamView() {
   const [examToDelete, setExamToDelete] = useState<ExamWithAttempts | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // 📊 Study session tracking
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const sessionStartTime = useRef<Date | null>(null)
+
   // Load exams on component mount
   useEffect(() => {
     loadExams()
   }, [])
+
+  // 📊 STATISTICS: Start study session when component mounts
+  useEffect(() => {
+    const startSession = async () => {
+      try {
+        const response = await fetch('/api/study-sessions/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            documentId: undefined, // ExamView doesn't always have a specific document
+            sessionType: 'exam',
+            plannedDurationMinutes: 45 // Default estimate for exam session
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setSessionId(data.sessionId)
+          sessionStartTime.current = new Date()
+          console.log('[ExamView] Study session started:', data.sessionId)
+        }
+      } catch (error) {
+        console.error('[ExamView] Failed to start study session:', error)
+      }
+    }
+
+    startSession()
+  }, [])
+
+  // 📊 STATISTICS: Complete study session when component unmounts
+  useEffect(() => {
+    return () => {
+      // Complete session on unmount using fetch with keepalive
+      if (sessionId && sessionStartTime.current) {
+        const durationMinutes = Math.round((Date.now() - sessionStartTime.current.getTime()) / 60000)
+
+        // Only record if session lasted at least 1 minute
+        if (durationMinutes >= 1) {
+          // Use fetch with keepalive: works during page unload and sets proper Content-Type header
+          fetch('/api/study-sessions/complete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              sessionId,
+              durationMinutes
+            }),
+            keepalive: true // Ensures request completes even during page unload
+          }).then(response => {
+            if (response.ok) {
+              console.log('[ExamView] Study session completed:', durationMinutes, 'minutes')
+            } else {
+              console.warn('[ExamView] Failed to complete study session:', response.status)
+            }
+          }).catch(error => {
+            console.error('[ExamView] Error completing study session:', error)
+          })
+        }
+      }
+    }
+  }, [sessionId])
 
   const loadExams = async () => {
     try {

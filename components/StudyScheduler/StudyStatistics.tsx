@@ -86,7 +86,9 @@ export default function StudyStatistics() {
   const fetchStats = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/study-statistics?range=${timeRange}`)
+      // Get user's timezone offset (in minutes, negative for timezones ahead of UTC)
+      const timezoneOffset = new Date().getTimezoneOffset()
+      const response = await fetch(`/api/study-statistics?range=${timeRange}&timezoneOffset=${-timezoneOffset}`)
       if (response.ok) {
         const data = await response.json()
         setStats(data.stats)
