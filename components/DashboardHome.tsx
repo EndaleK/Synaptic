@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar, Link2, Globe, CheckCircle2, ArrowRight, Brain, Clock, Bell, BarChart3, Target, PenTool, Youtube, GraduationCap, Library, Flame, Sparkles } from "lucide-react"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
+import { usePomodoroStore } from "@/lib/store/usePomodoroStore"
 import LearningProfileBanner from "@/components/LearningProfileBanner"
 import SubscriptionStatus from "@/components/SubscriptionStatus"
 import RecentContentWidget from "@/components/RecentContentWidget"
@@ -25,6 +26,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
   const [currentStreak, setCurrentStreak] = useState<number>(0)
   const [isLoadingStreak, setIsLoadingStreak] = useState(true)
   const { learningStyle, assessmentScores, userProfile } = useUserStore()
+  const { startTimer, status, timerType, sessionsCompleted } = usePomodoroStore()
 
   // Fetch recent documents
   useEffect(() => {
@@ -288,20 +290,33 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
             </button>
 
             <button
-              onClick={() => window.location.href = '/dashboard/study/pomodoro'}
-              className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+              onClick={() => {
+                if (status === 'idle') {
+                  startTimer()
+                }
+              }}
+              className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer group"
             >
-              <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
-                Adaptive
-              </span>
-              <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center mb-4">
+              {status !== 'idle' && (
+                <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-semibold rounded-full animate-pulse">
+                  Active
+                </span>
+              )}
+              {status === 'idle' && (
+                <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
+                  Start
+                </span>
+              )}
+              <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Clock className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
                 Pomodoro Timer
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Context-aware adaptive timer
+                {status !== 'idle'
+                  ? `${timerType === 'focus' ? '🍅 Focus' : timerType === 'shortBreak' ? '☕ Break' : '🌴 Long Break'} - ${sessionsCompleted} sessions`
+                  : 'Click to start a focus session'}
               </p>
             </button>
 

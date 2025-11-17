@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useNotifications } from '@/lib/notifications'
+import { usePomodoroStore } from '@/lib/store/usePomodoroStore'
 
 interface StudyProgress {
   currentStreak: number
@@ -28,6 +29,8 @@ interface StudyProgress {
   weekMinutes: number
   dailyGoalMinutes: number
   dailyGoalProgress: number
+  pomodoroSessionsToday?: number
+  pomodoroSessionsWeek?: number
 }
 
 export default function StudyProgressWidget() {
@@ -37,6 +40,7 @@ export default function StudyProgressWidget() {
   const notifications = useNotifications()
   const [lastNotifiedStreak, setLastNotifiedStreak] = useState<number | null>(null)
   const [lastNotifiedGoal, setLastNotifiedGoal] = useState<string | null>(null)
+  const { sessionsCompleted, totalStudyTimeToday } = usePomodoroStore()
 
   useEffect(() => {
     fetchProgress()
@@ -124,7 +128,7 @@ export default function StudyProgressWidget() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {/* Study Session Streak */}
         <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
           <div className="flex items-center gap-2 mb-2">
@@ -197,6 +201,27 @@ export default function StudyProgressWidget() {
           ) : (
             <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
               Start studying to track
+            </p>
+          )}
+        </div>
+
+        {/* Pomodoro Sessions */}
+        <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-red-200 dark:border-red-800">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg">🍅</span>
+            <span className="text-xs font-medium text-red-600 dark:text-red-400">Pomodoros</span>
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">{sessionsCompleted}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">today</span>
+          </div>
+          {totalStudyTimeToday > 0 ? (
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+              {Math.round(totalStudyTimeToday / 60)} min focused
+            </p>
+          ) : (
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+              Start a focus session
             </p>
           )}
         </div>

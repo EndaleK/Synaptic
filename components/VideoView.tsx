@@ -10,11 +10,13 @@ import type { Video } from '@/lib/supabase/types'
 import { useUser } from '@clerk/nextjs'
 import { useDocumentStore } from '@/lib/store/useStore'
 import { useUIStore } from '@/lib/store/useStore'
+import { useToast } from './ToastContainer'
 
 export default function VideoView() {
   const { user } = useUser()
   const setCurrentDocument = useDocumentStore(state => state.setCurrentDocument)
   const setActiveMode = useUIStore(state => state.setActiveMode)
+  const toast = useToast()
   const [activeView, setActiveView] = useState<'search' | 'my-videos' | 'player'>('search')
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null)
   const [video, setVideo] = useState<Video | null>(null)
@@ -49,9 +51,13 @@ export default function VideoView() {
           setSessionId(data.sessionId)
           sessionStartTime.current = new Date()
           console.log('[VideoView] Study session started:', data.sessionId)
+        } else {
+          console.error('[VideoView] Failed to start study session:', response.status)
+          toast.error('Unable to track study session. Your progress may not be recorded.')
         }
       } catch (error) {
         console.error('[VideoView] Failed to start study session:', error)
+        toast.error('Session tracking unavailable. Please check your connection.')
       }
     }
 

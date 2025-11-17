@@ -14,6 +14,7 @@ import QuizPromptModal from "@/components/QuizPromptModal"
 import InlineDocumentPicker from "@/components/InlineDocumentPicker"
 import ContentSelectionModal from "@/components/ContentSelectionModal"
 import Breadcrumb from "@/components/Breadcrumb"
+import FloatingPomodoroTimer from "@/components/FloatingPomodoroTimer"
 import { Flashcard } from "@/lib/types"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import { useDocumentStore } from "@/lib/store/useStore"
@@ -533,6 +534,9 @@ function DashboardContent() {
           onDismiss={handleDismissQuiz}
         />
       )}
+
+      {/* Floating Pomodoro Timer - Persists across all modes */}
+      <FloatingPomodoroTimer />
     </>
   )
 }

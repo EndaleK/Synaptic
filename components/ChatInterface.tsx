@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 import { useDocumentStore, useUIStore } from "@/lib/store/useStore"
 import { useChatStore } from "@/lib/store/useChatStore"
+import { useToast } from "./ToastContainer"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
 import SectionNavigator from "./SectionNavigator"
 import type { DocumentSection } from "@/lib/document-parser/section-detector"
@@ -81,6 +82,7 @@ export default function ChatInterface() {
   const { loadSession, setMessages: saveMessages, clearMessages: clearStoredMessages, hasSession } = useChatStore()
   const { activeMode } = useUIStore()
   const hasLoadedDocument = useRef(false)
+  const toast = useToast()
 
   // 📊 Study session tracking
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -377,9 +379,11 @@ export default function ChatInterface() {
             error: errorData.error,
             details: errorData.details
           })
+          toast.error('Unable to track study session. Your progress may not be recorded.')
         }
       } catch (error) {
         console.error('❌ [ChatInterface] Exception starting study session:', error)
+        toast.error('Session tracking unavailable. Please check your connection.')
       }
     }
 
