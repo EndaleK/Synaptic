@@ -68,9 +68,29 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (sessionError) {
-      logger.error('Failed to create study session', sessionError, { userId })
-      return NextResponse.json({ error: "Failed to start session" }, { status: 500 })
+      logger.error('Failed to create study session', sessionError, {
+        userId,
+        sessionType,
+        documentId,
+        plannedDurationMinutes,
+        errorCode: sessionError.code,
+        errorDetails: sessionError.details,
+        errorHint: sessionError.hint,
+        errorMessage: sessionError.message
+      })
+      return NextResponse.json({
+        error: "Failed to start session",
+        details: process.env.NODE_ENV === 'development' ? sessionError.message : undefined
+      }, { status: 500 })
     }
+
+    // Log successful session creation
+    logger.info(`✅ Study session started`, {
+      sessionId: session.id,
+      sessionType,
+      userId,
+      documentId
+    })
 
     const duration = Date.now() - startTime
     logger.api('POST', '/api/study-sessions/start', 200, duration, {

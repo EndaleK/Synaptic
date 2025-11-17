@@ -365,10 +365,21 @@ export default function ChatInterface() {
           const data = await response.json()
           setSessionId(data.sessionId)
           sessionStartTime.current = new Date()
-          console.log('[ChatInterface] Study session started:', data.sessionId)
+          console.log('📊 [ChatInterface] Study session started successfully', {
+            sessionId: data.sessionId,
+            documentId: currentDocument?.id,
+            startTime: data.startTime
+          })
+        } else {
+          const errorData = await response.json()
+          console.error('❌ [ChatInterface] Failed to start study session', {
+            status: response.status,
+            error: errorData.error,
+            details: errorData.details
+          })
         }
       } catch (error) {
-        console.error('[ChatInterface] Failed to start study session:', error)
+        console.error('❌ [ChatInterface] Exception starting study session:', error)
       }
     }
 
@@ -395,14 +406,24 @@ export default function ChatInterface() {
               durationMinutes
             }),
             keepalive: true // Ensures request completes even during page unload
-          }).then(response => {
+          }).then(async response => {
             if (response.ok) {
-              console.log('[ChatInterface] Study session completed:', durationMinutes, 'minutes')
+              const data = await response.json()
+              console.log('✅ [ChatInterface] Study session completed successfully', {
+                sessionId: data.sessionId,
+                durationMinutes: data.durationMinutes,
+                completedAt: data.completedAt
+              })
             } else {
-              console.warn('[ChatInterface] Failed to complete study session:', response.status)
+              const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+              console.error('❌ [ChatInterface] Failed to complete study session', {
+                status: response.status,
+                error: errorData.error,
+                details: errorData.details
+              })
             }
           }).catch(error => {
-            console.error('[ChatInterface] Error completing study session:', error)
+            console.error('❌ [ChatInterface] Exception completing study session:', error)
           })
         }
       }

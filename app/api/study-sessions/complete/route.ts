@@ -80,9 +80,27 @@ export async function POST(req: NextRequest) {
       .eq('id', sessionId)
 
     if (updateError) {
-      logger.error('Failed to complete study session', updateError, { userId, sessionId })
-      return NextResponse.json({ error: "Failed to complete session" }, { status: 500 })
+      logger.error('Failed to complete study session', updateError, {
+        userId,
+        sessionId,
+        durationMinutes,
+        errorCode: updateError.code,
+        errorDetails: updateError.details,
+        errorMessage: updateError.message
+      })
+      return NextResponse.json({
+        error: "Failed to complete session",
+        details: process.env.NODE_ENV === 'development' ? updateError.message : undefined
+      }, { status: 500 })
     }
+
+    // Log successful session completion
+    logger.info(`✅ Study session completed`, {
+      sessionId,
+      durationMinutes,
+      sessionType: session.session_type,
+      userId
+    })
 
     const duration = Date.now() - startTime
     logger.api('POST', '/api/study-sessions/complete', 200, duration, {
