@@ -64,14 +64,10 @@ export default function DocumentListView({
             className="w-4 h-4 rounded border-gray-300 dark:border-gray-600"
           />
         </div>
-        <div className="col-span-3">Name</div>
-        <div className="col-span-1 text-center" title="Flashcards">⚡</div>
-        <div className="col-span-1 text-center" title="Chat">💬</div>
-        <div className="col-span-1 text-center" title="Mind Map">🗺️</div>
-        <div className="col-span-1 text-center" title="Podcast">🎧</div>
-        <div className="col-span-1">Status</div>
-        <div className="col-span-1">Size</div>
-        <div className="col-span-1">Modified</div>
+        <div className="col-span-4">Name</div>
+        <div className="col-span-2">Status</div>
+        <div className="col-span-2">Size</div>
+        <div className="col-span-2">Modified</div>
         <div className="col-span-1"></div>
       </div>
 
@@ -100,94 +96,27 @@ export default function DocumentListView({
               </div>
 
               {/* Name + Icon */}
-              <div className="col-span-12 md:col-span-3 flex items-center gap-3 min-w-0">
+              <div className="col-span-12 md:col-span-4 flex items-center gap-3 min-w-0">
                 {getFileIcon(document.file_type)}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                     {document.file_name}
                   </p>
-                  {/* Mobile: Show content badges inline */}
-                  <div className="flex md:hidden items-center gap-2 mt-1 text-xs">
-                    {document.metadata?.flashcards_count > 0 && (
-                      <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded">
-                        ⚡ {document.metadata.flashcards_count}
-                      </span>
-                    )}
-                    {document.metadata?.chat_messages_count > 0 && (
-                      <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
-                        💬 {document.metadata.chat_messages_count}
-                      </span>
-                    )}
-                    {document.metadata?.mindmaps_count > 0 && (
-                      <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded">
-                        🗺️ {document.metadata.mindmaps_count}
-                      </span>
-                    )}
-                    {document.metadata?.podcasts_count > 0 && (
-                      <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
-                        🎧 {document.metadata.podcasts_count}
-                      </span>
-                    )}
-                  </div>
                 </div>
               </div>
 
-              {/* Flashcards Column - Desktop only */}
-              <div className="hidden md:flex col-span-1 items-center justify-center">
-                {document.metadata?.flashcards_count > 0 ? (
-                  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full min-w-[32px]">
-                    {document.metadata.flashcards_count}
-                  </span>
-                ) : (
-                  <span className="text-gray-300 dark:text-gray-700">—</span>
-                )}
-              </div>
-
-              {/* Chat Column - Desktop only */}
-              <div className="hidden md:flex col-span-1 items-center justify-center">
-                {document.metadata?.chat_messages_count > 0 ? (
-                  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full min-w-[32px]">
-                    {document.metadata.chat_messages_count}
-                  </span>
-                ) : (
-                  <span className="text-gray-300 dark:text-gray-700">—</span>
-                )}
-              </div>
-
-              {/* Mind Map Column - Desktop only */}
-              <div className="hidden md:flex col-span-1 items-center justify-center">
-                {document.metadata?.mindmaps_count > 0 ? (
-                  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full min-w-[32px]">
-                    {document.metadata.mindmaps_count}
-                  </span>
-                ) : (
-                  <span className="text-gray-300 dark:text-gray-700">—</span>
-                )}
-              </div>
-
-              {/* Podcast Column - Desktop only */}
-              <div className="hidden md:flex col-span-1 items-center justify-center">
-                {document.metadata?.podcasts_count > 0 ? (
-                  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full min-w-[32px]">
-                    {document.metadata.podcasts_count}
-                  </span>
-                ) : (
-                  <span className="text-gray-300 dark:text-gray-700">—</span>
-                )}
-              </div>
-
               {/* Status - Desktop only */}
-              <div className="hidden md:flex col-span-1 items-center">
+              <div className="hidden md:flex col-span-2 items-center">
                 {getStatusBadge(document.processing_status || 'completed')}
               </div>
 
               {/* Size - Desktop only */}
-              <div className="hidden md:flex col-span-1 items-center text-sm text-gray-600 dark:text-gray-400">
+              <div className="hidden md:flex col-span-2 items-center text-sm text-gray-600 dark:text-gray-400">
                 {formatFileSize(document.file_size)}
               </div>
 
               {/* Modified - Desktop only */}
-              <div className="hidden md:flex col-span-1 items-center text-sm text-gray-600 dark:text-gray-400">
+              <div className="hidden md:flex col-span-2 items-center text-sm text-gray-600 dark:text-gray-400">
                 {formatRelativeTime(document.updated_at)}
               </div>
 
@@ -229,17 +158,55 @@ export default function DocumentListView({
           style={{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }}
           onMouseLeave={() => setContextMenu(null)}
         >
+          {/* Learning Mode Submenu */}
+          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            Open in Mode
+          </div>
           <button
             onClick={() => {
-              const doc = documents.find(d => d.id === contextMenu.documentId)
-              if (doc) onSelectMode(doc.id, 'flashcards')
+              onSelectMode(contextMenu.documentId, 'flashcards')
               setContextMenu(null)
             }}
-            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
           >
-            <FolderInput className="w-4 h-4" />
-            Open
+            <span className="w-4 h-4 flex items-center justify-center text-purple-600 dark:text-purple-400">⚡</span>
+            Flashcards
           </button>
+          <button
+            onClick={() => {
+              onSelectMode(contextMenu.documentId, 'chat')
+              setContextMenu(null)
+            }}
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+          >
+            <span className="w-4 h-4 flex items-center justify-center text-blue-600 dark:text-blue-400">💬</span>
+            Chat
+          </button>
+          <button
+            onClick={() => {
+              onSelectMode(contextMenu.documentId, 'mindmap')
+              setContextMenu(null)
+            }}
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+          >
+            <span className="w-4 h-4 flex items-center justify-center text-emerald-600 dark:text-emerald-400">🗺️</span>
+            Mind Map
+          </button>
+          <button
+            onClick={() => {
+              onSelectMode(contextMenu.documentId, 'podcast')
+              setContextMenu(null)
+            }}
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+          >
+            <span className="w-4 h-4 flex items-center justify-center text-green-600 dark:text-green-400">🎧</span>
+            Podcast
+          </button>
+
+          {/* Divider */}
+          <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+
+          {/* Other Actions */}
           <button
             onClick={async () => {
               await onDelete(contextMenu.documentId)
