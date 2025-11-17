@@ -80,6 +80,13 @@ export interface Document {
   rag_chunk_count?: number
   rag_indexed_at?: string
   rag_indexing_error?: string
+  // Enhanced features
+  is_starred?: boolean
+  is_deleted?: boolean
+  deleted_at?: string
+  last_accessed_at?: string
+  tags?: string[]
+  folder_id?: string | null
   created_at: string
   updated_at: string
 }

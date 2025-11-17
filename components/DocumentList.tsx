@@ -14,6 +14,9 @@ interface DocumentListProps {
   onDelete: (documentId: string) => Promise<void>
   onRefresh: () => void
   onUpload?: () => void
+  onStar?: (documentId: string, starred: boolean) => Promise<void>
+  selectedDocuments?: Set<string>
+  onToggleSelect?: (documentId: string) => void
 }
 
 export default function DocumentList({
@@ -22,7 +25,10 @@ export default function DocumentList({
   onSelectMode,
   onDelete,
   onRefresh,
-  onUpload
+  onUpload,
+  onStar,
+  selectedDocuments,
+  onToggleSelect
 }: DocumentListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'size'>('date')
@@ -162,6 +168,9 @@ export default function DocumentList({
               onSelectMode={onSelectMode}
               onDelete={onDelete}
               onRefresh={onRefresh}
+              onStar={onStar}
+              selectedDocuments={selectedDocuments}
+              onToggleSelect={onToggleSelect}
             />
           ))}
         </div>

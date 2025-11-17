@@ -12,13 +12,29 @@ interface BreadcrumbItem {
   mode?: string
 }
 
-export default function Breadcrumb() {
+interface BreadcrumbProps {
+  items?: BreadcrumbItem[]
+  className?: string
+}
+
+// Predefined breadcrumb configurations
+export const documentsBreadcrumb: BreadcrumbItem[] = [
+  { label: "Home", href: "/dashboard", mode: "home" },
+  { label: "Documents" }
+]
+
+export default function Breadcrumb({ items, className }: BreadcrumbProps = {}) {
   const pathname = usePathname()
   const { activeMode } = useUIStore()
 
   // Generate breadcrumb items based on current route and mode
   const getBreadcrumbItems = (): BreadcrumbItem[] => {
-    const items: BreadcrumbItem[] = [
+    // If items are provided as props, use them
+    if (items && items.length > 0) {
+      return items
+    }
+
+    const generatedItems: BreadcrumbItem[] = [
       { label: "Home", href: "/dashboard", mode: "home" }
     ]
 
@@ -37,7 +53,7 @@ export default function Breadcrumb() {
         }
 
         if (modeLabels[activeMode]) {
-          items.push({ label: modeLabels[activeMode] })
+          generatedItems.push({ label: modeLabels[activeMode] })
         }
       }
     } else if (pathname.startsWith("/dashboard/")) {
@@ -57,14 +73,14 @@ export default function Breadcrumb() {
 
         // Don't make the last item clickable
         if (i === segments.length - 1) {
-          items.push({ label })
+          generatedItems.push({ label })
         } else {
-          items.push({ label, href })
+          generatedItems.push({ label, href })
         }
       }
     }
 
-    return items
+    return generatedItems
   }
 
   const breadcrumbItems = getBreadcrumbItems()
@@ -75,7 +91,7 @@ export default function Breadcrumb() {
   }
 
   return (
-    <nav className="flex items-center gap-1 text-sm mb-4 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
+    <nav className={cn("flex items-center gap-1 text-sm mb-4 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0", className)}>
       {breadcrumbItems.map((item, index) => (
         <div key={index} className="flex items-center gap-1 flex-shrink-0">
           {index > 0 && (

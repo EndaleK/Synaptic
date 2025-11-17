@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { FileText, File as FileIcon, FileType, Trash2, Download, Loader2, CheckCircle2, AlertCircle, Eye, Sparkles, Zap, Map, MessageCircle, BookOpen, Mic, Network, Database } from "lucide-react"
+import { FileText, File as FileIcon, FileType, Trash2, Download, Loader2, CheckCircle2, AlertCircle, Eye, Sparkles, Zap, Map, MessageCircle, BookOpen, Mic, Network, Database, Star } from "lucide-react"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { cn } from "@/lib/utils"
 import ContentSelectionModal from "./ContentSelectionModal"
@@ -13,15 +13,19 @@ interface DocumentCardProps {
   onSelectMode: (documentId: string, mode: PreferredMode) => void
   onDelete: (documentId: string) => void
   onRefresh?: () => void
+  onStar?: (documentId: string, starred: boolean) => Promise<void>
+  selectedDocuments?: Set<string>
+  onToggleSelect?: (documentId: string) => void
 }
 
-export default function DocumentCard({ document, onSelectMode, onDelete, onRefresh }: DocumentCardProps) {
+export default function DocumentCard({ document, onSelectMode, onDelete, onRefresh, onStar, selectedDocuments, onToggleSelect }: DocumentCardProps) {
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedGenerationType, setSelectedGenerationType] = useState<'flashcards' | 'podcast' | 'mindmap'>('flashcards')
   const [contentCounts, setContentCounts] = useState({ flashcards: 0, podcasts: 0, mindmaps: 0 })
   const [isDragging, setIsDragging] = useState(false)
+  const isSelected = selectedDocuments?.has(document.id) || false
 
   // Callback when RAG indexing completes
   const handleIndexComplete = () => {
@@ -186,12 +190,52 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
         draggable
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onClick={() => onToggleSelect?.(document.id)}
         className={cn(
           "relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:shadow-lg transition-all duration-200 cursor-grab active:cursor-grabbing",
           isDeleting && "opacity-50 pointer-events-none",
-          isDragging && "opacity-40"
+          isDragging && "opacity-40",
+          isSelected && "ring-2 ring-blue-500 dark:ring-blue-400"
         )}
       >
+        {/* Selection Checkbox */}
+        {onToggleSelect && (
+          <div className="absolute top-3 left-3 z-10">
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => {
+                e.stopPropagation()
+                onToggleSelect(document.id)
+              }}
+              className="w-4 h-4 rounded border-gray-300 dark:border-gray-600"
+            />
+          </div>
+        )}
+
+        {/* Star Button */}
+        {onStar && (
+          <div className="absolute top-3 right-24">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onStar(document.id, !document.is_starred)
+              }}
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              title={document.is_starred ? "Unstar" : "Star"}
+            >
+              <Star
+                className={cn(
+                  "w-5 h-5",
+                  document.is_starred
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "text-gray-400 hover:text-yellow-400"
+                )}
+              />
+            </button>
+          </div>
+        )}
+
         {/* Status Badge */}
         <div className="absolute top-3 right-3">
           {getStatusBadge()}

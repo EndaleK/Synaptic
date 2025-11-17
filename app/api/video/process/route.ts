@@ -9,6 +9,9 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 })
 
+// Vercel: Allow up to 5 minutes for video processing (transcript + AI analysis)
+export const maxDuration = 300
+
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
