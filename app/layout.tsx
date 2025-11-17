@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs';
 import ClientWrapper from "@/components/ClientWrapper";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,8 +21,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Synaptic - Learning That Adapts to You | 8 Intelligent Study Tools",
-  description: "Study smarter with 8 intelligent tools: flashcards with spaced repetition, mock exams, podcasts, mind maps, and more. Support for 500MB+ documents, 83% cheaper than competitors, research-backed design.",
+  title: "Synaptic™ - Learning That Adapts to You | 8 Intelligent Study Tools",
+  description: "Study smarter with Synaptic™: 8 intelligent tools including flashcards with spaced repetition, mock exams, podcasts, mind maps, and more. Support for 500MB+ documents, 83% cheaper than competitors, research-backed design.",
   keywords: [
     "AI study tools",
     "flashcards",
@@ -44,9 +45,9 @@ export const metadata: Metadata = {
     "CPA prep",
     "Bar exam study"
   ],
-  authors: [{ name: "Synaptic" }],
-  creator: "Synaptic",
-  publisher: "Synaptic",
+  authors: [{ name: "Synaptic™" }],
+  creator: "Synaptic™",
+  publisher: "Synaptic™",
   formatDetection: {
     email: false,
     address: false,
@@ -57,10 +58,10 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: "Synaptic - Learning That Adapts to You",
+    title: "Synaptic™ - Learning That Adapts to You",
     description: "Transform textbooks into podcasts, mind maps, and practice exams. 8 intelligent study tools in one platform. 83% cheaper, supports 500MB+ documents.",
     url: 'https://synaptic.study',
-    siteName: 'Synaptic',
+    siteName: 'Synaptic™',
     images: [
       {
         url: '/og-image.png',
@@ -74,7 +75,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: "Synaptic - Study Smarter, Not Harder",
+    title: "Synaptic™ - Study Smarter, Not Harder",
     description: "8 intelligent study tools: flashcards, mock exams, podcasts, mind maps. 83% cheaper, 500MB+ document support.",
     images: ['/og-image.png'],
     creator: '@synaptic_study',
@@ -100,6 +101,15 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest',
 };
 
+export const viewport: Viewport = {
+  themeColor: '#7B3FF2',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: 'cover',
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -113,11 +123,23 @@ export default function RootLayout({
           <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+
+          {/* PWA Meta Tags */}
+          <meta name="application-name" content="Synaptic™" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+          <meta name="apple-mobile-web-app-title" content="Synaptic™" />
+          <meta name="format-detection" content="telephone=no" />
+          <meta name="mobile-web-app-capable" content="yes" />
+
+          {/* iOS Splash Screens */}
+          <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" />
         </head>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <ServiceWorkerRegistration />
+          <PWAInstallPrompt />
           <ClientWrapper>
             {children}
           </ClientWrapper>

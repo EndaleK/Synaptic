@@ -1,6 +1,27 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+// @ts-ignore - next-pwa doesn't have types
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  disable: process.env.NODE_ENV === 'development',
+  register: true,
+  skipWaiting: true,
+  runtimeCaching: [
+    {
+      urlPattern: /^https?.*/,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'offlineCache',
+        expiration: {
+          maxEntries: 200,
+          maxAgeSeconds: 24 * 60 * 60, // 24 hours
+        },
+      },
+    },
+  ],
+});
+
 const nextConfig: NextConfig = {
   // Temporarily disable linting and type checking during builds for faster deployment
   eslint: {
@@ -105,9 +126,12 @@ const nextConfig: NextConfig = {
   }
 };
 
+// Wrap with PWA first, then Sentry configuration
+const configWithPWA = withPWA(nextConfig);
+
 // Wrap with Sentry configuration (only in production builds)
 export default process.env.NODE_ENV === 'production' && process.env.SENTRY_AUTH_TOKEN
-  ? withSentryConfig(nextConfig, {
+  ? withSentryConfig(configWithPWA, {
       // Sentry Webpack plugin options
       org: process.env.SENTRY_ORG,
       project: process.env.SENTRY_PROJECT,
@@ -116,23 +140,13 @@ export default process.env.NODE_ENV === 'production' && process.env.SENTRY_AUTH_
       // Upload source maps for better debugging
       silent: true, // Suppress logs to reduce noise
 
-      // Hide source maps from public
-      hideSourceMaps: true,
-
       // Automatically instrument Server Components
       automaticVercelMonitors: true,
 
       // Additional Webpack options
       widenClientFileUpload: true,
 
-      // Transpile SDK for Edge runtime
-      transpileClientSDK: true,
-
       // Tunnel requests to avoid ad blockers
       tunnelRoute: "/monitoring",
-
-      // Disable SDK initialization in Next.js config (we do it manually)
-      disableServerWebpackPlugin: false,
-      disableClientWebpackPlugin: false,
     })
-  : nextConfig;
+  : configWithPWA;
