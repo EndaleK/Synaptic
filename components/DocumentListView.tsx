@@ -24,6 +24,34 @@ export default function DocumentListView({
 }: DocumentListViewProps) {
   const [contextMenu, setContextMenu] = useState<{ documentId: string; x: number; y: number } | null>(null)
 
+  // Calculate menu position to avoid overflow
+  const getMenuPosition = () => {
+    if (!contextMenu) return {}
+
+    const menuWidth = 180
+    const menuHeight = 400 // Approximate height with all items
+    const padding = 8
+
+    let x = contextMenu.x
+    let y = contextMenu.y
+
+    // Adjust horizontal position if menu would overflow right edge
+    if (x + menuWidth > window.innerWidth) {
+      x = window.innerWidth - menuWidth - padding
+    }
+
+    // Adjust vertical position if menu would overflow bottom edge
+    if (y + menuHeight > window.innerHeight) {
+      y = window.innerHeight - menuHeight - padding
+    }
+
+    // Ensure menu doesn't go off left or top edge
+    x = Math.max(padding, x)
+    y = Math.max(padding, y)
+
+    return { left: `${x}px`, top: `${y}px` }
+  }
+
   const getFileIcon = (fileType: string) => {
     if (fileType.includes('pdf')) return <FileText className="w-5 h-5 text-red-500" />
     if (fileType.includes('image')) return <ImageIcon className="w-5 h-5 text-blue-500" />
@@ -155,7 +183,7 @@ export default function DocumentListView({
       {contextMenu && (
         <div
           className="fixed z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1 min-w-[180px]"
-          style={{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }}
+          style={getMenuPosition()}
           onMouseLeave={() => setContextMenu(null)}
         >
           {/* Learning Mode Submenu */}
