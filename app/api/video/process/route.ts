@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
-import { fetchTranscript } from '@egoist/youtube-transcript-plus'
+import { fetchYouTubeTranscriptWithRetry } from '@/lib/youtube-transcript-fetcher'
 import OpenAI from 'openai'
 import { incrementUsage } from '@/lib/usage-limits'
 
@@ -152,28 +152,27 @@ export async function POST(request: NextRequest) {
       throw insertError
     }
 
-    // Extract transcript (force English language)
+    // Extract transcript with enhanced fallback mechanisms
     let transcript: any[] = []
     let transcriptError: string | null = null
+    let transcriptSource = 'unknown'
+
     try {
-      console.log(`[Video ${videoId}] Attempting transcript extraction with youtube-transcript-plus (English)...`)
-      const transcriptData = await fetchTranscript(videoId, { lang: 'en' })
-      console.log(`[Video ${videoId}] Transcript fetched successfully, ${transcriptData.segments.length} segments`)
+      console.log(`[Video ${videoId}] Attempting transcript extraction with retry and fallback...`)
 
-      // Check first segment to determine if offset is in ms or seconds
-      const firstOffset = transcriptData.segments[0]?.offset || 0
-      const isMilliseconds = firstOffset > 100 // If offset > 100, likely milliseconds
+      const transcriptResult = await fetchYouTubeTranscriptWithRetry(videoId, {
+        lang: 'en',
+        youtubeApiKey,
+        maxRetries: 3
+      })
 
-      console.log(`[Video ${videoId}] First offset: ${firstOffset}, treating as ${isMilliseconds ? 'milliseconds' : 'seconds'}`)
+      transcript = transcriptResult.segments
+      transcriptSource = transcriptResult.source
 
-      transcript = transcriptData.segments.map((line: any) => ({
-        start_time: isMilliseconds ? line.offset / 1000 : line.offset,
-        end_time: isMilliseconds ? (line.offset + line.duration) / 1000 : (line.offset + line.duration),
-        text: line.text
-      }))
+      console.log(`[Video ${videoId}] ✅ Transcript fetched successfully via ${transcriptSource} (${transcript.length} segments)`)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err)
-      console.error(`[Video ${videoId}] Transcript extraction failed:`, {
+      console.error(`[Video ${videoId}] ❌ All transcript extraction methods failed:`, {
         error: errorMessage,
         errorType: err instanceof Error ? err.constructor.name : typeof err,
         stack: err instanceof Error ? err.stack : undefined
