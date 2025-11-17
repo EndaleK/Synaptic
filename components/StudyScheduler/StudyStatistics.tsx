@@ -71,8 +71,24 @@ interface StudyStats {
     chat: number
     mindmap: number
     podcast: number
+    video: number
+    writing: number
+    exam: number
+    other: number
   }
 }
+
+// Mode configuration for consistent display across charts and lists
+const MODE_CONFIG = {
+  flashcards: { name: 'Flashcards', icon: '🃏', color: '#7B3FF2', bgColor: 'bg-purple-100 dark:bg-purple-900/30' },
+  chat: { name: 'Chat', icon: '💬', color: '#E91E8C', bgColor: 'bg-pink-100 dark:bg-pink-900/30' },
+  mindmap: { name: 'Mind Maps', icon: '🗺️', color: '#FF6B35', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
+  podcast: { name: 'Podcasts', icon: '🎙️', color: '#2D3E9F', bgColor: 'bg-blue-100 dark:bg-blue-900/30' },
+  video: { name: 'Video', icon: '📹', color: '#10B981', bgColor: 'bg-green-100 dark:bg-green-900/30' },
+  writing: { name: 'Writing', icon: '✍️', color: '#F59E0B', bgColor: 'bg-amber-100 dark:bg-amber-900/30' },
+  exam: { name: 'Exam', icon: '📝', color: '#8B5CF6', bgColor: 'bg-violet-100 dark:bg-violet-900/30' },
+  other: { name: 'Other', icon: '⏰', color: '#6B7280', bgColor: 'bg-gray-100 dark:bg-gray-900/30' }
+} as const
 
 export default function StudyStatistics() {
   const [stats, setStats] = useState<StudyStats | null>(null)
@@ -98,6 +114,23 @@ export default function StudyStatistics() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Generate dynamic mode data from actual statistics
+  const getModeData = () => {
+    if (!stats?.modeBreakdown) return []
+
+    return Object.entries(stats.modeBreakdown)
+      .filter(([_, value]) => value > 0) // Only show modes with data
+      .map(([key, value]) => ({
+        key,
+        name: MODE_CONFIG[key as keyof typeof MODE_CONFIG].name,
+        icon: MODE_CONFIG[key as keyof typeof MODE_CONFIG].icon,
+        color: MODE_CONFIG[key as keyof typeof MODE_CONFIG].color,
+        bgColor: MODE_CONFIG[key as keyof typeof MODE_CONFIG].bgColor,
+        value
+      }))
+      .sort((a, b) => b.value - a.value) // Sort by time spent (descending)
   }
 
   const getStreakColor = (count: number): string => {
@@ -524,84 +557,88 @@ export default function StudyStatistics() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Pie Chart */}
-            <div className="flex items-center justify-center">
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Flashcards', value: stats.modeBreakdown.flashcards, color: '#7B3FF2' },
-                      { name: 'Chat', value: stats.modeBreakdown.chat, color: '#E91E8C' },
-                      { name: 'Mind Maps', value: stats.modeBreakdown.mindmap, color: '#FF6B35' },
-                      { name: 'Podcasts', value: stats.modeBreakdown.podcast, color: '#2D3E9F' }
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {[
-                      { name: 'Flashcards', value: stats.modeBreakdown.flashcards, color: '#7B3FF2' },
-                      { name: 'Chat', value: stats.modeBreakdown.chat, color: '#E91E8C' },
-                      { name: 'Mind Maps', value: stats.modeBreakdown.mindmap, color: '#FF6B35' },
-                      { name: 'Podcasts', value: stats.modeBreakdown.podcast, color: '#2D3E9F' }
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #E5E7EB',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                    formatter={(value: number) => `${value} min`}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+          {getModeData().length === 0 ? (
+            /* Empty State */
+            <div className="text-center py-12">
+              <Brain className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Start Your Learning Journey
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
+                Use any learning mode to begin tracking your study progress. Your statistics will appear here as you study.
+              </p>
+              <button
+                onClick={() => window.location.href = '/dashboard'}
+                className="px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-semibold hover:shadow-xl transition-all shadow-lg"
+              >
+                Explore Learning Modes
+              </button>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Pie Chart */}
+              <div className="flex items-center justify-center">
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={getModeData()}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {getModeData().map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                      formatter={(value: number) => `${value} min`}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
 
-            {/* Mode Statistics */}
-            <div className="space-y-4">
-              {[
-                { name: 'Flashcards', icon: '🃏', value: stats.modeBreakdown.flashcards, color: '#7B3FF2', bgColor: 'bg-purple-100 dark:bg-purple-900/30' },
-                { name: 'Chat', icon: '💬', value: stats.modeBreakdown.chat, color: '#E91E8C', bgColor: 'bg-pink-100 dark:bg-pink-900/30' },
-                { name: 'Mind Maps', icon: '🗺️', value: stats.modeBreakdown.mindmap, color: '#FF6B35', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
-                { name: 'Podcasts', icon: '🎙️', value: stats.modeBreakdown.podcast, color: '#2D3E9F', bgColor: 'bg-blue-100 dark:bg-blue-900/30' }
-              ].map((mode) => {
-                const total = stats.modeBreakdown!.flashcards + stats.modeBreakdown!.chat + stats.modeBreakdown!.mindmap + stats.modeBreakdown!.podcast
-                const percentage = total > 0 ? Math.round((mode.value / total) * 100) : 0
+              {/* Mode Statistics */}
+              <div className="space-y-4">
+                {getModeData().map((mode) => {
+                  const total = getModeData().reduce((sum, m) => sum + m.value, 0)
+                  const percentage = total > 0 ? Math.round((mode.value / total) * 100) : 0
 
-                return (
-                  <div key={mode.name} className={`${mode.bgColor} rounded-xl p-4 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600 transition-all`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">{mode.icon}</span>
-                        <span className="font-semibold text-gray-900 dark:text-white">{mode.name}</span>
+                  return (
+                    <div key={mode.key} className={`${mode.bgColor} rounded-xl p-4 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600 transition-all`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{mode.icon}</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">{mode.name}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-gray-900 dark:text-white">{mode.value} min</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">{percentage}%</div>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-gray-900 dark:text-white">{mode.value} min</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">{percentage}%</div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="h-2 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${percentage}%`,
+                            backgroundColor: mode.color
+                          }}
+                        />
                       </div>
                     </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div
-                        className="h-2 rounded-full transition-all duration-500"
-                        style={{
-                          width: `${percentage}%`,
-                          backgroundColor: mode.color
-                        }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
