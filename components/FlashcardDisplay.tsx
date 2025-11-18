@@ -10,9 +10,7 @@ import ShareModal from "./ShareModal"
 import { useToast } from "./ToastContainer"
 import { useDocumentStore } from "@/lib/store/useStore"
 import { useFlashcardStore } from "@/lib/store/useFlashcardStore"
-import FlashcardMaturityBadge from "./FlashcardMaturityBadge"
 import FlashcardSourceReference from "./FlashcardSourceReference"
-import { getMinReviewsForMastery } from "@/lib/spaced-repetition/sm2-algorithm"
 
 interface FlashcardDisplayProps {
   flashcards: Flashcard[]
@@ -1043,15 +1041,11 @@ ${'='.repeat(50)}`).join('\n')}`
               <h2 className="text-lg md:text-2xl font-bold text-black dark:text-white truncate">
                 Interactive Flashcards
               </h2>
-              {/* Maturity Badge */}
+              {/* Progress Summary */}
               {currentCard && hasValidDatabaseId(currentCard.id) && (
-                <FlashcardMaturityBadge
-                  maturityLevel={currentCard.maturity_level || 'new'}
-                  repetitions={currentCard.repetitions || 0}
-                  minReviewsForMastery={getMinReviewsForMastery(currentCard.auto_difficulty || 'medium')}
-                  size="md"
-                  showLabel={true}
-                />
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
+                  <span>{currentCard.repetitions || 0}/3 reviews</span>
+                </div>
               )}
             </div>
           </div>
@@ -1197,19 +1191,35 @@ ${'='.repeat(50)}`).join('\n')}`
             {...swipeHandlers}
             className="relative cursor-pointer h-72 md:h-80 lg:h-96 mb-3 md:mb-4"
           >
-            {/* Mastery Badge */}
-            {masteredCards.has(currentCard.id) && (
-              <div className="absolute top-2 right-2 z-10 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 shadow-lg">
-                <Check className="h-3 w-3" />
-                <span>Mastered</span>
-              </div>
-            )}
-            {needsReviewCards.has(currentCard.id) && !masteredCards.has(currentCard.id) && (
-              <div className="absolute top-2 right-2 z-10 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 shadow-lg">
-                <X className="h-3 w-3" />
-                <span>Review</span>
-              </div>
-            )}
+            {/* Progress Indicator - Shows dots (1-2) or "Mastered" (3+) */}
+            {(() => {
+              const repetitions = currentCard.repetitions || 0
+              const isCorrect = repetitions > 0 && (currentCard.last_quality_rating || 0) >= 3
+
+              if (repetitions >= 3) {
+                // Show "Mastered" badge after 3 successful reviews
+                return (
+                  <div className="absolute top-3 right-3 z-10 bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1.5 shadow-lg">
+                    <Check className="h-4 w-4" />
+                    <span>Mastered</span>
+                  </div>
+                )
+              } else if (repetitions > 0 && isCorrect) {
+                // Show progress dots for 1-2 successful reviews
+                return (
+                  <div className="absolute top-3 right-3 z-10 bg-white dark:bg-gray-800 px-2 py-2 rounded-full shadow-lg flex items-center gap-1">
+                    {Array.from({ length: repetitions }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-2.5 h-2.5 rounded-full bg-green-500"
+                        title={`${repetitions}/3 reviews to mastery`}
+                      />
+                    ))}
+                  </div>
+                )
+              }
+              return null
+            })()}
 
             <div
               className={cn(
@@ -1267,59 +1277,35 @@ ${'='.repeat(50)}`).join('\n')}`
             </div>
           </div>
 
-          {/* Enhanced 4-Button Review System - Only show when flipped and flashcard has database ID */}
+          {/* Simple 2-Button Review System - Only show when flipped and flashcard has database ID */}
           {flipped && hasValidDatabaseId(currentCard.id) && (
-            <div className="space-y-2 mt-3 mb-2">
+            <div className="space-y-3 mt-3 mb-2">
               {/* Review quality buttons */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => handleMastery('needs-review')}
                   disabled={isUpdatingMastery}
-                  className="flex flex-col items-center justify-center gap-1 px-3 py-2.5 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed min-h-[60px]"
-                  title="Completely forgot - Start over"
+                  className="flex flex-col items-center justify-center gap-2 px-4 py-4 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed min-h-[80px]"
+                  title="I don't get it - Review again"
                 >
-                  <X className="h-5 w-5" />
-                  <span className="text-xs md:text-sm">Again</span>
-                  <span className="text-xs opacity-75">&lt;1 min</span>
-                </button>
-
-                <button
-                  onClick={() => handleMastery('hard')}
-                  disabled={isUpdatingMastery}
-                  className="flex flex-col items-center justify-center gap-1 px-3 py-2.5 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed min-h-[60px]"
-                  title="Difficult to recall - Review soon"
-                >
-                  <span className="text-lg">😓</span>
-                  <span className="text-xs md:text-sm">Hard</span>
-                  <span className="text-xs opacity-75">~10 min</span>
+                  <X className="h-6 w-6" />
+                  <span className="text-sm md:text-base">I Don't Get It</span>
                 </button>
 
                 <button
                   onClick={() => handleMastery('good')}
                   disabled={isUpdatingMastery}
-                  className="flex flex-col items-center justify-center gap-1 px-3 py-2.5 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed min-h-[60px]"
-                  title="Recalled with some effort - Normal interval"
+                  className="flex flex-col items-center justify-center gap-2 px-4 py-4 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed min-h-[80px]"
+                  title="I got it - Progress toward mastery"
                 >
-                  <Check className="h-5 w-5" />
-                  <span className="text-xs md:text-sm">Good</span>
-                  <span className="text-xs opacity-75">4 days</span>
-                </button>
-
-                <button
-                  onClick={() => handleMastery('mastered')}
-                  disabled={isUpdatingMastery}
-                  className="flex flex-col items-center justify-center gap-1 px-3 py-2.5 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed min-h-[60px]"
-                  title="Perfect recall - Longer interval"
-                >
-                  <span className="text-lg">✨</span>
-                  <span className="text-xs md:text-sm">Easy</span>
-                  <span className="text-xs opacity-75">2 weeks</span>
+                  <Check className="h-6 w-6" />
+                  <span className="text-sm md:text-base">I Got It</span>
                 </button>
               </div>
 
               {/* Helper text */}
               <p className="text-center text-xs text-gray-500 dark:text-gray-400">
-                How well did you remember this card?
+                Select "I Got It" 3 times to master this card
               </p>
             </div>
           )}
