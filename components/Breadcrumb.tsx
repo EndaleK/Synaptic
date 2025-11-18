@@ -23,6 +23,11 @@ export const documentsBreadcrumb: BreadcrumbItem[] = [
   { label: "Documents" }
 ]
 
+export const settingsBreadcrumb: BreadcrumbItem[] = [
+  { label: "Home", href: "/dashboard", mode: "home" },
+  { label: "Settings" }
+]
+
 export default function Breadcrumb({ items, className }: BreadcrumbProps = {}) {
   const pathname = usePathname()
   const { activeMode } = useUIStore()

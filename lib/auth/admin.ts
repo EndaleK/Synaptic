@@ -64,7 +64,8 @@ export async function checkAdminAccess(): Promise<AdminUser | null> {
     }
 
     // Get user from Clerk
-    const user = await clerkClient().users.getUser(userId)
+    const client = await clerkClient()
+    const user = await client.users.getUser(userId)
 
     if (!user) {
       return null

@@ -39,6 +39,9 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   const [cardMasteryLevels, setCardMasteryLevels] = useState<Map<string, MasteryLevel>>(new Map())
   const [isUpdatingMastery, setIsUpdatingMastery] = useState(false)
 
+  // Track updated repetitions for progress dots (maps card ID to repetitions count)
+  const [cardRepetitions, setCardRepetitions] = useState<Map<string, number>>(new Map())
+
   // Study session tracking
   const [sessionId, setSessionId] = useState<string | null>(null)
   const sessionStartTime = useRef<Date | null>(null)
@@ -208,6 +211,9 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
       }
 
       const data = await response.json()
+
+      // Update the card's repetitions in local state for progress dots
+      setCardRepetitions(prev => new Map(prev).set(currentCard.id, data.mastery.repetitions))
 
       // Update local state based on action
       if (action === 'good') {
@@ -1034,7 +1040,7 @@ ${'='.repeat(50)}`).join('\n')}`
               {/* Progress Summary */}
               {currentCard && hasValidDatabaseId(currentCard.id) && (
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-                  <span>{currentCard.repetitions || 0}/3 reviews</span>
+                  <span>{cardRepetitions.get(currentCard.id) ?? currentCard.repetitions ?? 0}/3 reviews</span>
                 </div>
               )}
             </div>
@@ -1183,8 +1189,9 @@ ${'='.repeat(50)}`).join('\n')}`
           >
             {/* Progress Indicator - Shows dots (1-2) or "Mastered" (3+) */}
             {(() => {
-              const repetitions = currentCard.repetitions || 0
-              const isCorrect = repetitions > 0 && (currentCard.last_quality_rating || 0) >= 3
+              // Use updated repetitions from state if available, otherwise use card's value
+              const repetitions = cardRepetitions.get(currentCard.id) ?? currentCard.repetitions ?? 0
+              const isCorrect = repetitions > 0
 
               if (repetitions >= 3) {
                 // Show "Mastered" badge after 3 successful reviews
