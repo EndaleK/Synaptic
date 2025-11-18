@@ -10,6 +10,9 @@ import ShareModal from "./ShareModal"
 import { useToast } from "./ToastContainer"
 import { useDocumentStore } from "@/lib/store/useStore"
 import { useFlashcardStore } from "@/lib/store/useFlashcardStore"
+import FlashcardMaturityBadge from "./FlashcardMaturityBadge"
+import FlashcardSourceReference from "./FlashcardSourceReference"
+import { getMinReviewsForMastery } from "@/lib/spaced-repetition/sm2-algorithm"
 
 interface FlashcardDisplayProps {
   flashcards: Flashcard[]
@@ -1036,10 +1039,20 @@ ${'='.repeat(50)}`).join('\n')}`
             <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-lg flex items-center justify-center flex-shrink-0 shadow">
               <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 flex items-center justify-between gap-3">
               <h2 className="text-lg md:text-2xl font-bold text-black dark:text-white truncate">
                 Interactive Flashcards
               </h2>
+              {/* Maturity Badge */}
+              {currentCard && hasValidDatabaseId(currentCard.id) && (
+                <FlashcardMaturityBadge
+                  maturityLevel={currentCard.maturity_level || 'new'}
+                  repetitions={currentCard.repetitions || 0}
+                  minReviewsForMastery={getMinReviewsForMastery(currentCard.auto_difficulty || 'medium')}
+                  size="md"
+                  showLabel={true}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -1223,7 +1236,7 @@ ${'='.repeat(50)}`).join('\n')}`
               </div>
 
               <div
-                className="absolute inset-0 w-full h-full bg-gradient-to-br from-accent-secondary/5 to-accent-primary/5 dark:from-accent-secondary/30 dark:to-accent-primary/30 rounded-lg shadow-lg flex items-center justify-center backface-hidden rotate-y-180 border-2 border-accent-secondary/30 dark:border-accent-secondary/50 overflow-y-auto p-3 md:p-4"
+                className="absolute inset-0 w-full h-full bg-gradient-to-br from-accent-secondary/5 to-accent-primary/5 dark:from-accent-secondary/30 dark:to-accent-primary/30 rounded-lg shadow-lg flex flex-col items-center justify-center backface-hidden rotate-y-180 border-2 border-accent-secondary/30 dark:border-accent-secondary/50 overflow-y-auto p-3 md:p-4"
                 style={{
                   backfaceVisibility: "hidden",
                   transform: "rotateY(180deg)",
@@ -1233,6 +1246,23 @@ ${'='.repeat(50)}`).join('\n')}`
                 <p className="text-sm md:text-base lg:text-lg text-center text-gray-800 dark:text-gray-100 break-words max-w-full leading-relaxed">
                   {currentCard.back}
                 </p>
+
+                {/* Source Reference - Show when flipped and source data available */}
+                {(currentCard.source_page || currentCard.source_section || currentCard.source_excerpt) && (
+                  <div className="mt-4 w-full max-w-md">
+                    <FlashcardSourceReference
+                      source={{
+                        page: currentCard.source_page,
+                        section: currentCard.source_section,
+                        excerpt: currentCard.source_excerpt,
+                        chunk: currentCard.source_chunk
+                      }}
+                      documentName={currentDocument?.name}
+                      documentId={currentCard.document_id}
+                      compact={true}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
