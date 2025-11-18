@@ -34,12 +34,20 @@ ALTER TABLE flashcards
 ADD COLUMN IF NOT EXISTS card_type TEXT DEFAULT 'qa' CHECK (card_type IN ('qa', 'cloze', 'multiple-choice', 'image-occlusion'));
 
 -- For cloze deletion cards
-ADD COLUMN IF NOT EXISTS cloze_text TEXT,
+ALTER TABLE flashcards
+ADD COLUMN IF NOT EXISTS cloze_text TEXT;
+
+ALTER TABLE flashcards
 ADD COLUMN IF NOT EXISTS cloze_indices INTEGER[];
 
 -- For multiple choice cards
-ADD COLUMN IF NOT EXISTS mc_options TEXT[],
-ADD COLUMN IF NOT EXISTS mc_correct_index INTEGER,
+ALTER TABLE flashcards
+ADD COLUMN IF NOT EXISTS mc_options TEXT[];
+
+ALTER TABLE flashcards
+ADD COLUMN IF NOT EXISTS mc_correct_index INTEGER;
+
+ALTER TABLE flashcards
 ADD COLUMN IF NOT EXISTS mc_explanation TEXT;
 
 -- ============================================================================
