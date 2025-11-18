@@ -50,7 +50,7 @@ export default function GoalsSettingsModal() {
     {
       key: 'studyMinutes' as keyof DailyGoals,
       label: 'Study Time',
-      icon: '๐',
+      icon: 'รฐ',
       unit: 'minutes',
       description: 'Daily study time goal',
       min: 15,
@@ -60,7 +60,7 @@ export default function GoalsSettingsModal() {
     {
       key: 'flashcardsReviewed' as keyof DailyGoals,
       label: 'Flashcards',
-      icon: 'ก',
+      icon: 'ยก',
       unit: 'cards',
       description: 'Flashcards to review per day',
       min: 5,
@@ -70,7 +70,7 @@ export default function GoalsSettingsModal() {
     {
       key: 'documentsRead' as keyof DailyGoals,
       label: 'Documents',
-      icon: '=ฺ',
+      icon: '=ร',
       unit: 'documents',
       description: 'Documents to interact with',
       min: 1,
@@ -178,7 +178,7 @@ export default function GoalsSettingsModal() {
             {/* Info Box */}
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <p className="text-sm text-blue-900 dark:text-blue-300">
-                =ก <span className="font-semibold">Tip:</span> Set realistic goals that challenge you without causing burnout. You can adjust these anytime!
+                =ยก <span className="font-semibold">Tip:</span> Set realistic goals that challenge you without causing burnout. You can adjust these anytime!
               </p>
             </div>
           </div>
