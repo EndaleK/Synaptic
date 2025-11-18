@@ -14,7 +14,7 @@ import { logger } from '@/lib/logger'
 import { FileUploadSchema, validateDocumentLength, validateContentSafety } from '@/lib/validation'
 import { canUploadDocument, trackDocumentUpload } from '@/lib/usage-tracker'
 import { processFileParallel, shouldUseParallelProcessing, estimateUploadTime } from '@/lib/upload-optimizer'
-import { withMonitoring, trackApiMetric, flagSlowOperation } from '@/lib/monitoring/api-monitor'
+import { withMonitoring, trackApiMetric, flagSlowOperation, addApiContext } from '@/lib/monitoring/api-monitor'
 import { trackSupabaseQuery } from '@/lib/monitoring/supabase-monitor'
 
 // Vercel limits: 4.5MB max request body size (cannot be changed)
