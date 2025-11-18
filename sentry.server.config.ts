@@ -56,9 +56,4 @@ Sentry.init({
     'ENOTFOUND',
     'ECONNRESET',
   ],
-
-  // Enhanced integrations for better monitoring (Phase 0)
-  integrations: [
-    new Sentry.Integrations.Http({ tracing: true }),
-  ],
 });

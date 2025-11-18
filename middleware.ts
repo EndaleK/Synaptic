@@ -13,6 +13,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/inngest(.*)', // Inngest background job endpoint
   '/api/storage/test', // Storage diagnostic endpoint
   '/api/documents/(.*)/storage-info', // Document storage diagnostic
+  '/api/test-sentry(.*)', // Sentry test routes (Phase 0)
   '/pricing',
   '/about',
   '/clerk-debug',
