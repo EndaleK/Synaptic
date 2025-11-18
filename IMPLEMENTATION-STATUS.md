@@ -181,11 +181,11 @@ Or via Supabase Dashboard:
 ---
 
 ### Priority 2: Update API Routes
-**Status:** ⚠️ PARTIAL (Compatibility layer added)
+**Status:** ✅ COMPLETE
 
-**Files to Update:**
+**Files Updated:**
 
-**a) `/api/flashcards/mastery/route.ts`** - Accept quality ratings
+**a) `/api/flashcards/mastery/route.ts`** - Accept quality ratings (DONE)
 ```typescript
 // Current: Binary (mastered/needs-review)
 // Target: 4-level (again=0, hard=3, good=4, easy=5)
@@ -255,60 +255,34 @@ interface FlashcardWithMetadata {
 ---
 
 ### Priority 4: Add Maturity Badges to UI
-**Status:** ⚠️ COMPONENT CREATED, NOT INTEGRATED
+**Status:** ✅ COMPLETE
 
-**File to Update:** `components/FlashcardDisplay.tsx`
+**File Updated:** `components/FlashcardDisplay.tsx`
 
-**Add Badge Display:**
-```typescript
-import FlashcardMaturityBadge from './FlashcardMaturityBadge'
+**Implementation:**
+✅ Integrated FlashcardMaturityBadge into header (line 1047-1055)
+✅ Shows maturity level with progress dots for learning cards
+✅ Dynamic min reviews based on auto-difficulty
+✅ Responsive design with proper spacing
 
-// In flashcard header (line ~1015):
-<div className="flex items-center justify-between">
-  <h2>Interactive Flashcards</h2>
-  <FlashcardMaturityBadge
-    maturityLevel={currentCard.maturity_level || 'new'}
-    repetitions={currentCard.repetitions || 0}
-    minReviewsForMastery={3}  // Or use auto-difficulty
-    size="md"
-    showLabel={true}
-  />
-</div>
-```
-
-**Also Add:**
-- Progress bar: "2/3 reviews to mastery"
+**Still TODO:**
+- Progress bar: "2/3 reviews to mastery" (separate component)
 - Visual feedback when card levels up (toast notification)
 - Maturity filter in flashcard library
 
 ---
 
 ### Priority 5: Add Source References to UI
-**Status:** ⚠️ COMPONENT CREATED, NOT INTEGRATED
+**Status:** ✅ COMPLETE
 
-**File to Update:** `components/FlashcardDisplay.tsx`
+**File Updated:** `components/FlashcardDisplay.tsx`
 
-**Add Source Display:**
-```typescript
-import FlashcardSourceReference from './FlashcardSourceReference'
-
-// Below flashcard back content (line ~1232):
-{flipped && currentCard.source_page && (
-  <div className="mt-3">
-    <FlashcardSourceReference
-      source={{
-        page: currentCard.source_page,
-        section: currentCard.source_section,
-        excerpt: currentCard.source_excerpt,
-        chunk: currentCard.source_chunk
-      }}
-      documentName={documentName}  // Pass from parent
-      documentId={currentCard.document_id}
-      compact={true}
-    />
-  </div>
-)}
-```
+**Implementation:**
+✅ Integrated FlashcardSourceReference below back content (line 1250-1265)
+✅ Shows compact badge with expandable details
+✅ Displays page, section, excerpt, and chunk information
+✅ Link back to document for verification
+✅ Only shows when source data is available
 
 ---
 
@@ -404,13 +378,13 @@ import FlashcardSourceReference from './FlashcardSourceReference'
 ## 🐛 Known Issues & TODOs
 
 ### Critical
-- [ ] **Database migration not applied** - Run SQL migration
-- [ ] **API routes still use binary system** - Update to handle quality ratings
+- [ ] **Database migration not applied** - Run SQL migration (NEXT STEP)
+- [x] **API routes still use binary system** - Update to handle quality ratings (DONE)
 - [ ] **Source metadata not populated** - Update flashcard generation
 
 ### Medium
-- [ ] Maturity badges not visible (component exists, not integrated)
-- [ ] Source references not displayed (component exists, not integrated)
+- [x] Maturity badges not visible (component exists, not integrated) (DONE)
+- [x] Source references not displayed (component exists, not integrated) (DONE)
 - [ ] Review progress UI not implemented
 - [ ] Analytics dashboard not created
 
@@ -506,5 +480,6 @@ import FlashcardSourceReference from './FlashcardSourceReference'
 ---
 
 **Last Updated:** January 18, 2025
-**Status:** Phase 1 Complete, Phase 2 In Progress
-**Next Milestone:** Database Migration + API Updates
+**Status:** Phase 1 Complete, Phase 2 Partially Complete
+**Completed:** API Routes, Maturity Badges, Source References integrated
+**Next Milestone:** Database Migration + Flashcard Generation Updates
