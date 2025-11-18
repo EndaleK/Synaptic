@@ -1214,26 +1214,60 @@ ${'='.repeat(50)}`).join('\n')}`
             </div>
           </div>
 
-          {/* Mastery Buttons - Only show when flipped and flashcard has database ID */}
+          {/* Enhanced 4-Button Review System - Only show when flipped and flashcard has database ID */}
           {flipped && hasValidDatabaseId(currentCard.id) && (
-            <div className="flex justify-center items-center gap-3 mt-3 mb-2">
-              <button
-                onClick={() => handleMastery('needs-review')}
-                disabled={isUpdatingMastery}
-                className="flex items-center gap-2 px-4 md:px-5 py-2.5 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base min-h-[44px]"
-              >
-                <X className="h-5 w-5" />
-                <span>Review</span>
-              </button>
+            <div className="space-y-2 mt-3 mb-2">
+              {/* Review quality buttons */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <button
+                  onClick={() => handleMastery('needs-review')}
+                  disabled={isUpdatingMastery}
+                  className="flex flex-col items-center justify-center gap-1 px-3 py-2.5 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed min-h-[60px]"
+                  title="Completely forgot - Start over"
+                >
+                  <X className="h-5 w-5" />
+                  <span className="text-xs md:text-sm">Again</span>
+                  <span className="text-xs opacity-75">&lt;1 min</span>
+                </button>
 
-              <button
-                onClick={() => handleMastery('mastered')}
-                disabled={isUpdatingMastery}
-                className="flex items-center gap-2 px-4 md:px-5 py-2.5 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base min-h-[44px]"
-              >
-                <Check className="h-5 w-5" />
-                <span>Got it!</span>
-              </button>
+                <button
+                  onClick={() => handleMastery('hard')}
+                  disabled={isUpdatingMastery}
+                  className="flex flex-col items-center justify-center gap-1 px-3 py-2.5 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed min-h-[60px]"
+                  title="Difficult to recall - Review soon"
+                >
+                  <span className="text-lg">😓</span>
+                  <span className="text-xs md:text-sm">Hard</span>
+                  <span className="text-xs opacity-75">~10 min</span>
+                </button>
+
+                <button
+                  onClick={() => handleMastery('good')}
+                  disabled={isUpdatingMastery}
+                  className="flex flex-col items-center justify-center gap-1 px-3 py-2.5 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed min-h-[60px]"
+                  title="Recalled with some effort - Normal interval"
+                >
+                  <Check className="h-5 w-5" />
+                  <span className="text-xs md:text-sm">Good</span>
+                  <span className="text-xs opacity-75">4 days</span>
+                </button>
+
+                <button
+                  onClick={() => handleMastery('mastered')}
+                  disabled={isUpdatingMastery}
+                  className="flex flex-col items-center justify-center gap-1 px-3 py-2.5 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed min-h-[60px]"
+                  title="Perfect recall - Longer interval"
+                >
+                  <span className="text-lg">✨</span>
+                  <span className="text-xs md:text-sm">Easy</span>
+                  <span className="text-xs opacity-75">2 weeks</span>
+                </button>
+              </div>
+
+              {/* Helper text */}
+              <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+                How well did you remember this card?
+              </p>
             </div>
           )}
 

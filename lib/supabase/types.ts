@@ -94,17 +94,65 @@ export interface Document {
 // Type for inserting new documents (omit auto-generated fields)
 export type DocumentInsert = Omit<Document, 'id' | 'created_at' | 'updated_at'>
 
+export type FlashcardType = 'qa' | 'cloze' | 'multiple-choice' | 'image-occlusion'
+export type MaturityLevel = 'new' | 'learning' | 'young' | 'mature'
+
+export interface SourceReference {
+  page?: number
+  section?: string
+  excerpt?: string
+  chunk?: number
+}
+
+export interface ReviewRecord {
+  date: string
+  quality: number // 0-5 (SM-2 scale)
+  interval: number // days
+}
+
 export interface Flashcard {
   id: string
   user_id: string
   document_id: string
+
+  // Card content (Q&A format)
   front: string
   back: string
+
+  // Card type and format-specific fields
+  card_type: FlashcardType
+  cloze_text?: string           // For cloze deletion: "The {{c1::mitochondria}} is..."
+  cloze_indices?: number[]      // Which clozes to show: [1, 2]
+  mc_options?: string[]         // Multiple choice options (4 items)
+  mc_correct_index?: number     // Correct answer index (0-3)
+  mc_explanation?: string       // Explanation for MC answer
+
+  // Source references
+  source_page?: number
+  source_section?: string
+  source_excerpt?: string
+  source_chunk?: number
+
+  // Legacy difficulty (user-set or manual)
   difficulty?: Difficulty
+
+  // Auto-detected difficulty (easy/medium/hard)
+  auto_difficulty?: 'easy' | 'medium' | 'hard'
+
+  // Legacy review tracking (kept for backwards compatibility)
   times_reviewed: number
   times_correct: number
   last_reviewed_at?: string
   next_review_at?: string
+
+  // Enhanced SM-2 fields
+  ease_factor: number           // 1.3-5.0, default 2.5
+  interval_days: number         // Current interval
+  repetitions: number           // Consecutive correct reviews
+  last_quality_rating?: number  // 0-5 scale
+  maturity_level: MaturityLevel // new → learning → young → mature
+  review_history: ReviewRecord[] // Full history
+
   created_at: string
 }
 

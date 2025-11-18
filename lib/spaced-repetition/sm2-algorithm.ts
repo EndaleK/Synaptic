@@ -100,7 +100,7 @@ export function initializeSM2(): SM2ReviewData {
 }
 
 /**
- * Get quality rating from user-friendly labels
+ * Get quality rating from user-friendly labels (4-button system)
  */
 export function getQualityFromLabel(label: 'again' | 'hard' | 'good' | 'easy'): number {
   switch (label) {
@@ -115,6 +115,79 @@ export function getQualityFromLabel(label: 'again' | 'hard' | 'good' | 'easy'): 
     default:
       return QualityRating.CorrectWithHesitation // Default to "Good"
   }
+}
+
+/**
+ * Adaptive SM-2 algorithm that adjusts intervals based on card difficulty
+ * Research: Complex concepts benefit 40% more from spacing (Cepeda et al., 2006)
+ */
+export function calculateAdaptiveSM2(
+  input: SM2ReviewInput,
+  difficulty: 'easy' | 'medium' | 'hard' = 'medium'
+): SM2ReviewData {
+  const baseResult = calculateSM2(input)
+
+  // Difficulty multipliers based on research
+  const difficultyMultipliers = {
+    easy: 1.3,    // 30% longer intervals (faster progression for simple facts)
+    medium: 1.0,  // Standard SM-2
+    hard: 0.7     // 30% shorter intervals (more frequent review for complex concepts)
+  }
+
+  const multiplier = difficultyMultipliers[difficulty]
+
+  return {
+    ...baseResult,
+    interval: Math.max(1, Math.round(baseResult.interval * multiplier))
+  }
+}
+
+/**
+ * Auto-detect flashcard difficulty based on content complexity
+ */
+export function estimateFlashcardDifficulty(front: string, back: string): 'easy' | 'medium' | 'hard' {
+  const combinedText = front + ' ' + back
+
+  // Complexity indicators
+  const wordCount = combinedText.split(/\s+/).length
+  const avgWordLength = combinedText.replace(/\s/g, '').length / Math.max(wordCount, 1)
+  const hasMultipleSteps = /first|then|next|finally|step|firstly|secondly/i.test(combinedText)
+  const hasTechnicalTerms = /\b[A-Z][a-z]+[A-Z]\w+\b/.test(combinedText) // CamelCase terms
+  const hasFormulas = /[=+\-*\/\\∫∑πθλμσ]/.test(combinedText)
+  const hasBulletPoints = /[-•*]\s+/g.test(combinedText)
+
+  let complexityScore = 0
+
+  // Word count scoring
+  if (wordCount > 50) complexityScore += 2
+  else if (wordCount > 25) complexityScore += 1
+
+  // Average word length (longer words = more complex)
+  if (avgWordLength > 6) complexityScore += 1
+
+  // Content complexity indicators
+  if (hasMultipleSteps) complexityScore += 2
+  if (hasTechnicalTerms) complexityScore += 1
+  if (hasFormulas) complexityScore += 1
+  if (hasBulletPoints) complexityScore += 1
+
+  // Classification
+  if (complexityScore >= 5) return 'hard'
+  if (complexityScore >= 2) return 'medium'
+  return 'easy'
+}
+
+/**
+ * Get minimum reviews required for mastery based on difficulty
+ * Research: Students need 3-8 successful reviews for long-term retention
+ */
+export function getMinReviewsForMastery(difficulty: 'easy' | 'medium' | 'hard'): number {
+  const minReviews = {
+    easy: 3,    // Simple facts: 3 reviews
+    medium: 4,  // Standard concepts: 4 reviews
+    hard: 6     // Complex concepts: 6 reviews
+  }
+  return minReviews[difficulty]
 }
 
 /**
