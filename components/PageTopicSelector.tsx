@@ -276,7 +276,7 @@ export default function PageTopicSelector({
             <BookmarkCheck className="w-4 h-4" />
             Saved Selections
           </label>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
             {presets.map((preset) => (
               <div
                 key={preset.id}
