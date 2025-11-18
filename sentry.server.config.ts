@@ -6,8 +6,14 @@ Sentry.init({
   // Performance monitoring
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
+  // Profile performance with more granularity (Phase 0 enhancement)
+  profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0.5,
+
   // Environment
   environment: process.env.NODE_ENV || 'development',
+
+  // Track releases for better debugging (Phase 0 enhancement)
+  release: process.env.VERCEL_GIT_COMMIT_SHA,
 
   // Filtering
   beforeSend(event, hint) {
@@ -49,5 +55,10 @@ Sentry.init({
     'ETIMEDOUT',
     'ENOTFOUND',
     'ECONNRESET',
+  ],
+
+  // Enhanced integrations for better monitoring (Phase 0)
+  integrations: [
+    new Sentry.Integrations.Http({ tracing: true }),
   ],
 });
