@@ -49,103 +49,97 @@ export async function trackSupabaseQuery<T>(
 ): Promise<T> {
   const startTime = Date.now()
 
-  // Use modern Sentry startSpan API with callback
-  return Sentry.startSpan(
-    {
-      op: 'db.query',
-      name: `${operation} ${table}`,
-      attributes: {
-        'db.operation': operation,
-        'db.table': table,
-      },
-    },
-    async () => {
-      try {
-        // Execute the query
-        const result = await callback()
-        const duration = Date.now() - startTime
+  try {
+    // Execute the query
+    const result = await callback()
+    const duration = Date.now() - startTime
 
-        // Build metrics
-        const metrics: QueryMetrics = {
-          operation,
-          table,
-          duration,
-          success: true,
-          timestamp: new Date().toISOString(),
-        }
+    // Build metrics
+    const metrics: QueryMetrics = {
+      operation,
+      table,
+      duration,
+      success: true,
+      timestamp: new Date().toISOString(),
+    }
 
-        // Send measurement to Sentry
-        Sentry.setMeasurement(`db.${operation.toLowerCase()}.duration`, duration, 'millisecond')
+    // Send measurement to Sentry (in production)
+    if (process.env.NODE_ENV === 'production') {
+      Sentry.setMeasurement(`db.${operation.toLowerCase()}.duration`, duration, 'millisecond')
 
-        // Flag slow queries (>500ms)
-        if (duration > 500) {
-          Sentry.addBreadcrumb({
-            category: 'database',
-            message: `Slow query: ${operation} on ${table}`,
-            level: 'warning',
-            data: {
-              ...metrics,
-              threshold_ms: 500,
-              exceeded_by_ms: duration - 500,
-            },
-          })
-
-          console.warn('🐌 Slow database query detected:', {
-            operation,
-            table,
-            duration: `${duration}ms`,
-            threshold: '500ms',
-          })
-        }
-
-        // Log query in development
-        if (process.env.NODE_ENV === 'development') {
-          const emoji = duration > 500 ? '🐌' : duration > 200 ? '⏱️' : '⚡'
-          console.log(`${emoji} DB ${operation} ${table} - ${duration}ms`)
-        }
-
-        return result
-      } catch (error) {
-        const duration = Date.now() - startTime
-
-        // Build error metrics
-        const metrics: QueryMetrics = {
-          operation,
-          table,
-          duration,
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          timestamp: new Date().toISOString(),
-        }
-
-        // Capture exception in Sentry
-        Sentry.captureException(error, {
-          contexts: {
-            database: {
-              operation,
-              table,
-              duration_ms: duration,
-            },
-          },
-          tags: {
-            db_operation: operation,
-            db_table: table,
+      // Flag slow queries (>500ms)
+      if (duration > 500) {
+        Sentry.addBreadcrumb({
+          category: 'database',
+          message: `Slow query: ${operation} on ${table}`,
+          level: 'warning',
+          data: {
+            ...metrics,
+            threshold_ms: 500,
+            exceeded_by_ms: duration - 500,
           },
         })
-
-        // Log error
-        console.error('❌ Database query error:', {
-          operation,
-          table,
-          duration: `${duration}ms`,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        })
-
-        // Re-throw the error
-        throw error
       }
     }
-  )
+
+    // Log slow queries in development
+    if (process.env.NODE_ENV === 'development' && duration > 500) {
+      console.warn('🐌 Slow database query detected:', {
+        operation,
+        table,
+        duration: `${duration}ms`,
+        threshold: '500ms',
+      })
+    }
+
+    // Log query in development
+    if (process.env.NODE_ENV === 'development') {
+      const emoji = duration > 500 ? '🐌' : duration > 200 ? '⏱️' : '⚡'
+      console.log(`${emoji} DB ${operation} ${table} - ${duration}ms`)
+    }
+
+    return result
+  } catch (error) {
+    const duration = Date.now() - startTime
+
+    // Build error metrics
+    const metrics: QueryMetrics = {
+      operation,
+      table,
+      duration,
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString(),
+    }
+
+    // Capture exception in Sentry (in production)
+    if (process.env.NODE_ENV === 'production') {
+      Sentry.captureException(error, {
+        contexts: {
+          database: {
+            operation,
+            table,
+            duration_ms: duration,
+          },
+        },
+        tags: {
+          db_operation: operation,
+          db_table: table,
+        },
+      })
+    }
+
+    // Log error
+    console.error('❌ Database query error:', {
+      operation,
+      table,
+      duration: `${duration}ms`,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+
+    // Re-throw the error
+    throw error
+  }
 }
 
 /**
@@ -167,75 +161,68 @@ export async function trackBatchQuery<T>(
 ): Promise<T> {
   const startTime = Date.now()
 
-  return Sentry.startSpan(
-    {
-      op: 'db.batch',
-      name: `Batch ${operationName} on ${table}`,
-      attributes: {
-        'db.operation': operationName,
-        'db.table': table,
-        'db.item_count': itemCount || 0,
-      },
-    },
-    async () => {
-      try {
-        const result = await callback()
-        const duration = Date.now() - startTime
+  try {
+    const result = await callback()
+    const duration = Date.now() - startTime
 
-        // Calculate per-item duration if count provided
-        const perItemDuration = itemCount ? duration / itemCount : duration
+    // Calculate per-item duration if count provided
+    const perItemDuration = itemCount ? duration / itemCount : duration
 
-        Sentry.setMeasurement('db.batch.duration', duration, 'millisecond')
-        if (itemCount) {
-          Sentry.setMeasurement('db.batch.per_item_duration', perItemDuration, 'millisecond')
-        }
+    // Send measurements to Sentry (in production)
+    if (process.env.NODE_ENV === 'production') {
+      Sentry.setMeasurement('db.batch.duration', duration, 'millisecond')
+      if (itemCount) {
+        Sentry.setMeasurement('db.batch.per_item_duration', perItemDuration, 'millisecond')
+      }
 
-        // Flag slow batch operations (>2s total or >100ms per item)
-        if (duration > 2000 || (itemCount && perItemDuration > 100)) {
-          Sentry.addBreadcrumb({
-            category: 'database',
-            message: `Slow batch operation: ${operationName} on ${table}`,
-            level: 'warning',
-            data: {
-              operation: operationName,
-              table,
-              duration_ms: duration,
-              item_count: itemCount,
-              per_item_ms: perItemDuration,
-            },
-          })
-        }
-
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`⚡ DB Batch ${operationName} ${table} - ${duration}ms ${itemCount ? `(${itemCount} items, ${perItemDuration.toFixed(1)}ms each)` : ''}`)
-        }
-
-        return result
-      } catch (error) {
-        const duration = Date.now() - startTime
-
-        Sentry.captureException(error, {
-          contexts: {
-            database: {
-              operation: operationName,
-              table,
-              duration_ms: duration,
-              item_count: itemCount,
-            },
+      // Flag slow batch operations (>2s total or >100ms per item)
+      if (duration > 2000 || (itemCount && perItemDuration > 100)) {
+        Sentry.addBreadcrumb({
+          category: 'database',
+          message: `Slow batch operation: ${operationName} on ${table}`,
+          level: 'warning',
+          data: {
+            operation: operationName,
+            table,
+            duration_ms: duration,
+            item_count: itemCount,
+            per_item_ms: perItemDuration,
           },
         })
-
-        console.error('❌ Batch query error:', {
-          operation: operationName,
-          table,
-          duration: `${duration}ms`,
-          itemCount,
-        })
-
-        throw error
       }
     }
-  )
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`⚡ DB Batch ${operationName} ${table} - ${duration}ms ${itemCount ? `(${itemCount} items, ${perItemDuration.toFixed(1)}ms each)` : ''}`)
+    }
+
+    return result
+  } catch (error) {
+    const duration = Date.now() - startTime
+
+    // Capture exception in Sentry (in production)
+    if (process.env.NODE_ENV === 'production') {
+      Sentry.captureException(error, {
+        contexts: {
+          database: {
+            operation: operationName,
+            table,
+            duration_ms: duration,
+            item_count: itemCount,
+          },
+        },
+      })
+    }
+
+    console.error('❌ Batch query error:', {
+      operation: operationName,
+      table,
+      duration: `${duration}ms`,
+      itemCount,
+    })
+
+    throw error
+  }
 }
 
 /**
@@ -253,61 +240,55 @@ export async function trackRPCCall<T>(
 ): Promise<T | void> {
   const startTime = Date.now()
 
-  return Sentry.startSpan(
-    {
-      op: 'db.rpc',
-      name: `RPC ${functionName}`,
-      attributes: {
-        'db.operation': 'rpc',
-        'db.function': functionName,
-      },
-    },
-    async () => {
-      try {
-        const result = callback ? await callback() : undefined
-        const duration = Date.now() - startTime
+  try {
+    const result = callback ? await callback() : undefined
+    const duration = Date.now() - startTime
 
-        Sentry.setMeasurement('db.rpc.duration', duration, 'millisecond')
+    // Send measurements to Sentry (in production)
+    if (process.env.NODE_ENV === 'production') {
+      Sentry.setMeasurement('db.rpc.duration', duration, 'millisecond')
 
-        // Flag slow RPC calls (>1s)
-        if (duration > 1000) {
-          Sentry.addBreadcrumb({
-            category: 'database',
-            message: `Slow RPC call: ${functionName}`,
-            level: 'warning',
-            data: {
-              function: functionName,
-              duration_ms: duration,
-              params,
-            },
-          })
-        }
-
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`⚡ DB RPC ${functionName} - ${duration}ms`)
-        }
-
-        return result as T
-      } catch (error) {
-        const duration = Date.now() - startTime
-
-        Sentry.captureException(error, {
-          contexts: {
-            database: {
-              operation: 'rpc',
-              function: functionName,
-              duration_ms: duration,
-              params,
-            },
+      // Flag slow RPC calls (>1s)
+      if (duration > 1000) {
+        Sentry.addBreadcrumb({
+          category: 'database',
+          message: `Slow RPC call: ${functionName}`,
+          level: 'warning',
+          data: {
+            function: functionName,
+            duration_ms: duration,
+            params,
           },
         })
-
-        console.error('❌ RPC call error:', { function: functionName, duration: `${duration}ms` })
-
-        throw error
       }
     }
-  )
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`⚡ DB RPC ${functionName} - ${duration}ms`)
+    }
+
+    return result as T
+  } catch (error) {
+    const duration = Date.now() - startTime
+
+    // Capture exception in Sentry (in production)
+    if (process.env.NODE_ENV === 'production') {
+      Sentry.captureException(error, {
+        contexts: {
+          database: {
+            operation: 'rpc',
+            function: functionName,
+            duration_ms: duration,
+            params,
+          },
+        },
+      })
+    }
+
+    console.error('❌ RPC call error:', { function: functionName, duration: `${duration}ms` })
+
+    throw error
+  }
 }
 
 /**
@@ -320,5 +301,7 @@ export async function trackRPCCall<T>(
  * ```
  */
 export function trackDatabaseMetric(name: string, value: number) {
-  Sentry.setMeasurement(`db.${name}`, value, 'none')
+  if (process.env.NODE_ENV === 'production') {
+    Sentry.setMeasurement(`db.${name}`, value, 'none')
+  }
 }
