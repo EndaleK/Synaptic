@@ -1005,37 +1005,18 @@ ${'='.repeat(50)}`).join('\n')}`
   }, [showExportMenu])
 
   return (
-    <div ref={containerRef} className="max-w-4xl mx-auto py-6 md:py-8">
-      {/* Header Section - Compact on Mobile */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden mb-3 md:mb-6">
-        <div className="p-3 md:p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
-          <div className="flex items-center gap-2 md:gap-4">
-            <div className="w-10 h-10 md:w-16 md:h-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl md:rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
-              <BookOpen className="w-5 h-5 md:w-8 md:h-8 text-white" />
+    <div ref={containerRef} className="max-w-4xl mx-auto py-2 md:py-4">
+      {/* Header Section - Compact */}
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden mb-2 md:mb-3">
+        <div className="p-2 md:p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-lg flex items-center justify-center flex-shrink-0 shadow">
+              <BookOpen className="w-4 h-4 md:w-5 md:h-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-lg md:text-3xl font-bold text-black dark:text-white mb-0 md:mb-2 truncate">
+              <h2 className="text-base md:text-xl font-bold text-black dark:text-white truncate">
                 Interactive Flashcards
               </h2>
-              <p className="hidden md:block text-gray-600 dark:text-gray-400 mb-4">
-                Master your material with intelligently generated flashcards featuring spaced repetition and progress tracking
-              </p>
-
-              {/* Feature Badges - Hidden on Mobile */}
-              <div className="hidden md:flex flex-wrap gap-2">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-                  <Sparkles className="w-3.5 h-3.5 text-accent-primary" />
-                  Auto-Generated
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-                  <Zap className="w-3.5 h-3.5 text-accent-primary" />
-                  Interactive Learning
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-                  <TrendingUp className="w-3.5 h-3.5 text-accent-primary" />
-                  Progress Tracking
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -1142,9 +1123,9 @@ ${'='.repeat(50)}`).join('\n')}`
           </div>
         </div>
 
-        <div className="p-2 md:p-4">
-          <div className="mb-2 md:mb-3">
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 md:h-2">
+        <div className="p-2 md:p-3">
+          <div className="mb-2">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
               <div className="relative h-full rounded-full overflow-hidden">
                 <div
                   className="absolute left-0 bg-green-500 h-full transition-all duration-300"
@@ -1159,14 +1140,14 @@ ${'='.repeat(50)}`).join('\n')}`
                 />
               </div>
             </div>
-            <div className="flex items-center justify-between mt-1 text-xs md:text-sm">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between mt-1 text-xs">
+              <div className="flex items-center gap-2">
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
                   <span className="text-gray-600 dark:text-gray-400">{masteredCount} mastered</span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
                   <span className="text-gray-600 dark:text-gray-400">{needsReviewCount} review</span>
                 </span>
               </div>
@@ -1178,7 +1159,7 @@ ${'='.repeat(50)}`).join('\n')}`
 
           <div
             {...swipeHandlers}
-            className="relative cursor-pointer h-72 md:h-80 lg:h-96 mb-3 md:mb-6"
+            className="relative cursor-pointer h-56 md:h-64 lg:h-72 mb-2 md:mb-3"
           >
             {/* Mastery Badge */}
             {masteredCards.has(currentCard.id) && (
@@ -1235,22 +1216,22 @@ ${'='.repeat(50)}`).join('\n')}`
 
           {/* Mastery Buttons - Only show when flipped and flashcard has database ID */}
           {flipped && hasValidDatabaseId(currentCard.id) && (
-            <div className="flex justify-center items-center gap-3 md:gap-4 mt-4 mb-2">
+            <div className="flex justify-center items-center gap-2 mt-2 mb-1.5">
               <button
                 onClick={() => handleMastery('needs-review')}
                 disabled={isUpdatingMastery}
-                className="flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base min-h-[44px]"
+                className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-xs md:text-sm min-h-[40px]"
               >
-                <X className="h-5 w-5" />
-                <span>Review Again</span>
+                <X className="h-4 w-4" />
+                <span>Review</span>
               </button>
 
               <button
                 onClick={() => handleMastery('mastered')}
                 disabled={isUpdatingMastery}
-                className="flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base min-h-[44px]"
+                className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-xs md:text-sm min-h-[40px]"
               >
-                <Check className="h-5 w-5" />
+                <Check className="h-4 w-4" />
                 <span>Got it!</span>
               </button>
             </div>
@@ -1258,37 +1239,37 @@ ${'='.repeat(50)}`).join('\n')}`
 
           {/* Info message if flashcards don't have database IDs */}
           {flipped && !hasValidDatabaseId(currentCard.id) && (
-            <div className="flex justify-center items-center gap-2 mt-4 mb-2 px-4 py-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
-              <span>💡 Regenerate flashcards to enable progress tracking</span>
+            <div className="flex justify-center items-center gap-2 mt-2 mb-1.5 px-3 py-1.5 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-xs text-yellow-800 dark:text-yellow-200">
+              <span>💡 Regenerate to enable tracking</span>
             </div>
           )}
 
-          <div className="flex justify-center items-center gap-2 md:gap-3">
+          <div className="flex justify-center items-center gap-2">
             <button
               onClick={handlePrevious}
-              className="btn-secondary btn-touch-icon rounded-full"
+              className="btn-secondary btn-touch-icon rounded-full p-2"
             >
-              <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
+              <ChevronLeft className="h-5 w-5" />
             </button>
 
             <button
               onClick={handleFlip}
-              className="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm md:text-base min-h-[44px]"
+              className="btn-primary flex items-center gap-1.5 px-3 py-2 text-xs md:text-sm min-h-[40px]"
             >
-              <RotateCcw className="h-4 w-4 md:h-5 md:w-5" />
+              <RotateCcw className="h-4 w-4" />
               <span>Flip</span>
             </button>
 
             <button
               onClick={handleNext}
-              className="btn-secondary btn-touch-icon rounded-full"
+              className="btn-secondary btn-touch-icon rounded-full p-2"
             >
-              <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
+              <ChevronRight className="h-5 w-5" />
             </button>
           </div>
 
-          <p className="hidden md:block text-center text-caption text-gray-500 dark:text-gray-400 mt-2 md:mt-3">
-            Press Space to flip • Use arrow keys to navigate
+          <p className="hidden md:block text-center text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+            Space to flip • Arrows to navigate
           </p>
         </div>
       </div>
