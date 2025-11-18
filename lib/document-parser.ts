@@ -1,5 +1,4 @@
 import mammoth from "mammoth"
-import { parseServerPDF, isPDFFile } from "./server-pdf-parser"
 
 interface ParseResult {
   text: string
@@ -39,10 +38,15 @@ export async function parseDocument(file: File): Promise<ParseResult> {
       
       case "doc":
         return await parseDocFile(file)
-      
+
       case "pdf":
-        return await parseServerPDF(file)
-      
+        // PDFs are now handled server-side only via API routes
+        // Client-side PDF parsing is not supported to avoid bundling server dependencies
+        return {
+          text: "",
+          error: "PDF parsing must be done server-side. Please upload the PDF through the document upload interface."
+        }
+
       default:
         return { text: "", error: `Unsupported file type: ${fileType} (MIME: ${mimeType}, Extension: ${fileExtension})` }
     }

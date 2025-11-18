@@ -22,7 +22,8 @@ export default function FloatingPomodoroTimer() {
     setFocusDuration,
     setShortBreakDuration,
     setLongBreakDuration,
-    setCurrentStudySessionId
+    setCurrentStudySessionId,
+    syncTimer
   } = usePomodoroStore()
 
   const [isMinimized, setIsMinimized] = useState(true) // Start minimized by default
@@ -32,13 +33,18 @@ export default function FloatingPomodoroTimer() {
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  // Calculate default position (bottom-right corner)
+  // Calculate default position (top-right corner)
   const getDefaultPosition = () => {
-    if (typeof window === 'undefined') return { bottom: 24, right: 24 }
-    return { bottom: 24, right: 24 }
+    if (typeof window === 'undefined') return { top: 24, right: 24 }
+    return { top: 24, right: 24 }
   }
 
-  const [position, setPosition] = useState<{ bottom: number; right: number }>(getDefaultPosition())
+  const [position, setPosition] = useState<{ top: number; right: number }>(getDefaultPosition())
+
+  // Sync timer on mount (handles navigation between pages)
+  useEffect(() => {
+    syncTimer()
+  }, [syncTimer])
 
   // Tick every second when running
   useEffect(() => {
@@ -214,11 +220,11 @@ export default function FloatingPomodoroTimer() {
 
   return (
     <>
-      {/* Minimized Timer - Bottom Right, No Scroll Blocking */}
+      {/* Minimized Timer - Top Right, No Scroll Blocking */}
       {isMinimized && (
         <div
           className="fixed z-40 pointer-events-none"
-          style={{ bottom: `${position.bottom}px`, right: `${position.right}px` }}
+          style={{ top: `${position.top}px`, right: `${position.right}px` }}
         >
           <button
             onClick={(e) => {
@@ -243,7 +249,7 @@ export default function FloatingPomodoroTimer() {
       {!isMinimized && (
         <div
           className="fixed z-40 pointer-events-none"
-          style={{ bottom: `${position.bottom}px`, right: `${position.right}px` }}
+          style={{ top: `${position.top}px`, right: `${position.right}px` }}
         >
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden w-[240px] pointer-events-auto">
             {/* Header */}

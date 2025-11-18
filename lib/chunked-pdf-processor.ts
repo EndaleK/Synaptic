@@ -31,8 +31,8 @@ export async function processLargePDFInChunks(
     const fileSizeMB = pdfBuffer.length / (1024 * 1024)
     console.log(`[Chunked Processing] Starting chunked extraction for ${fileName} (${fileSizeMB.toFixed(2)}MB)`)
 
-    // Load the PDF
-    const pdfDoc = await PDFDocument.load(pdfBuffer)
+    // Load the PDF (ignore encryption if present)
+    const pdfDoc = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true })
     const totalPages = pdfDoc.getPageCount()
 
     console.log(`[Chunked Processing] PDF has ${totalPages} pages`)

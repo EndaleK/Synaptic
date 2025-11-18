@@ -16,6 +16,7 @@ interface PomodoroState {
   timeRemaining: number // in seconds
   status: TimerStatus
   sessionsCompleted: number
+  lastUpdateTime: number | null // timestamp for persistent timer calculation
 
   // Study session tracking
   currentStudySessionId: string | null
@@ -32,6 +33,7 @@ interface PomodoroState {
   setLongBreakDuration: (minutes: number) => void
   setCurrentStudySessionId: (id: string | null) => void
   resetTimer: () => void
+  syncTimer: () => void // Sync timer after page reload or navigation
 }
 
 export const usePomodoroStore = create<PomodoroState>()(
@@ -46,12 +48,64 @@ export const usePomodoroStore = create<PomodoroState>()(
       timeRemaining: 25 * 60, // 25 minutes in seconds
       status: 'idle',
       sessionsCompleted: 0,
+      lastUpdateTime: null,
 
       currentStudySessionId: null,
       totalStudyTimeToday: 0,
 
+      syncTimer: () => {
+        const state = get()
+        if (state.status !== 'running' || !state.lastUpdateTime) return
+
+        // Calculate elapsed time since last update
+        const now = Date.now()
+        const elapsedSeconds = Math.floor((now - state.lastUpdateTime) / 1000)
+
+        if (elapsedSeconds <= 0) return
+
+        // Update timer based on elapsed time
+        const newTimeRemaining = Math.max(0, state.timeRemaining - elapsedSeconds)
+
+        if (newTimeRemaining <= 0) {
+          // Timer completed while user was away
+          const newSessionsCompleted = state.timerType === 'focus'
+            ? state.sessionsCompleted + 1
+            : state.sessionsCompleted
+
+          const nextType: TimerType = state.timerType === 'focus'
+            ? (newSessionsCompleted % 4 === 0 ? 'longBreak' : 'shortBreak')
+            : 'focus'
+
+          const nextDuration = nextType === 'focus'
+            ? state.focusDuration
+            : nextType === 'shortBreak'
+            ? state.shortBreakDuration
+            : state.longBreakDuration
+
+          set({
+            status: 'idle',
+            timerType: nextType,
+            timeRemaining: nextDuration * 60,
+            sessionsCompleted: newSessionsCompleted,
+            lastUpdateTime: null,
+            currentStudySessionId: null
+          })
+        } else {
+          // Timer still running, update remaining time
+          const studyTimeIncrement = state.timerType === 'focus' ? elapsedSeconds : 0
+
+          set({
+            timeRemaining: newTimeRemaining,
+            totalStudyTimeToday: state.totalStudyTimeToday + studyTimeIncrement,
+            lastUpdateTime: now
+          })
+        }
+      },
+
       startTimer: () => {
         const state = get()
+        const now = Date.now()
+
         if (state.status === 'idle') {
           // Reset to full duration when starting from idle
           const duration = state.timerType === 'focus'
@@ -62,14 +116,18 @@ export const usePomodoroStore = create<PomodoroState>()(
 
           set({
             status: 'running',
-            timeRemaining: duration * 60
+            timeRemaining: duration * 60,
+            lastUpdateTime: now
           })
         } else {
-          set({ status: 'running' })
+          set({
+            status: 'running',
+            lastUpdateTime: now
+          })
         }
       },
 
-      pauseTimer: () => set({ status: 'paused' }),
+      pauseTimer: () => set({ status: 'paused', lastUpdateTime: null }),
 
       stopTimer: () => {
         const state = get()
@@ -82,13 +140,16 @@ export const usePomodoroStore = create<PomodoroState>()(
         set({
           status: 'idle',
           timeRemaining: duration * 60,
-          currentStudySessionId: null
+          currentStudySessionId: null,
+          lastUpdateTime: null
         })
       },
 
       tick: () => {
         const state = get()
         if (state.status !== 'running') return
+
+        const now = Date.now()
 
         if (state.timeRemaining <= 0) {
           // Timer completed
@@ -112,7 +173,8 @@ export const usePomodoroStore = create<PomodoroState>()(
             timerType: nextType,
             timeRemaining: nextDuration * 60,
             sessionsCompleted: newSessionsCompleted,
-            currentStudySessionId: null
+            currentStudySessionId: null,
+            lastUpdateTime: null
           })
         } else {
           const newTimeRemaining = state.timeRemaining - 1
@@ -120,7 +182,8 @@ export const usePomodoroStore = create<PomodoroState>()(
 
           set({
             timeRemaining: newTimeRemaining,
-            totalStudyTimeToday: state.totalStudyTimeToday + studyTimeIncrement
+            totalStudyTimeToday: state.totalStudyTimeToday + studyTimeIncrement,
+            lastUpdateTime: now
           })
         }
       },
@@ -194,7 +257,7 @@ export const usePomodoroStore = create<PomodoroState>()(
     {
       name: 'pomodoro-storage',
       storage: createJSONStorage(() => localStorage),
-      // Don't persist timer status to avoid resuming timer after page reload
+      // Persist timer status and lastUpdateTime for persistent timer
       partialize: (state) => ({
         focusDuration: state.focusDuration,
         shortBreakDuration: state.shortBreakDuration,
@@ -202,6 +265,9 @@ export const usePomodoroStore = create<PomodoroState>()(
         sessionsCompleted: state.sessionsCompleted,
         totalStudyTimeToday: state.totalStudyTimeToday,
         timerType: state.timerType,
+        status: state.status,
+        timeRemaining: state.timeRemaining,
+        lastUpdateTime: state.lastUpdateTime,
       })
     }
   )

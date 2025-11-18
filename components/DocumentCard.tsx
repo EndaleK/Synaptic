@@ -79,9 +79,10 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
   const getStatusBadge = () => {
     // Check if this is a large document that needs RAG indexing
     const isLargeDocument = document.file_size > 10 * 1024 * 1024 // >10MB
-    const needsRAGIndexing = isLargeDocument && !document.extracted_text && !document.rag_indexed
     const isRAGIndexed = document.rag_indexed === true
+    const needsRAGIndexing = isLargeDocument && !document.extracted_text && !isRAGIndexed
 
+    // Don't show "Index Required" if already indexed
     if (needsRAGIndexing && document.processing_status === 'completed') {
       return (
         <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-md text-xs font-medium">
@@ -280,8 +281,8 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
           </div>
         )}
 
-        {/* RAG Indexing Required - Show Index Button */}
-        {isReady && document.file_size > 10 * 1024 * 1024 && !document.extracted_text && !document.rag_indexed && (
+        {/* RAG Indexing Required - Show Index Button (only if not already indexed) */}
+        {isReady && document.file_size > 10 * 1024 * 1024 && !document.extracted_text && document.rag_indexed !== true && (
           <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
             <p className="text-xs text-yellow-800 dark:text-yellow-300 mb-2">
               This document is large and requires indexing for AI features.

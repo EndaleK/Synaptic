@@ -50,7 +50,7 @@ function DocumentsPageContent() {
   const [isGoogleDocsModalOpen, setIsGoogleDocsModalOpen] = useState(false)
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [quickAccessSection, setQuickAccessSection] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set())
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [filters, setFilters] = useState<FilterOptions>(DEFAULT_FILTERS)
