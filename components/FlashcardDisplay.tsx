@@ -178,7 +178,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   }, [])
 
   // Handle mastery button clicks
-  const handleMastery = useCallback(async (action: 'needs-review' | 'hard' | 'good' | 'mastered') => {
+  const handleMastery = useCallback(async (action: 'needs-review' | 'good') => {
     if (isUpdatingMastery || !currentCard.id) return
 
     // Check if flashcard has database ID
@@ -191,18 +191,13 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
     setIsUpdatingMastery(true)
 
     try {
-      // Map 4-button system to API's binary system for now
-      // TODO: Update API to handle full SM-2 quality ratings
-      const mappedAction = (action === 'mastered' || action === 'good' || action === 'hard')
-        ? 'mastered'
-        : 'needs-review'
-
+      // Send action directly to API (good = quality 4, needs-review = quality 0)
       const response = await fetch('/api/flashcards/mastery', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           flashcardId: currentCard.id,
-          action: mappedAction
+          action: action
         })
       })
 
@@ -214,59 +209,49 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
 
       const data = await response.json()
 
-      // Update local state based on quality rating
-      // 'mastered' and 'good' = confident recall, move to end
-      // 'hard' = difficult recall, review sooner
-      // 'needs-review' = failed, review very soon
-      if (action === 'mastered' || action === 'good') {
-        setMasteredCards(new Set([...masteredCards, currentCard.id]))
+      // Update local state based on action
+      if (action === 'good') {
+        // "I Got It" - progress toward mastery
+        // Check if this reaches mastered status (3+ repetitions)
+        if (data.mastery.repetitions >= 3) {
+          setMasteredCards(new Set([...masteredCards, currentCard.id]))
+        }
+
         setNeedsReviewCards(prev => {
           const updated = new Set(prev)
           updated.delete(currentCard.id)
           return updated
         })
 
-        // Reorder deck: move mastered card to the end
+        // Move card to the end of the deck
         setCardOrder(prevOrder => {
           const newOrder = [...prevOrder]
           const currentCardIndex = newOrder[currentIndex]
-          // Remove current card from its position
           newOrder.splice(currentIndex, 1)
-          // Add it to the end
           newOrder.push(currentCardIndex)
           return newOrder
         })
-      } else if (action === 'hard') {
-        // Hard cards: not mastered yet, but don't put them in needsReview
-        // Move forward just a bit (2 positions) for quicker review
-        setCardOrder(prevOrder => {
-          const newOrder = [...prevOrder]
-          const currentCardIndex = newOrder[currentIndex]
-          // Remove current card from its position
-          newOrder.splice(currentIndex, 1)
-          // Insert it 2 cards ahead
-          const insertPosition = Math.min(currentIndex + 2, newOrder.length)
-          newOrder.splice(insertPosition, 0, currentCardIndex)
-          return newOrder
-        })
       } else {
-        // needs-review: failed completely
+        // "I Don't Get It" - needs review
         setNeedsReviewCards(new Set([...needsReviewCards, currentCard.id]))
+        setMasteredCards(prev => {
+          const updated = new Set(prev)
+          updated.delete(currentCard.id)
+          return updated
+        })
 
-        // For review cards, move them forward a few positions (reshuffle)
+        // Move card forward a few positions for re-review
         setCardOrder(prevOrder => {
           const newOrder = [...prevOrder]
           const currentCardIndex = newOrder[currentIndex]
-          // Remove current card from its position
           newOrder.splice(currentIndex, 1)
-          // Insert it 3-5 cards ahead (or at the end if fewer cards remain)
           const insertPosition = Math.min(currentIndex + 3, newOrder.length)
           newOrder.splice(insertPosition, 0, currentCardIndex)
           return newOrder
         })
       }
 
-      setCardMasteryLevels(prev => new Map(prev).set(currentCard.id, data.mastery.level))
+      setCardMasteryLevels(prev => new Map(prev).set(currentCard.id, data.mastery.maturityLevel || data.mastery.level))
 
       // Move to next card automatically (stay at same index since we removed current card)
       setTimeout(() => {
@@ -278,11 +263,16 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
     } catch (error) {
       console.error('Error updating mastery:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to update mastery'
-      toast.error(errorMessage)
 
-      // If the flashcard doesn't have a database ID, show helpful message
-      if (errorMessage.includes('not found') || errorMessage.includes('Unauthorized')) {
-        toast.info('Flashcards must be saved to track progress. Try regenerating.')
+      // Check if error is due to missing database columns
+      if (errorMessage.includes('column') || errorMessage.includes('does not exist')) {
+        toast.error('Database migration required')
+        toast.info('Please apply the database migration to enable progress tracking. See URGENT-DATABASE-MIGRATION.md')
+      } else if (errorMessage.includes('not found') || errorMessage.includes('Unauthorized')) {
+        toast.error('Flashcards must be saved to track progress')
+        toast.info('Try regenerating flashcards to enable progress tracking')
+      } else {
+        toast.error(errorMessage)
       }
     } finally {
       setIsUpdatingMastery(false)
@@ -1279,27 +1269,27 @@ ${'='.repeat(50)}`).join('\n')}`
 
           {/* Simple 2-Button Review System - Only show when flipped and flashcard has database ID */}
           {flipped && hasValidDatabaseId(currentCard.id) && (
-            <div className="space-y-3 mt-3 mb-2">
+            <div className="space-y-2 mt-3 mb-2">
               {/* Review quality buttons */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 max-w-md mx-auto">
                 <button
                   onClick={() => handleMastery('needs-review')}
                   disabled={isUpdatingMastery}
-                  className="flex flex-col items-center justify-center gap-2 px-4 py-4 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed min-h-[80px]"
+                  className="flex flex-col items-center justify-center gap-1 px-2 py-2 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px]"
                   title="I don't get it - Review again"
                 >
-                  <X className="h-6 w-6" />
-                  <span className="text-sm md:text-base">I Don't Get It</span>
+                  <X className="h-3 w-3" />
+                  <span className="text-xs">I Don't Get It</span>
                 </button>
 
                 <button
                   onClick={() => handleMastery('good')}
                   disabled={isUpdatingMastery}
-                  className="flex flex-col items-center justify-center gap-2 px-4 py-4 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed min-h-[80px]"
+                  className="flex flex-col items-center justify-center gap-1 px-2 py-2 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px]"
                   title="I got it - Progress toward mastery"
                 >
-                  <Check className="h-6 w-6" />
-                  <span className="text-sm md:text-base">I Got It</span>
+                  <Check className="h-3 w-3" />
+                  <span className="text-xs">I Got It</span>
                 </button>
               </div>
 

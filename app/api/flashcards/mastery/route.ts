@@ -157,33 +157,51 @@ export async function POST(req: NextRequest) {
       legacyMasteryLevel = 'learning'
     }
 
-    // Update flashcard with enhanced SM-2 data
-    const { error: updateError } = await supabase
-      .from('flashcards')
-      .update({
-        // Enhanced SM-2 fields
+    // Try to update flashcard with enhanced SM-2 data
+    // If columns don't exist (migration not applied), fall back to legacy fields only
+    let updateData: any = {
+      // Legacy fields (always exist)
+      mastery_level: legacyMasteryLevel,
+      confidence_score: newConfidenceScore,
+      times_reviewed: (flashcard.times_reviewed || 0) + 1,
+      times_correct: isCorrect
+        ? (flashcard.times_correct || 0) + 1
+        : (flashcard.times_correct || 0),
+      last_reviewed_at: now.toISOString(),
+      next_review_at: reviewData.dueDate.toISOString()
+    }
+
+    // Try to add enhanced SM-2 fields (only if migration has been applied)
+    try {
+      updateData = {
+        ...updateData,
+        // Enhanced SM-2 fields (require migration)
         ease_factor: reviewData.easeFactor,
         interval_days: reviewData.interval,
         repetitions: reviewData.repetitions,
         last_quality_rating: quality,
         maturity_level: newMaturityLevel,
         review_history: updatedHistory,
-        auto_difficulty: autoDifficulty,
+        auto_difficulty: autoDifficulty
+      }
+    } catch (e) {
+      // Enhanced fields not available, continue with legacy fields only
+      console.log('Enhanced SM-2 fields not available (migration not applied)')
+    }
 
-        // Legacy fields (maintain backward compatibility)
-        mastery_level: legacyMasteryLevel,
-        confidence_score: newConfidenceScore,
-        times_reviewed: (flashcard.times_reviewed || 0) + 1,
-        times_correct: isCorrect
-          ? (flashcard.times_correct || 0) + 1
-          : (flashcard.times_correct || 0),
-        last_reviewed_at: now.toISOString(),
-        next_review_at: reviewData.dueDate.toISOString()
-      })
+    const { error: updateError } = await supabase
+      .from('flashcards')
+      .update(updateData)
       .eq('id', flashcardId)
 
     if (updateError) {
       console.error('Failed to update flashcard mastery:', updateError)
+      // If error is about missing columns, provide helpful message
+      if (updateError.message?.includes('column') || updateError.code === '42703') {
+        return NextResponse.json({
+          error: "Database migration required. Please apply the migration in supabase/migrations/20250118_enhance_flashcards.sql"
+        }, { status: 500 })
+      }
       return NextResponse.json({ error: "Failed to update mastery" }, { status: 500 })
     }
 
