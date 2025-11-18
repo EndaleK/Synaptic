@@ -9,6 +9,7 @@ import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { ChatMessageSchema, validateDocumentLength, validateContentSafety } from "@/lib/validation"
 import { getProviderForFeature } from "@/lib/ai"
 import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
+import { withMonitoring, trackApiMetric, addApiContext, flagSlowOperation } from '@/lib/monitoring/api-monitor'
 
 interface ChatRequest {
   message: string
@@ -17,12 +18,14 @@ interface ChatRequest {
   teachingMode?: 'socratic' | 'direct' | 'mixed'
 }
 
-export async function POST(request: NextRequest) {
+async function handleChatWithDocument(request: NextRequest) {
   const startTime = Date.now()
+  let userId: string | null = null
 
   try {
     // Authenticate user
-    const { userId } = await auth()
+    const authResult = await auth()
+    userId = authResult.userId
     if (!userId) {
       logger.warn("Unauthenticated chat request")
       return NextResponse.json(
@@ -86,8 +89,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Track message metrics
+    trackApiMetric('chat.message.length', message.length, 'none')
+    if (documentContent) {
+      trackApiMetric('chat.document.length', documentContent.length, 'none')
+    }
+
+    // Track teaching mode
+    const effectiveMode = teachingMode || 'default'
+    trackApiMetric(`chat.teaching_mode.${effectiveMode}`, 1, 'none')
+
+    // Add context for monitoring
+    addApiContext('chat_session', {
+      file_name: fileName || 'unknown',
+      message_length: message.length,
+      document_length: documentContent?.length || 0,
+      teaching_mode: effectiveMode
+    })
+
     // Get AI provider for chat (DeepSeek primary, OpenAI fallback)
     const provider = getProviderForFeature('chat')
+
+    // Track provider selection
+    trackApiMetric(`chat.ai_provider.${provider.name}`, 1, 'none')
 
     if (!provider.isConfigured()) {
       return NextResponse.json({
@@ -293,6 +317,7 @@ Please answer this question based only on the information provided in the docume
     })
 
     // Use provider.complete() instead of OpenAI SDK
+    const aiStartTime = Date.now()
     const completion = await provider.complete(
       [
         {
@@ -309,9 +334,21 @@ Please answer this question based only on the information provided in the docume
         maxTokens: 1000,
       }
     )
+    const aiDuration = Date.now() - aiStartTime
+
+    // Track AI completion metrics
+    trackApiMetric('chat.ai_completion.duration', aiDuration, 'millisecond')
+
+    // Flag slow AI completions (>10s)
+    if (aiDuration > 10000) {
+      flagSlowOperation('Chat AI completion', aiDuration, 10000)
+    }
 
     const aiResponse = completion.content ||
       "I apologize, but I'm having trouble processing your question at the moment. Please try rephrasing your question or try again."
+
+    // Track response length
+    trackApiMetric('chat.response.length', aiResponse.length, 'none')
 
     // Track actual usage
     if (completion.usage) {
@@ -390,3 +427,5 @@ Please answer this question based only on the information provided in the docume
     )
   }
 }
+
+export const POST = withMonitoring(handleChatWithDocument, '/api/chat-with-document')

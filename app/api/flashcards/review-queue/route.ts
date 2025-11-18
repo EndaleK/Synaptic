@@ -3,6 +3,8 @@ import { auth } from "@clerk/nextjs/server"
 import { createClient } from "@/lib/supabase/server"
 import { logger } from "@/lib/logger"
 import { prioritizeReviewQueue, getCardMaturity, estimateRetention, formatInterval } from "@/lib/spaced-repetition/sm2-algorithm"
+import { withMonitoring, trackApiMetric } from '@/lib/monitoring/api-monitor'
+import { trackSupabaseQuery } from '@/lib/monitoring/supabase-monitor'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,12 +12,14 @@ export const dynamic = 'force-dynamic'
  * GET /api/flashcards/review-queue
  * Fetches flashcards due for review today, prioritized by urgency
  */
-export async function GET(req: NextRequest) {
+async function handleGetReviewQueue(req: NextRequest) {
   const startTime = Date.now()
+  let userId: string | null = null
 
   try {
     // Authenticate user
-    const { userId } = await auth()
+    const authResult = await auth()
+    userId = authResult.userId
     if (!userId) {
       logger.warn('Unauthenticated review queue request')
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -24,11 +28,15 @@ export async function GET(req: NextRequest) {
     const supabase = await createClient()
 
     // Get user profile ID
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .eq('clerk_user_id', userId)
-      .single()
+    const { data: profile } = await trackSupabaseQuery(
+      'SELECT',
+      'user_profiles',
+      () => supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('clerk_user_id', userId!)
+        .single()
+    )
 
     if (!profile) {
       return NextResponse.json({ error: "User profile not found" }, { status: 404 })
@@ -40,26 +48,30 @@ export async function GET(req: NextRequest) {
     const today = new Date()
     today.setHours(23, 59, 59, 999) // End of today
 
-    const { data: reviewQueue, error: reviewError } = await supabase
-      .from('review_queue')
-      .select(`
-        *,
-        flashcards (
-          id,
-          front,
-          back,
-          difficulty,
-          times_reviewed,
-          times_correct,
-          documents (
+    const { data: reviewQueue, error: reviewError } = await trackSupabaseQuery(
+      'SELECT',
+      'review_queue',
+      () => supabase
+        .from('review_queue')
+        .select(`
+          *,
+          flashcards (
             id,
-            file_name
+            front,
+            back,
+            difficulty,
+            times_reviewed,
+            times_correct,
+            documents (
+              id,
+              file_name
+            )
           )
-        )
-      `)
-      .eq('user_id', userProfileId)
-      .lte('due_date', today.toISOString().split('T')[0])
-      .order('due_date', { ascending: true })
+        `)
+        .eq('user_id', userProfileId)
+        .lte('due_date', today.toISOString().split('T')[0])
+        .order('due_date', { ascending: true })
+    )
 
     if (reviewError) {
       logger.error('Failed to fetch review queue', reviewError, { userId })
@@ -82,27 +94,35 @@ export async function GET(req: NextRequest) {
     }
 
     // Get flashcards that don't have review queue entries yet (new flashcards)
-    const { data: newFlashcards, error: newFlashcardsError } = await supabase
-      .from('flashcards')
-      .select(`
-        id,
-        front,
-        back,
-        difficulty,
-        times_reviewed,
-        times_correct,
-        documents (
+    const { data: newFlashcards, error: newFlashcardsError } = await trackSupabaseQuery(
+      'SELECT',
+      'flashcards',
+      () => supabase
+        .from('flashcards')
+        .select(`
           id,
-          file_name
-        )
-      `)
-      .eq('user_id', userProfileId)
-      .is('last_reviewed_at', null)
+          front,
+          back,
+          difficulty,
+          times_reviewed,
+          times_correct,
+          documents (
+            id,
+            file_name
+          )
+        `)
+        .eq('user_id', userProfileId)
+        .is('last_reviewed_at', null)
+    )
 
     if (newFlashcardsError) {
       logger.error('Failed to fetch new flashcards', newFlashcardsError, { userId })
       // Continue without new flashcards
     }
+
+    // Track queue metrics
+    trackApiMetric('review_queue.due_cards', reviewQueue?.length || 0, 'none')
+    trackApiMetric('review_queue.new_cards', newFlashcards?.length || 0, 'none')
 
     // Format review queue items
     const formattedQueue = (reviewQueue || []).map(item => {
@@ -204,6 +224,11 @@ export async function GET(req: NextRequest) {
         : 0
     }
 
+    // Track final queue statistics
+    trackApiMetric('review_queue.total_due', stats.totalDue, 'none')
+    trackApiMetric('review_queue.average_retention', Math.round(stats.averageRetention), 'none')
+    trackApiMetric('review_queue.mature_cards', stats.matureCards, 'none')
+
     const duration = Date.now() - startTime
     logger.api('GET', '/api/flashcards/review-queue', 200, duration, {
       userId,
@@ -218,7 +243,7 @@ export async function GET(req: NextRequest) {
 
   } catch (error: any) {
     const duration = Date.now() - startTime
-    logger.error('Review queue error', error, { userId: 'unknown' })
+    logger.error('Review queue error', error, { userId: userId || 'unknown' })
     logger.api('GET', '/api/flashcards/review-queue', 500, duration, { error: error.message })
 
     return NextResponse.json(
@@ -227,3 +252,5 @@ export async function GET(req: NextRequest) {
     )
   }
 }
+
+export const GET = withMonitoring(handleGetReviewQueue, '/api/flashcards/review-queue')

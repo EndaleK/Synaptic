@@ -13,10 +13,12 @@ import { FileUploadSchema, validateDocumentLength, validateContentSafety } from 
 import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
 import { createClient } from "@/lib/supabase/server"
 import { createSSEStream, createSSEHeaders, ProgressTracker } from "@/lib/sse-utils"
+import { withMonitoring, trackApiMetric, addApiContext, flagSlowOperation } from '@/lib/monitoring/api-monitor'
+import { trackSupabaseQuery, trackBatchQuery } from '@/lib/monitoring/supabase-monitor'
 
 export const maxDuration = 300 // 5 minutes for complex documents
 
-export async function POST(request: NextRequest) {
+async function handleGenerateFlashcards(request: NextRequest) {
   const startTime = Date.now()
   let userId: string | null = null
 
@@ -91,12 +93,19 @@ export async function POST(request: NextRequest) {
       // Fetch document from database
       const supabase = await createClient()
 
+      // Track content type for monitoring
+      trackApiMetric('flashcards.request_type.json', 1, 'none')
+
       // First get user profile ID (required for RLS)
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('clerk_user_id', userId)
-        .single()
+      const { data: profile } = await trackSupabaseQuery(
+        'SELECT',
+        'user_profiles',
+        () => supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('clerk_user_id', userId!)
+          .single()
+      )
 
       if (!profile) {
         logger.error('User profile not found', undefined, { userId })
@@ -106,13 +115,24 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // Add context for monitoring
+      addApiContext('flashcard_generation', {
+        document_id: documentId,
+        user_profile_id: profile.id,
+        request_type: 'json'
+      })
+
       // Fetch document with user_id filter (required for RLS)
-      const { data: doc, error: fetchError } = await supabase
-        .from('documents')
-        .select('extracted_text, file_name')
-        .eq('id', documentId)
-        .eq('user_id', profile.id)
-        .single()
+      const { data: doc, error: fetchError } = await trackSupabaseQuery(
+        'SELECT',
+        'documents',
+        () => supabase
+          .from('documents')
+          .select('extracted_text, file_name')
+          .eq('id', documentId!)
+          .eq('user_id', profile.id)
+          .single()
+      )
 
       if (fetchError || !doc) {
         // Improve error logging to see actual Supabase error
@@ -184,6 +204,9 @@ export async function POST(request: NextRequest) {
         mode
       })
 
+      // Track request type
+      trackApiMetric(`flashcards.request_type.formdata_${mode}`, 1, 'none')
+
       if (mode === "file") {
         uploadedFile = formData.get("file") as File
         const file = uploadedFile
@@ -210,6 +233,17 @@ export async function POST(request: NextRequest) {
           )
         }
 
+        // Track file size
+        trackApiMetric('flashcards.file_upload.size', file.size, 'byte')
+
+        // Add context for monitoring
+        addApiContext('flashcard_generation', {
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size,
+          request_type: 'formdata_file'
+        })
+
         logger.debug("Processing file upload", {
           userId,
           fileName: file.name,
@@ -217,7 +251,17 @@ export async function POST(request: NextRequest) {
           fileSize: file.size
         })
 
+        const parseStartTime = Date.now()
         const parseResult = await parseDocument(file)
+        const parseDuration = Date.now() - parseStartTime
+
+        trackApiMetric('flashcards.file_parse.duration', parseDuration, 'millisecond')
+
+        // Flag slow parsing (>5s for complex files)
+        if (parseDuration > 5000) {
+          flagSlowOperation(`File parsing (${file.name})`, parseDuration, 5000)
+        }
+
         if (parseResult.error) {
           logger.error("File parsing failed", new Error(parseResult.error), {
             userId,
@@ -251,6 +295,12 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           )
         }
+
+        // Add context for monitoring
+        addApiContext('flashcard_generation', {
+          text_length: textContent.length,
+          request_type: 'formdata_text'
+        })
       } else {
         return NextResponse.json(
           { error: "Invalid mode. Must be 'file' or 'text'" },
@@ -339,6 +389,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Track text content length for monitoring
+    trackApiMetric('flashcards.text_content.length', textContent.length, 'none')
+
     // Select optimal AI provider based on document size
     const providerSelection = selectAIProvider(textContent.length, 'flashcards')
     logger.info("Smart routing selected provider", {
@@ -348,14 +401,29 @@ export async function POST(request: NextRequest) {
       textLength: textContent.length
     })
 
+    // Track selected provider
+    trackApiMetric(`flashcards.ai_provider.${providerSelection.provider}`, 1, 'none')
+
     // Generate flashcards with automatic provider selection
+    const aiStartTime = Date.now()
     const result = await generateFlashcardsAuto(textContent, generationOptions)
+    const aiDuration = Date.now() - aiStartTime
     const flashcards = result.flashcards
+
+    // Track AI generation metrics
+    trackApiMetric('flashcards.ai_generation.duration', aiDuration, 'millisecond')
+    trackApiMetric('flashcards.generated_count', flashcards.length, 'none')
+
+    // Flag slow AI generation (>30s for complex documents)
+    if (aiDuration > 30000) {
+      flagSlowOperation('Flashcard AI generation', aiDuration, 30000)
+    }
 
     logger.info("Flashcards generated successfully", {
       userId,
       provider: result.provider,
-      flashcardCount: flashcards.length
+      flashcardCount: flashcards.length,
+      duration: `${aiDuration}ms`
     })
 
     // Track usage (use the selected provider's model for cost tracking)
@@ -381,11 +449,15 @@ export async function POST(request: NextRequest) {
       const supabase = await createClient()
 
       // Get user profile ID
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('clerk_user_id', userId)
-        .single()
+      const { data: profile } = await trackSupabaseQuery(
+        'SELECT',
+        'user_profiles',
+        () => supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('clerk_user_id', userId!)
+          .single()
+      )
 
       if (profile) {
         const userProfileId = profile.id
@@ -402,10 +474,15 @@ export async function POST(request: NextRequest) {
           times_correct: 0
         }))
 
-        const { data: insertedCards, error: insertError } = await supabase
-          .from('flashcards')
-          .insert(flashcardsToInsert)
-          .select()
+        const { data: insertedCards, error: insertError } = await trackBatchQuery(
+          'insert_flashcards',
+          'flashcards',
+          () => supabase
+            .from('flashcards')
+            .insert(flashcardsToInsert)
+            .select(),
+          flashcards.length
+        )
 
         if (!insertError && insertedCards) {
           // Update flashcards with database IDs and timestamps
@@ -520,3 +597,5 @@ export async function POST(request: NextRequest) {
     }
   }
 }
+
+export const POST = withMonitoring(handleGenerateFlashcards, '/api/generate-flashcards')

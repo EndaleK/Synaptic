@@ -14,6 +14,8 @@ import { logger } from '@/lib/logger'
 import { FileUploadSchema, validateDocumentLength, validateContentSafety } from '@/lib/validation'
 import { canUploadDocument, trackDocumentUpload } from '@/lib/usage-tracker'
 import { processFileParallel, shouldUseParallelProcessing, estimateUploadTime } from '@/lib/upload-optimizer'
+import { withMonitoring, trackApiMetric, flagSlowOperation } from '@/lib/monitoring/api-monitor'
+import { trackSupabaseQuery } from '@/lib/monitoring/supabase-monitor'
 
 // Vercel limits: 4.5MB max request body size (cannot be changed)
 // For files > 5MB, use /api/upload-large-document (chunked upload)
@@ -24,12 +26,14 @@ export const maxDuration = 300 // 5 minutes max
  * GET /api/documents
  * Fetch all documents for authenticated user
  */
-export async function GET(request: NextRequest) {
+async function handleGetDocuments(request: NextRequest) {
   const startTime = Date.now()
+  let userId: string | null = null
 
   try {
     // Authenticate user
-    const { userId } = await auth()
+    const authResult = await auth()
+    userId = authResult.userId
 
     if (!userId) {
       logger.warn('Unauthenticated documents list request')
@@ -53,8 +57,12 @@ export async function GET(request: NextRequest) {
 
     logger.debug('Fetching documents', { userId, limit, offset })
 
-    // Fetch documents from database
-    const { documents, error } = await getUserDocuments(userId, limit, offset)
+    // Fetch documents from database with monitoring
+    const { documents, error } = await trackSupabaseQuery(
+      'SELECT',
+      'documents',
+      () => getUserDocuments(userId!, limit, offset)
+    )
 
     if (error) {
       logger.error('Failed to fetch documents from database', new Error(error), { userId })
@@ -66,7 +74,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Track metrics
     const duration = Date.now() - startTime
+    trackApiMetric('documents.count', documents?.length || 0)
     logger.api('GET', '/api/documents', 200, duration, {
       userId,
       documentCount: documents?.length || 0,
@@ -86,16 +96,21 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export const GET = withMonitoring(handleGetDocuments, '/api/documents')
+
 /**
  * POST /api/documents
  * Upload and process a new document
  */
-export async function POST(request: NextRequest) {
+async function handlePostDocument(request: NextRequest) {
   const startTime = Date.now()
+  let userId: string | null = null
+  let documentId: string | null = null
 
   try {
     // Authenticate user
-    const { userId } = await auth()
+    const authResult = await auth()
+    userId = authResult.userId
 
     if (!userId) {
       logger.warn('Unauthenticated document upload request')
@@ -156,6 +171,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Track file size metric
+    trackApiMetric('document.upload.file_size', file.size, 'byte')
+
     // Estimate upload time for logging
     const uploadEstimate = estimateUploadTime(file.size)
     logger.debug('Processing document upload', {
@@ -167,14 +185,26 @@ export async function POST(request: NextRequest) {
       message: uploadEstimate.message
     })
 
+    // Add context for monitoring
+    addApiContext('document_upload', {
+      file_name: file.name,
+      file_type: file.type,
+      file_size: file.size,
+      estimated_time: uploadEstimate.estimated
+    })
+
     // Get user profile ID first (documents.user_id references user_profiles.id, not clerk_user_id)
     const supabase = await import('@/lib/supabase/server').then(m => m.createClient())
 
-    const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .eq('clerk_user_id', userId)
-      .single()
+    const { data: profile, error: profileError } = await trackSupabaseQuery(
+      'SELECT',
+      'user_profiles',
+      () => supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('clerk_user_id', userId!)
+        .single()
+    )
 
     if (profileError || !profile) {
       logger.error('User profile not found', profileError, { userId })
@@ -197,7 +227,11 @@ export async function POST(request: NextRequest) {
       storage_path: ''
     }
 
-    const { document, error: dbError } = await saveDocumentToDatabase(documentData)
+    const { document, error: dbError } = await trackSupabaseQuery(
+      'INSERT',
+      'documents',
+      () => saveDocumentToDatabase(documentData)
+    )
 
     if (dbError || !document) {
       logger.error('Failed to create document record', new Error(dbError || 'No document returned'), { userId, fileName: file.name })
@@ -209,10 +243,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const documentId = document.id
+    documentId = document.id
     logger.debug('Document record created', { userId, documentId, fileName: file.name })
 
-    await updateDocumentStatus(documentId, 'processing')
+    await trackSupabaseQuery(
+      'UPDATE',
+      'documents',
+      () => updateDocumentStatus(documentId!, 'processing')
+    )
 
     // Step 2 & 3: Upload and parse in parallel for large files (optimization)
     const useParallel = shouldUseParallelProcessing(file.size)
@@ -226,11 +264,16 @@ export async function POST(request: NextRequest) {
         fileSize: file.size
       })
 
+      const parallelStartTime = Date.now()
+
       // Process upload and parsing simultaneously
       const { uploadResult, parseResult: parseResultParallel } = await processFileParallel(
         uploadDocumentToStorage(file, userId),
         parseDocument(file)
       )
+
+      const parallelDuration = Date.now() - parallelStartTime
+      trackApiMetric('document.parallel_processing.duration', parallelDuration, 'millisecond')
 
       if (uploadResult.error) {
         // Create user-friendly error message
@@ -259,11 +302,20 @@ export async function POST(request: NextRequest) {
       logger.info('Parallel processing complete', {
         userId,
         documentId,
-        duration: `${Date.now() - startTime}ms`
+        duration: `${parallelDuration}ms`
       })
+
+      // Flag if parallel processing was slow (>30s for files that should benefit)
+      if (parallelDuration > 30000) {
+        flagSlowOperation('Parallel document processing', parallelDuration, 30000)
+      }
     } else {
       // Sequential processing for small files (original behavior)
+      const uploadStartTime = Date.now()
       const uploadResult = await uploadDocumentToStorage(file, userId)
+      const uploadDuration = Date.now() - uploadStartTime
+
+      trackApiMetric('document.upload.duration', uploadDuration, 'millisecond')
 
       if (uploadResult.error) {
         // Create user-friendly error message
@@ -289,8 +341,17 @@ export async function POST(request: NextRequest) {
       storagePath = uploadResult.path
       logger.debug('File uploaded to storage', { userId, documentId, storagePath })
 
-      // Extract text content
+      // Extract text content with performance tracking
+      const parseStartTime = Date.now()
       parseResult = await parseDocument(file)
+      const parseDuration = Date.now() - parseStartTime
+
+      trackApiMetric('document.parse.duration', parseDuration, 'millisecond')
+
+      // Flag slow PDF parsing (>5s is expected for complex PDFs, but worth monitoring)
+      if (parseDuration > 5000 && file.type === 'application/pdf') {
+        flagSlowOperation('PDF parsing', parseDuration, 5000)
+      }
     }
 
     // Validate storage path for PDFs (critical for PDF viewer)
@@ -330,6 +391,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Track extracted text metrics
+    trackApiMetric('document.extracted_text.length', extractedText.length, 'none')
+    if (parseResult.pageCount) {
+      trackApiMetric('document.page_count', parseResult.pageCount, 'none')
+    }
+
     // Validate document content length and safety
     const lengthValidation = validateDocumentLength(extractedText)
     if (!lengthValidation.valid) {
@@ -358,19 +425,23 @@ export async function POST(request: NextRequest) {
     logger.debug('Document text extracted and validated', { userId, documentId, textLength: extractedText.length })
 
     // Step 4: Update document with storage path and extracted text
-    const { error: updateError } = await supabase
-      .from('documents')
-      .update({
-        storage_path: storagePath,
-        extracted_text: extractedText,
-        processing_status: 'completed',
-        metadata: {
-          page_count: parseResult.pageCount || null,
-          extraction_method: 'server-side',
-          updated_at: new Date().toISOString(),
-        }
-      })
-      .eq('id', documentId)
+    const { error: updateError } = await trackSupabaseQuery(
+      'UPDATE',
+      'documents',
+      () => supabase
+        .from('documents')
+        .update({
+          storage_path: storagePath,
+          extracted_text: extractedText,
+          processing_status: 'completed',
+          metadata: {
+            page_count: parseResult.pageCount || null,
+            extraction_method: 'server-side',
+            updated_at: new Date().toISOString(),
+          }
+        })
+        .eq('id', documentId)
+    )
 
     if (updateError) {
       logger.error('Failed to update document with final data', updateError, { userId, documentId })
@@ -387,6 +458,8 @@ export async function POST(request: NextRequest) {
     trackDocumentUpload(userId, 'free') // TODO: Get actual tier from user profile
 
     const duration = Date.now() - startTime
+    trackApiMetric('document.total_processing.duration', duration, 'millisecond')
+
     logger.api('POST', '/api/documents', 200, duration, {
       userId,
       documentId,
@@ -422,3 +495,5 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+export const POST = withMonitoring(handlePostDocument, '/api/documents')

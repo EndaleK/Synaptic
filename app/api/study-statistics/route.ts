@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { createClient } from "@/lib/supabase/server"
 import { logger } from "@/lib/logger"
+import { withMonitoring, trackApiMetric, addApiContext } from '@/lib/monitoring/api-monitor'
+import { trackSupabaseQuery } from '@/lib/monitoring/supabase-monitor'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,12 +11,14 @@ export const dynamic = 'force-dynamic'
  * GET /api/study-statistics
  * Fetches comprehensive study statistics including streaks, session data, and flashcard reviews
  */
-export async function GET(req: NextRequest) {
+async function handleGetStudyStatistics(req: NextRequest) {
   const startTime = Date.now()
+  let userId: string | null = null
 
   try {
     // Authenticate user
-    const { userId } = await auth()
+    const authResult = await auth()
+    userId = authResult.userId
     if (!userId) {
       logger.warn('Unauthenticated study statistics request')
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -24,14 +28,27 @@ export async function GET(req: NextRequest) {
     const range = searchParams.get('range') || 'month' // week, month, year
     const timezoneOffset = parseInt(searchParams.get('timezoneOffset') || '0') // Timezone offset in minutes (e.g., -300 for EST)
 
+    // Track request parameters
+    trackApiMetric(`stats.range.${range}`, 1, 'none')
+
+    // Add context for monitoring
+    addApiContext('statistics_request', {
+      range,
+      timezone_offset: timezoneOffset
+    })
+
     const supabase = await createClient()
 
     // Get user profile ID with error handling
-    const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .eq('clerk_user_id', userId)
-      .single()
+    const { data: profile, error: profileError } = await trackSupabaseQuery(
+      'SELECT',
+      'user_profiles',
+      () => supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('clerk_user_id', userId!)
+        .single()
+    )
 
     if (profileError) {
       logger.error('Failed to fetch user profile', profileError, { userId })
@@ -45,11 +62,15 @@ export async function GET(req: NextRequest) {
     const userProfileId = profile.id
 
     // Get user preferences for goals with error handling
-    const { data: preferences, error: preferencesError } = await supabase
-      .from('user_study_preferences')
-      .select('daily_study_goal_minutes, daily_flashcard_review_goal')
-      .eq('user_id', userProfileId)
-      .single()
+    const { data: preferences, error: preferencesError } = await trackSupabaseQuery(
+      'SELECT',
+      'user_study_preferences',
+      () => supabase
+        .from('user_study_preferences')
+        .select('daily_study_goal_minutes, daily_flashcard_review_goal')
+        .eq('user_id', userProfileId)
+        .single()
+    )
 
     if (preferencesError && preferencesError.code !== 'PGRST116') {
       // Log error but continue with defaults - preferences are optional
@@ -98,12 +119,16 @@ export async function GET(req: NextRequest) {
     heatmapStart.setUTCDate(heatmapStart.getUTCDate() - heatmapDays)
 
     // Fetch all completed study sessions
-    const { data: sessions, error: sessionsError } = await supabase
-      .from('study_sessions')
-      .select('start_time, duration_minutes, completed')
-      .eq('user_id', userProfileId)
-      .eq('completed', true)
-      .order('start_time', { ascending: true })
+    const { data: sessions, error: sessionsError} = await trackSupabaseQuery(
+      'SELECT',
+      'study_sessions',
+      () => supabase
+        .from('study_sessions')
+        .select('start_time, duration_minutes, completed, session_type')
+        .eq('user_id', userProfileId)
+        .eq('completed', true)
+        .order('start_time', { ascending: true })
+    )
 
     if (sessionsError) {
       logger.error('Failed to fetch study sessions', sessionsError, { userId })
@@ -112,6 +137,9 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Failed to fetch sessions" }, { status: 500 })
       }
     }
+
+    // Track number of sessions retrieved
+    trackApiMetric('stats.sessions_retrieved', sessions?.length || 0, 'none')
 
     // Calculate streak (with timezone support)
     const sessionDates = new Set<string>()
@@ -199,21 +227,32 @@ export async function GET(req: NextRequest) {
     const averageSessionMinutes = totalSessions > 0 ? Math.round(totalMinutes / totalSessions) : 0
 
     // Fetch flashcard statistics with error handling
-    const { data: flashcards, error: flashcardsError } = await supabase
-      .from('flashcards')
-      .select('times_reviewed, times_correct')
-      .eq('user_id', userProfileId)
+    const { data: flashcards, error: flashcardsError } = await trackSupabaseQuery(
+      'SELECT',
+      'flashcards',
+      () => supabase
+        .from('flashcards')
+        .select('times_reviewed, times_correct')
+        .eq('user_id', userProfileId)
+    )
 
     if (flashcardsError) {
       logger.error('Failed to fetch flashcard statistics', flashcardsError, { userId })
       // Continue with empty data rather than failing entirely
     }
 
+    // Track flashcard metrics
+    trackApiMetric('stats.flashcards_count', flashcards?.length || 0, 'none')
+
     const totalFlashcardsReviewed = flashcards?.reduce((sum, f) => sum + (f.times_reviewed || 0), 0) || 0
     const totalCorrect = flashcards?.reduce((sum, f) => sum + (f.times_correct || 0), 0) || 0
     const averageAccuracy = totalFlashcardsReviewed > 0
       ? Math.round((totalCorrect / totalFlashcardsReviewed) * 100)
       : 0
+
+    // Track computed statistics
+    trackApiMetric('stats.total_reviews', totalFlashcardsReviewed, 'none')
+    trackApiMetric('stats.average_accuracy', averageAccuracy, 'none')
 
     // Flashcards reviewed today and this week (using count aggregation for performance)
     // Try review_queue first, fallback to flashcards table if review_queue doesn't exist
@@ -406,6 +445,11 @@ export async function GET(req: NextRequest) {
     }
 
     const duration = Date.now() - startTime
+
+    // Track overall statistics calculation time
+    trackApiMetric('stats.calculation_time', duration, 'millisecond')
+    trackApiMetric('stats.current_streak', currentStreak, 'none')
+
     logger.api('GET', '/api/study-statistics', 200, duration, { userId })
 
     return NextResponse.json({
@@ -415,7 +459,7 @@ export async function GET(req: NextRequest) {
 
   } catch (error: any) {
     const duration = Date.now() - startTime
-    logger.error('Study statistics error', error, { userId: 'unknown' })
+    logger.error('Study statistics error', error, { userId: userId || 'unknown' })
     logger.api('GET', '/api/study-statistics', 500, duration, { error: error.message })
 
     return NextResponse.json(
@@ -424,3 +468,5 @@ export async function GET(req: NextRequest) {
     )
   }
 }
+
+export const GET = withMonitoring(handleGetStudyStatistics, '/api/study-statistics')
