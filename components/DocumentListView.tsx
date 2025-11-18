@@ -123,7 +123,7 @@ export default function DocumentListView({
       </div>
 
       {/* Document Rows */}
-      <div className="divide-y divide-gray-100 dark:divide-gray-800">
+      <div className="divide-y divide-gray-100 dark:divide-gray-800 max-h-[600px] overflow-y-auto">
         {documents.map((document) => {
           const isSelected = selectedDocuments.has(document.id)
 
