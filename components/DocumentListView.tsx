@@ -72,6 +72,29 @@ export default function DocumentListView({
     }
   }
 
+  const getIndexBadge = (document: Document) => {
+    // Only show indexing status for large files (>10MB) that would benefit from RAG
+    const isLargeFile = document.file_size > 10 * 1024 * 1024
+
+    if (!isLargeFile) return null
+
+    if (document.rag_indexed) {
+      return (
+        <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+          <span>✓</span>
+          <span>Indexed</span>
+        </span>
+      )
+    }
+
+    return (
+      <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+        <span>📊</span>
+        <span>Needs Index</span>
+      </span>
+    )
+  }
+
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
       {/* Table Header */}
@@ -134,8 +157,9 @@ export default function DocumentListView({
               </div>
 
               {/* Status - Desktop only */}
-              <div className="hidden md:flex col-span-2 items-center">
+              <div className="hidden md:flex col-span-2 items-center gap-2 flex-wrap">
                 {getStatusBadge(document.processing_status || 'completed')}
+                {getIndexBadge(document)}
               </div>
 
               {/* Size - Desktop only */}

@@ -65,6 +65,29 @@ export default function DocumentTableView({
     return <File className="w-4 h-4 text-gray-500" />
   }
 
+  const getIndexBadge = (document: Document) => {
+    // Only show indexing status for large files (>10MB) that would benefit from RAG
+    const isLargeFile = document.file_size > 10 * 1024 * 1024
+
+    if (!isLargeFile) return null
+
+    if (document.rag_indexed) {
+      return (
+        <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+          <span>✓</span>
+          <span>Indexed</span>
+        </span>
+      )
+    }
+
+    return (
+      <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+        <span>📊</span>
+        <span>Needs Index</span>
+      </span>
+    )
+  }
+
   const SortableHeader = ({ field, label }: { field: string; label: string }) => (
     <button
       onClick={() => onSort(field)}
@@ -189,15 +212,18 @@ export default function DocumentTableView({
 
                 {/* Status */}
                 <td className="px-4 py-3">
-                  {document.processing_status === 'completed' && (
-                    <span className="text-xs text-green-600 dark:text-green-400">✓ Ready</span>
-                  )}
-                  {document.processing_status === 'processing' && (
-                    <span className="text-xs text-yellow-600 dark:text-yellow-400 animate-pulse">⚡ Processing</span>
-                  )}
-                  {document.processing_status === 'failed' && (
-                    <span className="text-xs text-red-600 dark:text-red-400">✗ Failed</span>
-                  )}
+                  <div className="flex flex-col gap-1">
+                    {document.processing_status === 'completed' && (
+                      <span className="text-xs text-green-600 dark:text-green-400">✓ Ready</span>
+                    )}
+                    {document.processing_status === 'processing' && (
+                      <span className="text-xs text-yellow-600 dark:text-yellow-400 animate-pulse">⚡ Processing</span>
+                    )}
+                    {document.processing_status === 'failed' && (
+                      <span className="text-xs text-red-600 dark:text-red-400">✗ Failed</span>
+                    )}
+                    {getIndexBadge(document)}
+                  </div>
                 </td>
 
                 {/* Actions */}
