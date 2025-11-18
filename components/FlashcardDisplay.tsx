@@ -177,7 +177,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   }, [])
 
   // Handle mastery button clicks
-  const handleMastery = useCallback(async (action: 'mastered' | 'needs-review') => {
+  const handleMastery = useCallback(async (action: 'needs-review' | 'hard' | 'good' | 'mastered') => {
     if (isUpdatingMastery || !currentCard.id) return
 
     // Check if flashcard has database ID
@@ -190,12 +190,18 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
     setIsUpdatingMastery(true)
 
     try {
+      // Map 4-button system to API's binary system for now
+      // TODO: Update API to handle full SM-2 quality ratings
+      const mappedAction = (action === 'mastered' || action === 'good' || action === 'hard')
+        ? 'mastered'
+        : 'needs-review'
+
       const response = await fetch('/api/flashcards/mastery', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           flashcardId: currentCard.id,
-          action
+          action: mappedAction
         })
       })
 
@@ -207,8 +213,11 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
 
       const data = await response.json()
 
-      // Update local state
-      if (action === 'mastered') {
+      // Update local state based on quality rating
+      // 'mastered' and 'good' = confident recall, move to end
+      // 'hard' = difficult recall, review sooner
+      // 'needs-review' = failed, review very soon
+      if (action === 'mastered' || action === 'good') {
         setMasteredCards(new Set([...masteredCards, currentCard.id]))
         setNeedsReviewCards(prev => {
           const updated = new Set(prev)
@@ -226,7 +235,21 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
           newOrder.push(currentCardIndex)
           return newOrder
         })
+      } else if (action === 'hard') {
+        // Hard cards: not mastered yet, but don't put them in needsReview
+        // Move forward just a bit (2 positions) for quicker review
+        setCardOrder(prevOrder => {
+          const newOrder = [...prevOrder]
+          const currentCardIndex = newOrder[currentIndex]
+          // Remove current card from its position
+          newOrder.splice(currentIndex, 1)
+          // Insert it 2 cards ahead
+          const insertPosition = Math.min(currentIndex + 2, newOrder.length)
+          newOrder.splice(insertPosition, 0, currentCardIndex)
+          return newOrder
+        })
       } else {
+        // needs-review: failed completely
         setNeedsReviewCards(new Set([...needsReviewCards, currentCard.id]))
 
         // For review cards, move them forward a few positions (reshuffle)
