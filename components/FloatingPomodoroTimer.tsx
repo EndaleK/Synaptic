@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { usePomodoroStore } from "@/lib/store/usePomodoroStore"
+import { useStudyGoalsStore } from "@/lib/store/useStudyGoalsStore"
 import { Play, Pause, Square, Settings, X, Minimize2, Maximize2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -26,6 +27,9 @@ export default function FloatingPomodoroTimer() {
     syncTimer
   } = usePomodoroStore()
 
+  const { incrementPomodoroSessions, checkAndResetDaily } = useStudyGoalsStore()
+  const prevSessionsCompletedRef = useRef(sessionsCompleted)
+
   const [isMinimized, setIsMinimized] = useState(true) // Start minimized by default
   const [showSettings, setShowSettings] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -44,7 +48,17 @@ export default function FloatingPomodoroTimer() {
   // Sync timer on mount (handles navigation between pages)
   useEffect(() => {
     syncTimer()
-  }, [syncTimer])
+    checkAndResetDaily() // Check if we need to reset daily goals
+  }, [syncTimer, checkAndResetDaily])
+
+  // Track Pomodoro session completions and update goals
+  useEffect(() => {
+    if (sessionsCompleted > prevSessionsCompletedRef.current && timerType === 'focus') {
+      // A focus session was completed
+      incrementPomodoroSessions()
+      prevSessionsCompletedRef.current = sessionsCompleted
+    }
+  }, [sessionsCompleted, timerType, incrementPomodoroSessions])
 
   // Tick every second when running
   useEffect(() => {

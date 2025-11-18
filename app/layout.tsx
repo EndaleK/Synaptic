@@ -119,6 +119,9 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <head>
+          {/* Google Site Verification */}
+          <meta name="google-site-verification" content="3ExrBId0okoOWgiiWtlHSitp7sdQ0K5TQd-R3J0MhVQ" />
+
           {/* Performance hints */}
           <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.googleapis.com" />

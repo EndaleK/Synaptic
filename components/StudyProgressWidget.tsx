@@ -12,11 +12,14 @@ import {
   Clock,
   CheckCircle2,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Settings
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useNotifications } from '@/lib/notifications'
 import { usePomodoroStore } from '@/lib/store/usePomodoroStore'
+import { useStudyGoalsStore } from '@/lib/store/useStudyGoalsStore'
+import GoalsSettingsModal from './GoalsSettingsModal'
 
 interface StudyProgress {
   currentStreak: number
@@ -41,10 +44,19 @@ export default function StudyProgressWidget() {
   const [lastNotifiedStreak, setLastNotifiedStreak] = useState<number | null>(null)
   const [lastNotifiedGoal, setLastNotifiedGoal] = useState<string | null>(null)
   const { sessionsCompleted, totalStudyTimeToday } = usePomodoroStore()
+  const {
+    dailyGoals,
+    dailyProgress,
+    weeklyStats,
+    checkAndResetDaily,
+    getGoalCompletion,
+    setGoalsModalOpen
+  } = useStudyGoalsStore()
 
   useEffect(() => {
     fetchProgress()
-  }, [])
+    checkAndResetDaily() // Initialize and check daily reset
+  }, [checkAndResetDaily])
 
   // Check for milestone notifications
   useEffect(() => {
@@ -106,26 +118,39 @@ export default function StudyProgressWidget() {
   }
 
   const progressPercentage = Math.min(stats.dailyGoalProgress, 100)
+  const goalCompletion = getGoalCompletion()
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="w-6 h-6 text-purple-600" />
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Study Progress</h2>
-          <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
-            This Week
-          </span>
+    <>
+      <GoalsSettingsModal />
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-purple-600" />
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Study Progress</h2>
+            <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
+              This Week
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setGoalsModalOpen(true)}
+              className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              title="Customize daily goals"
+            >
+              <Settings className="w-4 h-4" />
+              Goals
+            </button>
+            <button
+              onClick={() => router.push('/dashboard/study/statistics')}
+              className="flex items-center gap-1 text-sm font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 transition-colors"
+            >
+              View All
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => router.push('/dashboard/study/statistics')}
-          className="flex items-center gap-1 text-sm font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 transition-colors"
-        >
-          View All
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
@@ -227,6 +252,85 @@ export default function StudyProgressWidget() {
         </div>
       </div>
 
+      {/* Today's Goals Progress */}
+      <div className="mb-6 p-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Target className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <h3 className="font-semibold text-gray-900 dark:text-white">Today's Goals</h3>
+          </div>
+          <span className="text-xs text-gray-600 dark:text-gray-400">
+            {Object.values(goalCompletion).filter(v => v >= 100).length} / 4 completed
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {/* Study Time Goal */}
+          <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Study Time</span>
+              <span className="text-xs font-bold text-gray-900 dark:text-white">
+                {dailyProgress.studyMinutes}/{dailyGoals.studyMinutes}m
+              </span>
+            </div>
+            <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-500 transition-all duration-300"
+                style={{ width: `${Math.min(100, goalCompletion.studyMinutes)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Flashcards Goal */}
+          <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Flashcards</span>
+              <span className="text-xs font-bold text-gray-900 dark:text-white">
+                {dailyProgress.flashcardsReviewed}/{dailyGoals.flashcardsReviewed}
+              </span>
+            </div>
+            <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-purple-500 transition-all duration-300"
+                style={{ width: `${Math.min(100, goalCompletion.flashcardsReviewed)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Documents Goal */}
+          <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Documents</span>
+              <span className="text-xs font-bold text-gray-900 dark:text-white">
+                {dailyProgress.documentsRead.size}/{dailyGoals.documentsRead}
+              </span>
+            </div>
+            <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-green-500 transition-all duration-300"
+                style={{ width: `${Math.min(100, goalCompletion.documentsRead)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Pomodoro Goal */}
+          <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Pomodoros</span>
+              <span className="text-xs font-bold text-gray-900 dark:text-white">
+                {dailyProgress.pomodoroSessions}/{dailyGoals.pomodoroSessions}
+              </span>
+            </div>
+            <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-red-500 transition-all duration-300"
+                style={{ width: `${Math.min(100, goalCompletion.pomodoroSessions)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Daily Goal Progress */}
       <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
         <div className="flex items-center justify-between mb-2">
@@ -270,6 +374,7 @@ export default function StudyProgressWidget() {
           <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
