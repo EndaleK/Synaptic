@@ -102,8 +102,8 @@ WHERE repetitions = 0 AND times_correct > 0;
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS flashcard_review_sessions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE,
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT REFERENCES user_profiles(id) ON DELETE CASCADE,
   document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
   session_start TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   session_end TIMESTAMP WITH TIME ZONE,
