@@ -160,13 +160,35 @@ function getRelationshipIcon(relationship: string): string {
 
 /**
  * Main layout function - routes to template-specific algorithm
+ * Now also supports mapType-based layouts (radial, concept)
  */
-export function layoutMindMap(mindMapData: MindMapData): ReactFlowMindMap {
+export function layoutMindMap(mindMapData: MindMapData, mapType?: 'hierarchical' | 'radial' | 'concept'): ReactFlowMindMap {
   const template = getTemplate(mindMapData.template);
 
-  console.log(`[Layout] Applying ${mindMapData.template} layout to ${mindMapData.nodes.length} nodes`);
+  // Prioritize mapType over template for layout selection
+  const layoutType = mapType || mindMapData.template;
 
-  switch (mindMapData.template) {
+  // VISUAL DEBUG: Log layout selection with emoji for easy identification
+  const layoutEmoji = {
+    'hierarchical': '🌿',
+    'radial': '⭕',
+    'concept': '🌐',
+    'flowchart': '📊',
+    'timeline': '⏳'
+  }[layoutType] || '❓';
+
+  console.log(`\n🎨 ========== MIND MAP LAYOUT ==========`);
+  console.log(`${layoutEmoji} Layout Type: ${layoutType.toUpperCase()}`);
+  console.log(`📊 Nodes: ${mindMapData.nodes.length}, Edges: ${mindMapData.edges.length}`);
+  console.log(`🎯 Template: ${mindMapData.template}`);
+  console.log(`⚙️ MapType Override: ${mapType || 'none (using template default)'}`);
+  console.log(`========================================\n`);
+
+  switch (layoutType) {
+    case 'radial':
+      return layoutRadial(mindMapData, template);
+    case 'concept':
+      return layoutConcept(mindMapData, template);
     case 'flowchart':
       return layoutFlowchart(mindMapData, template);
     case 'timeline':
@@ -185,6 +207,8 @@ function layoutHierarchical(
   mindMapData: MindMapData,
   template: VisualizationTemplate
 ): ReactFlowMindMap {
+  console.log(`🌿 HIERARCHICAL LAYOUT: Traditional tree structure with color-coded levels`);
+
   const { nodes: mindMapNodes, edges: mindMapEdges } = mindMapData;
   const { nodeSpacing } = template.layout;
 
@@ -354,6 +378,364 @@ function layoutHierarchical(
         stroke: isCrossLink ? '#F59E0B' : '#FDE68A',  // NEW: Amber border for definition
         strokeWidth: 1,               // NEW: Border for visual separation
         rx: 8,                        // Was: 6 (slightly more rounded)
+        ry: 8,
+      },
+    });
+  });
+
+  return { nodes: reactFlowNodes, edges: reactFlowEdges };
+}
+
+/**
+ * Radial Mind Map Layout
+ * Circular layout with central concept and radiating branches
+ * All level-1 nodes arranged in a circle around the root
+ */
+function layoutRadial(
+  mindMapData: MindMapData,
+  template: VisualizationTemplate
+): ReactFlowMindMap {
+  console.log(`⭕ RADIAL LAYOUT: Circular sunburst with radius 400px per level`);
+
+  const { nodes: mindMapNodes, edges: mindMapEdges } = mindMapData;
+
+  const reactFlowNodes: Node[] = [];
+  const reactFlowEdges: Edge[] = [];
+
+  // Find root node (level 0)
+  const rootNode = mindMapNodes.find(n => n.level === 0);
+  if (!rootNode) {
+    throw new Error('No root node found for radial layout');
+  }
+
+  // Group nodes by level
+  const nodesByLevel = new Map<number, MindMapNode[]>();
+  mindMapNodes.forEach(node => {
+    if (!nodesByLevel.has(node.level)) {
+      nodesByLevel.set(node.level, []);
+    }
+    nodesByLevel.get(node.level)!.push(node);
+  });
+
+  // Build parent-child relationships for branch assignment
+  const childrenMap = new Map<string, string[]>();
+  mindMapEdges.forEach(edge => {
+    if (!childrenMap.has(edge.from)) {
+      childrenMap.set(edge.from, []);
+    }
+    childrenMap.get(edge.from)!.push(edge.to);
+  });
+
+  // Calculate radial positions
+  mindMapNodes.forEach((node) => {
+    let x = 0;
+    let y = 0;
+
+    if (node.level === 0) {
+      // Root at center
+      x = 0;
+      y = 0;
+    } else {
+      // Find which level-1 branch this node belongs to
+      let currentNode = node;
+      let parent = mindMapEdges.find(e => e.to === currentNode.id);
+      let branchRoot = node;
+
+      // Traverse up to find the level-1 ancestor
+      while (parent) {
+        const parentNode = mindMapNodes.find(n => n.id === parent.from);
+        if (parentNode) {
+          if (parentNode.level === 1) {
+            branchRoot = parentNode;
+            break;
+          }
+          currentNode = parentNode;
+          parent = mindMapEdges.find(e => e.to === currentNode.id);
+        } else {
+          break;
+        }
+      }
+
+      // Calculate angle based on branch root position
+      const level1Nodes = nodesByLevel.get(1) || [];
+      const branchIndex = level1Nodes.indexOf(branchRoot);
+      const totalBranches = level1Nodes.length;
+
+      // Distribute branches evenly around circle
+      const angleStep = (2 * Math.PI) / totalBranches;
+      const baseAngle = branchIndex * angleStep - Math.PI / 2; // Start from top
+
+      // Radial distance based on level - INCREASED for more dramatic circular layout
+      const radiusPerLevel = 400; // Increased from 250 for much more spacing and visual drama
+      const radius = node.level * radiusPerLevel;
+
+      // For nodes in the same branch, add slight angular offset
+      const nodesInBranch = mindMapNodes.filter(n => {
+        let curr = n;
+        let par = mindMapEdges.find(e => e.to === curr.id);
+        while (par) {
+          const parNode = mindMapNodes.find(pn => pn.id === par.from);
+          if (parNode) {
+            if (parNode.level === 1 && parNode.id === branchRoot.id) {
+              return true;
+            }
+            curr = parNode;
+            par = mindMapEdges.find(e => e.to === curr.id);
+          } else {
+            break;
+          }
+        }
+        return false;
+      });
+
+      const nodeIndexInBranch = nodesInBranch.indexOf(node);
+      const angularSpread = 0.4; // Increased from 0.3 for more spread between siblings
+      const angleOffset = (nodeIndexInBranch - (nodesInBranch.length - 1) / 2) * (angularSpread / Math.max(nodesInBranch.length, 1));
+
+      const finalAngle = baseAngle + angleOffset;
+      x = radius * Math.cos(finalAngle);
+      y = radius * Math.sin(finalAngle);
+    }
+
+    // Styling similar to hierarchical but with circular emphasis
+    const fontSizeByLevel = [24, 18, 14, 12];
+    const fontSize = node.level < fontSizeByLevel.length ? fontSizeByLevel[node.level] : 11;
+
+    const paddingByLevel = [28, 20, 16, 12];
+    const padding = node.level < paddingByLevel.length ? paddingByLevel[node.level] : 10;
+
+    const minWidthByLevel = [320, 260, 220, 180];
+    const minWidth = node.level < minWidthByLevel.length ? minWidthByLevel[node.level] : 160;
+
+    const borderRadiusByLevel = [999, 24, 18, 12]; // Root is circular
+    const borderRadius = node.level < borderRadiusByLevel.length ? borderRadiusByLevel[node.level] : 8;
+
+    const borderWidthByLevel = [5, 3, 2, 2];
+    const borderWidth = node.level < borderWidthByLevel.length ? borderWidthByLevel[node.level] : 1;
+
+    const textColor = node.category === 'technique' ? '#1F2937' : 'white';
+    const fidelity = calculateFidelity(node);
+    const fidelityBadge = getFidelityBadge(fidelity);
+
+    reactFlowNodes.push({
+      id: node.id,
+      type: 'default',
+      position: { x, y },
+      data: {
+        label: node.label,
+        description: node.description,
+        level: node.level,
+        category: node.category,
+        fidelity: fidelity,
+        fidelityBadge: fidelityBadge,
+      },
+      label: node.label,
+      style: {
+        background: getColorForCategory(node.category || 'concept', template),
+        color: textColor,
+        border: `${borderWidth}px solid ${getColorForLevel(node.level)}`,
+        borderRadius: `${borderRadius}px`,
+        padding: `${padding}px`,
+        minWidth: `${minWidth}px`,
+        fontSize: `${fontSize}px`,
+        fontWeight: node.level === 0 ? '800' : node.level === 1 ? '600' : '500',
+        boxShadow: node.level === 0
+          ? '0 12px 32px rgba(0,0,0,0.2)'
+          : node.level === 1
+          ? '0 8px 20px rgba(0,0,0,0.15)'
+          : '0 4px 12px rgba(0,0,0,0.1)',
+        transition: 'all 0.2s ease',
+      },
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
+    });
+  });
+
+  // Create edges - radial connections
+  mindMapEdges.forEach((edge) => {
+    const sourceNode = mindMapNodes.find(n => n.id === edge.from);
+    const targetNode = mindMapNodes.find(n => n.id === edge.to);
+
+    reactFlowEdges.push({
+      id: edge.id,
+      source: edge.from,
+      target: edge.to,
+      type: 'smoothstep',
+      label: getRelationshipIcon(edge.relationship) + edge.relationship,
+      animated: true,
+      data: {
+        tooltip: `"${sourceNode?.label}" ${edge.relationship} "${targetNode?.label}"`,
+        isCrossLink: false,
+        sourceLabel: sourceNode?.label,
+        targetLabel: targetNode?.label,
+      },
+      style: {
+        stroke: '#8B5CF6', // Purple for radial branches
+        strokeWidth: Math.max(2, 4 - (sourceNode?.level || 0) * 0.5),
+      },
+      markerEnd: {
+        type: 'arrowclosed' as any,
+        color: '#8B5CF6',
+        width: 18,
+        height: 18,
+      },
+      labelStyle: {
+        fill: '#1f2937',
+        fontWeight: 700,
+        fontSize: 14,
+        padding: '5px 10px',
+      },
+      labelBgStyle: {
+        fill: '#F3E8FF',
+        fillOpacity: 1,
+        stroke: '#C4B5FD',
+        strokeWidth: 1,
+        rx: 8,
+        ry: 8,
+      },
+    });
+  });
+
+  return { nodes: reactFlowNodes, edges: reactFlowEdges };
+}
+
+/**
+ * Concept Map Layout
+ * Hierarchical structure with prominent cross-links showing knowledge integration
+ * Similar to hierarchical but with enhanced cross-link visualization
+ */
+function layoutConcept(
+  mindMapData: MindMapData,
+  template: VisualizationTemplate
+): ReactFlowMindMap {
+  console.log(`🌐 CONCEPT MAP: Network with ULTRA-prominent cross-links (7px, bright orange)`);
+
+  const { nodes: mindMapNodes, edges: mindMapEdges } = mindMapData;
+  const { nodeSpacing } = template.layout;
+
+  const reactFlowNodes: Node[] = [];
+  const reactFlowEdges: Edge[] = [];
+
+  // Group nodes by level (same as hierarchical)
+  const nodesByLevel = new Map<number, MindMapNode[]>();
+  mindMapNodes.forEach(node => {
+    if (!nodesByLevel.has(node.level)) {
+      nodesByLevel.set(node.level, []);
+    }
+    nodesByLevel.get(node.level)!.push(node);
+  });
+
+  // Layout nodes (same positioning as hierarchical)
+  mindMapNodes.forEach((node) => {
+    const nodesAtLevel = nodesByLevel.get(node.level) || [];
+    const indexAtLevel = nodesAtLevel.indexOf(node);
+    const totalAtLevel = nodesAtLevel.length;
+
+    const x = node.level * nodeSpacing.horizontal;
+    const y = (indexAtLevel - (totalAtLevel - 1) / 2) * nodeSpacing.vertical;
+
+    const fontSizeByLevel = [22, 16, 13, 11, 10];
+    const fontSize = node.level < fontSizeByLevel.length ? fontSizeByLevel[node.level] : 10;
+
+    const paddingByLevel = [24, 18, 14, 12, 10];
+    const padding = node.level < paddingByLevel.length ? paddingByLevel[node.level] : 10;
+
+    const minWidthByLevel = [300, 240, 200, 180, 160];
+    const minWidth = node.level < minWidthByLevel.length ? minWidthByLevel[node.level] : 160;
+
+    const borderRadiusByLevel = [24, 18, 12, 8, 8];
+    const borderRadius = node.level < borderRadiusByLevel.length ? borderRadiusByLevel[node.level] : 8;
+
+    const borderWidthByLevel = [4, 3, 2, 2, 1];
+    const borderWidth = node.level < borderWidthByLevel.length ? borderWidthByLevel[node.level] : 1;
+
+    const textColor = node.category === 'technique' ? '#1F2937' : 'white';
+    const fidelity = calculateFidelity(node);
+    const fidelityBadge = getFidelityBadge(fidelity);
+
+    reactFlowNodes.push({
+      id: node.id,
+      type: 'default',
+      position: { x, y },
+      data: {
+        label: node.label,
+        description: node.description,
+        level: node.level,
+        category: node.category,
+        fidelity: fidelity,
+        fidelityBadge: fidelityBadge,
+      },
+      label: node.label,
+      style: {
+        background: getColorForCategory(node.category || 'concept', template),
+        color: textColor,
+        border: `${borderWidth}px solid ${getColorForLevel(node.level)}`,
+        borderRadius: `${borderRadius}px`,
+        padding: `${padding}px`,
+        minWidth: `${minWidth}px`,
+        fontSize: `${fontSize}px`,
+        fontWeight: node.level === 0 ? '700' : node.level === 1 ? '600' : '500',
+        boxShadow: node.level === 0
+          ? '0 8px 24px rgba(0,0,0,0.15)'
+          : node.level === 1
+          ? '0 6px 16px rgba(0,0,0,0.12)'
+          : '0 4px 8px rgba(0,0,0,0.1)',
+        transition: 'all 0.2s ease',
+      },
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
+    });
+  });
+
+  // Create edges with EXTRA emphasis on cross-links
+  mindMapEdges.forEach((edge) => {
+    const sourceNode = mindMapNodes.find(n => n.id === edge.from);
+    const targetNode = mindMapNodes.find(n => n.id === edge.to);
+
+    // Detect cross-links (connections that skip levels or go across branches)
+    const isCrossLink = sourceNode && targetNode && Math.abs(sourceNode.level - targetNode.level) > 1;
+
+    const tooltipText = isCrossLink
+      ? `🔗 CROSS-LINK: "${sourceNode?.label}" ${edge.relationship} "${targetNode?.label}" - This connection shows knowledge integration across different concepts!`
+      : `"${sourceNode?.label}" ${edge.relationship} "${targetNode?.label}"`;
+
+    reactFlowEdges.push({
+      id: edge.id,
+      source: edge.from,
+      target: edge.to,
+      type: 'smoothstep',
+      label: (isCrossLink ? '🔗 ' : '') + getRelationshipIcon(edge.relationship) + edge.relationship,
+      animated: !isCrossLink, // Cross-links are static and bold
+      data: {
+        tooltip: tooltipText,
+        isCrossLink: isCrossLink,
+        sourceLabel: sourceNode?.label,
+        targetLabel: targetNode?.label,
+      },
+      style: {
+        stroke: isCrossLink ? '#FF5722' : '#64748B', // ULTRA bright orange for cross-links, gray for hierarchy
+        strokeWidth: isCrossLink ? 7 : 3, // ULTRA THICKER cross-links (increased from 5 to 7)
+        strokeDasharray: isCrossLink ? '14,8' : undefined, // ULTRA prominent dashes (longer dashes)
+      },
+      markerEnd: {
+        type: 'arrowclosed' as any,
+        color: isCrossLink ? '#FF5722' : '#64748B',
+        width: isCrossLink ? 30 : 18, // MUCH larger arrows for cross-links
+        height: isCrossLink ? 30 : 18,
+      },
+      labelStyle: {
+        fill: isCrossLink ? '#D32F2F' : '#1f2937', // ULTRA bright red text for cross-links
+        fontWeight: isCrossLink ? 900 : 700,
+        fontSize: isCrossLink ? 18 : 14, // Bigger text for cross-links
+        padding: '6px 12px',
+        letterSpacing: isCrossLink ? '0.8px' : '0.3px', // More spacing for emphasis
+      },
+      labelBgStyle: {
+        fill: isCrossLink ? '#FFEBEE' : '#FFFBEA', // ULTRA bright red bg for cross-links
+        fillOpacity: 1,
+        stroke: isCrossLink ? '#EF5350' : '#FDE68A', // Brighter stroke
+        strokeWidth: isCrossLink ? 3 : 1, // Thicker border
+        rx: 8,
         ry: 8,
       },
     });

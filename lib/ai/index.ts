@@ -99,7 +99,7 @@ export function getProviderForFeature(feature: string): AIProvider {
  */
 function getDefaultProvider(feature: string): ProviderType {
   const defaults: Record<string, ProviderType> = {
-    'mindmap': 'deepseek',           // Cost-effective for concept extraction
+    'mindmap': 'openai',             // CHANGED: OpenAI generates reliable edges for mind maps (DeepSeek produces 0 edges)
     'podcast_script': 'deepseek',    // Cost-effective for script generation
     'podcast_tts': 'openai',         // OpenAI has best TTS
     'flashcards': 'deepseek',        // 60-70% cheaper than OpenAI

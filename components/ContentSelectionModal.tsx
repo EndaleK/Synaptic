@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Loader2, Sparkles, Zap, Map, Save, Check } from "lucide-react"
+import { X, Loader2, Sparkles, Zap, Map, Save, Check, GitBranch, Radio, Network } from "lucide-react"
 import { useRouter } from "next/navigation"
 import PageTopicSelector, { SelectionData } from "./PageTopicSelector"
-import { Document } from "@/lib/supabase/types"
+import { Document, type MindMapType } from "@/lib/supabase/types"
 
 interface ContentSelectionModalProps {
   isOpen: boolean
@@ -47,6 +47,9 @@ export default function ContentSelectionModal({
   const [selection, setSelection] = useState<SelectionData>({ type: 'full' })
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Mind map type selection (only used when generationType === 'mindmap')
+  const [selectedMapType, setSelectedMapType] = useState<MindMapType>('hierarchical')
 
   // Preset saving state
   const [showSavePreset, setShowSavePreset] = useState(false)
@@ -102,11 +105,14 @@ export default function ContentSelectionModal({
         case 'mindmap':
           // Use RAG endpoint for large/indexed documents
           apiEndpoint = (isRAGIndexed || isLargeDocument) ? '/api/generate-mindmap-rag' : '/api/generate-mindmap'
-          // Mind map uses auto-detected params, but accepts selection
+          // Pass mind map type to API
+          requestBody.mapType = selectedMapType
+          console.log('[ContentSelectionModal] ⚠️ Mind map type selected:', selectedMapType)
           break
       }
 
       console.log(`🚀 Generating ${generationType} from ${selection.type}...`)
+      console.log('[ContentSelectionModal] ⚠️ Request body:', JSON.stringify(requestBody, null, 2))
 
       response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -354,6 +360,77 @@ export default function ContentSelectionModal({
               <p className="text-sm text-blue-800 dark:text-blue-200">
                 ℹ️ Full document will be used (page information not available)
               </p>
+            </div>
+          )}
+
+          {/* Mind Map Type Selector (only shown for mind maps) */}
+          {generationType === 'mindmap' && (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+                <Map className="w-4 h-4" />
+                Mind Map Type
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
+                {/* Hierarchical */}
+                <button
+                  onClick={() => setSelectedMapType('hierarchical')}
+                  className={`p-4 rounded-lg border-2 transition-all text-left ${
+                    selectedMapType === 'hierarchical'
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <GitBranch className={`w-5 h-5 ${selectedMapType === 'hierarchical' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`} />
+                    <span className={`font-semibold text-sm ${selectedMapType === 'hierarchical' ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-gray-100'}`}>
+                      Hierarchical
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Tree structure with clear parent-child relationships
+                  </p>
+                </button>
+
+                {/* Radial */}
+                <button
+                  onClick={() => setSelectedMapType('radial')}
+                  className={`p-4 rounded-lg border-2 transition-all text-left ${
+                    selectedMapType === 'radial'
+                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Radio className={`w-5 h-5 ${selectedMapType === 'radial' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-500'}`} />
+                    <span className={`font-semibold text-sm ${selectedMapType === 'radial' ? 'text-purple-900 dark:text-purple-100' : 'text-gray-900 dark:text-gray-100'}`}>
+                      Radial
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Circular layout with central focus and radiating branches
+                  </p>
+                </button>
+
+                {/* Concept */}
+                <button
+                  onClick={() => setSelectedMapType('concept')}
+                  className={`p-4 rounded-lg border-2 transition-all text-left ${
+                    selectedMapType === 'concept'
+                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Network className={`w-5 h-5 ${selectedMapType === 'concept' ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`} />
+                    <span className={`font-semibold text-sm ${selectedMapType === 'concept' ? 'text-green-900 dark:text-green-100' : 'text-gray-900 dark:text-gray-100'}`}>
+                      Concept
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Network with cross-links showing knowledge integration
+                  </p>
+                </button>
+              </div>
             </div>
           )}
 

@@ -150,7 +150,6 @@ export default function LandingPage() {
               <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
                 Mind Mapping
               </h3>
-              <p className="text-xs font-semibold text-orange-600 dark:text-orange-400 mb-3">Research-Backed (0.66 Effect Size)</p>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                 Visualize concepts with interactive maps featuring relationship types, cross-links, and knowledge integration indicators.
               </p>
@@ -374,14 +373,6 @@ export default function LandingPage() {
               <p className="text-gray-600 dark:text-gray-400 font-medium">Cheaper Audio Generation</p>
               <p className="text-sm text-green-600 dark:text-green-400 mt-1">Premium TTS at fraction of cost</p>
             </div>
-            <div className="text-center p-8 bg-gradient-to-br from-orange-50 to-pink-50 dark:from-orange-900/20 dark:to-pink-900/20 rounded-2xl border border-orange-200 dark:border-orange-800">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Award className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-                <p className="text-4xl font-bold text-black dark:text-white">0.66</p>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 font-medium">Research-Backed Design</p>
-              <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">Effect size for mind maps</p>
-            </div>
           </div>
 
           {/* Testimonials */}
@@ -542,7 +533,7 @@ export default function LandingPage() {
                   Built on Scientific Research
                 </h4>
                 <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-                  Our mind mapping feature is backed by peer-reviewed research showing a <strong>0.66 effect size</strong> on learning outcomes (Nesbit & Adesope, 2006). This means students using mind maps can expect significantly improved comprehension and retention compared to traditional note-taking methods.
+                  Our mind mapping feature is backed by peer-reviewed research showing significantly improved comprehension and retention compared to traditional note-taking methods (Nesbit & Adesope, 2006).
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <span className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-full border border-orange-300 dark:border-orange-700">

@@ -1,6 +1,7 @@
 import { chunkDocument, getChunkingSummary, type ChunkOptions } from "./document-chunker"
 import { getProviderForFeature, type AIProvider } from "./ai"
 import { type TemplateType, getRecommendedTemplate, TEMPLATES } from "./mindmap-templates"
+import { type MindMapType } from "./supabase/types"
 
 export interface MindMapNode {
   id: string
@@ -37,69 +38,28 @@ interface GenerateMindMapOptions {
   maxDepth?: number // Maximum depth levels (default 4)
   provider?: AIProvider // Optional provider (defaults to configured provider for 'mindmap' feature)
   template?: TemplateType // Optional template override (AI auto-selects if not provided)
+  mapType?: MindMapType // Type of mind map: hierarchical, radial, or concept (default: hierarchical)
 }
 
 /**
- * Generate a hierarchical mind map from document text
- * Mimics NotebookLM's Mind Map feature
+ * Generate type-specific system prompt for mind map generation
  */
-export async function generateMindMap(
-  options: GenerateMindMapOptions
-): Promise<MindMapData> {
-  const {
-    text,
-    maxNodes = 20,
-    maxDepth = 4,
-    provider: customProvider,
-    template: userTemplate
-  } = options
+function getSystemPromptForMapType(mapType: MindMapType, maxNodes: number, maxDepth: number): string {
+  const baseSourceFidelity = `
+SOURCE FIDELITY REQUIREMENTS (CRITICAL - MUST FOLLOW):
+⚠️ These rules override all other instructions when conflicts arise:
+1. **Content Restriction**: Create nodes and relationships ONLY from concepts explicitly mentioned in the provided document content
+2. **No External Knowledge**: Do NOT add nodes, descriptions, or relationships based on your general knowledge of the topic
+3. **Text-Based Relationships**: Relationships must be supported by the TEXT, not by what you know about the topic in general
+4. **Description Fidelity**: Node descriptions must derive directly from the text - NO external elaboration or context
+5. **Incomplete Information Handling**: If the text doesn't provide enough information for a complete mind map structure, create a smaller/simpler map rather than adding external knowledge
+6. **Cross-Link Limitation**: Only create cross-links between concepts that are actually related IN THE TEXT, not in general knowledge
+7. **No Assumptions**: Do not assume relationships, examples, or details that aren't stated in the source text
+8. **Quote Priority**: When in doubt, use direct quotes from the text rather than paraphrasing with external context
 
-  // Get provider (use custom if provided, otherwise get configured provider)
-  const provider = customProvider || getProviderForFeature('mindmap')
+If following these rules results in fewer nodes than the target, that is acceptable - accuracy and source fidelity are more important than hitting the target node count.`
 
-  if (!provider.isConfigured()) {
-    throw new Error(`AI provider not configured. Please add the appropriate API key to your environment variables.`)
-  }
-
-  console.log(`[MindMap] Using ${provider.name} provider for generation`)
-
-  // Determine visualization template
-  let selectedTemplate: TemplateType = userTemplate || 'hierarchical' // Default to hierarchical if not specified
-  let templateSelectionMode: 'user' | 'ai-auto' = userTemplate ? 'user' : 'ai-auto'
-
-  // Truncate if necessary (reduced for faster processing)
-  const maxChars = 24000
-  let processedText = text
-  if (text.length > maxChars) {
-    processedText = text.substring(0, maxChars)
-    const lastSentence = processedText.lastIndexOf('. ')
-    if (lastSentence > maxChars * 0.8) {
-      processedText = processedText.substring(0, lastSentence + 1)
-    }
-    console.log(`Mind map: Text truncated from ${text.length} to ${processedText.length} characters`)
-  }
-
-  const systemPrompt = `You are an expert at creating CONCEPT MAPS - hierarchical, networked knowledge structures with explicit labeled relationships.
-
-CONCEPT MAP PRINCIPLES (NOT traditional mind maps):
-1. **Hierarchical & Networked**: Top-down organization (most general → specific) with cross-links between branches
-2. **Explicit Relationships**: Every connection MUST have a labeled linking phrase (e.g., "leads to", "is a type of", "requires")
-3. **Propositional Structure**: Each edge forms a readable sentence: Concept1 + Linking Phrase + Concept2
-4. **Cross-Links**: Connect related concepts across different branches to show knowledge integration
-
-CORE DESIGN GOALS:
-✓ Answer a focus question about the document's main topic
-✓ Create clear visual-verbal mnemonics for deep understanding
-✓ Show both hierarchy (top-down) AND network (cross-links)
-✓ Enable verification of knowledge through complete propositions
-
-HIERARCHICAL STRUCTURE:
-- **Level 0** (Root): Most general, inclusive concept (answers "What is this about?")
-- **Level 1** (Major Concepts): 4-7 primary concepts (broad categories)
-- **Level 2** (Subconcepts): 3-5 subdivisions per major concept
-- **Level 3** (Details): 2-4 specific points (examples, applications)
-- **Level 4** (Optional): Granular supporting details
-
+  const baseLabelingGuidelines = `
 NODE LABELING (Critical for Readability & Cognitive Load Reduction):
 - Root: Clear, inclusive concept (e.g., "Safety Protocol Implementation")
 - Level 1: Broad categories (e.g., "Heat-Related Hazards", "Emergency Procedures")
@@ -114,8 +74,9 @@ DESCRIPTION GUIDELINES (Cognitive Load Management):
 - Provide comprehensive context and explanations in descriptions
 - Include specific examples, data, applications, and connections
 - Help users understand WHY this concept matters and HOW it relates to others
-- This separation (brief label + rich description) reduces visual clutter while preserving depth
+- This separation (brief label + rich description) reduces visual clutter while preserving depth`
 
+  const categoryAssignment = `
 CATEGORY ASSIGNMENT (for color coding):
 - **concept**: Abstract ideas, theories, frameworks
 - **principle**: Rules, laws, guidelines, best practices
@@ -124,7 +85,139 @@ CATEGORY ASSIGNMENT (for color coding):
 - **example**: Case studies, illustrations, scenarios
 - **data**: Statistics, metrics, facts
 - **definition**: Key terms, terminology
-- **outcome**: Results, benefits, consequences
+- **outcome**: Results, benefits, consequences`
+
+  if (mapType === 'hierarchical') {
+    return `You are an expert at creating HIERARCHICAL MIND MAPS - tree-structured knowledge representations optimized for top-down learning.
+
+HIERARCHICAL MIND MAP PRINCIPLES:
+1. **Strict Tree Structure**: Every node has exactly one parent (except root), creating clear hierarchical relationships
+2. **Top-Down Organization**: Most general concepts at top → specific details at bottom
+3. **Clear Levels**: Distinct depth levels with consistent categorization
+4. **No Cross-Links**: Pure tree structure - no connections between branches (this distinguishes it from concept maps)
+
+HIERARCHICAL STRUCTURE:
+- **Level 0** (Root): Single most general, inclusive concept (answers "What is this about?")
+- **Level 1** (Major Branches): 4-7 primary topics (broad categories)
+- **Level 2** (Subconcepts): 3-5 subdivisions per major branch
+- **Level 3** (Details): 2-4 specific points (examples, applications)
+- **Level 4** (Optional): Granular supporting details
+
+${baseLabelingGuidelines}
+
+${categoryAssignment}
+
+RELATIONSHIP TYPES (Hierarchical only - parent → child):
+- "includes" / "contains" / "consists of"
+- "is divided into"
+- "has types" / "has subtypes"
+- "comprises"
+
+Target: ${maxNodes} nodes maximum, ${maxDepth} levels deep
+Aim for: ~${Math.ceil(maxNodes * 0.20)} main branches (level 1), each with ~${Math.floor((maxNodes - Math.ceil(maxNodes * 0.20)) / Math.ceil(maxNodes * 0.20))} sub-branches
+
+${baseSourceFidelity}
+
+Return ONLY a valid JSON object in this exact format:
+{
+  "title": "Main topic/title",
+  "nodes": [
+    {
+      "id": "unique_snake_case_id",
+      "label": "Concise Concept Label",
+      "level": 0,
+      "description": "Detailed explanation with context, examples, or significance",
+      "category": "concept"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_unique_id",
+      "from": "source_concept_id",
+      "to": "target_concept_id",
+      "relationship": "contains"
+    }
+  ]
+}
+
+EDGE REQUIREMENTS:
+1. Every node (except root) MUST have exactly ONE incoming edge (strict tree structure)
+2. Use hierarchical relationship labels only
+3. NO cross-links between branches
+
+DO NOT include any text outside the JSON object.`
+  }
+
+  if (mapType === 'radial') {
+    return `You are an expert at creating RADIAL MIND MAPS - circular layouts with a central concept and radiating branches, optimized for visual balance and equal importance.
+
+RADIAL MIND MAP PRINCIPLES:
+1. **Central Focus**: Single central concept with all main branches radiating outward
+2. **Equal Importance**: All level-1 branches have equal visual weight (circular arrangement)
+3. **Balanced Distribution**: Aim for even distribution of nodes across all radiating branches
+4. **Clear Radial Levels**: Distance from center indicates hierarchy depth
+
+RADIAL STRUCTURE:
+- **Level 0** (Center): Single core concept or theme
+- **Level 1** (Primary Radials): 5-8 main branches radiating from center (equally spaced)
+- **Level 2** (Secondary Radials): 2-4 sub-branches per main branch
+- **Level 3** (Details): 1-3 specific points extending outward
+
+${baseLabelingGuidelines}
+
+${categoryAssignment}
+
+RELATIONSHIP TYPES (Radial - center → outward):
+- "radiates to" / "branches into"
+- "extends to"
+- "includes"
+- "comprises"
+
+Target: ${maxNodes} nodes maximum, ${maxDepth} levels deep
+Aim for: ~${Math.ceil(maxNodes * 0.25)} primary radials (level 1), balanced distribution of ${Math.floor((maxNodes - Math.ceil(maxNodes * 0.25)) / Math.ceil(maxNodes * 0.25))} nodes per branch
+
+VISUAL BALANCE REQUIREMENTS:
+- Distribute nodes evenly across all primary branches
+- Avoid heavily weighted branches on one side
+- Keep branch depths similar for visual harmony
+
+${baseSourceFidelity}
+
+Return ONLY a valid JSON object (same format as hierarchical).
+
+EDGE REQUIREMENTS:
+1. All level-1 nodes MUST connect directly to the central node
+2. Each branch forms its own hierarchy radiating outward
+3. NO cross-links between radial branches
+
+DO NOT include any text outside the JSON object.`
+  }
+
+  // mapType === 'concept'
+  return `You are an expert at creating CONCEPT MAPS - networked knowledge structures with explicit labeled relationships showing knowledge integration.
+
+CONCEPT MAP PRINCIPLES:
+1. **Hierarchical & Networked**: Top-down organization WITH cross-links between branches
+2. **Explicit Relationships**: Every connection MUST have a labeled linking phrase (e.g., "leads to", "is a type of", "requires")
+3. **Propositional Structure**: Each edge forms a readable sentence: Concept1 + Linking Phrase + Concept2
+4. **Cross-Links**: Connect related concepts across different branches to show knowledge integration (KEY DIFFERENCE from hierarchical)
+
+CORE DESIGN GOALS:
+✓ Answer a focus question about the document's main topic
+✓ Create clear visual-verbal mnemonics for deep understanding
+✓ Show both hierarchy (top-down) AND network (cross-links)
+✓ Enable verification of knowledge through complete propositions
+
+HIERARCHICAL STRUCTURE:
+- **Level 0** (Root): Most general, inclusive concept (answers "What is this about?")
+- **Level 1** (Major Concepts): 4-7 primary concepts (broad categories)
+- **Level 2** (Subconcepts): 3-5 subdivisions per major concept
+- **Level 3** (Details): 2-4 specific points (examples, applications)
+- **Level 4** (Optional): Granular supporting details
+
+${baseLabelingGuidelines}
+
+${categoryAssignment}
 
 RELATIONSHIP TYPES (Critical - MUST be specific and meaningful):
 **Hierarchical (parent → child):**
@@ -152,28 +245,17 @@ RELATIONSHIP TYPES (Critical - MUST be specific and meaningful):
 - "similar to" / "related to"
 - "supports" / "reinforces"
 
-CROSS-LINKS (10-20% of total edges):
+CROSS-LINKS (10-20% of total edges - REQUIRED):
 - Connect concepts from DIFFERENT branches
 - Show knowledge integration and synthesis
 - Use relationships like: "reinforces", "contrasts with", "applies to", "exemplifies"
-- Example: "Heat Exhaustion" → "requires" → "Buddy System Protocol"
+- Example: "Heat Exhaustion" → "prevented by using" → "Buddy System Protocol"
 
 Target: ${maxNodes} nodes maximum, ${maxDepth} levels deep
 Aim for: ~${Math.ceil(maxNodes * 0.20)} main branches (level 1), each with ${Math.floor((maxNodes - Math.ceil(maxNodes * 0.20)) / Math.ceil(maxNodes * 0.20))} sub-branches
 CRITICAL: Include ${Math.ceil(maxNodes * 0.15)} cross-links connecting concepts from different branches!
 
-SOURCE FIDELITY REQUIREMENTS (CRITICAL - MUST FOLLOW):
-⚠️ These rules override all other instructions when conflicts arise:
-1. **Content Restriction**: Create nodes and relationships ONLY from concepts explicitly mentioned in the provided document content
-2. **No External Knowledge**: Do NOT add nodes, descriptions, or relationships based on your general knowledge of the topic
-3. **Text-Based Relationships**: Relationships must be supported by the TEXT, not by what you know about the topic in general
-4. **Description Fidelity**: Node descriptions must derive directly from the text - NO external elaboration or context
-5. **Incomplete Information Handling**: If the text doesn't provide enough information for a complete mind map structure, create a smaller/simpler map rather than adding external knowledge
-6. **Cross-Link Limitation**: Only create cross-links between concepts that are actually related IN THE TEXT, not in general knowledge
-7. **No Assumptions**: Do not assume relationships, examples, or details that aren't stated in the source text
-8. **Quote Priority**: When in doubt, use direct quotes from the text rather than paraphrasing with external context
-
-If following these rules results in fewer nodes than the target, that is acceptable - accuracy and source fidelity are more important than hitting the target node count.
+${baseSourceFidelity}
 
 Return ONLY a valid JSON object in this exact format:
 {
@@ -212,14 +294,69 @@ EXAMPLE of good cross-link:
 This creates: "Heat Exhaustion" + "prevented by using" + "Buddy System" = complete knowledge proposition
 
 DO NOT include any text outside the JSON object.`
+}
 
-  const userPrompt = `Extract a hierarchical mind map from this content:
+/**
+ * Generate a mind map from document text
+ * Supports hierarchical, radial, and concept map types
+ */
+export async function generateMindMap(
+  options: GenerateMindMapOptions
+): Promise<MindMapData> {
+  const {
+    text,
+    maxNodes = 20,
+    maxDepth = 4,
+    provider: customProvider,
+    template: userTemplate,
+    mapType = 'hierarchical' // Default to hierarchical for backward compatibility
+  } = options
+
+  // Get provider (use custom if provided, otherwise get configured provider)
+  const provider = customProvider || getProviderForFeature('mindmap')
+
+  if (!provider.isConfigured()) {
+    throw new Error(`AI provider not configured. Please add the appropriate API key to your environment variables.`)
+  }
+
+  console.log(`[MindMap] Using ${provider.name} provider for generation`)
+  console.log(`[MindMap] Generating ${mapType} mind map`)
+
+  // Determine visualization template
+  let selectedTemplate: TemplateType = userTemplate || 'hierarchical' // Default to hierarchical if not specified
+  let templateSelectionMode: 'user' | 'ai-auto' = userTemplate ? 'user' : 'ai-auto'
+
+  // Truncate if necessary (reduced for faster processing)
+  const maxChars = 24000
+  let processedText = text
+  if (text.length > maxChars) {
+    processedText = text.substring(0, maxChars)
+    const lastSentence = processedText.lastIndexOf('. ')
+    if (lastSentence > maxChars * 0.8) {
+      processedText = processedText.substring(0, lastSentence + 1)
+    }
+    console.log(`Mind map: Text truncated from ${text.length} to ${processedText.length} characters`)
+  }
+
+  // Generate type-specific system prompt
+  const systemPrompt = getSystemPromptForMapType(mapType, maxNodes, maxDepth)
+
+  // Generate type-aware user prompt
+  const mapTypeDescriptions = {
+    hierarchical: 'a hierarchical tree-structured',
+    radial: 'a radial/circular',
+    concept: 'a concept map with cross-links'
+  }
+
+  const userPrompt = `Extract ${mapTypeDescriptions[mapType]} mind map from this content:
 
 <content>
 ${processedText}
 </content>
 
-Create a clear, well-structured mind map with ${maxNodes} nodes organized in ${maxDepth} levels.`
+Create a clear, well-structured ${mapType} mind map with ${maxNodes} nodes organized in ${maxDepth} levels.
+
+IMPORTANT: Your response must be ONLY a JSON object with "title", "nodes" (array), and "edges" (array) fields. Do NOT use nested tree format with "children". Use the flat nodes/edges format specified in the system prompt.`
 
   try {
     const response = await provider.complete(
@@ -238,6 +375,12 @@ Create a clear, well-structured mind map with ${maxNodes} nodes organized in ${m
     // Remove markdown code blocks if present
     responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
 
+    // Try to extract JSON if there's extra text
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      responseText = jsonMatch[0]
+    }
+
     // Log response length for debugging
     console.log(`[MindMap] Response length: ${responseText.length} chars, tokens used: ${response.usage?.totalTokens || 'unknown'}`)
 
@@ -245,10 +388,12 @@ Create a clear, well-structured mind map with ${maxNodes} nodes organized in ${m
       const parsed = JSON.parse(responseText)
 
       if (!parsed.nodes || !Array.isArray(parsed.nodes)) {
+        console.error('[MindMap] Invalid response - missing nodes array. Response preview:', responseText.substring(0, 500))
         throw new Error("Invalid mind map format: missing nodes array")
       }
 
       if (!parsed.edges || !Array.isArray(parsed.edges)) {
+        console.error('[MindMap] Invalid response - missing edges array. Response preview:', responseText.substring(0, 500))
         throw new Error("Invalid mind map format: missing edges array")
       }
 
@@ -279,27 +424,50 @@ Create a clear, well-structured mind map with ${maxNodes} nodes organized in ${m
         }
       })
 
-      // Validate and normalize edges
-      const validatedEdges: MindMapEdge[] = parsed.edges.map((edge: any, index: number) => {
-        if (!edge.from || !edge.to) {
-          throw new Error(`Invalid edge ${index}: missing from or to`)
-        }
+      // Validate and normalize edges - filter out invalid ones instead of throwing
+      const validatedEdges: MindMapEdge[] = parsed.edges
+        .filter((edge: any, index: number) => {
+          // Support both "from/to" and "source/target" field names (different AI providers use different conventions)
+          const fromField = edge.from ?? edge.source
+          const toField = edge.to ?? edge.target
 
-        // Verify nodes exist
-        const fromExists = validatedNodes.some(n => n.id === edge.from)
-        const toExists = validatedNodes.some(n => n.id === edge.to)
+          if (!fromField || !toField) {
+            console.warn(`Skipping invalid edge ${index}: missing from/source or to/target fields`)
+            return false
+          }
 
-        if (!fromExists || !toExists) {
-          console.warn(`Edge ${index} references non-existent nodes: ${edge.from} -> ${edge.to}`)
-        }
+          // Verify nodes exist
+          const fromExists = validatedNodes.some(n => n.id === fromField)
+          const toExists = validatedNodes.some(n => n.id === toField)
 
-        return {
-          id: edge.id || `edge_${index}`,
-          from: edge.from,
-          to: edge.to,
-          relationship: edge.relationship || 'contains'
-        }
-      })
+          if (!fromExists || !toExists) {
+            console.warn(`Skipping edge ${index}: references non-existent nodes (${fromField} -> ${toField})`)
+            return false
+          }
+
+          return true
+        })
+        .map((edge: any, index: number) => {
+          // Normalize to "from/to" format
+          const fromField = edge.from ?? edge.source
+          const toField = edge.to ?? edge.target
+
+          return {
+            id: edge.id || `edge_${index}`,
+            from: fromField,
+            to: toField,
+            relationship: edge.relationship || 'contains'
+          }
+        })
+
+      // CRITICAL: Validate that we have edges (mind maps are useless without connections!)
+      if (validatedEdges.length === 0 && validatedNodes.length > 1) {
+        console.error(`[MindMap] ❌ AI generated ${validatedNodes.length} nodes but 0 edges! Mind map will be disconnected.`)
+        console.error(`[MindMap] Provider: ${provider.name}`)
+        throw new Error('ZERO_EDGES_ERROR: AI failed to generate any edges. Mind map would be disconnected.')
+      }
+
+      console.log(`[MindMap] ✅ Validated ${validatedNodes.length} nodes and ${validatedEdges.length} edges`)
 
       // Calculate metadata first
       const maxDepthFound = Math.max(...validatedNodes.map(n => n.level))

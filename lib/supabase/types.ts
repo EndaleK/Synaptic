@@ -183,11 +183,14 @@ export interface Podcast {
   created_at: string
 }
 
+export type MindMapType = 'hierarchical' | 'radial' | 'concept'
+
 export interface MindMap {
   id: string
   user_id: string
   document_id: string
   title: string
+  map_type: MindMapType // Type of mind map layout
   nodes: Array<{
     id: string
     label: string
@@ -197,9 +200,24 @@ export interface MindMap {
   edges: Array<{
     source: string
     target: string
+    label?: string // For concept maps (labeled relationships)
     [key: string]: any
   }>
   layout_data?: Record<string, any>
+  layout_config?: {
+    // Hierarchical-specific
+    direction?: 'TB' | 'LR' | 'BT' | 'RL'
+    spacing?: number
+    // Radial-specific
+    angleStart?: number
+    angleEnd?: number
+    radiusStep?: number
+    // Concept map-specific (force-directed)
+    strength?: number
+    distance?: number
+    iterations?: number
+    [key: string]: any
+  }
   view_count: number
   created_at: string
   updated_at: string

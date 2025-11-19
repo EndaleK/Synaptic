@@ -82,12 +82,17 @@ export function createSSEStream<T = any>(
         controller.enqueue(encoder.encode(formatted))
       }
 
-      try {
-        // Keep connection alive with heartbeat
-        const heartbeat = setInterval(() => {
+      // Keep connection alive with heartbeat
+      const heartbeat = setInterval(() => {
+        try {
           controller.enqueue(encoder.encode(': heartbeat\n\n'))
-        }, 15000) // Every 15 seconds
+        } catch (e) {
+          // Controller already closed, ignore
+          clearInterval(heartbeat)
+        }
+      }, 15000) // Every 15 seconds
 
+      try {
         // Execute handler
         await handler(send)
 
@@ -95,6 +100,9 @@ export function createSSEStream<T = any>(
         clearInterval(heartbeat)
         controller.close()
       } catch (error) {
+        // Clean up heartbeat first
+        clearInterval(heartbeat)
+
         // Send error event
         send({
           type: 'error',

@@ -35,6 +35,7 @@ interface MindMapViewerProps {
   template?: TemplateType
   templateReason?: string
   documentText?: string
+  mapType?: 'hierarchical' | 'radial' | 'concept'  // NEW: Mind map type for layout selection
   onNodeClick?: (node: MindMapNode) => void
   onTemplateChange?: (template: TemplateType) => void
 }
@@ -90,6 +91,7 @@ export default function MindMapViewer({
   template: initialTemplate = 'hierarchical',
   templateReason,
   documentText,
+  mapType, // NEW: Mind map type for layout selection
   onNodeClick,
   onTemplateChange
 }: MindMapViewerProps) {
@@ -183,8 +185,8 @@ export default function MindMapViewer({
       }
     };
 
-    // Apply template-specific layout
-    const { nodes: layoutedNodes, edges: layoutedEdges } = layoutMindMap(mindMapData);
+    // Apply template-specific layout with mapType priority
+    const { nodes: layoutedNodes, edges: layoutedEdges } = layoutMindMap(mindMapData, mapType);
 
     console.log('[MindMapViewer] Layout complete:', {
       nodesCount: layoutedNodes.length,

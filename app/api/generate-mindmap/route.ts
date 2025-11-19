@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
       documentId,
       maxNodes,
       maxDepth,
-      selection // Optional content selection (pages, topics, or full document)
+      selection, // Optional content selection (pages, topics, or full document)
+      mapType = 'hierarchical' // Default to hierarchical for backward compatibility
     } = body
 
     // Validate input
@@ -361,18 +362,11 @@ export async function POST(req: NextRequest) {
     if (envProvider) {
       selectedProviderType = envProvider
     } else if (complexityAnalysis.score >= 50) {
-      // Complex documents: Prefer Anthropic, but fallback to DeepSeek if not configured
-      const anthropicProvider = providerFactory.getProvider('anthropic')
-      if (anthropicProvider.isConfigured()) {
-        selectedProviderType = 'anthropic'
-      } else {
-        selectedProviderType = 'deepseek'
-        wasDowngraded = true
-        logger.info('Anthropic not configured, falling back to DeepSeek for complex document', { userId, documentId })
-      }
+      // Complex documents: Use OpenAI for reliable edge generation (Anthropic has auth issues, DeepSeek produces 0 edges)
+      selectedProviderType = 'openai'
     } else {
-      // Simple/moderate documents: Use DeepSeek for cost savings (60-70% cheaper than OpenAI)
-      selectedProviderType = 'deepseek'
+      // Simple/moderate documents: Use OpenAI for reliable edge generation (DeepSeek produces 0 edges)
+      selectedProviderType = 'openai'
     }
 
     const selectedProvider = providerFactory.getProviderWithFallback(selectedProviderType, 'openai')
@@ -448,7 +442,8 @@ export async function POST(req: NextRequest) {
       text: documentText,
       maxNodes: effectiveMaxNodes,
       maxDepth: effectiveMaxDepth,
-      provider: selectedProvider
+      provider: selectedProvider,
+      mapType: mapType // Pass map type to generator for type-specific prompts
     })
 
     // Validate mind map
@@ -472,46 +467,8 @@ export async function POST(req: NextRequest) {
     // Step 4: Processing structure complete
     tracker.completeStep(4, 'Processing nodes and edges...')
 
-    // Step 5: Save to database
-    tracker.completeStep(5, 'Saving mind map to database...')
-
-    // Save to database using Supabase UUID
-    let mindMap = null
-    const { data: savedMindMap, error: dbError } = await supabase
-      .from('mindmaps')
-      .insert({
-        user_id: profile.id, // Use Supabase UUID, not Clerk ID
-        document_id: documentId,
-        title: mindMapData.title,
-        nodes: mindMapData.nodes,
-        edges: mindMapData.edges,
-        layout_data: {
-          ...mindMapData.metadata,
-          template: mindMapData.template,
-          templateReason: mindMapData.templateReason
-        }
-      })
-      .select()
-      .single()
-
-    if (dbError) {
-      logger.error('Database save error for mind map', dbError, {
-        userId,
-        documentId,
-        errorCode: dbError.code,
-        errorMessage: dbError.message,
-        errorDetails: dbError.details,
-        errorHint: dbError.hint
-      })
-      // Don't fail the request, mind map is still generated
-    } else {
-      mindMap = savedMindMap
-      logger.debug('Mind map saved to database', {
-        mindMapId: mindMap.id,
-        userId,
-        documentId
-      })
-    }
+    // Step 5: Mind map generation complete (no auto-save)
+    tracker.completeStep(5, 'Mind map generated successfully!')
 
     // Track usage
     const totalTokens = mindMapData.nodes.reduce((sum, node) => sum + node.label.length + node.description.length, 0)
@@ -537,13 +494,12 @@ export async function POST(req: NextRequest) {
     logger.api('POST', '/api/generate-mindmap', 200, duration, {
       userId,
       documentId,
-      mindMapId: mindMap?.id,
       provider: selectedProvider.name,
       nodeCount: mindMapData.nodes.length,
       edgeCount: mindMapData.edges.length
     })
 
-    logger.debug('Mind map generation complete', {
+    logger.debug('Mind map generation complete (preview mode)', {
       userId,
       documentId,
       provider: selectedProvider.name,
@@ -558,8 +514,9 @@ export async function POST(req: NextRequest) {
       data: {
         success: true,
         mindMap: {
-          id: mindMap?.id,
+          // No ID yet - will be assigned when user saves to library
           title: mindMapData.title,
+          mapType: mapType, // Include the selected map type for saving
           nodes: mindMapData.nodes,
           edges: mindMapData.edges,
           template: mindMapData.template,
