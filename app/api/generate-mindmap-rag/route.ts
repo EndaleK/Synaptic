@@ -399,6 +399,7 @@ export async function POST(req: NextRequest) {
             description: mindMapData.description || `Mind map for ${document.file_name}`,
             nodes: mindMapData.nodes,
             edges: mindMapData.edges,
+            document_text: documentText || null, // Include document text for node expansion feature
             metadata: {
               complexity: complexityAnalysis.complexity,
               complexity_score: complexityAnalysis.score,

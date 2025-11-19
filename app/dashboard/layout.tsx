@@ -95,6 +95,7 @@ export default function DashboardLayout({
     { name: "Mock Exams", id: "exam", icon: GraduationCap, comingSoon: false },
     { name: "Write", id: "writer", icon: PenTool, comingSoon: false },
     { name: "Video", id: "video", icon: Youtube, comingSoon: false },
+    { name: "Quick Summary", id: "quick-summary", icon: Clock, comingSoon: false, isNew: true },
   ]
 
   const studyTools = [

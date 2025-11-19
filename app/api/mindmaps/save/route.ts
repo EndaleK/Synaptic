@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json()
-    const { documentId, title, mapType, nodes, edges, layoutData } = body
+    const { documentId, title, mapType, nodes, edges, layoutData, documentText } = body
 
     // Validate required fields
     if (!documentId || !title || !mapType || !nodes || !edges) {
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Save to database
-    const { data: savedMindMap, error: dbError } = await supabase
+    const { data: savedMindMap, error: dbError} = await supabase
       .from('mindmaps')
       .insert({
         user_id: profile.id,
@@ -72,7 +72,8 @@ export async function POST(req: NextRequest) {
         map_type: mapType,
         nodes,
         edges,
-        layout_data: layoutData || {}
+        layout_data: layoutData || {},
+        document_text: documentText || null // Include document text for node expansion feature
       })
       .select()
       .single()

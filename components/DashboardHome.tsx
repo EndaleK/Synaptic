@@ -134,11 +134,23 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       name: "Video",
       icon: Youtube,
       description: "Learn from YouTube videos with deep content analysis",
-      color: "amber", // Maps to --mode-video
+      color: "orange", // Maps to --mode-video (changed from amber since quick-summary uses amber)
+      bgClass: "bg-orange-500",
+      shadowClass: "shadow-orange-500/30",
+      available: true,
+      premium: false
+    },
+    {
+      id: "quick-summary",
+      name: "Quick Summary",
+      icon: Clock,
+      description: "Get the gist in 5 minutes - articles, docs, or videos",
+      color: "amber", // Maps to --mode-quick-summary
       bgClass: "bg-amber-500",
       shadowClass: "shadow-amber-500/30",
       available: true,
-      premium: false
+      premium: false,
+      new: true // NEW badge indicator
     },
     {
       id: "exam",

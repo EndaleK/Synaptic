@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Document Chat**: Socratic AI teacher with RAG for large documents
 - **Flashcard Generation**: Auto-generate flashcards with spaced repetition
 - **Podcast Generation**: Text-to-speech with LemonFox API integration
+- **Quick Summary** (NEW): "Teach me in 5 minutes" - Fast, energetic audio summaries from docs, URLs, or YouTube
 - **Mind Map Visualization**: Interactive concept maps with @xyflow/react
 - **Writing Assistant**: Essay editor with AI suggestions and citation management
 - **Video Learning**: YouTube search and transcript-based learning
@@ -82,6 +83,7 @@ The dashboard is a client-side adaptive interface with dynamic view switching:
 - **Chat**: ChatInterface - Socratic Q&A with document context
 - **Flashcards**: DocumentUpload + FlashcardDisplay - Generation and review
 - **Podcast**: PodcastView - Audio generation and playback
+- **Quick Summary** (NEW): QuickSummaryView - 5-minute audio summaries from documents, URLs, or YouTube
 - **Mind Map**: MindMapView - Interactive concept visualization with @xyflow/react
 - **Writing**: WritingView - Essay editor with TipTap, citations, AI suggestions
 - **Video**: VideoView - YouTube search, transcript extraction, content generation
@@ -132,6 +134,7 @@ Three processing modes based on document size:
 - `/api/chat-with-document`: Direct chat with full document
 - `/api/chat-rag`: RAG-based chat for large documents
 - `/api/generate-podcast`: Podcast script + TTS generation (SSE streaming)
+- `/api/generate-quick-summary`: NEW - 5-minute audio summaries from docs, URLs, or YouTube (SSE streaming)
 - `/api/generate-mindmap`: Mind map extraction with complexity scoring
 
 **Content Resources**:

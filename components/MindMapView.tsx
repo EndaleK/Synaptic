@@ -95,19 +95,25 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
               metadata: latest.layout_data?.metadata
             })
 
-            // Fetch document text for node expansion
-            try {
-              const docResponse = await fetch(`/api/documents/${documentId}`)
-              if (docResponse.ok) {
-                const docData = await docResponse.json()
-                if (docData.document?.extracted_text) {
-                  setDocumentText(docData.document.extracted_text)
-                  console.log('[MindMapView] Loaded document text for node expansion:', docData.document.extracted_text.length, 'chars')
+            // Use stored document_text if available (preferred), otherwise fetch from document
+            if (latest.document_text) {
+              setDocumentText(latest.document_text)
+              console.log('[MindMapView] Loaded document text from mind map:', latest.document_text.length, 'chars')
+            } else {
+              // Fallback: Fetch document text for node expansion
+              try {
+                const docResponse = await fetch(`/api/documents/${documentId}`)
+                if (docResponse.ok) {
+                  const docData = await docResponse.json()
+                  if (docData.document?.extracted_text) {
+                    setDocumentText(docData.document.extracted_text)
+                    console.log('[MindMapView] Loaded document text from document API:', docData.document.extracted_text.length, 'chars')
+                  }
                 }
+              } catch (docErr) {
+                console.error('Failed to fetch document text:', docErr)
+                // Continue anyway - node expansion just won't be available
               }
-            } catch (docErr) {
-              console.error('Failed to fetch document text:', docErr)
-              // Continue anyway - node expansion just won't be available
             }
           }
         }
@@ -391,7 +397,8 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
             ...mindMapData.metadata,
             template: mindMapData.template,
             templateReason: mindMapData.templateReason
-          }
+          },
+          documentText: documentText || null // Include document text for node expansion feature
         })
       })
 

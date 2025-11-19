@@ -9,6 +9,7 @@ import FlashcardDisplay from "@/components/FlashcardDisplay"
 import LearningStyleAssessment from "@/components/LearningStyleAssessment"
 import DashboardHome from "@/components/DashboardHome"
 import PodcastView from "@/components/PodcastView"
+import QuickSummaryView from "@/components/QuickSummaryView"
 import MindMapView from "@/components/MindMapView"
 import QuizPromptModal from "@/components/QuizPromptModal"
 import InlineDocumentPicker from "@/components/InlineDocumentPicker"
@@ -424,6 +425,17 @@ function DashboardContent() {
             <PodcastView
               documentId={currentDocument.id}
               documentName={currentDocument.name}
+            />
+          </div>
+        )
+
+      case "quick-summary":
+        // Quick Summary doesn't require pre-selection - handles docs, URLs, and YouTube in-component
+        return (
+          <div className="h-full">
+            <QuickSummaryView
+              documentId={currentDocument?.id}
+              documentName={currentDocument?.name}
             />
           </div>
         )

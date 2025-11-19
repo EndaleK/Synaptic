@@ -237,8 +237,8 @@ function layoutHierarchical(
     // PHASE 1: Enhanced Hierarchical Depth Styling (Research-Backed)
     // Aggressive scale ratios for clear visual hierarchy (Nielsen Norman: 58% better digestibility)
 
-    // Font size scaling: 22→16→13→11→10px (1.4x ratio for clear jumps)
-    const fontSizeByLevel = [22, 16, 13, 11, 10];
+    // Font size scaling: INCREASED for better readability - 28→22→18→16→14px
+    const fontSizeByLevel = [28, 22, 18, 16, 14]; // Was: [22, 16, 13, 11, 10]
     const fontSize = node.level < fontSizeByLevel.length
       ? fontSizeByLevel[node.level]
       : fontSizeByLevel[fontSizeByLevel.length - 1];
@@ -497,9 +497,9 @@ function layoutRadial(
       y = radius * Math.sin(finalAngle);
     }
 
-    // Styling similar to hierarchical but with circular emphasis
-    const fontSizeByLevel = [24, 18, 14, 12];
-    const fontSize = node.level < fontSizeByLevel.length ? fontSizeByLevel[node.level] : 11;
+    // Styling similar to hierarchical but with circular emphasis - INCREASED font sizes
+    const fontSizeByLevel = [30, 24, 20, 18]; // Was: [24, 18, 14, 12]
+    const fontSize = node.level < fontSizeByLevel.length ? fontSizeByLevel[node.level] : 16; // Was: 11
 
     const paddingByLevel = [28, 20, 16, 12];
     const padding = node.level < paddingByLevel.length ? paddingByLevel[node.level] : 10;
@@ -634,8 +634,8 @@ function layoutConcept(
     const x = node.level * nodeSpacing.horizontal;
     const y = (indexAtLevel - (totalAtLevel - 1) / 2) * nodeSpacing.vertical;
 
-    const fontSizeByLevel = [22, 16, 13, 11, 10];
-    const fontSize = node.level < fontSizeByLevel.length ? fontSizeByLevel[node.level] : 10;
+    const fontSizeByLevel = [28, 22, 18, 16, 14]; // INCREASED: Was [22, 16, 13, 11, 10]
+    const fontSize = node.level < fontSizeByLevel.length ? fontSizeByLevel[node.level] : 14; // Was: 10
 
     const paddingByLevel = [24, 18, 14, 12, 10];
     const padding = node.level < paddingByLevel.length ? paddingByLevel[node.level] : 10;
