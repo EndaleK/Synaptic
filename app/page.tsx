@@ -24,7 +24,7 @@ export default function LandingPage() {
             {/* Brand Logo */}
             <div className="mb-0 flex justify-center">
               <img
-                src="/logo-full.png"
+                src="/logo-full-transparent.png"
                 alt="Synaptic™ - Study Smarter"
                 width={486}
                 height={486}

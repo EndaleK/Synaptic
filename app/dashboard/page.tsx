@@ -15,9 +15,11 @@ import QuizPromptModal from "@/components/QuizPromptModal"
 import InlineDocumentPicker from "@/components/InlineDocumentPicker"
 import ContentSelectionModal from "@/components/ContentSelectionModal"
 import Breadcrumb from "@/components/Breadcrumb"
+import TimeBasedThemeDebugger from "@/components/TimeBasedThemeDebugger"
 import { Flashcard } from "@/lib/types"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import { useDocumentStore } from "@/lib/store/useStore"
+import { useTimeBasedTheme } from "@/lib/hooks/useTimeBasedTheme"
 import type { LearningStyle, PreferredMode, Document } from "@/lib/supabase/types"
 
 // Dynamic imports to prevent SSR hydration issues
@@ -90,6 +92,9 @@ function DashboardContent() {
   } = useUserStore()
   const { currentDocument, setCurrentDocument } = useDocumentStore()
   const searchParams = useSearchParams()
+
+  // Time-based theme warmth (0-20%)
+  const warmthLevel = useTimeBasedTheme()
 
   // Modal state for inline document picker flow
   const [selectedDocForModal, setSelectedDocForModal] = useState<Document | null>(null)
@@ -563,7 +568,13 @@ function DashboardContent() {
 
   return (
     <>
-      <div className={`h-screen overflow-hidden flex flex-col transition-colors duration-500 ${getBackgroundTint()}`}>
+      <div
+        className={`h-screen overflow-hidden flex flex-col transition-colors duration-500 ${getBackgroundTint()}`}
+        style={{
+          filter: `sepia(${warmthLevel}%) saturate(${100 - warmthLevel * 0.5}%)`,
+          transition: 'filter 2s ease-in-out'
+        }}
+      >
         <div className="flex-shrink-0 container-padding-x pt-4">
           <Breadcrumb />
         </div>
@@ -596,6 +607,11 @@ function DashboardContent() {
           onTakeQuiz={handleTakeQuiz}
           onDismiss={handleDismissQuiz}
         />
+      )}
+
+      {/* Time-Based Theme Debugger (Development Only) */}
+      {process.env.NODE_ENV === 'development' && (
+        <TimeBasedThemeDebugger warmthLevel={warmthLevel} />
       )}
 
     </>
