@@ -239,6 +239,7 @@ export default function StudyStatistics() {
 
     // Get the first day to determine alignment
     const firstDate = new Date(stats.heatmapData[0].date)
+    const lastDate = new Date(stats.heatmapData[stats.heatmapData.length - 1].date)
     const firstDayOfWeek = firstDate.getDay() // 0 = Sunday, 1 = Monday, etc.
 
     // Start week on Monday (adjust Sunday to be 6, Monday to be 0)
@@ -247,14 +248,17 @@ export default function StudyStatistics() {
     let currentWeek: Array<typeof stats.heatmapData[0] | null> = new Array(7).fill(null)
     let currentDayInWeek = adjustedFirstDay
     let lastMonth = ''
+    let dataIndex = 0
 
     stats.heatmapData.forEach((day) => {
       const date = new Date(day.date)
       const monthName = date.toLocaleDateString('en-US', { month: 'short' })
 
-      // Track month changes for labels - only at start of week
-      if (monthName !== lastMonth && currentDayInWeek === 0) {
-        monthLabels.push({ weekIndex: grid.length, month: monthName })
+      // Track month changes for labels - show at first occurrence in each week
+      if (monthName !== lastMonth) {
+        if (currentDayInWeek <= 3) { // Only if we're in first half of week
+          monthLabels.push({ weekIndex: grid.length, month: monthName })
+        }
         lastMonth = monthName
       }
 
@@ -275,17 +279,17 @@ export default function StudyStatistics() {
     }
 
     return (
-      <div className="w-full">
-        <div className="flex flex-col gap-2">
+      <div className="w-full overflow-x-auto">
+        <div className="inline-flex flex-col gap-2 min-w-full">
           {/* Month labels */}
-          <div className="flex gap-[2px] pl-[30px]">
+          <div className="flex gap-[3px] pl-[32px]">
             {grid.map((_, weekIndex) => {
               const monthLabel = monthLabels.find(m => m.weekIndex === weekIndex)
               return (
                 <div
                   key={weekIndex}
-                  className="text-[11px] font-medium text-gray-600 dark:text-gray-400"
-                  style={{ width: '10px', textAlign: 'left' }}
+                  className="text-xs font-medium text-gray-600 dark:text-gray-400"
+                  style={{ width: '13px', textAlign: 'left' }}
                 >
                   {monthLabel?.month || ''}
                 </div>
@@ -294,30 +298,30 @@ export default function StudyStatistics() {
           </div>
 
           {/* Grid with day labels */}
-          <div className="flex gap-[2px]">
+          <div className="flex gap-[3px]">
             {/* Day of week labels */}
-            <div className="flex flex-col gap-[2px] justify-start pr-1">
+            <div className="flex flex-col gap-[3px] justify-start pr-1">
               {['Mon', '', 'Wed', '', 'Fri', '', ''].map((day, idx) => (
                 <div
                   key={idx}
-                  className="h-[10px] text-[11px] text-gray-600 dark:text-gray-400 flex items-center justify-end"
-                  style={{ width: '24px' }}
+                  className="h-[13px] text-xs text-gray-600 dark:text-gray-400 flex items-center justify-end"
+                  style={{ width: '26px' }}
                 >
                   {day}
                 </div>
               ))}
             </div>
 
-            {/* Contribution grid */}
-            <div className="flex gap-[2px]">
+            {/* Contribution grid - stretched out */}
+            <div className="flex gap-[3px]">
               {grid.map((week, weekIndex) => (
-                <div key={weekIndex} className="flex flex-col gap-[2px]">
+                <div key={weekIndex} className="flex flex-col gap-[3px]">
                   {week.map((day, dayIndex) => {
                     if (!day) {
                       return (
                         <div
                           key={dayIndex}
-                          className="w-[10px] h-[10px] rounded-[2px] bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                          className="w-[13px] h-[13px] rounded-[2px] bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                         />
                       )
                     }
@@ -330,7 +334,7 @@ export default function StudyStatistics() {
                       <div
                         key={dayIndex}
                         className={`
-                          w-[10px] h-[10px] rounded-[2px] transition-all cursor-pointer
+                          w-[13px] h-[13px] rounded-[2px] transition-all cursor-pointer
                           ${getStreakColor(day.minutes)}
                           ${day.minutes === 0 ? 'border border-gray-200 dark:border-gray-700' : ''}
                           ${isToday ? 'ring-1 ring-offset-1 ring-blue-500 dark:ring-blue-400' : ''}
@@ -352,12 +356,12 @@ export default function StudyStatistics() {
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
               <span>Less</span>
-              <div className="flex gap-[2px]">
-                <div className="w-[10px] h-[10px] rounded-[2px] bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700" />
-                <div className="w-[10px] h-[10px] rounded-[2px] bg-green-200 dark:bg-green-900" />
-                <div className="w-[10px] h-[10px] rounded-[2px] bg-green-400 dark:bg-green-700" />
-                <div className="w-[10px] h-[10px] rounded-[2px] bg-green-600 dark:bg-green-500" />
-                <div className="w-[10px] h-[10px] rounded-[2px] bg-green-700 dark:bg-green-400" />
+              <div className="flex gap-[3px]">
+                <div className="w-[13px] h-[13px] rounded-[2px] bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700" />
+                <div className="w-[13px] h-[13px] rounded-[2px] bg-green-200 dark:bg-green-900" />
+                <div className="w-[13px] h-[13px] rounded-[2px] bg-green-400 dark:bg-green-700" />
+                <div className="w-[13px] h-[13px] rounded-[2px] bg-green-600 dark:bg-green-500" />
+                <div className="w-[13px] h-[13px] rounded-[2px] bg-green-700 dark:bg-green-400" />
               </div>
               <span>More</span>
             </div>
