@@ -1,13 +1,14 @@
 // Service Worker for Synaptic PWA
-const CACHE_NAME = 'synaptic-v1'
-const STATIC_CACHE = 'synaptic-static-v1'
-const DYNAMIC_CACHE = 'synaptic-dynamic-v1'
+const CACHE_NAME = 'synaptic-v2'
+const STATIC_CACHE = 'synaptic-static-v2'
+const DYNAMIC_CACHE = 'synaptic-dynamic-v2'
 
 // Assets to cache on install
 const STATIC_ASSETS = [
   '/',
   '/dashboard',
-  '/logo-brain.png',
+  '/icon-192x192.png',
+  '/icon-512x512.png',
   '/apple-touch-icon.png',
   '/favicon-32x32.png',
   '/favicon-16x16.png',

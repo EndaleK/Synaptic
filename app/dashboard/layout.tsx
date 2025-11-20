@@ -187,7 +187,7 @@ export default function DashboardLayout({
                 <>
                   <div className="w-[54px] h-[54px] flex items-center justify-center flex-shrink-0">
                     <Image
-                      src="/logo-brain.png"
+                      src="/logo-brain-transparent.png"
                       alt="Synaptic Logo"
                       width={54}
                       height={54}
@@ -207,7 +207,7 @@ export default function DashboardLayout({
               ) : (
                 <div className="w-[54px] h-[54px] flex items-center justify-center">
                   <Image
-                    src="/logo-brain.png"
+                    src="/logo-brain-transparent.png"
                     alt="Synaptic Logo"
                     width={54}
                     height={54}
@@ -505,7 +505,7 @@ export default function DashboardLayout({
 
             <Link href="/dashboard" className="flex items-center gap-2">
               <Image
-                src="/logo-brain.png"
+                src="/logo-brain-transparent.png"
                 alt="Synaptic"
                 width={32}
                 height={32}

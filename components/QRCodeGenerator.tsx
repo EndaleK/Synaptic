@@ -18,7 +18,7 @@ interface QRCodeGeneratorProps {
  *
  * Features:
  * - Generates QR code for specified URL
- * - Embeds logo-brain.png in center
+ * - Embeds logo-brain-transparent.png in center
  * - Downloadable as PNG
  * - Customizable size and styling
  */
@@ -57,7 +57,7 @@ export function QRCodeGenerator({
             setLogoDataUrl(canvas.toDataURL('image/png'))
           }
         }
-        img.src = '/logo-brain.png'
+        img.src = '/logo-brain-transparent.png'
       } catch (error) {
         console.error('Failed to load logo:', error)
       }

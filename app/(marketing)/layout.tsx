@@ -16,7 +16,7 @@ export default function MarketingLayout({
   const pathname = usePathname()
 
   // Use brain logo for pricing page, original logo for landing page
-  const logoSrc = pathname === "/pricing" ? "/logo-brain.png" : "/logo-full.png"
+  const logoSrc = pathname === "/pricing" ? "/logo-brain-transparent.png" : "/logo-full.png"
 
   return (
     <div className="min-h-screen bg-white dark:bg-black flex flex-col">
