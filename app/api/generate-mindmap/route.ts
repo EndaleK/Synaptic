@@ -98,60 +98,60 @@ export async function POST(req: NextRequest) {
 
       try {
         // Step 1: Fetch document
-        tracker.completeStep(1, 'Fetching document...')
-
         // Initialize Supabase
         const supabase = await createClient()
 
-    // SIMPLIFIED: Fetch document and profile separately for better reliability
-    // First get user profile
-    const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .eq('clerk_user_id', userId)
-      .single()
+        // SIMPLIFIED: Fetch document and profile separately for better reliability
+        // First get user profile
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('clerk_user_id', userId)
+          .single()
 
-    if (profileError || !profile) {
-      logger.error('User profile not found', profileError, { userId })
-      const duration = Date.now() - startTime
-      logger.api('POST', '/api/generate-mindmap', 404, duration, { userId, error: 'User profile not found' })
-      throw new Error('User profile not found')
-    }
+        if (profileError || !profile) {
+          logger.error('User profile not found', profileError, { userId })
+          const duration = Date.now() - startTime
+          logger.api('POST', '/api/generate-mindmap', 404, duration, { userId, error: 'User profile not found' })
+          throw new Error('User profile not found')
+        }
 
-    // Then fetch the document (RLS will ensure user owns it)
-    const { data: document, error: fetchError } = await supabase
-      .from('documents')
-      .select('id, file_name, extracted_text, metadata, storage_path, user_id')
-      .eq('id', documentId)
-      .eq('user_id', profile.id)
-      .single()
+        // Then fetch the document (RLS will ensure user owns it)
+        const { data: document, error: fetchError } = await supabase
+          .from('documents')
+          .select('id, file_name, extracted_text, metadata, storage_path, user_id')
+          .eq('id', documentId)
+          .eq('user_id', profile.id)
+          .single()
 
-    if (fetchError || !document) {
-      logger.error('Document fetch error', fetchError, {
-        userId,
-        documentId,
-        profileId: profile.id,
-        errorCode: fetchError?.code,
-        errorMessage: fetchError?.message
-      })
-      const duration = Date.now() - startTime
-      const errorMessage = fetchError?.code === 'PGRST116' ? 'Document not found or access denied' : 'Failed to fetch document'
-      logger.api('POST', '/api/generate-mindmap', 404, duration, { userId, error: errorMessage })
-      throw new Error(errorMessage)
-    }
+        if (fetchError || !document) {
+          logger.error('Document fetch error', fetchError, {
+            userId,
+            documentId,
+            profileId: profile.id,
+            errorCode: fetchError?.code,
+            errorMessage: fetchError?.message
+          })
+          const duration = Date.now() - startTime
+          const errorMessage = fetchError?.code === 'PGRST116' ? 'Document not found or access denied' : 'Failed to fetch document'
+          logger.api('POST', '/api/generate-mindmap', 404, duration, { userId, error: errorMessage })
+          throw new Error(errorMessage)
+        }
 
-    // Use document and profile directly (already fetched above)
-    logger.debug('Document and profile fetched successfully', {
-      userId,
-      documentId: document.id,
-      profileId: profile.id,
-      fileName: document.file_name
-    })
+        // Document fetched successfully - mark step 1 complete
+        tracker.completeStep(1, 'Document fetched successfully')
+
+        // Use document and profile directly (already fetched above)
+        logger.debug('Document and profile fetched successfully', {
+          userId,
+          documentId: document.id,
+          profileId: profile.id,
+          fileName: document.file_name
+        })
 
     // If no extracted text, try to extract it now (for old documents or large files)
     if (!document.extracted_text && document.storage_path) {
       logger.info('No extracted text found, extracting on-demand', { userId, documentId })
-      tracker.completeStep(1, 'Extracting text from PDF...')
 
       try {
         // Download file from storage
@@ -278,8 +278,6 @@ export async function POST(req: NextRequest) {
     })
 
     // Step 2: Analyze complexity
-    tracker.completeStep(2, 'Analyzing document complexity...')
-
     // Analyze document complexity to determine optimal parameters
     const complexityAnalysis = analyzeDocumentComplexity(documentText)
     logger.debug('Document complexity analysis', {
@@ -290,6 +288,9 @@ export async function POST(req: NextRequest) {
       recommendedNodes: complexityAnalysis.recommendedNodes,
       recommendedDepth: complexityAnalysis.recommendedDepth
     })
+
+    // Complexity analysis complete
+    tracker.completeStep(2, 'Document complexity analyzed')
 
     // Use analyzed parameters (or manual override if provided explicitly)
     let effectiveMaxNodes = body.maxNodes !== undefined ? body.maxNodes : complexityAnalysis.recommendedNodes
@@ -378,8 +379,6 @@ export async function POST(req: NextRequest) {
     })
 
     // Step 3: Generate mind map
-    tracker.completeStep(3, 'Generating mind map structure...')
-
     // Use the refactored generateMindMap function with provider injection
     const mindMapData = await generateMindMap({
       text: documentText,
@@ -388,6 +387,9 @@ export async function POST(req: NextRequest) {
       provider: selectedProvider,
       mapType: mapType // Pass map type to generator for type-specific prompts
     })
+
+    // Mind map generation complete
+    tracker.completeStep(3, 'Mind map structure generated')
 
     // Validate mind map
     const isValid = validateMindMap(mindMapData)
@@ -407,8 +409,8 @@ export async function POST(req: NextRequest) {
       edgeCount: mindMapData.edges.length
     })
 
-    // Step 4: Processing structure complete
-    tracker.completeStep(4, 'Processing nodes and edges...')
+    // Step 4: Processing structure
+    tracker.completeStep(4, 'Nodes and edges processed')
 
     // Step 5: Mind map generation complete (no auto-save)
     tracker.completeStep(5, 'Mind map generated successfully!')
