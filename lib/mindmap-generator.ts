@@ -399,7 +399,9 @@ IMPORTANT: Your response must be ONLY a JSON object with "title", "nodes" (array
 
       // Validate and normalize nodes
       const validatedNodes: MindMapNode[] = parsed.nodes.map((node: any, index: number) => {
-        if (!node.id || !node.label) {
+        // Check for missing id or label (handle both undefined/null and empty strings)
+        // Note: node.id can be 0 (falsy but valid), so check for null/undefined explicitly
+        if (node.id === null || node.id === undefined || !node.label) {
           console.error(`[MindMap] Invalid node at index ${index}:`, JSON.stringify(node, null, 2))
           console.error(`[MindMap] All nodes preview:`, JSON.stringify(parsed.nodes.slice(0, 3), null, 2))
           throw new Error(`Invalid node ${index}: missing id or label. Node data: ${JSON.stringify(node)}`)
@@ -418,7 +420,7 @@ IMPORTANT: Your response must be ONLY a JSON object with "title", "nodes" (array
         }
 
         return {
-          id: node.id,
+          id: String(node.id), // Normalize to string (AI might return numbers)
           label: trimmedLabel,
           level: typeof node.level === 'number' ? node.level : 0,
           description: node.description || '',
@@ -433,14 +435,14 @@ IMPORTANT: Your response must be ONLY a JSON object with "title", "nodes" (array
           const fromField = edge.from ?? edge.source
           const toField = edge.to ?? edge.target
 
-          if (!fromField || !toField) {
+          if (fromField === null || fromField === undefined || toField === null || toField === undefined) {
             console.warn(`Skipping invalid edge ${index}: missing from/source or to/target fields`)
             return false
           }
 
-          // Verify nodes exist
-          const fromExists = validatedNodes.some(n => n.id === fromField)
-          const toExists = validatedNodes.some(n => n.id === toField)
+          // Verify nodes exist (normalize to strings for comparison)
+          const fromExists = validatedNodes.some(n => n.id === String(fromField))
+          const toExists = validatedNodes.some(n => n.id === String(toField))
 
           if (!fromExists || !toExists) {
             console.warn(`Skipping edge ${index}: references non-existent nodes (${fromField} -> ${toField})`)
@@ -450,12 +452,12 @@ IMPORTANT: Your response must be ONLY a JSON object with "title", "nodes" (array
           return true
         })
         .map((edge: any, index: number) => {
-          // Normalize to "from/to" format
-          const fromField = edge.from ?? edge.source
-          const toField = edge.to ?? edge.target
+          // Normalize to "from/to" format and convert IDs to strings
+          const fromField = String(edge.from ?? edge.source)
+          const toField = String(edge.to ?? edge.target)
 
           return {
-            id: edge.id || `edge_${index}`,
+            id: edge.id ? String(edge.id) : `edge_${index}`,
             from: fromField,
             to: toField,
             relationship: edge.relationship || 'contains'
