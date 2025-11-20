@@ -399,14 +399,20 @@ function layoutRadial(
 
   const { nodes: mindMapNodes, edges: mindMapEdges } = mindMapData;
 
+  // DEBUG: Log all node levels
+  console.log('[RADIAL DEBUG] Node levels:', mindMapNodes.map(n => `"${n.label.substring(0, 25)}": L${n.level}`).join(', '));
+
   const reactFlowNodes: Node[] = [];
   const reactFlowEdges: Edge[] = [];
 
   // Find root node (level 0)
   const rootNode = mindMapNodes.find(n => n.level === 0);
   if (!rootNode) {
+    console.error('[RADIAL ERROR] No root node (level 0) found! All nodes:', mindMapNodes.map(n => `"${n.label}"(L${n.level})`));
     throw new Error('No root node found for radial layout');
   }
+
+  console.log(`[RADIAL DEBUG] Root node: "${rootNode.label}" (ID: ${rootNode.id})`);
 
   // Group nodes by level
   const nodesByLevel = new Map<number, MindMapNode[]>();
@@ -415,6 +421,11 @@ function layoutRadial(
       nodesByLevel.set(node.level, []);
     }
     nodesByLevel.get(node.level)!.push(node);
+  });
+
+  // DEBUG: Log nodes per level
+  nodesByLevel.forEach((nodes, level) => {
+    console.log(`[RADIAL DEBUG] Level ${level}: ${nodes.length} nodes - ${nodes.map(n => `"${n.label.substring(0, 20)}"`).join(', ')}`);
   });
 
   // Build parent-child relationships for branch assignment
@@ -427,7 +438,7 @@ function layoutRadial(
   });
 
   // Calculate radial positions
-  mindMapNodes.forEach((node) => {
+  mindMapNodes.forEach((node, nodeIndex) => {
     let x = 0;
     let y = 0;
 
@@ -435,66 +446,93 @@ function layoutRadial(
       // Root at center
       x = 0;
       y = 0;
+      console.log(`[RADIAL DEBUG] Root "${node.label}" positioned at center (0, 0)`);
     } else {
-      // Find which level-1 branch this node belongs to
-      let currentNode = node;
-      let parent = mindMapEdges.find(e => e.to === currentNode.id);
-      let branchRoot = node;
-
-      // Traverse up to find the level-1 ancestor
-      while (parent) {
-        const parentNode = mindMapNodes.find(n => n.id === parent.from);
-        if (parentNode) {
-          if (parentNode.level === 1) {
-            branchRoot = parentNode;
-            break;
-          }
-          currentNode = parentNode;
-          parent = mindMapEdges.find(e => e.to === currentNode.id);
-        } else {
-          break;
-        }
-      }
-
-      // Calculate angle based on branch root position
+      // Check if we have level-1 nodes for branch-based layout
       const level1Nodes = nodesByLevel.get(1) || [];
-      const branchIndex = level1Nodes.indexOf(branchRoot);
-      const totalBranches = level1Nodes.length;
 
-      // Distribute branches evenly around circle
-      const angleStep = (2 * Math.PI) / totalBranches;
-      const baseAngle = branchIndex * angleStep - Math.PI / 2; // Start from top
+      if (level1Nodes.length === 0) {
+        // FALLBACK: No level-1 nodes, use simple circular layout based on node index
+        console.warn(`[RADIAL WARNING] No level-1 nodes found! Using simple circular fallback for "${node.label}"`);
 
-      // Radial distance based on level - INCREASED for more dramatic circular layout
-      const radiusPerLevel = 400; // Increased from 250 for much more spacing and visual drama
-      const radius = node.level * radiusPerLevel;
+        const radiusPerLevel = 400;
+        const radius = node.level * radiusPerLevel;
 
-      // For nodes in the same branch, add slight angular offset
-      const nodesInBranch = mindMapNodes.filter(n => {
-        let curr = n;
-        let par = mindMapEdges.find(e => e.to === curr.id);
-        while (par) {
-          const parNode = mindMapNodes.find(pn => pn.id === par.from);
-          if (parNode) {
-            if (parNode.level === 1 && parNode.id === branchRoot.id) {
-              return true;
+        // Distribute all non-root nodes evenly in a circle
+        const nonRootNodes = mindMapNodes.filter(n => n.level > 0);
+        const nodeIndexInCircle = nonRootNodes.indexOf(node);
+        const totalInCircle = nonRootNodes.length;
+
+        const angleStep = (2 * Math.PI) / totalInCircle;
+        const angle = nodeIndexInCircle * angleStep - Math.PI / 2; // Start from top
+
+        x = radius * Math.cos(angle);
+        y = radius * Math.sin(angle);
+
+        console.log(`[RADIAL DEBUG] Node "${node.label}" (L${node.level}) positioned at (${x.toFixed(0)}, ${y.toFixed(0)}) - simple circle`);
+      } else {
+        // NORMAL: Branch-based layout
+        // Find which level-1 branch this node belongs to
+        let currentNode = node;
+        let parent = mindMapEdges.find(e => e.to === currentNode.id);
+        let branchRoot = node;
+
+        // Traverse up to find the level-1 ancestor
+        while (parent) {
+          const parentNode = mindMapNodes.find(n => n.id === parent.from);
+          if (parentNode) {
+            if (parentNode.level === 1) {
+              branchRoot = parentNode;
+              break;
             }
-            curr = parNode;
-            par = mindMapEdges.find(e => e.to === curr.id);
+            currentNode = parentNode;
+            parent = mindMapEdges.find(e => e.to === currentNode.id);
           } else {
             break;
           }
         }
-        return false;
-      });
 
-      const nodeIndexInBranch = nodesInBranch.indexOf(node);
-      const angularSpread = 0.4; // Increased from 0.3 for more spread between siblings
-      const angleOffset = (nodeIndexInBranch - (nodesInBranch.length - 1) / 2) * (angularSpread / Math.max(nodesInBranch.length, 1));
+        // Calculate angle based on branch root position
+        const branchIndex = level1Nodes.indexOf(branchRoot);
+        const totalBranches = level1Nodes.length;
 
-      const finalAngle = baseAngle + angleOffset;
-      x = radius * Math.cos(finalAngle);
-      y = radius * Math.sin(finalAngle);
+        // Distribute branches evenly around circle
+        const angleStep = (2 * Math.PI) / totalBranches;
+        const baseAngle = branchIndex * angleStep - Math.PI / 2; // Start from top
+
+        // Radial distance based on level - INCREASED for more dramatic circular layout
+        const radiusPerLevel = 400; // Increased from 250 for much more spacing and visual drama
+        const radius = node.level * radiusPerLevel;
+
+        // For nodes in the same branch, add slight angular offset
+        const nodesInBranch = mindMapNodes.filter(n => {
+          let curr = n;
+          let par = mindMapEdges.find(e => e.to === curr.id);
+          while (par) {
+            const parNode = mindMapNodes.find(pn => pn.id === par.from);
+            if (parNode) {
+              if (parNode.level === 1 && parNode.id === branchRoot.id) {
+                return true;
+              }
+              curr = parNode;
+              par = mindMapEdges.find(e => e.to === curr.id);
+            } else {
+              break;
+            }
+          }
+          return false;
+        });
+
+        const nodeIndexInBranch = nodesInBranch.indexOf(node);
+        const angularSpread = 0.4; // Increased from 0.3 for more spread between siblings
+        const angleOffset = (nodeIndexInBranch - (nodesInBranch.length - 1) / 2) * (angularSpread / Math.max(nodesInBranch.length, 1));
+
+        const finalAngle = baseAngle + angleOffset;
+        x = radius * Math.cos(finalAngle);
+        y = radius * Math.sin(finalAngle);
+
+        console.log(`[RADIAL DEBUG] Node "${node.label}" (L${node.level}) positioned at (${x.toFixed(0)}, ${y.toFixed(0)}) - branch ${branchIndex}/${totalBranches}`);
+      }
     }
 
     // Styling similar to hierarchical but with circular emphasis - INCREASED font sizes
