@@ -232,40 +232,45 @@ export default function StudyStatistics() {
     if (!stats?.heatmapData) return null
 
     // GitHub-style contribution grid: rows = days of week, columns = weeks
-    const monthLabels: { weekIndex: number; month: string }[] = []
+    const monthLabels: { weekIndex: number; month: string; span: number }[] = []
 
     // Organize data into a grid: [week][dayOfWeek]
     const grid: Array<Array<typeof stats.heatmapData[0] | null>> = []
 
     // Get the first day to determine alignment
     const firstDate = new Date(stats.heatmapData[0].date)
-    const lastDate = new Date(stats.heatmapData[stats.heatmapData.length - 1].date)
     const firstDayOfWeek = firstDate.getDay() // 0 = Sunday, 1 = Monday, etc.
 
-    // Start week on Monday (adjust Sunday to be 6, Monday to be 0)
-    const adjustedFirstDay = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
+    // Start week on Sunday (GitHub style)
+    const adjustedFirstDay = firstDayOfWeek
 
     let currentWeek: Array<typeof stats.heatmapData[0] | null> = new Array(7).fill(null)
     let currentDayInWeek = adjustedFirstDay
-    let lastMonth = ''
-    let dataIndex = 0
+    let currentMonth = ''
+    let monthStartWeek = 0
 
-    stats.heatmapData.forEach((day) => {
+    stats.heatmapData.forEach((day, index) => {
       const date = new Date(day.date)
       const monthName = date.toLocaleDateString('en-US', { month: 'short' })
 
-      // Track month changes for labels - show at first occurrence in each week
-      if (monthName !== lastMonth) {
-        if (currentDayInWeek <= 3) { // Only if we're in first half of week
-          monthLabels.push({ weekIndex: grid.length, month: monthName })
+      // Track month changes for labels
+      if (monthName !== currentMonth) {
+        if (currentMonth && monthLabels.length > 0) {
+          // Update the span of the previous month
+          monthLabels[monthLabels.length - 1].span = grid.length - monthStartWeek
         }
-        lastMonth = monthName
+        // Only add month label if there are at least 2 weeks to show it
+        if (index === 0 || stats.heatmapData.length - index >= 14) {
+          monthLabels.push({ weekIndex: grid.length, month: monthName, span: 1 })
+          monthStartWeek = grid.length
+        }
+        currentMonth = monthName
       }
 
       currentWeek[currentDayInWeek] = day
       currentDayInWeek++
 
-      // Start new week on Sunday (when currentDayInWeek reaches 7)
+      // Start new week on Saturday (when currentDayInWeek reaches 7)
       if (currentDayInWeek === 7) {
         grid.push([...currentWeek])
         currentWeek = new Array(7).fill(null)
@@ -278,50 +283,67 @@ export default function StudyStatistics() {
       grid.push(currentWeek)
     }
 
+    // Update last month span
+    if (monthLabels.length > 0) {
+      monthLabels[monthLabels.length - 1].span = grid.length - monthStartWeek
+    }
+
     return (
-      <div className="w-full overflow-x-auto">
-        <div className="inline-flex flex-col gap-2 min-w-full">
-          {/* Month labels */}
-          <div className="flex gap-[3px] pl-[32px]">
-            {grid.map((_, weekIndex) => {
-              const monthLabel = monthLabels.find(m => m.weekIndex === weekIndex)
-              return (
-                <div
-                  key={weekIndex}
-                  className="text-xs font-medium text-gray-600 dark:text-gray-400"
-                  style={{ width: '13px', textAlign: 'left' }}
-                >
-                  {monthLabel?.month || ''}
-                </div>
-              )
-            })}
+      <div className="w-full">
+        <div className="flex flex-col gap-1">
+          {/* Month labels - GitHub style */}
+          <div className="flex gap-[2px] pl-[28px] mb-1">
+            {monthLabels.map((label, idx) => (
+              <div
+                key={idx}
+                className="text-[11px] text-gray-600 dark:text-gray-400"
+                style={{
+                  width: `${label.span * 12}px`, // 10px square + 2px gap
+                  textAlign: 'left'
+                }}
+              >
+                {label.month}
+              </div>
+            ))}
           </div>
 
-          {/* Grid with day labels */}
-          <div className="flex gap-[3px]">
-            {/* Day of week labels */}
-            <div className="flex flex-col gap-[3px] justify-start pr-1">
-              {['Mon', '', 'Wed', '', 'Fri', '', ''].map((day, idx) => (
+          {/* Grid with day labels - GitHub style */}
+          <div className="flex gap-[2px]">
+            {/* Day of week labels - only Mon, Wed, Fri visible */}
+            <div className="flex flex-col gap-[2px] justify-start pr-[3px]">
+              {[
+                { label: 'Mon', visible: true },
+                { label: 'Tue', visible: false },
+                { label: 'Wed', visible: true },
+                { label: 'Thu', visible: false },
+                { label: 'Fri', visible: true },
+                { label: 'Sat', visible: false },
+                { label: 'Sun', visible: false }
+              ].map((day, idx) => (
                 <div
                   key={idx}
-                  className="h-[13px] text-xs text-gray-600 dark:text-gray-400 flex items-center justify-end"
-                  style={{ width: '26px' }}
+                  className="h-[10px] text-[11px] text-gray-500 dark:text-gray-400 flex items-center justify-end"
+                  style={{ width: '23px', opacity: day.visible ? 1 : 0 }}
                 >
-                  {day}
+                  {day.label}
                 </div>
               ))}
             </div>
 
-            {/* Contribution grid - stretched out */}
-            <div className="flex gap-[3px]">
+            {/* Contribution grid */}
+            <div className="flex gap-[2px]">
               {grid.map((week, weekIndex) => (
-                <div key={weekIndex} className="flex flex-col gap-[3px]">
+                <div key={weekIndex} className="flex flex-col gap-[2px]">
                   {week.map((day, dayIndex) => {
                     if (!day) {
                       return (
                         <div
                           key={dayIndex}
-                          className="w-[13px] h-[13px] rounded-[2px] bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                          className="w-[10px] h-[10px] rounded-[1px] bg-gray-100 dark:bg-gray-800"
+                          style={{
+                            outline: '1px solid rgba(27, 31, 35, 0.06)',
+                            outlineOffset: '-1px'
+                          }}
                         />
                       )
                     }
@@ -334,12 +356,15 @@ export default function StudyStatistics() {
                       <div
                         key={dayIndex}
                         className={`
-                          w-[13px] h-[13px] rounded-[2px] transition-all cursor-pointer
+                          w-[10px] h-[10px] rounded-[1px] transition-all cursor-pointer
                           ${getStreakColor(day.minutes)}
-                          ${day.minutes === 0 ? 'border border-gray-200 dark:border-gray-700' : ''}
-                          ${isToday ? 'ring-1 ring-offset-1 ring-blue-500 dark:ring-blue-400' : ''}
-                          hover:ring-2 hover:ring-offset-1 hover:ring-blue-500 dark:hover:ring-blue-400 hover:scale-110
+                          ${isToday ? 'ring-1 ring-blue-500 dark:ring-blue-400' : ''}
+                          hover:ring-1 hover:ring-gray-800 dark:hover:ring-gray-200
                         `}
+                        style={{
+                          outline: day.minutes === 0 ? '1px solid rgba(27, 31, 35, 0.06)' : 'none',
+                          outlineOffset: '-1px'
+                        }}
                         title={`${date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}: ${day.minutes} min`}
                       />
                     )
@@ -349,22 +374,15 @@ export default function StudyStatistics() {
             </div>
           </div>
 
-          {/* Legend */}
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              {stats.heatmapData.filter(d => d.minutes > 0).length} days of activity in the last {timeRange === 'month' ? 'month' : timeRange === 'week' ? 'week' : 'year'}
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-              <span>Less</span>
-              <div className="flex gap-[3px]">
-                <div className="w-[13px] h-[13px] rounded-[2px] bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700" />
-                <div className="w-[13px] h-[13px] rounded-[2px] bg-green-200 dark:bg-green-900" />
-                <div className="w-[13px] h-[13px] rounded-[2px] bg-green-400 dark:bg-green-700" />
-                <div className="w-[13px] h-[13px] rounded-[2px] bg-green-600 dark:bg-green-500" />
-                <div className="w-[13px] h-[13px] rounded-[2px] bg-green-700 dark:bg-green-400" />
-              </div>
-              <span>More</span>
-            </div>
+          {/* Legend - GitHub style */}
+          <div className="flex items-center justify-end gap-1 mt-2 text-xs text-gray-600 dark:text-gray-400">
+            <span className="mr-1">Less</span>
+            <div className="w-[10px] h-[10px] rounded-[1px] bg-gray-100 dark:bg-gray-800" style={{ outline: '1px solid rgba(27, 31, 35, 0.06)', outlineOffset: '-1px' }} />
+            <div className="w-[10px] h-[10px] rounded-[1px] bg-green-200 dark:bg-green-900" />
+            <div className="w-[10px] h-[10px] rounded-[1px] bg-green-400 dark:bg-green-700" />
+            <div className="w-[10px] h-[10px] rounded-[1px] bg-green-600 dark:bg-green-500" />
+            <div className="w-[10px] h-[10px] rounded-[1px] bg-green-700 dark:bg-green-400" />
+            <span className="ml-1">More</span>
           </div>
         </div>
       </div>
