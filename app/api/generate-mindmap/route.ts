@@ -103,107 +103,50 @@ export async function POST(req: NextRequest) {
         // Initialize Supabase
         const supabase = await createClient()
 
-    // OPTIMIZED: Fetch user profile and document in a single JOIN query
-    // Reduces 2 sequential DB queries to 1 query (100-300ms faster)
-    logger.debug('Fetching document with profile verification', {
-      userId,
-      documentId
-    })
-
-    let { data: documentWithProfile, error: fetchError } = await supabase
-      .from('documents')
-      .select(`
-        id,
-        file_name,
-        extracted_text,
-        metadata,
-        storage_path,
-        user_id,
-        user_profiles!inner (
-          id,
-          clerk_user_id
-        )
-      `)
-      .eq('id', documentId)
-      .eq('user_profiles.clerk_user_id', userId)
+    // SIMPLIFIED: Fetch document and profile separately for better reliability
+    // First get user profile
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('clerk_user_id', userId)
       .single()
 
-    if (fetchError || !documentWithProfile) {
-      // Log detailed error information
-      logger.error('Document/profile fetch error for mind map generation', fetchError, {
+    if (profileError || !profile) {
+      logger.error('User profile not found', profileError, { userId })
+      const duration = Date.now() - startTime
+      logger.api('POST', '/api/generate-mindmap', 404, duration, { userId, error: 'User profile not found' })
+      throw new Error('User profile not found')
+    }
+
+    // Then fetch the document (RLS will ensure user owns it)
+    const { data: document, error: fetchError } = await supabase
+      .from('documents')
+      .select('id, file_name, extracted_text, metadata, storage_path, user_id')
+      .eq('id', documentId)
+      .eq('user_id', profile.id)
+      .single()
+
+    if (fetchError || !document) {
+      logger.error('Document fetch error', fetchError, {
         userId,
         documentId,
+        profileId: profile.id,
         errorCode: fetchError?.code,
-        errorMessage: fetchError?.message,
-        errorDetails: fetchError?.details,
-        errorHint: fetchError?.hint
+        errorMessage: fetchError?.message
       })
-
-      // DEBUGGING: Try multiple fallback queries to understand the issue
-
-      // 1. Check if document exists at all
-      const { data: anyDocument, error: docError } = await supabase
-        .from('documents')
-        .select('id, user_id, file_name, extracted_text, storage_path, metadata')
-        .eq('id', documentId)
-        .single()
-
-      if (docError) {
-        logger.error('Document lookup failed completely', docError, { documentId })
-      } else if (anyDocument) {
-        logger.info('Document exists', { documentId, userId: anyDocument.user_id, fileName: anyDocument.file_name })
-
-        // 2. Check if user profile exists
-        const { data: userProfile, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('id, clerk_user_id')
-          .eq('id', anyDocument.user_id)
-          .single()
-
-        if (profileError) {
-          logger.error('User profile lookup failed', profileError, { userId: anyDocument.user_id })
-        } else if (userProfile) {
-          logger.info('Found document owner profile', {
-            profileId: userProfile.id,
-            clerkUserId: userProfile.clerk_user_id,
-            requestClerkUserId: userId,
-            match: userProfile.clerk_user_id === userId
-          })
-
-          // If the profile matches the requesting user, use this document anyway
-          if (userProfile.clerk_user_id === userId) {
-            logger.info('User owns document, proceeding despite join failure', { documentId, userId })
-            // Create a mock documentWithProfile object
-            documentWithProfile = {
-              ...anyDocument,
-              user_profiles: userProfile
-            } as any
-            // Don't return error, continue with the request
-          }
-        }
-      }
-
-      // Only throw error if we still don't have the document
-      if (!documentWithProfile) {
-        const duration = Date.now() - startTime
-        const errorMessage = fetchError?.code === 'PGRST116' ? 'Document not found or access denied' : 'Failed to fetch document'
-        logger.api('POST', '/api/generate-mindmap', 404, duration, { userId, error: errorMessage })
-        throw new Error(errorMessage)
-      }
+      const duration = Date.now() - startTime
+      const errorMessage = fetchError?.code === 'PGRST116' ? 'Document not found or access denied' : 'Failed to fetch document'
+      logger.api('POST', '/api/generate-mindmap', 404, duration, { userId, error: errorMessage })
+      throw new Error(errorMessage)
     }
 
-    const document = {
-      id: documentWithProfile.id,
-      file_name: documentWithProfile.file_name,
-      extracted_text: documentWithProfile.extracted_text,
-      metadata: documentWithProfile.metadata,
-      storage_path: documentWithProfile.storage_path,
-      user_id: documentWithProfile.user_id
-    }
-
-    const profile = {
-      id: (documentWithProfile.user_profiles as any).id
-    }
+    // Use document and profile directly (already fetched above)
+    logger.debug('Document and profile fetched successfully', {
+      userId,
+      documentId: document.id,
+      profileId: profile.id,
+      fileName: document.file_name
+    })
 
     // If no extracted text, try to extract it now (for old documents or large files)
     if (!document.extracted_text && document.storage_path) {
