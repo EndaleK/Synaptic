@@ -231,58 +231,120 @@ export default function StudyStatistics() {
   const renderHeatmap = () => {
     if (!stats?.heatmapData) return null
 
-    const weeks: Array<Array<typeof stats.heatmapData[0]>> = []
-    let currentWeek: Array<typeof stats.heatmapData[0]> = []
+    // GitHub-style contribution grid: rows = days of week, columns = weeks
+    const daysOfWeek = ['Mon', 'Wed', 'Fri'] // Show labels for alternating days
+    const monthLabels: { weekIndex: number; month: string }[] = []
 
-    // Group data by weeks
+    // Organize data into a grid: [week][dayOfWeek]
+    const grid: Array<Array<typeof stats.heatmapData[0] | null>> = []
+
+    // Get the first day to determine alignment
+    const firstDate = new Date(stats.heatmapData[0].date)
+    const firstDayOfWeek = firstDate.getDay() // 0 = Sunday, 1 = Monday, etc.
+
+    // Start week on Monday (adjust Sunday to be 6, Monday to be 0)
+    const adjustedFirstDay = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
+
+    let currentWeek: Array<typeof stats.heatmapData[0] | null> = new Array(7).fill(null)
+    let currentDayInWeek = adjustedFirstDay
+    let lastMonth = ''
+
     stats.heatmapData.forEach((day, index) => {
-      currentWeek.push(day)
-      if ((index + 1) % 7 === 0) {
-        weeks.push([...currentWeek])
-        currentWeek = []
+      const date = new Date(day.date)
+      const monthName = date.toLocaleDateString('en-US', { month: 'short' })
+
+      // Track month changes for labels
+      if (monthName !== lastMonth && currentDayInWeek <= 1) {
+        monthLabels.push({ weekIndex: grid.length, month: monthName })
+        lastMonth = monthName
+      }
+
+      currentWeek[currentDayInWeek] = day
+      currentDayInWeek++
+
+      // Start new week on Sunday (when currentDayInWeek reaches 7)
+      if (currentDayInWeek === 7) {
+        grid.push([...currentWeek])
+        currentWeek = new Array(7).fill(null)
+        currentDayInWeek = 0
       }
     })
 
-    if (currentWeek.length > 0) {
-      weeks.push(currentWeek)
+    // Push remaining days
+    if (currentWeek.some(d => d !== null)) {
+      grid.push(currentWeek)
     }
 
     return (
-      <div className="overflow-x-auto">
-        <div className="flex gap-1">
-          {weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className="flex flex-col gap-1">
-              {week.map((day, dayIndex) => {
-                const date = new Date(day.date)
-                const isToday = new Date().toDateString() === date.toDateString()
-
-                return (
-                  <div
-                    key={dayIndex}
-                    className={`
-                      w-3 h-3 rounded-sm transition-all hover:scale-125 hover:ring-2 hover:ring-accent-primary cursor-pointer
-                      ${getStreakColor(day.minutes)}
-                      ${isToday ? 'ring-2 ring-accent-primary' : ''}
-                    `}
-                    title={`${date.toLocaleDateString()}: ${day.minutes} minutes`}
-                  />
-                )
-              })}
-            </div>
-          ))}
-        </div>
-
-        {/* Legend */}
-        <div className="flex items-center justify-end gap-2 mt-4 text-xs text-gray-600 dark:text-gray-400">
-          <span>Less</span>
-          <div className="flex gap-1">
-            <div className="w-3 h-3 rounded-sm bg-gray-100 dark:bg-gray-800" />
-            <div className="w-3 h-3 rounded-sm bg-green-200 dark:bg-green-900" />
-            <div className="w-3 h-3 rounded-sm bg-green-400 dark:bg-green-700" />
-            <div className="w-3 h-3 rounded-sm bg-green-600 dark:bg-green-500" />
-            <div className="w-3 h-3 rounded-sm bg-green-700 dark:bg-green-400" />
+      <div className="overflow-x-auto pb-2">
+        <div className="inline-block min-w-full">
+          {/* Month labels */}
+          <div className="flex gap-[3px] ml-8 mb-1">
+            {grid.map((_, weekIndex) => {
+              const monthLabel = monthLabels.find(m => m.weekIndex === weekIndex)
+              return (
+                <div key={weekIndex} className="w-[11px] text-[10px] text-gray-500 dark:text-gray-400">
+                  {monthLabel ? monthLabel.month : ''}
+                </div>
+              )
+            })}
           </div>
-          <span>More</span>
+
+          {/* Grid with day labels */}
+          <div className="flex gap-1">
+            {/* Day of week labels */}
+            <div className="flex flex-col gap-[3px] justify-start pt-0 pr-1">
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => (
+                <div
+                  key={day}
+                  className="h-[11px] text-[9px] text-gray-500 dark:text-gray-400 flex items-center"
+                  style={{ opacity: idx % 2 === 0 ? 1 : 0 }} // Show only Mon, Wed, Fri, Sun
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Contribution grid */}
+            {grid.map((week, weekIndex) => (
+              <div key={weekIndex} className="flex flex-col gap-[3px]">
+                {week.map((day, dayIndex) => {
+                  if (!day) {
+                    return <div key={dayIndex} className="w-[11px] h-[11px]" />
+                  }
+
+                  const date = new Date(day.date)
+                  const today = new Date()
+                  const isToday = date.toDateString() === today.toDateString()
+
+                  return (
+                    <div
+                      key={dayIndex}
+                      className={`
+                        w-[11px] h-[11px] rounded-sm transition-all hover:scale-125 hover:ring-2 hover:ring-blue-500 cursor-pointer
+                        ${getStreakColor(day.minutes)}
+                        ${isToday ? 'ring-2 ring-blue-500' : ''}
+                      `}
+                      title={`${date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}: ${day.minutes} min`}
+                    />
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center justify-end gap-2 mt-3 text-xs text-gray-600 dark:text-gray-400">
+            <span>Less</span>
+            <div className="flex gap-1">
+              <div className="w-[11px] h-[11px] rounded-sm bg-gray-100 dark:bg-gray-800" />
+              <div className="w-[11px] h-[11px] rounded-sm bg-green-200 dark:bg-green-900" />
+              <div className="w-[11px] h-[11px] rounded-sm bg-green-400 dark:bg-green-700" />
+              <div className="w-[11px] h-[11px] rounded-sm bg-green-600 dark:bg-green-500" />
+              <div className="w-[11px] h-[11px] rounded-sm bg-green-700 dark:bg-green-400" />
+            </div>
+            <span>More</span>
+          </div>
         </div>
       </div>
     )

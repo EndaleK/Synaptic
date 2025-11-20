@@ -110,13 +110,13 @@ async function handleGetStudyStatistics(req: NextRequest) {
     weekStart.setUTCDate(weekStart.getUTCDate() - weekStart.getUTCDay())
     const monthStart = new Date(Date.UTC(userNow.getUTCFullYear(), userNow.getUTCMonth(), 1))
 
-    // Determine heatmap range
+    // Determine heatmap range (inclusive of today, so we need days + 1)
     let heatmapDays = 30
     if (range === 'week') heatmapDays = 7
     if (range === 'year') heatmapDays = 365
 
     const heatmapStart = new Date(todayStart)
-    heatmapStart.setUTCDate(heatmapStart.getUTCDate() - heatmapDays)
+    heatmapStart.setUTCDate(heatmapStart.getUTCDate() - heatmapDays + 1) // +1 to include today
 
     // Fetch all completed study sessions
     const { data: sessions, error: sessionsError} = await trackSupabaseQuery(
