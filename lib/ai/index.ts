@@ -31,6 +31,7 @@ class AIProviderFactory {
   /**
    * Get provider with fallback
    * Tries primary provider, falls back to secondary if not configured
+   * Returns fallback provider even if unconfigured (let caller handle check)
    */
   getProviderWithFallback(
     primary: ProviderType,
@@ -42,11 +43,11 @@ class AIProviderFactory {
     }
 
     const fallbackProvider = this.getProvider(fallback);
-    if (!fallbackProvider.isConfigured()) {
-      throw new Error(`Neither ${primary} nor ${fallback} providers are configured`);
+    if (fallbackProvider.isConfigured()) {
+      console.warn(`Provider ${primary} not configured, falling back to ${fallback}`);
     }
 
-    console.warn(`Provider ${primary} not configured, falling back to ${fallback}`);
+    // Return fallback provider even if not configured, let caller handle error
     return fallbackProvider;
   }
 
