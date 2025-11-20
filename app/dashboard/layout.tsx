@@ -4,13 +4,12 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { UserButton, useUser } from "@clerk/nextjs"
-import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool, Youtube, Share2, Library, GraduationCap } from "lucide-react"
+import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool, Youtube, Library, GraduationCap } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useUIStore } from "@/lib/store/useStore"
 import { useToast } from "@/components/ToastContainer"
 import { SignOutButton } from "@clerk/nextjs"
 import PomodoroWidget from "@/components/StudyScheduler/PomodoroWidget"
-import ShareModal from "@/components/ShareModal"
 import BottomNavigationBar from "@/components/BottomNavigationBar"
 
 export default function DashboardLayout({
@@ -27,7 +26,6 @@ export default function DashboardLayout({
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [learningModesExpanded, setLearningModesExpanded] = useState(true)
   const [studyToolsExpanded, setStudyToolsExpanded] = useState(true)
-  const [showShareModal, setShowShareModal] = useState(false)
   const { activeMode, setActiveMode } = useUIStore()
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
@@ -419,16 +417,6 @@ export default function DashboardLayout({
 
           {/* User Section */}
           <div className="p-2.5 border-t border-gray-200 dark:border-gray-800 space-y-1.5">
-            {/* Share Button */}
-            <button
-              onClick={() => setShowShareModal(true)}
-              className={`w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 text-blue-600 dark:text-blue-400 rounded-lg transition-all text-sm font-medium border border-blue-200 dark:border-blue-800`}
-              title={sidebarCollapsed ? "Share Synaptic" : undefined}
-            >
-              <Share2 className="w-4 h-4" />
-              {!sidebarCollapsed && <span>Share Synaptic</span>}
-            </button>
-
             {/* Theme Toggle & Sign Out Buttons */}
             <div className={`flex gap-1 ${sidebarCollapsed ? "flex-col" : ""}`}>
               {/* Theme Toggle Button */}
@@ -550,15 +538,6 @@ export default function DashboardLayout({
           isMenuOpen={sidebarOpen}
         />
       </div>
-
-      {/* Share Modal */}
-      <ShareModal
-        isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        url="https://synaptic.study"
-        title="Share Synaptic"
-        description="Scan this QR code to access Synaptic - AI-powered personalized learning"
-      />
     </div>
   )
 }

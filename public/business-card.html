@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synaptic - Digital Business Card</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .logo {
+            max-width: 360px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        .tagline {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+
+        .contact-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 0 0 25px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95em;
+        }
+
+        .contact-icon {
+            font-size: 1.3em;
+            margin-right: 8px;
+            min-width: 25px;
+        }
+
+        .contact-item a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .contact-item a:hover {
+            text-decoration: underline;
+        }
+
+        .qr-section {
+            text-align: center;
+            margin: 25px 0;
+        }
+
+        .qr-code {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            display: inline-block;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .comparison {
+            margin: 25px 0;
+        }
+
+        .comparison h2 {
+            color: #667eea;
+            font-size: 1.3em;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        .comparison-table th {
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+
+        .comparison-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.85em;
+        }
+
+        .comparison-table td:first-child {
+            font-weight: 500;
+        }
+
+        .comparison-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .check {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .cross {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .formats {
+            margin: 25px 0;
+        }
+
+        .formats h2 {
+            color: #667eea;
+            font-size: 1.3em;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .format-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            margin: 12px 0;
+        }
+
+        .format-item {
+            text-align: center;
+            padding: 12px 8px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            font-size: 0.8em;
+        }
+
+        .format-icon {
+            font-size: 1.8em;
+            margin-bottom: 4px;
+        }
+
+        .website-link {
+            text-align: center;
+            margin: 25px 0 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .website-link a {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 1em;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: transform 0.3s;
+        }
+
+        .website-link a:hover {
+            transform: translateY(-2px);
+        }
+
+        .download-btn {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 12px 30px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .download-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        @media (max-width: 600px) {
+            .card {
+                padding: 20px;
+            }
+
+            .logo {
+                max-width: 280px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .contact-section {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .comparison-table {
+                font-size: 0.75em;
+            }
+
+            .comparison-table th,
+            .comparison-table td {
+                padding: 6px 4px;
+            }
+
+            .format-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .website-link {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .website-link a,
+            .download-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <!-- Logo and Title -->
+        <div class="logo-section">
+            <img src="/logo-full.png" alt="Synaptic Logo" class="logo">
+            <h1>Synaptic</h1>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="contact-section">
+            <div class="contact-item">
+                <span class="contact-icon">📧</span>
+                <div>
+                    <a href="mailto:hello@synaptic.study">hello@synaptic.study</a><br>
+                    <a href="mailto:support@synaptic.study">support@synaptic.study</a>
+                </div>
+            </div>
+            <div class="contact-item">
+                <span class="contact-icon">📱</span>
+                <a href="tel:+17809646896">+1 (780) 964-6896</a>
+            </div>
+            <div class="contact-item">
+                <span class="contact-icon">🌐</span>
+                <a href="https://synaptic.study" target="_blank">synaptic.study</a>
+            </div>
+        </div>
+
+        <!-- QR Code -->
+        <div class="qr-section">
+            <div class="qr-code">
+                <div id="qrcode"></div>
+            </div>
+            <p style="margin-top: 8px; color: #666; font-size: 0.85em; font-weight: 500;">Scan to visit synaptic.study</p>
+        </div>
+
+        <!-- Synaptic vs NotebookLM -->
+        <div class="comparison">
+            <h2>🆚 Synaptic vs NotebookLM</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Synaptic</th>
+                        <th>NotebookLM</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>💬 AI Chat with Documents</td>
+                        <td class="check">✅ Socratic Teaching</td>
+                        <td class="check">✅ Q&A with Citations</td>
+                    </tr>
+                    <tr>
+                        <td>🎧 Audio Overviews</td>
+                        <td class="check">✅ Podcasts + Quick Summary</td>
+                        <td class="check">✅ Deep Dive Discussions</td>
+                    </tr>
+                    <tr>
+                        <td>📥 Offline Download</td>
+                        <td class="check">✅ All Content</td>
+                        <td class="check">✅ Audio Only</td>
+                    </tr>
+                    <tr>
+                        <td>🎴 Flashcards with Spaced Repetition</td>
+                        <td class="check">✅ SM-2 Algorithm</td>
+                        <td class="check">✅ Basic Flashcards</td>
+                    </tr>
+                    <tr>
+                        <td>🗺️ Interactive Mind Maps</td>
+                        <td class="check">✅ 3 Types (Hierarchical, Radial, Concept)</td>
+                        <td class="check">✅ Static Mind Maps</td>
+                    </tr>
+                    <tr>
+                        <td>📝 Practice Exams & Quizzes</td>
+                        <td class="check">✅ Auto-generated with Analytics</td>
+                        <td class="check">✅ Study Guides & Quizzes</td>
+                    </tr>
+                    <tr>
+                        <td>⚡ Quick Summary Feature</td>
+                        <td class="check">✅ 5-min Audio + Text</td>
+                        <td class="check">✅ Briefing Documents</td>
+                    </tr>
+                    <tr>
+                        <td>📊 Study Analytics & Progress Tracking</td>
+                        <td class="check">✅ Comprehensive</td>
+                        <td class="cross">❌ Limited</td>
+                    </tr>
+                    <tr>
+                        <td>✍️ Writing Assistant</td>
+                        <td class="check">✅ Full Editor with Citations</td>
+                        <td class="cross">❌ Basic Notes</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Supported Formats -->
+        <div class="formats">
+            <h2>📚 Supported Formats</h2>
+            <div class="format-grid">
+                <div class="format-item">
+                    <div class="format-icon">📄</div>
+                    <div>PDF</div>
+                </div>
+                <div class="format-item">
+                    <div class="format-icon">📝</div>
+                    <div>DOCX</div>
+                </div>
+                <div class="format-item">
+                    <div class="format-icon">📋</div>
+                    <div>TXT</div>
+                </div>
+                <div class="format-item">
+                    <div class="format-icon">🌐</div>
+                    <div>Web Pages</div>
+                </div>
+                <div class="format-item">
+                    <div class="format-icon">🔬</div>
+                    <div>arXiv</div>
+                </div>
+                <div class="format-item">
+                    <div class="format-icon">🎥</div>
+                    <div>YouTube</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Website Link -->
+        <div class="website-link">
+            <a href="https://synaptic.study" target="_blank">🌐 Visit Website</a>
+            <button class="download-btn" onclick="downloadCard()">📥 Download Card</button>
+        </div>
+    </div>
+
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        // Generate QR Code with logo
+        new QRCode(document.getElementById("qrcode"), {
+            text: "https://synaptic.study",
+            width: 180,
+            height: 180,
+            colorDark: "#667eea",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        // Download card as image
+        async function downloadCard() {
+            const card = document.querySelector('.card');
+            const downloadBtn = document.querySelector('.download-btn');
+
+            // Hide download button temporarily
+            downloadBtn.style.display = 'none';
+
+            try {
+                const canvas = await html2canvas(card, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    logging: false
+                });
+
+                // Convert to blob
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.download = 'synaptic-business-card.png';
+                    link.href = url;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                });
+            } catch (error) {
+                console.error('Download failed:', error);
+                alert('Download failed. Please try again or take a screenshot.');
+            } finally {
+                // Show download button again
+                downloadBtn.style.display = 'inline-block';
+            }
+        }
+    </script>
+</body>
+</html>

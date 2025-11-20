@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import dynamic from "next/dynamic"
-import { Upload, RefreshCw, PanelLeftClose, PanelLeft } from "lucide-react"
+import { Upload, RefreshCw, PanelLeftClose, PanelLeft, Globe } from "lucide-react"
 import DocumentList from "@/components/DocumentList"
 import DocumentListView from "@/components/DocumentListView"
 import DocumentTableView from "@/components/DocumentTableView"
@@ -18,6 +18,7 @@ import { useToast } from "@/components/ToastContainer"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { useDocumentStore, useUIStore } from "@/lib/store/useStore"
 import GoogleDocsImport from "@/components/GoogleDocsImport"
+import URLImport from "@/components/URLImport"
 import { cn } from "@/lib/utils"
 
 // Use new simplified uploader (no chunking, direct Supabase upload)
@@ -48,6 +49,7 @@ function DocumentsPageContent() {
   const [error, setError] = useState<string | null>(null)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isGoogleDocsModalOpen, setIsGoogleDocsModalOpen] = useState(false)
+  const [isURLImportModalOpen, setIsURLImportModalOpen] = useState(false)
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [quickAccessSection, setQuickAccessSection] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -415,45 +417,64 @@ function DocumentsPageContent() {
             </div>
           </div>
 
-          {/* Mobile-optimized action buttons */}
-          <div className="flex items-center gap-2 md:gap-3">
-            {/* View Toggle - Hidden on mobile */}
-            <div className="hidden md:block">
+          {/* Action Toolbar */}
+          <div className="flex items-center gap-2">
+            {/* View Toggle Group - Desktop only */}
+            <div className="hidden lg:flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
               <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
             </div>
 
-            {/* Refresh Button - Icon only on mobile */}
-            <button
-              onClick={fetchDocuments}
-              disabled={isLoading}
-              className="flex items-center gap-2 px-3 md:px-4 py-2 md:py-2.5 bg-accent-primary/10 dark:bg-accent-primary/20 text-accent-primary rounded-lg font-medium hover:bg-accent-primary/20 dark:hover:bg-accent-primary/30 transition-all disabled:opacity-50"
-            >
-              <RefreshCw className={cn("w-4 h-4 md:w-5 md:h-5", isLoading && "animate-spin")} />
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
+            {/* Action Buttons Container */}
+            <div className="flex items-center gap-2">
+              {/* Refresh Button */}
+              <button
+                onClick={fetchDocuments}
+                disabled={isLoading}
+                className="p-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all disabled:opacity-50"
+                title="Refresh"
+              >
+                <RefreshCw className={cn("w-5 h-5", isLoading && "animate-spin")} />
+              </button>
 
-            {/* Google Docs Button - Icon only on mobile */}
-            <button
-              onClick={() => setIsGoogleDocsModalOpen(true)}
-              className="flex items-center gap-2 px-3 md:px-4 py-2 md:py-2.5 bg-white dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg font-semibold hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
-              title="Import from Google Docs"
-            >
-              <svg className="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none">
-                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" fill="#4285F4"/>
-                <path d="M14 2v6h6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M8 13h8M8 17h8M8 9h2" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              <span className="hidden lg:inline">Google Docs</span>
-            </button>
+              {/* Divider */}
+              <div className="h-6 w-px bg-gray-300 dark:bg-gray-700" />
 
-            {/* Upload Button - Primary action, always visible with text */}
-            <button
-              onClick={() => setIsUploadModalOpen(true)}
-              className="flex items-center gap-1.5 md:gap-2 px-4 md:px-6 py-2 md:py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-semibold hover:shadow-xl transition-all shadow-lg text-sm md:text-base"
-            >
-              <Upload className="w-4 h-4 md:w-5 md:h-5" />
-              <span>Upload</span>
-            </button>
+              {/* Import URL Button */}
+              <button
+                onClick={() => setIsURLImportModalOpen(true)}
+                className="flex items-center gap-2 px-3 py-2.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-all font-medium"
+                title="Import from URL"
+              >
+                <Globe className="w-5 h-5" />
+                <span className="hidden xl:inline">Import URL</span>
+              </button>
+
+              {/* Google Docs Button */}
+              <button
+                onClick={() => setIsGoogleDocsModalOpen(true)}
+                className="flex items-center gap-2 px-3 py-2.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all font-medium"
+                title="Import from Google Docs"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" fill="currentColor"/>
+                  <path d="M14 2v6h6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M8 13h8M8 17h8M8 9h2" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <span className="hidden xl:inline">Google Docs</span>
+              </button>
+
+              {/* Divider */}
+              <div className="h-6 w-px bg-gray-300 dark:bg-gray-700" />
+
+              {/* Upload Button - Primary */}
+              <button
+                onClick={() => setIsUploadModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-semibold hover:shadow-lg transition-all"
+              >
+                <Upload className="w-5 h-5" />
+                <span>Upload</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -572,6 +593,33 @@ function DocumentsPageContent() {
           toast.success('Document uploaded successfully')
         }}
       />
+
+      {/* URL Import Modal */}
+      {isURLImportModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fadeIn"
+          onClick={() => setIsURLImportModalOpen(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl mx-4 p-6 animate-slideUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <URLImport
+              onImportComplete={() => {
+                toast.success('URL imported successfully!')
+                setIsURLImportModalOpen(false)
+                fetchDocuments()
+              }}
+            />
+            <button
+              onClick={() => setIsURLImportModalOpen(false)}
+              className="mt-4 w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Google Docs Import Modal */}
       {isGoogleDocsModalOpen && (

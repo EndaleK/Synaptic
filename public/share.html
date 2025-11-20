@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Synaptic - AI-powered study platform. Turn documents into flashcards, podcasts, mind maps & more. Works offline!">
+    <meta property="og:title" content="Synaptic - Your AI Study Companion">
+    <meta property="og:description" content="Upload PDFs → Get flashcards, podcasts, mind maps & practice exams. Better than NotebookLM. Works offline!">
+    <meta property="og:image" content="https://synaptic.study/og-image.png">
+    <meta property="og:url" content="https://synaptic.study/share">
+    <meta name="twitter:card" content="summary_large_image">
+    <title>Synaptic - AI Study Companion | Better than NotebookLM</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: white;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header .tagline {
+            font-size: 1.2em;
+            opacity: 0.95;
+            margin-bottom: 20px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 5px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Content */
+        .content {
+            padding: 40px 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+            padding-left: 15px;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 15px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .feature-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .feature-desc {
+            font-size: 0.95em;
+            color: #555;
+        }
+
+        /* Comparison Table */
+        .comparison {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .comparison table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .comparison td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .comparison tr:hover {
+            background: #e9ecef;
+        }
+
+        .check {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .cross {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        /* QR Code Section */
+        .qr-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            text-align: center;
+            color: white;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+
+        .qr-code {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            display: inline-block;
+            margin: 20px 0;
+        }
+
+        #qrcode {
+            margin: 0 auto;
+        }
+
+        /* CTA Buttons */
+        .cta-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Pricing Cards */
+        .pricing-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .pricing-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .pricing-card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+        }
+
+        .pricing-card.featured {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .pricing-tier {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .pricing-amount {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #333;
+            margin: 15px 0;
+        }
+
+        .pricing-amount span {
+            font-size: 0.5em;
+            color: #666;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin: 20px 0;
+        }
+
+        .pricing-features li {
+            padding: 8px 0;
+            font-size: 0.95em;
+        }
+
+        /* Testimonials */
+        .testimonials {
+            margin: 30px 0;
+        }
+
+        .testimonial {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .testimonial-text {
+            font-style: italic;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .testimonial-author {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        /* Share Buttons */
+        .share-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+
+        .share-btn {
+            padding: 12px 20px;
+            border-radius: 25px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s;
+        }
+
+        .share-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .share-whatsapp {
+            background: #25D366;
+        }
+
+        .share-twitter {
+            background: #1DA1F2;
+        }
+
+        .share-facebook {
+            background: #4267B2;
+        }
+
+        .share-email {
+            background: #EA4335;
+        }
+
+        .share-copy {
+            background: #6c757d;
+        }
+
+        /* Footer */
+        .footer {
+            background: #f8f9fa;
+            padding: 30px 20px;
+            text-align: center;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .footer-links {
+            margin: 20px 0;
+        }
+
+        .footer-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: 500;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .content {
+                padding: 30px 20px;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">🧠</div>
+            <h1>Synaptic</h1>
+            <p class="tagline">Your AI Study Companion</p>
+            <div>
+                <span class="badge">🎓 10,000+ Students</span>
+                <span class="badge">⭐ 4.9/5 Rating</span>
+                <span class="badge">📥 Works Offline</span>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Main CTA -->
+            <div class="section">
+                <h2>🚀 Study Smarter, Not Harder</h2>
+                <p style="font-size: 1.1em; margin-bottom: 20px;">
+                    Upload any document and get instant flashcards, podcasts, mind maps, and practice exams.
+                    <strong>Everything works offline!</strong>
+                </p>
+                <div class="cta-buttons">
+                    <a href="https://synaptic.study/sign-up" class="btn btn-primary">🎯 Start Free Trial</a>
+                    <a href="https://synaptic.study/demo" class="btn btn-secondary">🎬 Watch Demo</a>
+                </div>
+            </div>
+
+            <!-- Features -->
+            <div class="section">
+                <h2>✨ 8 Powerful Learning Modes</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">💬</div>
+                        <div class="feature-title">AI Tutor Chat</div>
+                        <div class="feature-desc">Socratic method teaching - asks questions instead of giving answers</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🎴</div>
+                        <div class="feature-title">Smart Flashcards</div>
+                        <div class="feature-desc">Spaced repetition with SM-2 algorithm. Download for offline study</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🎧</div>
+                        <div class="feature-title">AI Podcasts</div>
+                        <div class="feature-desc">Turn docs into audio. Quick 5-min summaries or deep dives</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🗺️</div>
+                        <div class="feature-title">Mind Maps</div>
+                        <div class="feature-desc">3 types: Hierarchical, Radial, Concept. Interactive & exportable</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">📝</div>
+                        <div class="feature-title">Practice Exams</div>
+                        <div class="feature-desc">Auto-generated tests with instant feedback & analytics</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">✍️</div>
+                        <div class="feature-title">Writing Assistant</div>
+                        <div class="feature-desc">Essay editor with AI suggestions & citation manager</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🎥</div>
+                        <div class="feature-title">Video Learning</div>
+                        <div class="feature-desc">YouTube search, transcript extraction, flashcard generation</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <div class="feature-title">Study Analytics</div>
+                        <div class="feature-desc">Track progress, streaks, mastery levels, and time spent</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- vs NotebookLM -->
+            <div class="section">
+                <h2>🆚 Synaptic vs NotebookLM</h2>
+                <div class="comparison">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th>Synaptic</th>
+                                <th>NotebookLM</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>📥 Offline Mode</td>
+                                <td class="check">✅ Full</td>
+                                <td class="cross">❌ None</td>
+                            </tr>
+                            <tr>
+                                <td>🎴 Flashcards</td>
+                                <td class="check">✅ Spaced Repetition</td>
+                                <td class="cross">❌ Not Available</td>
+                            </tr>
+                            <tr>
+                                <td>🗺️ Mind Maps</td>
+                                <td class="check">✅ 3 Types</td>
+                                <td class="cross">❌ Not Available</td>
+                            </tr>
+                            <tr>
+                                <td>📝 Practice Exams</td>
+                                <td class="check">✅ With Analytics</td>
+                                <td class="cross">❌ Not Available</td>
+                            </tr>
+                            <tr>
+                                <td>🎧 Audio Summaries</td>
+                                <td class="check">✅ Podcasts + Quick (5 min)</td>
+                                <td class="check">✅ Audio Overviews</td>
+                            </tr>
+                            <tr>
+                                <td>💬 Chat Mode</td>
+                                <td class="check">✅ Socratic Teaching</td>
+                                <td class="check">✅ Q&A</td>
+                            </tr>
+                            <tr>
+                                <td>📊 Study Analytics</td>
+                                <td class="check">✅ Comprehensive</td>
+                                <td class="cross">❌ Limited</td>
+                            </tr>
+                            <tr>
+                                <td>✍️ Writing Tools</td>
+                                <td class="check">✅ Full Editor</td>
+                                <td class="cross">❌ Basic Notes</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- File Formats -->
+            <div class="section">
+                <h2>📚 Supported Formats</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; text-align: center;">
+                    <div style="padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                        <div style="font-size: 2em;">📄</div>
+                        <div style="font-weight: 600;">PDF</div>
+                        <div style="font-size: 0.9em; color: #666;">Up to 500MB</div>
+                    </div>
+                    <div style="padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                        <div style="font-size: 2em;">📝</div>
+                        <div style="font-weight: 600;">Word</div>
+                        <div style="font-size: 0.9em; color: #666;">.docx files</div>
+                    </div>
+                    <div style="padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                        <div style="font-size: 2em;">🌐</div>
+                        <div style="font-weight: 600;">Web Pages</div>
+                        <div style="font-size: 0.9em; color: #666;">Any URL</div>
+                    </div>
+                    <div style="padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                        <div style="font-size: 2em;">🔬</div>
+                        <div style="font-weight: 600;">arXiv</div>
+                        <div style="font-size: 0.9em; color: #666;">Research papers</div>
+                    </div>
+                    <div style="padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                        <div style="font-size: 2em;">🎥</div>
+                        <div style="font-weight: 600;">YouTube</div>
+                        <div style="font-size: 0.9em; color: #666;">Video transcripts</div>
+                    </div>
+                    <div style="padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                        <div style="font-size: 2em;">📋</div>
+                        <div style="font-weight: 600;">Text</div>
+                        <div style="font-size: 0.9em; color: #666;">.txt files</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing -->
+            <div class="section">
+                <h2>💰 Simple Pricing</h2>
+                <div class="pricing-cards">
+                    <div class="pricing-card">
+                        <div class="pricing-tier">🆓 Free</div>
+                        <div class="pricing-amount">$0<span>/month</span></div>
+                        <ul class="pricing-features">
+                            <li>✅ 10 documents/mo</li>
+                            <li>✅ 50 flashcards/mo</li>
+                            <li>✅ 5 podcasts/mo</li>
+                            <li>✅ 5 mind maps/mo</li>
+                            <li>✅ Offline downloads</li>
+                        </ul>
+                    </div>
+
+                    <div class="pricing-card featured">
+                        <div class="pricing-tier">⭐ Premium</div>
+                        <div class="pricing-amount">$9.99<span>/month</span></div>
+                        <ul class="pricing-features">
+                            <li>✅ Unlimited everything</li>
+                            <li>✅ Priority processing</li>
+                            <li>✅ Advanced analytics</li>
+                            <li>✅ Early features</li>
+                            <li>✅ Email support</li>
+                        </ul>
+                    </div>
+
+                    <div class="pricing-card">
+                        <div class="pricing-tier">🎓 Student</div>
+                        <div class="pricing-amount">$4.99<span>/month</span></div>
+                        <ul class="pricing-features">
+                            <li>✅ All Premium features</li>
+                            <li>✅ 50% discount</li>
+                            <li>✅ .edu email required</li>
+                            <li>✅ Annual verification</li>
+                            <li>✅ Student community</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; color: white;">
+                    <h3 style="margin-bottom: 10px;">🔥 Launch Special - 50% Off!</h3>
+                    <p style="font-size: 1.1em;">First 1,000 users: 3 months Premium for $14.99</p>
+                    <p style="font-size: 0.9em; opacity: 0.9;">Use code: <strong>LAUNCH1000</strong></p>
+                </div>
+            </div>
+
+            <!-- QR Code -->
+            <div class="qr-section">
+                <h2 style="margin-bottom: 10px;">📱 Scan to Try Synaptic</h2>
+                <p style="font-size: 1.1em; opacity: 0.95; margin-bottom: 20px;">
+                    Point your phone camera at the QR code
+                </p>
+                <div class="qr-code">
+                    <div id="qrcode"></div>
+                </div>
+                <p style="font-size: 0.9em; opacity: 0.9;">
+                    Or visit: <strong>synaptic.study</strong>
+                </p>
+            </div>
+
+            <!-- Testimonials -->
+            <div class="section">
+                <h2>💬 What Students Say</h2>
+                <div class="testimonials">
+                    <div class="testimonial">
+                        <div class="testimonial-text">
+                            "I went from C's to A's using Synaptic. The spaced repetition flashcards are a game-changer!"
+                        </div>
+                        <div class="testimonial-author">— Sarah M., Pre-Med Student</div>
+                    </div>
+
+                    <div class="testimonial">
+                        <div class="testimonial-text">
+                            "Downloaded podcasts for my 10-hour flight. Studied the whole textbook offline. Incredible!"
+                        </div>
+                        <div class="testimonial-author">— James K., Law Student</div>
+                    </div>
+
+                    <div class="testimonial">
+                        <div class="testimonial-text">
+                            "Finally, ONE app for everything. No more switching between Quizlet, NotebookLM, and Anki."
+                        </div>
+                        <div class="testimonial-author">— Priya S., MBA Candidate</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Share -->
+            <div class="section">
+                <h2>📲 Share with Friends</h2>
+                <div class="share-buttons">
+                    <a href="#" class="share-btn share-whatsapp" onclick="shareWhatsApp(); return false;">
+                        📱 WhatsApp
+                    </a>
+                    <a href="#" class="share-btn share-twitter" onclick="shareTwitter(); return false;">
+                        🐦 Twitter
+                    </a>
+                    <a href="#" class="share-btn share-facebook" onclick="shareFacebook(); return false;">
+                        👥 Facebook
+                    </a>
+                    <a href="#" class="share-btn share-email" onclick="shareEmail(); return false;">
+                        ✉️ Email
+                    </a>
+                    <a href="#" class="share-btn share-copy" onclick="copyLink(); return false;">
+                        📋 Copy Link
+                    </a>
+                </div>
+            </div>
+
+            <!-- Final CTA -->
+            <div style="text-align: center; margin: 40px 0;">
+                <h2 style="margin-bottom: 20px;">Ready to Study Smarter?</h2>
+                <div class="cta-buttons">
+                    <a href="https://synaptic.study/sign-up" class="btn btn-primary" style="font-size: 1.2em;">
+                        🚀 Get Started Free
+                    </a>
+                </div>
+                <p style="margin-top: 15px; color: #666;">
+                    No credit card required • Cancel anytime • 1-minute setup
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-links">
+                <a href="https://synaptic.study">Home</a>
+                <a href="https://synaptic.study/features">Features</a>
+                <a href="https://synaptic.study/pricing">Pricing</a>
+                <a href="https://synaptic.study/demo">Demo</a>
+                <a href="mailto:support@synaptic.study">Support</a>
+            </div>
+            <p style="color: #666; margin-top: 20px;">
+                © 2025 Synaptic. Made with ❤️ for students worldwide.
+            </p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        // Generate QR Code
+        new QRCode(document.getElementById("qrcode"), {
+            text: "https://synaptic.study?ref=qr",
+            width: 200,
+            height: 200,
+            colorDark : "#667eea",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+
+        // Share Functions
+        function shareWhatsApp() {
+            const text = encodeURIComponent("🧠 Found an amazing study app!\n\nSynaptic turns PDFs into:\n✅ Flashcards (offline)\n✅ Podcasts\n✅ Mind maps\n✅ Practice exams\n\nBetter than NotebookLM!\n\nTry free: https://synaptic.study\n\nUse code LAUNCH1000 for 50% off");
+            window.open(`https://wa.me/?text=${text}`, '_blank');
+        }
+
+        function shareTwitter() {
+            const text = encodeURIComponent("🧠 Synaptic is a game-changer for studying!\n\n✅ AI Flashcards\n✅ Podcasts\n✅ Mind Maps\n✅ Works Offline\n\nBetter than NotebookLM. Try free:");
+            const url = encodeURIComponent("https://synaptic.study");
+            window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+        }
+
+        function shareFacebook() {
+            const url = encodeURIComponent("https://synaptic.study/share");
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+        }
+
+        function shareEmail() {
+            const subject = encodeURIComponent("Check out Synaptic - AI Study Platform");
+            const body = encodeURIComponent("I found this amazing AI study platform:\n\nSynaptic turns documents into flashcards, podcasts, mind maps, and practice exams. Everything works offline!\n\nBetter than NotebookLM.\n\nTry it free: https://synaptic.study\n\nUse code LAUNCH1000 for 50% off Premium!");
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        }
+
+        function copyLink() {
+            const link = "https://synaptic.study/share";
+            navigator.clipboard.writeText(link).then(() => {
+                showToast("✅ Link copied to clipboard!");
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Track page view
+        console.log('Share page loaded');
+    </script>
+</body>
+</html>

@@ -17,6 +17,7 @@ const isPublicRoute = createRouteMatcher([
   '/pricing',
   '/about',
   '/clerk-debug',
+  '/share(.*)', // Shareable landing pages
 ])
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {
