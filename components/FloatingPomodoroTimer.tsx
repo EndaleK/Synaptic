@@ -32,6 +32,7 @@ export default function FloatingPomodoroTimer() {
 
   const [isMinimized, setIsMinimized] = useState(true) // Start minimized by default
   const [showSettings, setShowSettings] = useState(false)
+  const [isHidden, setIsHidden] = useState(false) // Allow complete dismissal
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -227,9 +228,26 @@ export default function FloatingPomodoroTimer() {
     e.stopPropagation()
   }
 
-  if (status === 'idle' && timeRemaining === getTotalDuration()) {
-    // Don't show timer if it hasn't been started yet
-    return null
+  // Always show the timer once it has been started at least once
+  // Only hide if user explicitly dismisses it or if no session has ever been started
+  const hasNeverStarted = status === 'idle' && timeRemaining === getTotalDuration() && sessionsCompleted === 0
+
+  if (isHidden || (hasNeverStarted && isMinimized)) {
+    // Show a small "Start Timer" button when hidden
+    return hasNeverStarted ? null : (
+      <div className="fixed z-40 top-4 right-4">
+        <button
+          onClick={() => {
+            setIsHidden(false)
+            setIsMinimized(true)
+          }}
+          className="px-4 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center gap-2 text-sm font-medium"
+        >
+          <span>🍅</span>
+          <span>Show Timer</span>
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -240,22 +258,34 @@ export default function FloatingPomodoroTimer() {
           className="fixed z-40 pointer-events-none"
           style={{ top: `${position.top}px`, right: `${position.right}px` }}
         >
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setIsMinimized(false)
-            }}
-            className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-full shadow-lg transition-all hover:scale-105 pointer-events-auto",
-              "bg-gradient-to-r text-white font-medium text-sm",
-              getTimerColor()
-            )}
-          >
-            <span className="font-mono">{formatTime(timeRemaining)}</span>
-            {status === 'running' && (
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-            )}
-          </button>
+          <div className="flex items-center gap-2 pointer-events-auto">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsMinimized(false)
+              }}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full shadow-lg transition-all hover:scale-105",
+                "bg-gradient-to-r text-white font-medium text-sm",
+                getTimerColor()
+              )}
+            >
+              <span className="font-mono">{formatTime(timeRemaining)}</span>
+              {status === 'running' && (
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+              )}
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsHidden(true)
+              }}
+              className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-all hover:scale-105 shadow-md"
+              title="Hide timer"
+            >
+              <X className="w-3.5 h-3.5 text-gray-600 dark:text-gray-300" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -292,6 +322,17 @@ export default function FloatingPomodoroTimer() {
                   title="Minimize"
                 >
                   <Minimize2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsHidden(true)
+                    setIsMinimized(true)
+                  }}
+                  className="p-1 hover:bg-white/20 rounded transition-colors"
+                  title="Hide timer"
+                >
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>

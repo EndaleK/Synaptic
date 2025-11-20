@@ -1,4 +1,4 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { clerkMiddleware, createRouteMatcher, currentUser } from '@clerk/nextjs/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
@@ -56,16 +56,27 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
 
         // Create profile if it doesn't exist
         if (!profile) {
-          const sessionClaims = await auth()
-          const email = sessionClaims.sessionClaims?.email as string || ''
-          const fullName = (sessionClaims.sessionClaims?.firstName || '') + ' ' + (sessionClaims.sessionClaims?.lastName || '')
+          // Get full user details from Clerk for better name extraction
+          const clerkUser = await currentUser()
+          if (!clerkUser) {
+            console.error('Could not fetch user details from Clerk')
+            return NextResponse.next()
+          }
+
+          // Extract email and name with comprehensive fallback chain
+          const email = clerkUser.emailAddresses[0]?.emailAddress || ''
+          const fullName = clerkUser.fullName ||
+                          `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() ||
+                          clerkUser.username ||
+                          email.split('@')[0] || // Use email prefix as last resort
+                          'User'
 
           const { error: insertError } = await supabase
             .from('user_profiles')
             .insert({
               clerk_user_id: userId,
               email: email,
-              full_name: fullName.trim() || undefined,
+              full_name: fullName,
               created_at: new Date().toISOString()
             })
 
@@ -75,7 +86,7 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
             const { sendWelcomeEmail } = await import('@/lib/email/send')
             sendWelcomeEmail({
               userEmail: email,
-              userName: fullName.trim() || undefined,
+              userName: fullName !== 'User' ? fullName : undefined,
             }).catch(err => {
               console.error('Failed to send welcome email:', err)
             })

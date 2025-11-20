@@ -68,11 +68,21 @@ const categoryColors: Record<string, { bg: string; border: string; text: string 
 
 // Custom node component to ensure labels display correctly with proper styling
 function CustomNode({ data, style }: NodeProps) {
+  console.log('[CustomNode] Rendering:', { label: data.label, style });
+
   return (
-    <div style={{ ...style, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+    <div style={{
+      ...style,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      textAlign: 'center',
+      minWidth: '100px',  // EMERGENCY: Force minimum dimensions
+      minHeight: '40px',  // EMERGENCY: Force minimum dimensions
+    }}>
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
-      <div style={{ whiteSpace: style?.whiteSpace || 'normal', wordWrap: 'break-word' }}>
-        {data.label || ''}
+      <div style={{ whiteSpace: style?.whiteSpace || 'normal', wordWrap: 'break-word', width: '100%' }}>
+        {data.label || 'NO LABEL'}
       </div>
       <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
     </div>

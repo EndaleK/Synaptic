@@ -51,13 +51,70 @@ export default function UserManagementPanel({ admin }: UserManagementPanelProps)
   })
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null)
+  const [backfilling, setBackfilling] = useState(false)
+  const [backfillStatus, setBackfillStatus] = useState<{
+    usersNeedingBackfill?: number
+    message?: string
+  } | null>(null)
 
   // Can the admin edit users?
   const canEdit = admin.role === 'editor' || admin.role === 'superadmin'
 
   useEffect(() => {
     fetchUsers()
+    checkBackfillStatus()
   }, [search, tierFilter, pagination.offset])
+
+  async function checkBackfillStatus() {
+    try {
+      const response = await fetch('/api/admin/backfill-names')
+      if (response.ok) {
+        const data = await response.json()
+        setBackfillStatus(data)
+      }
+    } catch (error) {
+      console.error('Failed to check backfill status:', error)
+    }
+  }
+
+  async function runBackfill() {
+    if (!canEdit) {
+      alert('You need editor or superadmin role to run backfill')
+      return
+    }
+
+    if (!confirm('This will update all users with missing names from Clerk. Continue?')) {
+      return
+    }
+
+    setBackfilling(true)
+    try {
+      const response = await fetch('/api/admin/backfill-names', {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert(
+          `Backfill complete!\n\n` +
+          `Updated: ${data.updated}\n` +
+          `Failed: ${data.failed}\n` +
+          `Skipped: ${data.skipped}`
+        )
+        // Refresh user list and backfill status
+        fetchUsers()
+        checkBackfillStatus()
+      } else {
+        const error = await response.json()
+        alert(`Backfill failed: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Failed to run backfill:', error)
+      alert('Failed to run backfill')
+    } finally {
+      setBackfilling(false)
+    }
+  }
 
   async function fetchUsers() {
     setLoading(true)
@@ -169,9 +226,22 @@ export default function UserManagementPanel({ admin }: UserManagementPanelProps)
     <div className="space-y-6">
       {/* Header & Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          User Management
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            User Management
+          </h2>
+
+          {/* Backfill Button */}
+          {backfillStatus && backfillStatus.usersNeedingBackfill && backfillStatus.usersNeedingBackfill > 0 && canEdit && (
+            <button
+              onClick={runBackfill}
+              disabled={backfilling}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            >
+              {backfilling ? 'Backfilling...' : `Fix ${backfillStatus.usersNeedingBackfill} Missing Names`}
+            </button>
+          )}
+        </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
@@ -246,11 +316,13 @@ export default function UserManagementPanel({ admin }: UserManagementPanelProps)
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {user.full_name || 'Unknown'}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         {user.email}
                       </div>
+                      {user.full_name && (
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {user.full_name}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

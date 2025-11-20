@@ -9,7 +9,7 @@ import { useState, useEffect } from "react"
 import { useUIStore } from "@/lib/store/useStore"
 import { useToast } from "@/components/ToastContainer"
 import { SignOutButton } from "@clerk/nextjs"
-import PomodoroWidget from "@/components/StudyScheduler/PomodoroWidget"
+import FloatingPomodoroTimer from "@/components/FloatingPomodoroTimer"
 import BottomNavigationBar from "@/components/BottomNavigationBar"
 
 export default function DashboardLayout({
@@ -525,12 +525,8 @@ export default function DashboardLayout({
         {/* Page content */}
         <main className="pb-16 md:pb-0">{children}</main>
 
-        {/* Persistent Pomodoro Widget */}
-        <PomodoroWidget
-          onMaximize={() => {
-            router.push('/dashboard/study/pomodoro')
-          }}
-        />
+        {/* Persistent Pomodoro Timer - Visible across all study tools */}
+        <FloatingPomodoroTimer />
 
         {/* Bottom Navigation Bar - Mobile Only */}
         <BottomNavigationBar
