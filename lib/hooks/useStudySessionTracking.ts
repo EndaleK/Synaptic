@@ -68,13 +68,16 @@ export function useStudySessionTracking(options: SessionTrackingOptions = {}) {
       const sessionType = getSessionType(activeMode)
       console.log(`[Session Tracking] Session type: ${sessionType}`)
 
+      const requestBody = {
+        sessionType: sessionType,
+        plannedDurationMinutes: 60
+      }
+      console.log('[Session Tracking] Request body:', requestBody)
+
       const response = await fetch('/api/study-sessions/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionType: sessionType,
-          plannedDurationMinutes: 60
-        })
+        body: JSON.stringify(requestBody)
       })
 
       console.log(`[Session Tracking] Response status: ${response.status}`)
