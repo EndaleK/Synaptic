@@ -69,7 +69,25 @@ export async function POST() {
       try {
         // Fetch user details from Clerk
         const client = await clerkClient()
-        const clerkUser = await client.users.getUser(user.clerk_user_id)
+        let clerkUser
+
+        try {
+          clerkUser = await client.users.getUser(user.clerk_user_id)
+        } catch (clerkError: any) {
+          // Handle specific Clerk API errors
+          if (clerkError.status === 404 || clerkError.message?.includes('not found')) {
+            console.warn(`Clerk user not found (deleted): ${user.clerk_user_id}`)
+            results.skipped++
+            results.details.push({
+              clerk_user_id: user.clerk_user_id,
+              email: user.email,
+              status: 'skipped',
+              error: 'User deleted from Clerk'
+            })
+            continue
+          }
+          throw clerkError // Re-throw other errors
+        }
 
         if (!clerkUser) {
           console.warn(`Clerk user not found: ${user.clerk_user_id}`)

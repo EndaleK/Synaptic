@@ -95,12 +95,30 @@ export default function UserManagementPanel({ admin }: UserManagementPanelProps)
 
       if (response.ok) {
         const data = await response.json()
-        alert(
-          `Backfill complete!\n\n` +
+
+        // Build detailed message
+        let message = `Backfill complete!\n\n` +
           `Updated: ${data.updated}\n` +
           `Failed: ${data.failed}\n` +
-          `Skipped: ${data.skipped}`
-        )
+          `Skipped: ${data.skipped}\n`
+
+        // Show failed users with error details
+        if (data.failed > 0 && data.details) {
+          const failedUsers = data.details.filter((d: any) => d.status === 'failed')
+          message += `\nFailed Users:\n`
+          failedUsers.forEach((user: any, idx: number) => {
+            if (idx < 5) { // Show first 5 failures
+              message += `\n${user.email}: ${user.error}`
+            }
+          })
+          if (failedUsers.length > 5) {
+            message += `\n\n... and ${failedUsers.length - 5} more failures`
+          }
+        }
+
+        console.log('Full backfill results:', data)
+        alert(message)
+
         // Refresh user list and backfill status
         fetchUsers()
         checkBackfillStatus()
