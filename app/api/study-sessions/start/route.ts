@@ -28,12 +28,9 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body: StartSessionRequestBody = await req.json()
-    console.log('[API] Received body:', body)
     const { documentId, sessionType, plannedDurationMinutes } = body
-    console.log('[API] Parsed values:', { documentId, sessionType, plannedDurationMinutes })
 
     if (!sessionType || !plannedDurationMinutes) {
-      console.error('[API] Validation failed - missing required fields')
       return NextResponse.json(
         { error: "sessionType and plannedDurationMinutes are required" },
         { status: 400 }

@@ -34,8 +34,8 @@ export default function DashboardLayout({
   // Auto-track study sessions for all dashboard activity
   useStudySessionTracking({
     autoStart: true,
-    inactivityTimeout: 5 * 60 * 1000, // 5 minutes
-    minSessionDuration: 1 // 1 minute minimum
+    inactivityTimeout: 2 * 60 * 1000, // 2 minutes (matches hook default)
+    minSessionDuration: 0.25 // 15 seconds minimum (matches hook default)
   })
 
   // Initialize theme from localStorage (defaults to light mode)

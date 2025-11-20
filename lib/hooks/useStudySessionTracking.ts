@@ -13,8 +13,8 @@ interface SessionTrackingOptions {
 export function useStudySessionTracking(options: SessionTrackingOptions = {}) {
   const {
     autoStart = true,
-    inactivityTimeout = 5 * 60 * 1000, // 5 minutes of inactivity
-    minSessionDuration = 1 // 1 minute minimum
+    inactivityTimeout = 2 * 60 * 1000, // 2 minutes of inactivity (reduced from 5)
+    minSessionDuration = 0.25 // 15 seconds minimum (reduced from 1 minute)
   } = options
 
   const { user } = useUser()
@@ -197,9 +197,24 @@ export function useStudySessionTracking(options: SessionTrackingOptions = {}) {
       activeMode
     })
 
-    if (autoStart && user && !isTracking && activeMode !== 'home') {
-      console.log('[Session Tracking] Conditions met, starting session')
-      startSession()
+    if (autoStart && user && activeMode !== 'home') {
+      if (isTracking) {
+        // Mode changed while tracking - complete old session and start new one
+        console.log('[Session Tracking] Mode changed, completing old session and starting new one')
+        const completeAndRestart = async () => {
+          await completeSession(true)
+          setTimeout(() => startSession(), 200) // Small delay to ensure completion
+        }
+        completeAndRestart()
+      } else {
+        // Not tracking yet - start new session
+        console.log('[Session Tracking] Conditions met, starting session')
+        startSession()
+      }
+    } else if (activeMode === 'home' && isTracking) {
+      // User went to home - complete session
+      console.log('[Session Tracking] User went to home, completing session')
+      completeSession(true)
     } else {
       console.log('[Session Tracking] Conditions not met for auto-start')
     }
