@@ -295,7 +295,7 @@ function layoutHierarchical(
       },
       label: node.label, // ReactFlow default nodes use top-level label property
       style: {
-        background: getColorForCategory(node.category || 'concept', template),
+        background: getColorForCategory(node.category || 'concept', template, node.id),
         color: textColor,
         border: `${borderWidth}px solid ${getColorForLevel(node.level)}`,
         borderRadius: `${borderRadius}px`,
@@ -585,7 +585,7 @@ function layoutRadial(
       },
       label: node.label,
       style: {
-        background: getColorForCategory(node.category || 'concept', template),
+        background: getColorForCategory(node.category || 'concept', template, node.id),
         color: textColor,
         border: `${borderWidth}px solid ${getColorForLevel(node.level)}`,
         borderRadius: `${borderRadius}px`,
@@ -722,7 +722,7 @@ function layoutConcept(
       },
       label: node.label,
       style: {
-        background: getColorForCategory(node.category || 'concept', template),
+        background: getColorForCategory(node.category || 'concept', template, node.id),
         color: textColor,
         border: `${borderWidth}px solid ${getColorForLevel(node.level)}`,
         borderRadius: `${borderRadius}px`,

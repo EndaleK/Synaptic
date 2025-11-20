@@ -17,7 +17,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { Handle } from '@xyflow/react'
-import { Download, Maximize2, RefreshCw, ArrowLeft, BookmarkPlus, BookmarkCheck, Save } from 'lucide-react'
+import { Download, Maximize2, RefreshCw, ArrowLeft, BookmarkPlus, BookmarkCheck, Save, Info } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
@@ -150,6 +150,9 @@ export default function MindMapViewer({
 
   // PHASE 4.2: State for focus mode (highlight branch + cross-links)
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
+
+  // State for compact legend visibility (hidden by default to maximize viewing space)
+  const [showLegend, setShowLegend] = useState(false)
 
   // State for saving
   const [isSaving, setIsSaving] = useState(false)
@@ -906,23 +909,23 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
       `}</style>
       <div className="w-full h-full bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden flex flex-col">
         {/* Compact Header */}
-      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
+      <div className="px-3 py-1 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
         <div className="flex items-center justify-between gap-3">
           {/* Back Button + Title and Stats */}
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             {/* Back to Mind Map Home Button */}
             <button
               onClick={() => router.push('/dashboard?mode=mindmap')}
-              className="flex items-center gap-1.5 px-2 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all shadow-sm hover:shadow"
+              className="flex items-center gap-1 px-1.5 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all shadow-sm hover:shadow"
               title="Back to mind map home"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Back</span>
             </button>
 
             <div className="flex-1 min-w-0">
-              <h2 className="text-base font-bold text-black dark:text-white truncate">{title}</h2>
-              <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2 flex-wrap">
+              <h2 className="text-sm font-bold text-black dark:text-white truncate leading-tight">{title}</h2>
+              <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2 flex-wrap leading-tight">
                 <span>{nodes?.length || 0} concepts • {edges?.length || 0} connections</span>
                 {/* PHASE 2.3: Cross-Link Count Badge (Knowledge Integration Indicator) */}
                 {crossLinkCount > 0 && (
@@ -982,6 +985,21 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
 
             {/* Divider */}
             <div className="w-px bg-gray-300 dark:bg-gray-600"></div>
+
+            {/* Legend Toggle */}
+            <button
+              onClick={() => setShowLegend(!showLegend)}
+              className={`flex items-center gap-1 px-2 py-1 border rounded text-xs font-medium transition-colors ${
+                showLegend
+                  ? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300'
+                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+              title={showLegend ? 'Hide legend' : 'Show legend'}
+            >
+              <Info className="w-3 h-3" />
+              <span className="hidden sm:inline">Legend</span>
+            </button>
+
             <button
               onClick={handleExportPNG}
               className="flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
@@ -1018,7 +1036,7 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
         </div>
 
         {/* Template Switcher - Compact */}
-        <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="mt-1 flex items-center justify-between gap-2">
           <div className="flex gap-1.5">
             {['hierarchical', 'flowchart', 'timeline'].map((templateType) => {
               const template = TEMPLATES[templateType as TemplateType];
@@ -1250,9 +1268,10 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
         </div>
       )}
 
-      {/* Compact Legend */}
-      <div className="px-3 py-1.5 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-950 dark:to-blue-950/30">
-        <div className="flex items-center justify-between gap-3 text-xs">
+      {/* Compact Legend - Toggleable */}
+      {showLegend && (
+        <div className="px-3 py-1.5 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-950 dark:to-blue-950/30">
+          <div className="flex items-center justify-between gap-3 text-xs">
           {/* Tip - PHASE 4.2: Updated to include focus mode */}
           <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
             <span className="font-semibold">💡</span>
@@ -1285,7 +1304,8 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
             ))}
           </div>
         </div>
-      </div>
+        </div>
+      )}
       </div>
 
       {/* Save Message Toast */}

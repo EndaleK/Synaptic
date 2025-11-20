@@ -503,10 +503,10 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
       <div className="h-full flex flex-col">
         {/* Show existing mind map count */}
         {existingMindMaps.length > 1 && (
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4 mx-4 mt-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-2.5 mb-2 mx-4 mt-2">
             <div className="flex items-center gap-2">
-              <History className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <p className="text-sm text-blue-800 dark:text-blue-200">
+              <History className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <p className="text-xs text-blue-800 dark:text-blue-200">
                 This document has {existingMindMaps.length} mind map{existingMindMaps.length > 1 ? 's' : ''}.
                 Showing the most recent one.
               </p>
@@ -516,10 +516,10 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
 
         {/* Preview Mode Banner */}
         {isPreviewMode && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800 px-4 py-3">
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800 px-4 py-1.5">
             <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+              <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+              <p className="text-xs font-medium text-yellow-800 dark:text-yellow-200">
                 Preview Mode - This mind map has not been saved yet
               </p>
             </div>
