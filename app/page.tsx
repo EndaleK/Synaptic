@@ -34,14 +34,14 @@ export default function LandingPage() {
 
             {/* Headline */}
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-black dark:text-white mb-4 leading-tight tracking-tight">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-orange">Learning That Adapts to You</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-orange">Learning That Adapts To Your Needs</span>
               <br />
               <span className="text-black dark:text-white">Everything You Need to Master Any Subject</span>
             </h1>
 
             {/* Subheadline */}
             <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-6 max-w-3xl mx-auto leading-relaxed">
-              From flashcards to mock exams, podcasts to mind maps—master any subject with Synaptic™ adapting to your learning style.
+              AI-powered flashcards, mock exams, podcasts, and mind maps—personalized to how you learn best. Master any subject faster.
             </p>
 
             {/* Stats Badges */}
@@ -356,7 +356,7 @@ export default function LandingPage() {
           </div>
 
           {/* Stats Bar */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16 max-w-4xl mx-auto">
             <div className="text-center p-8 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl border border-purple-200 dark:border-purple-800">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Database className="w-6 h-6 text-purple-600 dark:text-purple-400" />

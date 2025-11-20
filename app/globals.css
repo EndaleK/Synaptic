@@ -41,6 +41,15 @@
   --mode-writer: 244 63 94;           /* Rose-500 - creativity */
   --mode-video: 251 191 36;           /* Amber-500 - media */
 
+  /* Feature-specific background tints (subtle 3-5% opacity for immersive modes) */
+  --bg-tint-flashcards: rgba(99, 102, 241, 0.04);   /* Soft indigo tint */
+  --bg-tint-chat: rgba(59, 130, 246, 0.04);         /* Soft blue tint */
+  --bg-tint-podcast: rgba(139, 92, 246, 0.04);      /* Soft violet tint */
+  --bg-tint-mindmap: rgba(34, 197, 94, 0.04);       /* Soft green tint */
+  --bg-tint-writer: rgba(244, 63, 94, 0.04);        /* Soft rose tint */
+  --bg-tint-video: rgba(251, 191, 36, 0.04);        /* Soft amber tint */
+  --bg-tint-quiz: rgba(123, 63, 242, 0.04);         /* Soft purple tint */
+
   /* Text colors for better accessibility (WCAG AAA) */
   --text-on-light: 15 23 42;          /* Slate-900 - primary text */
   --text-secondary-light: 71 85 105;  /* Slate-600 - secondary text */
@@ -147,6 +156,15 @@
     --text-on-dark: 248 250 252;         /* Slate-50 - primary text */
     --text-secondary-dark: 203 213 225;  /* Slate-300 - secondary text */
     --text-caption-dark: 148 163 184;    /* Slate-400 - captions */
+
+    /* Feature-specific background tints for dark mode (6-8% opacity for better visibility) */
+    --bg-tint-flashcards: rgba(99, 102, 241, 0.08);   /* Indigo tint */
+    --bg-tint-chat: rgba(59, 130, 246, 0.08);         /* Blue tint */
+    --bg-tint-podcast: rgba(139, 92, 246, 0.08);      /* Violet tint */
+    --bg-tint-mindmap: rgba(34, 197, 94, 0.08);       /* Green tint */
+    --bg-tint-writer: rgba(244, 63, 94, 0.08);        /* Rose tint */
+    --bg-tint-video: rgba(251, 191, 36, 0.08);        /* Amber tint */
+    --bg-tint-quiz: rgba(123, 63, 242, 0.08);         /* Purple tint */
   }
 }
 
@@ -640,6 +658,35 @@ html.font-size-large {
   .text-caption-responsive {
     color: rgb(var(--text-caption-dark));
   }
+}
+
+/* Mode-specific background tint utilities */
+.bg-tint-flashcards {
+  background-color: var(--bg-tint-flashcards);
+}
+
+.bg-tint-chat {
+  background-color: var(--bg-tint-chat);
+}
+
+.bg-tint-podcast {
+  background-color: var(--bg-tint-podcast);
+}
+
+.bg-tint-mindmap {
+  background-color: var(--bg-tint-mindmap);
+}
+
+.bg-tint-writer {
+  background-color: var(--bg-tint-writer);
+}
+
+.bg-tint-video {
+  background-color: var(--bg-tint-video);
+}
+
+.bg-tint-quiz {
+  background-color: var(--bg-tint-quiz);
 }
 
 /* Custom utility classes */

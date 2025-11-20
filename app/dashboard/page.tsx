@@ -411,6 +411,22 @@ function DashboardContent() {
     setSelectedDocForModal(null)
   }
 
+  // Get background tint class based on active mode
+  const getBackgroundTint = () => {
+    const tints: Record<string, string> = {
+      flashcards: 'bg-[var(--bg-tint-flashcards)]',
+      chat: 'bg-[var(--bg-tint-chat)]',
+      podcast: 'bg-[var(--bg-tint-podcast)]',
+      'quick-summary': 'bg-[var(--bg-tint-podcast)]', // Same as podcast (audio)
+      mindmap: 'bg-[var(--bg-tint-mindmap)]',
+      writer: 'bg-[var(--bg-tint-writer)]',
+      video: 'bg-[var(--bg-tint-video)]',
+      exam: 'bg-[var(--bg-tint-quiz)]',
+      home: 'bg-transparent' // No tint on home page
+    }
+    return tints[activeMode] || 'bg-transparent'
+  }
+
   // Render different content based on active mode
   const renderModeContent = () => {
     switch (activeMode) {
@@ -547,7 +563,7 @@ function DashboardContent() {
 
   return (
     <>
-      <div className="h-screen overflow-hidden flex flex-col">
+      <div className={`h-screen overflow-hidden flex flex-col transition-colors duration-500 ${getBackgroundTint()}`}>
         <div className="flex-shrink-0 container-padding-x pt-4">
           <Breadcrumb />
         </div>

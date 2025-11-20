@@ -68,15 +68,24 @@ export async function POST(req: NextRequest) {
     }
 
     // Update study session
+    // Build update object dynamically to handle missing columns gracefully
+    const updateData: any = {
+      end_time: now.toISOString(),
+      duration_minutes: durationMinutes,
+      completed: true
+    }
+
+    // Only include optional fields if provided (for backward compatibility with schema)
+    if (breaksTaken !== undefined) {
+      updateData.breaks_taken = breaksTaken
+    }
+    if (notes !== undefined) {
+      updateData.notes = notes
+    }
+
     const { error: updateError } = await supabase
       .from('study_sessions')
-      .update({
-        end_time: now.toISOString(),
-        duration_minutes: durationMinutes,
-        completed: true,
-        breaks_taken: breaksTaken || 0,
-        notes: notes || null
-      })
+      .update(updateData)
       .eq('id', sessionId)
 
     if (updateError) {
