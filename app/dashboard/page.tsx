@@ -120,10 +120,46 @@ function DashboardContent() {
       console.log('📥 Podcast mode loaded from URL params')
       setActiveModeDocuments(prev => ({ ...prev, podcast: true }))
       setActiveMode('podcast')
+
+      // Load document metadata if not already loaded
+      if (!currentDocument || currentDocument.id !== documentId) {
+        fetch(`/api/documents/${documentId}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.document) {
+              setCurrentDocument({
+                id: data.document.id,
+                name: data.document.file_name,
+                content: data.document.extracted_text || '',
+                fileType: data.document.file_type,
+                storagePath: data.document.storage_path
+              })
+            }
+          })
+          .catch(error => console.error('Error loading document:', error))
+      }
     } else if (mode === 'mindmap') {
       console.log('📥 Mind map mode loaded from URL params')
       setActiveModeDocuments(prev => ({ ...prev, mindmap: true }))
       setActiveMode('mindmap')
+
+      // Load document metadata if not already loaded
+      if (!currentDocument || currentDocument.id !== documentId) {
+        fetch(`/api/documents/${documentId}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.document) {
+              setCurrentDocument({
+                id: data.document.id,
+                name: data.document.file_name,
+                content: data.document.extracted_text || '',
+                fileType: data.document.file_type,
+                storagePath: data.document.storage_path
+              })
+            }
+          })
+          .catch(error => console.error('Error loading document:', error))
+      }
     } else if (mode === 'flashcards') {
       // Only load if we don't already have flashcards or if it's a different document
       const shouldLoad = flashcards.length === 0 ||
