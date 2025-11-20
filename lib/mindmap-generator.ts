@@ -400,7 +400,9 @@ IMPORTANT: Your response must be ONLY a JSON object with "title", "nodes" (array
       // Validate and normalize nodes
       const validatedNodes: MindMapNode[] = parsed.nodes.map((node: any, index: number) => {
         if (!node.id || !node.label) {
-          throw new Error(`Invalid node ${index}: missing id or label`)
+          console.error(`[MindMap] Invalid node at index ${index}:`, JSON.stringify(node, null, 2))
+          console.error(`[MindMap] All nodes preview:`, JSON.stringify(parsed.nodes.slice(0, 3), null, 2))
+          throw new Error(`Invalid node ${index}: missing id or label. Node data: ${JSON.stringify(node)}`)
         }
 
         // PHASE 1.3: Label Length Validation (Cognitive Load Theory)
