@@ -565,7 +565,7 @@ export default function StudyStatistics() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                AI Study Insights
+                Synaptic Study Insights
               </h3>
               <p className="text-xs text-gray-600 dark:text-gray-400">
                 Personalized recommendations based on your study patterns
