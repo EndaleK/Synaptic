@@ -11,6 +11,7 @@ import { useToast } from "@/components/ToastContainer"
 import { SignOutButton } from "@clerk/nextjs"
 import FloatingPomodoroTimer from "@/components/FloatingPomodoroTimer"
 import BottomNavigationBar from "@/components/BottomNavigationBar"
+import { useStudySessionTracking } from "@/lib/hooks/useStudySessionTracking"
 
 export default function DashboardLayout({
   children,
@@ -29,6 +30,13 @@ export default function DashboardLayout({
   const { activeMode, setActiveMode } = useUIStore()
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
+
+  // Auto-track study sessions for all dashboard activity
+  useStudySessionTracking({
+    autoStart: true,
+    inactivityTimeout: 5 * 60 * 1000, // 5 minutes
+    minSessionDuration: 1 // 1 minute minimum
+  })
 
   // Initialize theme from localStorage (defaults to light mode)
   useEffect(() => {
