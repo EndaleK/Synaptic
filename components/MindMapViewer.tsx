@@ -35,13 +35,17 @@ interface MindMapViewerProps {
   template?: TemplateType
   templateReason?: string
   documentText?: string
+  documentId?: string  // NEW: Document ID for reloading document text
   mapType?: 'hierarchical' | 'radial' | 'concept'  // NEW: Mind map type for layout selection
   onNodeClick?: (node: MindMapNode) => void
   onTemplateChange?: (template: TemplateType) => void
+  onReloadDocumentText?: () => Promise<void>  // NEW: Callback to reload document text
 }
 
 interface NodeDetail {
   expandedExplanation: string
+  hasDocumentText?: boolean  // NEW: Flag to indicate if document text is available
+  canReload?: boolean  // NEW: Flag to indicate if reload is possible
   quotes: Array<{
     text: string
     context: string
@@ -101,9 +105,11 @@ export default function MindMapViewer({
   template: initialTemplate = 'hierarchical',
   templateReason,
   documentText,
+  documentId, // NEW: Document ID for reloading
   mapType, // NEW: Mind map type for layout selection
   onNodeClick,
-  onTemplateChange
+  onTemplateChange,
+  onReloadDocumentText // NEW: Reload callback
 }: MindMapViewerProps) {
   // Next.js router for navigation
   const router = useRouter()
@@ -273,30 +279,37 @@ export default function MindMapViewer({
       setIsPanelOpen(true)
       setIsLoadingDetails(false)
       setNodeDetails({
-        expandedExplanation: `## Why Node Expansion is Unavailable
+        expandedExplanation: `## ⚠️ Detailed Explanation Unavailable
 
-This mind map was loaded from your saved library, where we optimize performance by storing only the visual structure (nodes, edges, and relationships) rather than the full source document text.
+The document text for this mind map is not currently loaded. This could happen if:
+- The mind map was saved without document text
+- The original document was deleted or moved
+- There was an error loading the document
 
 ## What You're Missing
 
-When viewing a mind map with the original document loaded, clicking a node provides:
+When document text is available, clicking a node provides:
 
 • **Deeper Explanations**: AI-generated elaboration on the concept with additional context
 • **Source Quotes**: Direct excerpts from your document that support this concept
 • **Concrete Examples**: Real-world applications or scenarios from your material
 • **Citation Context**: Surrounding text that shows how the concept fits into the broader narrative
 
-## How to Access This Feature
+## How to Fix This
 
-To use node expansion with this mind map:
+${documentId && onReloadDocumentText ?
+`**Try reloading the document text**: Click the "Reload Document Text" button in the panel to attempt loading the text from your documents library.
 
-1. **Re-upload the Document**: Go to the Documents page and upload the original file again
-2. **Generate Fresh**: Create a new mind map directly from the document (this loads the full text into memory)
-3. **Keep Tab Open**: When initially generating a mind map, keep the generation tab open to explore nodes immediately
+If that doesn't work:` : ''}
 
-**Note**: This limitation is intentional—storing full document text for every saved mind map would significantly increase storage costs and slow down loading times. The visual structure alone is usually sufficient for reviewing concepts and relationships.`,
+1. **Generate Fresh**: Create a new mind map directly from the document (this loads the full text into memory)
+2. **Keep Tab Open**: When initially generating a mind map, keep the generation tab open to explore nodes immediately
+
+${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F12) to see detailed error logs that may help diagnose the issue.' : ''}`,
         quotes: [],
-        examples: []
+        examples: [],
+        hasDocumentText: false,
+        canReload: !!(documentId && onReloadDocumentText)
       })
       return
     }
@@ -1337,6 +1350,7 @@ To use node expansion with this mind map:
         nodeDetails={nodeDetails}
         isLoading={isLoadingDetails}
         selectedNodePosition={selectedNodePosition}
+        onReloadDocumentText={onReloadDocumentText}
       />
 
       {/* Connection Line */}

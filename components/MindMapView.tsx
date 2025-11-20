@@ -98,20 +98,33 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
             // Use stored document_text if available (preferred), otherwise fetch from document
             if (latest.document_text) {
               setDocumentText(latest.document_text)
-              console.log('[MindMapView] Loaded document text from mind map:', latest.document_text.length, 'chars')
+              console.log('[MindMapView] ✓ Loaded document text from mind map:', latest.document_text.length, 'chars')
             } else {
+              console.warn('[MindMapView] ⚠️ No document_text in saved mind map, trying fallback fetch from document API')
               // Fallback: Fetch document text for node expansion
               try {
                 const docResponse = await fetch(`/api/documents/${documentId}`)
+                console.log('[MindMapView] Document API response status:', docResponse.status)
+
                 if (docResponse.ok) {
                   const docData = await docResponse.json()
+                  console.log('[MindMapView] Document API returned:', {
+                    hasDocument: !!docData.document,
+                    hasExtractedText: !!docData.document?.extracted_text,
+                    extractedTextLength: docData.document?.extracted_text?.length || 0
+                  })
+
                   if (docData.document?.extracted_text) {
                     setDocumentText(docData.document.extracted_text)
-                    console.log('[MindMapView] Loaded document text from document API:', docData.document.extracted_text.length, 'chars')
+                    console.log('[MindMapView] ✓ Loaded document text from document API:', docData.document.extracted_text.length, 'chars')
+                  } else {
+                    console.error('[MindMapView] ✗ Document API returned no extracted_text')
                   }
+                } else {
+                  console.error('[MindMapView] ✗ Document API returned error:', docResponse.status, await docResponse.text())
                 }
               } catch (docErr) {
-                console.error('Failed to fetch document text:', docErr)
+                console.error('[MindMapView] ✗ Failed to fetch document text:', docErr)
                 // Continue anyway - node expansion just won't be available
               }
             }
@@ -435,6 +448,45 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
     }
   }
 
+  // NEW: Reload document text (for when saved mind maps are missing document_text)
+  const handleReloadDocumentText = async () => {
+    if (!documentId) {
+      console.error('[MindMapView] Cannot reload: No documentId available')
+      return
+    }
+
+    console.log('[MindMapView] 🔄 Manually reloading document text for document:', documentId)
+
+    try {
+      const docResponse = await fetch(`/api/documents/${documentId}`)
+      console.log('[MindMapView] Reload response status:', docResponse.status)
+
+      if (docResponse.ok) {
+        const docData = await docResponse.json()
+        console.log('[MindMapView] Reload returned:', {
+          hasDocument: !!docData.document,
+          hasExtractedText: !!docData.document?.extracted_text,
+          extractedTextLength: docData.document?.extracted_text?.length || 0
+        })
+
+        if (docData.document?.extracted_text) {
+          setDocumentText(docData.document.extracted_text)
+          console.log('[MindMapView] ✓ Successfully reloaded document text:', docData.document.extracted_text.length, 'chars')
+        } else {
+          console.error('[MindMapView] ✗ Reload failed: No extracted_text in response')
+          setError('Could not reload document text: Document has no extracted text')
+        }
+      } else {
+        const errorText = await docResponse.text()
+        console.error('[MindMapView] ✗ Reload failed with status:', docResponse.status, errorText)
+        setError(`Failed to reload document text: ${docResponse.status} ${errorText}`)
+      }
+    } catch (err) {
+      console.error('[MindMapView] ✗ Exception during reload:', err)
+      setError(err instanceof Error ? err.message : 'Failed to reload document text')
+    }
+  }
+
   // Loading state
   if (isLoading) {
     return (
@@ -538,6 +590,8 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
             templateReason={mindMapData.templateReason}
             mapType={mindMapData.mapType || selectedMapType} // NEW: Pass mind map type for layout
             documentText={documentText}
+            documentId={documentId} // NEW: Pass documentId for reloading
+            onReloadDocumentText={handleReloadDocumentText} // NEW: Reload callback
           />
         </div>
       </div>

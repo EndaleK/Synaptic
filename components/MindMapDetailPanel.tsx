@@ -1,12 +1,14 @@
 "use client"
 
 import React, { useState } from 'react'
-import { X, BookOpen, Quote, Lightbulb, Loader2, Minimize2, Maximize2, ChevronUp, Maximize } from 'lucide-react'
+import { X, BookOpen, Quote, Lightbulb, Loader2, Minimize2, Maximize2, ChevronUp, Maximize, RefreshCw } from 'lucide-react'
 
 type PanelState = 'minimized' | 'compact' | 'expanded'
 
 interface NodeDetail {
   expandedExplanation: string
+  hasDocumentText?: boolean  // NEW: Flag to indicate if document text is available
+  canReload?: boolean  // NEW: Flag to indicate if reload is possible
   quotes: Array<{
     text: string
     context: string
@@ -25,6 +27,7 @@ interface MindMapDetailPanelProps {
   nodeDetails: NodeDetail | null
   isLoading: boolean
   selectedNodePosition?: { x: number; y: number } | null
+  onReloadDocumentText?: () => Promise<void>  // NEW: Callback to reload document text
 }
 
 export default function MindMapDetailPanel({
@@ -34,9 +37,29 @@ export default function MindMapDetailPanel({
   nodeDescription,
   nodeDetails,
   isLoading,
-  selectedNodePosition
+  selectedNodePosition,
+  onReloadDocumentText
 }: MindMapDetailPanelProps) {
   const [panelState, setPanelState] = useState<PanelState>('compact')
+  const [isReloading, setIsReloading] = useState(false)
+
+  // Handle reload document text
+  const handleReload = async () => {
+    if (!onReloadDocumentText) return
+
+    setIsReloading(true)
+    try {
+      await onReloadDocumentText()
+      // Reopen the panel after reload
+      setTimeout(() => {
+        onClose() // Close to trigger refresh
+      }, 500)
+    } catch (error) {
+      console.error('Failed to reload document text:', error)
+    } finally {
+      setIsReloading(false)
+    }
+  }
 
   if (!isOpen) return null
 
@@ -214,6 +237,20 @@ export default function MindMapDetailPanel({
                     {nodeDetails.expandedExplanation}
                   </p>
                 </div>
+
+                {/* Reload Button - Show if document text is missing and reload is available */}
+                {nodeDetails.canReload && onReloadDocumentText && (
+                  <div className="mt-4">
+                    <button
+                      onClick={handleReload}
+                      disabled={isReloading}
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isReloading ? 'animate-spin' : ''}`} />
+                      {isReloading ? 'Loading Document Text...' : 'Reload Document Text'}
+                    </button>
+                  </div>
+                )}
               </section>
 
               {/* Quotes from Source */}
