@@ -473,6 +473,35 @@ IMPORTANT: Your response must be ONLY a JSON object with "title", "nodes" (array
 
       console.log(`[MindMap] ✅ Validated ${validatedNodes.length} nodes and ${validatedEdges.length} edges`)
 
+      // Fix missing levels: If all nodes are level 0, calculate levels based on edge hierarchy
+      const allLevel0 = validatedNodes.every(n => n.level === 0)
+      if (allLevel0 && validatedNodes.length > 1) {
+        console.warn('[MindMap] All nodes at level 0 - calculating levels from edge hierarchy')
+
+        // Build adjacency map
+        const childToParent = new Map<string, string>()
+        validatedEdges.forEach(edge => {
+          childToParent.set(edge.to, edge.from)
+        })
+
+        // Calculate level for each node by traversing up to root
+        validatedNodes.forEach(node => {
+          let level = 0
+          let currentId = node.id
+          const visited = new Set<string>()
+
+          while (childToParent.has(currentId) && !visited.has(currentId)) {
+            visited.add(currentId)
+            currentId = childToParent.get(currentId)!
+            level++
+          }
+
+          node.level = level
+        })
+
+        console.log('[MindMap] Recalculated levels:', validatedNodes.map(n => `${n.label} (L${n.level})`).join(', '))
+      }
+
       // Calculate metadata first
       const maxDepthFound = Math.max(...validatedNodes.map(n => n.level))
       const categories = Array.from(new Set(validatedNodes.map(n => n.category).filter(Boolean)))
