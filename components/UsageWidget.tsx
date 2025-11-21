@@ -31,6 +31,7 @@ export default function UsageWidget() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
     // Wait for auth to be loaded AND userId to be available
@@ -39,29 +40,47 @@ export default function UsageWidget() {
       return
     }
 
-    const fetchUsage = async () => {
+    const fetchUsage = async (isRetry = false) => {
       try {
+        // Small delay on initial fetch to let Clerk initialize cookies
+        if (!isRetry) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+
         const response = await fetch('/api/usage', {
           credentials: 'include' // Ensure cookies are sent
         })
         if (!response.ok) {
-          console.error('Usage API responded with:', response.status, response.statusText)
           throw new Error(`Failed to fetch usage: ${response.status}`)
         }
         const data = await response.json()
         setUsage(data)
         setError(null) // Clear any previous errors
+        setRetryCount(0) // Reset retry count on success
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-        setError('Unable to load usage stats')
-        console.error('Usage fetch error:', errorMessage, err)
+        // Only retry if first attempt and under retry limit
+        if (!isRetry && retryCount < 2) {
+          setRetryCount(prev => prev + 1)
+          setTimeout(() => fetchUsage(true), 500)
+          return
+        }
+
+        // Only log and show error if all retries exhausted
+        if (retryCount >= 2) {
+          const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+          console.error('Usage fetch failed after retries:', errorMessage, err)
+          setError('Unable to load usage stats')
+        }
       } finally {
-        setLoading(false)
+        // Only set loading to false if not retrying
+        if (isRetry || retryCount >= 2) {
+          setLoading(false)
+        }
       }
     }
 
     fetchUsage()
-  }, [userId, isLoaded])
+  }, [userId, isLoaded, retryCount])
 
   if (loading) {
     return (

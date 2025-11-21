@@ -241,6 +241,14 @@ export default function MarketingLayout({
                     Privacy Policy
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    href="/terms"
+                    className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
+                  >
+                    Terms of Service
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
