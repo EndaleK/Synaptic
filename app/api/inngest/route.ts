@@ -27,4 +27,9 @@ const functions = [
 export const { GET, POST, PUT } = serve({
   client: inngest,
   functions,
+  // Customize the Inngest dev server UI
+  servePath: '/api/inngest',
+  landingPage: true,
+  // Custom branding for the Inngest UI
+  signingKey: process.env.INNGEST_SIGNING_KEY,
 })
