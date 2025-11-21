@@ -4,6 +4,11 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { config } from 'dotenv'
+import { resolve } from 'path'
+
+// Load environment variables
+config({ path: resolve(process.cwd(), '.env.local') })
 import * as fs from 'fs'
 import * as path from 'path'
 
