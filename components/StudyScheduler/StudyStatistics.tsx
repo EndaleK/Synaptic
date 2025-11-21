@@ -688,19 +688,25 @@ export default function StudyStatistics() {
           <div className="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
             <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Average</div>
             <div className="text-xl font-bold text-gray-900 dark:text-white">
-              {Math.round(stats.heatmapData.reduce((sum, d) => sum + d.minutes, 0) / stats.heatmapData.length)} min
+              {stats.heatmapData && stats.heatmapData.length > 0
+                ? Math.round(stats.heatmapData.reduce((sum, d) => sum + d.minutes, 0) / stats.heatmapData.length)
+                : 0} min
             </div>
           </div>
           <div className="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
             <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Peak Day</div>
             <div className="text-xl font-bold text-gray-900 dark:text-white">
-              {Math.max(...stats.heatmapData.map(d => d.minutes))} min
+              {stats.heatmapData && stats.heatmapData.length > 0
+                ? Math.max(...stats.heatmapData.map(d => d.minutes))
+                : 0} min
             </div>
           </div>
           <div className="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
             <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Active Days</div>
             <div className="text-xl font-bold text-gray-900 dark:text-white">
-              {stats.heatmapData.filter(d => d.minutes > 0).length}
+              {stats.heatmapData && stats.heatmapData.length > 0
+                ? stats.heatmapData.filter(d => d.minutes > 0).length
+                : 0}
             </div>
           </div>
         </div>
