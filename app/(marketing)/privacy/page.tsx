@@ -8,9 +8,16 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      <h1 className="text-4xl font-bold text-black dark:text-white mb-8">
-        Privacy Policy
-      </h1>
+      <div className="flex items-center gap-4 mb-8">
+        <img
+          src="/logo-brain-transparent.png"
+          alt="Synaptic"
+          className="h-16 w-auto"
+        />
+        <h1 className="text-4xl font-bold text-black dark:text-white">
+          Privacy Policy
+        </h1>
+      </div>
 
       <div className="prose prose-gray dark:prose-invert max-w-none">
         <p className="text-gray-600 dark:text-gray-400 mb-8">
@@ -88,6 +95,29 @@ export default function PrivacyPage() {
           <p className="text-gray-600 dark:text-gray-400 mb-3">
             We use the following third-party services that may collect information:
           </p>
+
+          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-4">
+            <h3 className="text-lg font-medium text-black dark:text-white mb-3">
+              Google Services Integration (Optional)
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-3">
+              If you choose to connect your Google account, we access:
+            </p>
+            <ul className="list-disc pl-6 text-gray-600 dark:text-gray-400 space-y-2 mb-3">
+              <li><strong>Google Docs:</strong> Read-only access to import document content for generating study materials. We never modify or delete your Google Docs.</li>
+              <li><strong>Google Calendar:</strong> Create, update, and delete study session events you explicitly add to your calendar. We only modify events you create through Synaptic.</li>
+              <li><strong>Google Drive:</strong> Read-only access to list and identify Google Docs files for easier import. We never modify, delete, or access files beyond Docs.</li>
+            </ul>
+            <p className="text-gray-600 dark:text-gray-400 mb-2">
+              <strong>How we use Google data:</strong> Content from Google Docs is processed to generate flashcards, podcasts, and study materials—just like manually uploaded files. Calendar events sync study sessions to your Google Calendar for reminders.
+            </p>
+            <p className="text-gray-600 dark:text-gray-400 mb-2">
+              <strong>Your control:</strong> You can disconnect your Google account anytime from Settings → Integrations. Disconnecting revokes our access immediately and deletes stored access tokens.
+            </p>
+            <p className="text-gray-600 dark:text-gray-400">
+              <strong>Data retention:</strong> We store only access tokens (encrypted) to maintain your connection. Imported Google Docs content is treated like any other uploaded document and deleted when you delete the document or your account.
+            </p>
+          </div>
 
           <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-4">
             <h3 className="text-lg font-medium text-black dark:text-white mb-3">

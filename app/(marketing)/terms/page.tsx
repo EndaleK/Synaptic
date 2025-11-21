@@ -8,9 +8,16 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      <h1 className="text-4xl font-bold text-black dark:text-white mb-8">
-        Terms of Service
-      </h1>
+      <div className="flex items-center gap-4 mb-8">
+        <img
+          src="/logo-brain-transparent.png"
+          alt="Synaptic"
+          className="h-16 w-auto"
+        />
+        <h1 className="text-4xl font-bold text-black dark:text-white">
+          Terms of Service
+        </h1>
+      </div>
 
       <div className="prose prose-gray dark:prose-invert max-w-none">
         <p className="text-gray-600 dark:text-gray-400 mb-8">

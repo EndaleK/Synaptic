@@ -16,6 +16,8 @@ const isPublicRoute = createRouteMatcher([
   '/api/test-sentry(.*)', // Sentry test routes (Phase 0)
   '/pricing',
   '/about',
+  '/privacy', // Required for Google OAuth verification
+  '/terms', // Required for Google OAuth verification
   '/clerk-debug',
   '/share(.*)', // Shareable landing pages
 ])
