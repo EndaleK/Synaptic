@@ -21,11 +21,13 @@ mermaid.initialize({
 export default function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
   const [renderedDiagrams, setRenderedDiagrams] = useState<Map<string, string>>(new Map())
   const diagramIdCounter = useRef(0)
+  const pendingDiagrams = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     // Reset when content changes
     setRenderedDiagrams(new Map())
     diagramIdCounter.current = 0
+    pendingDiagrams.current.clear()
   }, [content])
 
   const decodeHTMLEntities = (text: string): string => {
@@ -68,6 +70,21 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
     }
   }
 
+  // Effect to render pending diagrams
+  useEffect(() => {
+    pendingDiagrams.current.forEach((diagramKey) => {
+      const [code] = diagramKey.split('|||')
+      renderMermaidDiagram(code).then((svg) => {
+        setRenderedDiagrams(prev => {
+          const next = new Map(prev)
+          next.set(diagramKey, svg || 'FAILED')
+          return next
+        })
+        pendingDiagrams.current.delete(diagramKey)
+      })
+    })
+  })
+
   if (!content) {
     return null
   }
@@ -86,14 +103,13 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
             // Check if it's a mermaid diagram
             if (!inline && language === 'mermaid') {
               // Use a unique key for this diagram
-              const diagramKey = `${codeString.substring(0, 50)}-${codeString.length}`
+              const diagramKey = `${codeString}|||${codeString.length}`
 
-              // If we haven't rendered this diagram yet, render it
-              if (!renderedDiagrams.has(diagramKey)) {
-                renderMermaidDiagram(codeString).then((svg) => {
-                  // Store the result (even if empty) to prevent re-rendering attempts
-                  setRenderedDiagrams(prev => new Map(prev).set(diagramKey, svg || 'FAILED'))
-                })
+              // If we haven't rendered this diagram yet, queue it
+              if (!renderedDiagrams.has(diagramKey) && !pendingDiagrams.current.has(diagramKey)) {
+                pendingDiagrams.current.add(diagramKey)
+                // Trigger re-render after queuing
+                setTimeout(() => setRenderedDiagrams(prev => new Map(prev)), 0)
 
                 // Show loading state
                 return (
@@ -185,16 +201,6 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
           },
           // Style paragraphs
           p({ children }) {
-            // Check if children contains code blocks (which cannot be inside <p> tags)
-            const hasCodeBlock = React.Children.toArray(children).some(
-              (child: any) => child?.type === 'pre' || child?.props?.node?.tagName === 'pre'
-            )
-
-            // If it has code blocks, use a div instead of p to avoid invalid HTML
-            if (hasCodeBlock) {
-              return <div className="my-2 leading-relaxed">{children}</div>
-            }
-
             return <p className="my-2 leading-relaxed">{children}</p>
           },
           // Style links
