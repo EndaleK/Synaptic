@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import mermaid from 'mermaid'
@@ -12,44 +12,43 @@ interface MarkdownRendererProps {
 
 // Initialize Mermaid
 mermaid.initialize({
-  startOnLoad: true,
+  startOnLoad: false,
   theme: 'default',
   securityLevel: 'loose',
   fontFamily: 'Patrick Hand, cursive',
 })
 
 export default function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [renderedDiagrams, setRenderedDiagrams] = useState<Map<string, string>>(new Map())
+  const diagramIdCounter = useRef(0)
 
   useEffect(() => {
-    if (containerRef.current) {
-      // Find all mermaid code blocks and render them
-      const mermaidBlocks = containerRef.current.querySelectorAll('.mermaid-diagram')
-      mermaidBlocks.forEach((block, index) => {
-        const code = block.textContent || ''
-        const id = `mermaid-${Date.now()}-${index}`
-
-        // Create container for rendered diagram
-        const container = document.createElement('div')
-        container.id = id
-        container.className = 'mermaid-container my-4'
-
-        // Replace the code block with the container
-        block.replaceWith(container)
-
-        // Render mermaid diagram
-        mermaid.render(`mermaid-svg-${id}`, code).then(({ svg }) => {
-          container.innerHTML = svg
-        }).catch((error) => {
-          console.error('Mermaid rendering error:', error)
-          container.innerHTML = `<pre class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg text-red-600 dark:text-red-400">${error.message}</pre>`
-        })
-      })
-    }
+    // Reset when content changes
+    setRenderedDiagrams(new Map())
+    diagramIdCounter.current = 0
   }, [content])
 
+  const renderMermaidDiagram = async (code: string): Promise<string> => {
+    if (!code || !code.trim()) {
+      return ''
+    }
+
+    try {
+      const id = `mermaid-${Date.now()}-${diagramIdCounter.current++}`
+      const { svg } = await mermaid.render(id, code.trim())
+      return svg
+    } catch (error: any) {
+      console.error('Mermaid rendering error:', error)
+      return `<div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg text-red-600 dark:text-red-400 my-4">Failed to render diagram: ${error.message}</div>`
+    }
+  }
+
+  if (!content) {
+    return null
+  }
+
   return (
-    <div ref={containerRef} className={className}>
+    <div className={className}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -57,14 +56,41 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
           code({ node, inline, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '')
             const language = match ? match[1] : ''
+            const codeString = String(children).replace(/\n$/, '')
 
             // Check if it's a mermaid diagram
             if (!inline && language === 'mermaid') {
-              return (
-                <div className="mermaid-diagram hidden">
-                  {String(children).replace(/\n$/, '')}
-                </div>
-              )
+              // Use a unique key for this diagram
+              const diagramKey = `${codeString.substring(0, 50)}-${codeString.length}`
+
+              // If we haven't rendered this diagram yet, render it
+              if (!renderedDiagrams.has(diagramKey)) {
+                renderMermaidDiagram(codeString).then((svg) => {
+                  if (svg) {
+                    setRenderedDiagrams(prev => new Map(prev).set(diagramKey, svg))
+                  }
+                })
+
+                // Show loading state
+                return (
+                  <div className="my-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-center text-gray-500 dark:text-gray-400">
+                    Rendering diagram...
+                  </div>
+                )
+              }
+
+              // Render the cached SVG
+              const svg = renderedDiagrams.get(diagramKey)
+              if (svg) {
+                return (
+                  <div
+                    className="mermaid-container my-4"
+                    dangerouslySetInnerHTML={{ __html: svg }}
+                  />
+                )
+              }
+
+              return null
             }
 
             // Regular code block
