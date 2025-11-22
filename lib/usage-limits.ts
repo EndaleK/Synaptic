@@ -6,7 +6,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
 
-// Usage limits per tier (Updated Jan 19, 2025 - Added quick summaries)
+// Usage limits per tier (Updated Nov 21, 2025 - Added Study Buddy)
 export const USAGE_LIMITS = {
   free: {
     documents: 10,        // Increased from 5 - matches student course load
@@ -15,8 +15,9 @@ export const USAGE_LIMITS = {
     mindmaps: 10,         // Increased from 5 - consistency with documents
     exams: 5,             // Increased from 3 - one per course for midterm/final
     videos: 10,           // Matches documents - reasonable for course video analysis
-    chat_messages: 50,    // NEW - prevents abuse while maintaining core value
-    quick_summaries: 10   // NEW - "Teach me in 5 minutes" feature (2x podcasts, cheaper to generate)
+    chat_messages: 50,    // Document chat - prevents abuse while maintaining core value
+    quick_summaries: 10,  // "Teach me in 5 minutes" feature (2x podcasts, cheaper to generate)
+    study_buddy: 100      // NEW - Study Buddy conversations (2x chat_messages, different context)
   },
   premium: {
     documents: Infinity,
@@ -26,7 +27,8 @@ export const USAGE_LIMITS = {
     exams: Infinity,
     videos: Infinity,
     chat_messages: Infinity,
-    quick_summaries: Infinity
+    quick_summaries: Infinity,
+    study_buddy: Infinity
   },
   enterprise: {
     documents: Infinity,
@@ -36,11 +38,12 @@ export const USAGE_LIMITS = {
     exams: Infinity,
     videos: Infinity,
     chat_messages: Infinity,
-    quick_summaries: Infinity
+    quick_summaries: Infinity,
+    study_buddy: Infinity
   }
 }
 
-export type FeatureType = 'documents' | 'flashcards' | 'podcasts' | 'mindmaps' | 'exams' | 'videos' | 'chat_messages' | 'quick_summaries'
+export type FeatureType = 'documents' | 'flashcards' | 'podcasts' | 'mindmaps' | 'exams' | 'videos' | 'chat_messages' | 'quick_summaries' | 'study_buddy'
 
 export interface UsageCheckResult {
   allowed: boolean
@@ -134,7 +137,8 @@ export async function checkUsageLimit(
         exams: ['exam_creation', 'exam'],
         videos: ['video_processing', 'video'],
         chat_messages: ['chat_message', 'chat'],
-        quick_summaries: ['quick_summary_generation', 'quick_summary']
+        quick_summaries: ['quick_summary_generation', 'quick_summary'],
+        study_buddy: ['study_buddy_message', 'study_buddy']
       }
 
       const actionTypes = actionTypeMap[feature as keyof typeof actionTypeMap] || []
@@ -215,7 +219,8 @@ export async function incrementUsage(
       exams: 'exam_creation',
       videos: 'video_processing',
       chat_messages: 'chat_message',
-      quick_summaries: 'quick_summary_generation'
+      quick_summaries: 'quick_summary_generation',
+      study_buddy: 'study_buddy_message'
     }
 
     const actionType = actionTypeMap[feature]

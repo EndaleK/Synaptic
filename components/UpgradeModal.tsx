@@ -7,7 +7,7 @@ import { useToast } from "@/components/ToastContainer"
 interface UpgradeModalProps {
   isOpen: boolean
   onClose: () => void
-  feature: 'documents' | 'flashcards' | 'podcasts' | 'mindmaps' | 'exams'
+  feature: 'documents' | 'flashcards' | 'podcasts' | 'mindmaps' | 'exams' | 'videos' | 'chat_messages' | 'quick_summaries' | 'study_buddy'
   used: number
   limit: number
 }
@@ -42,6 +42,30 @@ const featureInfo = {
     icon: '📝',
     description: 'Create AI-generated practice exams',
     premiumBenefit: 'Unlimited exam creations with detailed analytics'
+  },
+  videos: {
+    name: 'Video Analysis',
+    icon: '🎥',
+    description: 'Process YouTube videos and generate content',
+    premiumBenefit: 'Unlimited video processing with transcript analysis'
+  },
+  chat_messages: {
+    name: 'Document Chat',
+    icon: '💬',
+    description: 'Chat with your documents using AI',
+    premiumBenefit: 'Unlimited chat messages with document context'
+  },
+  quick_summaries: {
+    name: 'Quick Summaries',
+    icon: '⚡',
+    description: 'Get 5-minute audio summaries',
+    premiumBenefit: 'Unlimited quick summary generations'
+  },
+  study_buddy: {
+    name: 'Study Buddy',
+    icon: '🤖',
+    description: 'AI study companion with personalized help',
+    premiumBenefit: 'Unlimited Study Buddy conversations'
   }
 }
 

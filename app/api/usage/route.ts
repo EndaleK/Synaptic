@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
 
-// Usage limits per tier (Updated Nov 14, 2025 - Growth strategy)
+// Usage limits per tier (Updated Nov 21, 2025 - Added Study Buddy)
 // NOTE: These must match lib/usage-limits.ts
 const USAGE_LIMITS = {
   free: {
@@ -13,7 +13,9 @@ const USAGE_LIMITS = {
     mindmaps: 10,         // Increased from 5
     exams: 5,             // Mock exam generation limit
     videos: 10,           // Video processing limit
-    chat_messages: 50     // NEW limit
+    chat_messages: 50,    // Document chat limit
+    quick_summaries: 10,  // Quick summary limit
+    study_buddy: 100      // Study Buddy conversations limit
   },
   premium: {
     documents: Infinity,
@@ -22,7 +24,9 @@ const USAGE_LIMITS = {
     mindmaps: Infinity,
     exams: Infinity,
     videos: Infinity,
-    chat_messages: Infinity
+    chat_messages: Infinity,
+    quick_summaries: Infinity,
+    study_buddy: Infinity
   },
   enterprise: {
     documents: Infinity,
@@ -31,7 +35,9 @@ const USAGE_LIMITS = {
     mindmaps: Infinity,
     exams: Infinity,
     videos: Infinity,
-    chat_messages: Infinity
+    chat_messages: Infinity,
+    quick_summaries: Infinity,
+    study_buddy: Infinity
   }
 }
 
@@ -100,7 +106,9 @@ export async function GET() {
       mindmaps: 0,
       exams: 0,
       videos: 0,
-      chat_messages: 0
+      chat_messages: 0,
+      quick_summaries: 0,
+      study_buddy: 0
     }
 
     usageData?.forEach((record) => {
@@ -118,6 +126,10 @@ export async function GET() {
         usage.videos++
       } else if (record.action_type === 'chat_message' || record.action_type.includes('chat')) {
         usage.chat_messages++
+      } else if (record.action_type === 'quick_summary_generation' || record.action_type.includes('quick_summary')) {
+        usage.quick_summaries++
+      } else if (record.action_type === 'study_buddy_message' || record.action_type.includes('study_buddy')) {
+        usage.study_buddy++
       }
     })
 
@@ -140,7 +152,9 @@ export async function GET() {
         mindmaps: { used: usage.mindmaps, limit: limits.mindmaps },
         exams: { used: usage.exams, limit: limits.exams },
         videos: { used: usage.videos, limit: limits.videos },
-        chat_messages: { used: usage.chat_messages, limit: limits.chat_messages }
+        chat_messages: { used: usage.chat_messages, limit: limits.chat_messages },
+        quick_summaries: { used: usage.quick_summaries, limit: limits.quick_summaries },
+        study_buddy: { used: usage.study_buddy, limit: limits.study_buddy }
       }
     })
 

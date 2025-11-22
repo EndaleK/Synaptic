@@ -16,6 +16,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getProviderForFeature } from '@/lib/ai'
 import { generateStudyBuddyPrompt, type PersonalityMode, type ExplainLevel } from '@/lib/study-buddy/personalities'
 import { logger } from '@/lib/logger'
+import { checkUsageLimit, incrementUsage } from '@/lib/usage-limits'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,6 +62,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'Valid personality mode is required (tutor, buddy, or comedy)' },
         { status: 400 }
+      )
+    }
+
+    // Check usage limits (free tier: 100 messages/month, premium: unlimited)
+    const usageCheck = await checkUsageLimit(userId, 'study_buddy')
+    if (!usageCheck.allowed) {
+      logger.warn('Study Buddy blocked - usage limit reached', {
+        userId,
+        tier: usageCheck.tier,
+        used: usageCheck.used,
+        limit: usageCheck.limit
+      })
+      return NextResponse.json(
+        {
+          error: usageCheck.message,
+          tier: usageCheck.tier,
+          used: usageCheck.used,
+          limit: usageCheck.limit,
+          upgradeUrl: '/pricing'
+        },
+        { status: 403 }
       )
     }
 
@@ -132,7 +154,7 @@ export async function POST(req: NextRequest) {
       })
 
       // Track usage
-      await trackStudyBuddyUsage(profile.id, messages[messages.length - 1].content.length)
+      await incrementUsage(userId, 'study_buddy')
 
       const duration = Date.now() - startTime
       logger.api('POST', '/api/study-buddy/chat', 200, duration, {
@@ -167,7 +189,7 @@ export async function POST(req: NextRequest) {
           controller.close()
 
           // Track usage (asynchronously)
-          trackStudyBuddyUsage(profile.id, messages[messages.length - 1].content.length).catch(
+          incrementUsage(userId, 'study_buddy').catch(
             (error) => logger.error('Failed to track Study Buddy usage', error)
           )
 
