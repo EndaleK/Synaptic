@@ -57,9 +57,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (!personalityMode || !['tutor', 'buddy'].includes(personalityMode)) {
+    if (!personalityMode || !['tutor', 'buddy', 'comedy'].includes(personalityMode)) {
       return NextResponse.json(
-        { error: 'Valid personality mode is required (tutor or buddy)' },
+        { error: 'Valid personality mode is required (tutor, buddy, or comedy)' },
         { status: 400 }
       )
     }

@@ -48,9 +48,11 @@ export default function Breadcrumb({ items, className }: BreadcrumbProps = {}) {
       if (activeMode !== "home") {
         // Add mode-specific breadcrumb
         const modeLabels: Record<string, string> = {
+          studyBuddy: "Study Buddy",
           flashcards: "Flashcards",
           chat: "Chat with Document",
           podcast: "Podcast Learning",
+          "quick-summary": "Quick Summary",
           mindmap: "Mind Map",
           writer: "Writing Assistant",
           video: "Video Learning",

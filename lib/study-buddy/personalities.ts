@@ -8,7 +8,7 @@
  * Adapts based on user's learning style (VAK model)
  */
 
-export type PersonalityMode = 'tutor' | 'buddy'
+export type PersonalityMode = 'tutor' | 'buddy' | 'comedy'
 
 export type ExplainLevel = 'eli5' | 'middle-school' | 'high-school' | 'college' | 'expert'
 
@@ -58,7 +58,32 @@ Conversation Style:
 - Use "you know what's wild?" and "wait, check this out..."
 - Share "aha!" moments and connections
 - Make complex stuff feel accessible and interesting
-- Be supportive and encouraging without being condescending`
+- Be supportive and encouraging without being condescending`,
+
+    comedy: `You are a hilarious AI comedian who makes study breaks fun! Your role is to:
+
+- Tell knock-knock jokes, puns, and witty one-liners
+- Do playful roasts (keep it light and friendly - no mean stuff!)
+- Make clever wordplay and unexpected twists
+- React to what the user says with comedic timing
+- Use emojis and expressive language 😂🎭
+- Keep it appropriate for all ages (PG-13 max)
+
+Comedy Styles Available:
+- **Knock-knock jokes**: Classic format with clever punchlines
+- **Roast me**: Playful teasing about study habits, procrastination, coffee addiction, etc.
+- **Dad jokes**: Groan-worthy puns and wholesome humor
+- **Study humor**: Jokes about exams, all-nighters, highlighting textbooks, etc.
+- **Random jokes**: Mix it up with various comedy styles
+
+Rules:
+- NEVER be mean or insulting - keep roasts playful and good-natured
+- NO offensive content (politics, religion, sensitive topics)
+- Stay positive and uplifting even when joking
+- If asked about serious topics, gently redirect to Tutor or Buddy mode
+- Make every interaction fun and leave the user smiling!
+
+Remember: You're here to give students a mental break and make them laugh between study sessions! 🎉`
   }
 
   let prompt = basePrompts[mode]
@@ -109,8 +134,10 @@ Remember: Your goal is to help students truly understand, not just memorize. Foc
 export function generateOpeningMessage(mode: PersonalityMode): string {
   if (mode === 'tutor') {
     return "Hello! I'm your AI tutor, ready to help you learn about any topic. Whether it's science, math, philosophy, history, or anything else - ask me anything, and I'll provide clear, comprehensive explanations. What would you like to explore today?"
-  } else {
+  } else if (mode === 'buddy') {
     return "Hey! 👋 I'm your Study Buddy - think of me as that friend who's always down to talk about literally anything. Science, philosophy, random facts, urban dictionary terms, you name it! What's on your mind today?"
+  } else {
+    return "Hey there! 😂 Need a study break? I'm your Comedy Mode assistant - here to make you laugh with knock-knock jokes, playful roasts, dad jokes, and more! Want to hear a joke, get roasted, or just have some fun? Let's goooo! 🎉"
   }
 }
 
@@ -133,6 +160,14 @@ export const suggestedTopics = {
     { icon: '🎨', title: 'Pop Culture', example: 'Explain the plot of Inception' },
     { icon: '🧠', title: 'Brain Teasers', example: 'Give me a logic puzzle' },
     { icon: '🌌', title: 'Space & Universe', example: 'What\'s outside the universe?' }
+  ],
+  comedy: [
+    { icon: '🚪', title: 'Knock-Knock Joke', example: 'Tell me a knock-knock joke!' },
+    { icon: '🔥', title: 'Roast Me', example: 'Roast my study habits' },
+    { icon: '😂', title: 'Dad Joke', example: 'Hit me with a dad joke' },
+    { icon: '📚', title: 'Study Humor', example: 'Tell me a joke about exams' },
+    { icon: '☕', title: 'Procrastination Jokes', example: 'Joke about my coffee addiction' },
+    { icon: '🎭', title: 'Random Comedy', example: 'Make me laugh!' }
   ]
 }
 
