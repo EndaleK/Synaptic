@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAIProvider } from '@/lib/ai'
+import { getProviderForFeature } from '@/lib/ai'
 import { generateStudyBuddyPrompt, type PersonalityMode, type ExplainLevel } from '@/lib/study-buddy/personalities'
 import { logger } from '@/lib/logger'
 
@@ -96,9 +96,9 @@ export async function POST(req: NextRequest) {
     })
 
     // Get AI provider (prefer DeepSeek for cost efficiency)
-    const provider = await getAIProvider('chat')
+    const provider = getProviderForFeature('chat')
 
-    if (!provider) {
+    if (!provider.isConfigured()) {
       logger.error('No AI provider configured for Study Buddy')
       return NextResponse.json(
         {
