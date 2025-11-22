@@ -591,7 +591,7 @@ IMPORTANT: Your response must be ONLY a JSON object with "title", "nodes" (array
       throw new Error(`Failed to parse mind map: ${parseError}`)
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`${provider.name} API error (mind map):`, error)
     if (error.response) {
       console.error("Response:", error.response.data)

@@ -65,9 +65,9 @@ export function useRealTimeAnalysis({
       // Only update if this is still the latest request
       setSuggestions(newSuggestions || [])
       setLastAnalyzedContent(textToAnalyze)
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Ignore abort errors (they're expected when user types before analysis completes)
-      if (error.name !== 'AbortError') {
+      if (error instanceof Error && error.name !== 'AbortError') {
         console.error('Real-time analysis error:', error)
         // Don't clear existing suggestions on error, just stop loading
       }

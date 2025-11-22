@@ -214,7 +214,7 @@ Make it engaging and educational!`
       throw new Error(`Failed to parse podcast script: ${parseError}`)
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`${provider.name} API error (podcast script):`, error)
     if (error.response) {
       console.error("Response:", error.response.data)

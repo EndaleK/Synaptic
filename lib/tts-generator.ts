@@ -127,7 +127,7 @@ export async function generateSpeechForLine(
       buffer = await generateSpeechWithOpenAI(line.text, voice)
       provider = 'openai'
       console.log(`[TTS] ✓ OpenAI succeeded for ${line.speaker}`)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`[TTS] OpenAI failed for ${line.speaker}:`, error)
       throw new Error(`Failed to generate speech: ${error.message}`)
     }

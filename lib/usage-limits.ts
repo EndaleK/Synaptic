@@ -174,7 +174,7 @@ export async function checkUsageLimit(
         : `You've reached your monthly ${feature} limit (${limit}). Upgrade to Premium for unlimited access.`
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Usage limit check failed', error, { clerkUserId, feature })
     return {
       allowed: false,
@@ -248,7 +248,7 @@ export async function incrementUsage(
       console.log('✅ Usage tracked successfully:', { clerkUserId, feature, actionType })
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Usage increment failed', error, { clerkUserId, feature })
     console.error('🔴 USAGE TRACKING EXCEPTION:', {
       clerkUserId,

@@ -129,7 +129,7 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
       const { svg } = await mermaid.render(id, cleanedCode)
 
       setRenderedDiagrams(prev => new Map(prev).set(key, svg || 'FAILED'))
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Mermaid rendering error:', error)
       setRenderedDiagrams(prev => new Map(prev).set(key, 'FAILED'))
     }

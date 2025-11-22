@@ -154,7 +154,7 @@ DO NOT include any text outside the JSON array.`
       throw new Error("Failed to parse flashcard data")
     }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("OpenAI API error:", error)
     if (error.response) {
       console.error("Response data:", error.response.data)

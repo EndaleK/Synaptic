@@ -138,7 +138,7 @@ export default function StudyBuddyInterface() {
 
       setStreamingMessage("")
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Study Buddy chat error:', error)
       toast.error(error.message || 'Failed to get response from Study Buddy')
     } finally {

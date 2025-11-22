@@ -111,7 +111,7 @@ export default function CitationManager({
       setUrlInput('')
 
       toast.success('Citation metadata fetched successfully! Review and save.')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Citation fetch error:', error)
       toast.error(error.message || 'Failed to fetch citation metadata')
     } finally {

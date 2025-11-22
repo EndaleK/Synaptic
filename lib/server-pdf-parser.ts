@@ -81,7 +81,7 @@ async function parsePDFWithPdfParse(buffer: Buffer): Promise<PDFParseResult> {
       method: 'pdf-parse'
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('pdf-parse extraction error:', error)
 
     // Handle specific error types
@@ -171,7 +171,7 @@ export async function parsePDFWithPyMuPDF(buffer: Buffer): Promise<PDFParseResul
         fs.unlinkSync(tempFilePath)
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ PyMuPDF subprocess error:', error)
     return {
       text: "",

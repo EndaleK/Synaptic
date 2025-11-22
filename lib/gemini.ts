@@ -116,7 +116,7 @@ export async function generateGeminiCompletion(
         totalTokens: estimatedPromptTokens + estimatedCompletionTokens,
       },
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Gemini API error', error, {
       errorMessage: error.message,
       errorType: error.constructor.name,

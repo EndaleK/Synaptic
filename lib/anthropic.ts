@@ -93,7 +93,7 @@ export async function generateClaudeCompletion(
         totalTokens: response.usage.input_tokens + response.usage.output_tokens,
       },
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Claude API error', error, {
       errorMessage: error.message,
       errorType: error.constructor.name,
