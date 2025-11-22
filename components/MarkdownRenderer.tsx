@@ -28,14 +28,22 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
     diagramIdCounter.current = 0
   }, [content])
 
+  const decodeHTMLEntities = (text: string): string => {
+    const textarea = document.createElement('textarea')
+    textarea.innerHTML = text
+    return textarea.value
+  }
+
   const renderMermaidDiagram = async (code: string): Promise<string> => {
     if (!code || !code.trim()) {
       return ''
     }
 
     try {
+      // Decode HTML entities that may have been escaped by markdown renderer
+      const decodedCode = decodeHTMLEntities(code.trim())
       const id = `mermaid-${Date.now()}-${diagramIdCounter.current++}`
-      const { svg } = await mermaid.render(id, code.trim())
+      const { svg } = await mermaid.render(id, decodedCode)
       return svg
     } catch (error: any) {
       console.error('Mermaid rendering error:', error)
