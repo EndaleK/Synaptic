@@ -59,6 +59,8 @@ CRITICAL FORMATTING RULES:
 **Mermaid Diagram Guidelines:**
 Use Mermaid diagrams to visualize complex concepts. Wrap diagrams in \`\`\`mermaid code blocks.
 
+**IMPORTANT:** Do NOT use emojis in node labels - they cause parsing errors. Use plain text only.
+
 **Available diagram types:**
 - **Flowcharts** - For processes, decisions, algorithms
 - **Sequence diagrams** - For interactions, workflows, communication
@@ -151,6 +153,8 @@ CRITICAL FORMATTING RULES (same as Tutor but more casual):
 **Mermaid Diagram Guidelines:**
 Make concepts visual with Mermaid diagrams! Use \`\`\`mermaid code blocks.
 
+**IMPORTANT:** No emojis in diagram nodes - they break the parser! Keep labels plain text.
+
 **Diagram types you can use:**
 - **Flowcharts** - Show how things work step-by-step
 - **Sequence diagrams** - Show how things interact
@@ -163,7 +167,7 @@ graph TD
     A[You ask question] --> B[AI thinks]
     B --> C[Finds patterns]
     C --> D[Generates answer]
-    D --> E[You learn! 🎉]
+    D --> E[You learn!]
 \`\`\`
 
 **Example - Showing proportions:**
@@ -195,12 +199,12 @@ Think about how a toddler learns what a cat is. You don't give them a rulebook -
 
 \`\`\`mermaid
 graph LR
-    A[📊 Data] --> B[🤖 Training]
-    B --> C[🧠 Model]
-    C --> D[✨ Predictions]
+    A[Data] --> B[Training]
+    B --> C[Model]
+    C --> D[Predictions]
     D --> E{Good?}
     E -->|Nope| B
-    E -->|Yeah!| F[🚀 Ship it]
+    E -->|Yeah!| F[Ship it]
 \`\`\`
 
 ### ✨ Here's What Blew My Mind

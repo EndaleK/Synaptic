@@ -34,6 +34,14 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
     return textarea.value
   }
 
+  const isValidMermaidCode = (code: string): boolean => {
+    // Must start with a valid diagram type
+    const validTypes = ['graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 'stateDiagram',
+                       'erDiagram', 'gantt', 'pie', 'journey', 'gitGraph', 'mindmap', 'timeline']
+    const firstLine = code.trim().split('\n')[0].toLowerCase()
+    return validTypes.some(type => firstLine.startsWith(type))
+  }
+
   const renderMermaidDiagram = async (code: string): Promise<string> => {
     if (!code || !code.trim()) {
       return ''
@@ -42,12 +50,21 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
     try {
       // Decode HTML entities that may have been escaped by markdown renderer
       const decodedCode = decodeHTMLEntities(code.trim())
+
+      // Validate it's actually Mermaid syntax before attempting to render
+      if (!isValidMermaidCode(decodedCode)) {
+        console.warn('Invalid Mermaid syntax, skipping:', decodedCode.substring(0, 50))
+        return ''
+      }
+
       const id = `mermaid-${Date.now()}-${diagramIdCounter.current++}`
       const { svg } = await mermaid.render(id, decodedCode)
       return svg
     } catch (error: any) {
       console.error('Mermaid rendering error:', error)
-      return `<div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg text-red-600 dark:text-red-400 my-4">Failed to render diagram: ${error.message}</div>`
+      // Return empty string instead of error message for better UX
+      // The original code block will be shown as a code block instead
+      return ''
     }
   }
 
@@ -74,9 +91,8 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
               // If we haven't rendered this diagram yet, render it
               if (!renderedDiagrams.has(diagramKey)) {
                 renderMermaidDiagram(codeString).then((svg) => {
-                  if (svg) {
-                    setRenderedDiagrams(prev => new Map(prev).set(diagramKey, svg))
-                  }
+                  // Store the result (even if empty) to prevent re-rendering attempts
+                  setRenderedDiagrams(prev => new Map(prev).set(diagramKey, svg || 'FAILED'))
                 })
 
                 // Show loading state
@@ -89,16 +105,25 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
 
               // Render the cached SVG
               const svg = renderedDiagrams.get(diagramKey)
-              if (svg) {
+
+              // If rendering failed, fall back to showing code block
+              if (!svg || svg === 'FAILED') {
                 return (
-                  <div
-                    className="mermaid-container my-4"
-                    dangerouslySetInnerHTML={{ __html: svg }}
-                  />
+                  <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto my-4">
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  </pre>
                 )
               }
 
-              return null
+              // Render the diagram
+              return (
+                <div
+                  className="mermaid-container my-4"
+                  dangerouslySetInnerHTML={{ __html: svg }}
+                />
+              )
             }
 
             // Regular code block
