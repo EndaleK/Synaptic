@@ -175,30 +175,30 @@ export default function StudyBuddyInterface() {
 
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
+      {/* Header - Mobile Optimized */}
       <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
             {/* Title */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gray-600 dark:bg-gray-700 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-600 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white font-handwriting">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white font-handwriting truncate">
                   Study Buddy
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-handwriting">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-handwriting hidden sm:block">
                   Ask me anything - I'm here to help you learn
                 </p>
               </div>
             </div>
 
-            {/* New Conversation Button */}
+            {/* New Conversation Button - Mobile Optimized */}
             <button
               onClick={handleNewConversation}
               disabled={messages.length === 0}
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-gray-700 dark:bg-gray-600 hover:bg-gray-800 dark:hover:bg-gray-500 rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-handwriting"
+              className="px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white bg-gray-700 dark:bg-gray-600 hover:bg-gray-800 dark:hover:bg-gray-500 rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-handwriting min-h-[40px] sm:min-h-auto active:scale-95 flex-shrink-0"
               title="Start new conversation"
             >
               <RotateCcw className="w-4 h-4" />
@@ -206,19 +206,19 @@ export default function StudyBuddyInterface() {
             </button>
           </div>
 
-          {/* Controls */}
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Controls - Mobile Optimized */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <PersonalityToggle
               mode={personalityMode}
               onChange={setPersonalityMode}
             />
 
-            {/* Explain Like Button */}
+            {/* Explain Like Button - Mobile Optimized */}
             <div className="relative">
               <button
                 onClick={() => setShowExplainPresets(!showExplainPresets)}
                 className={`
-                  px-4 py-2 rounded-lg border transition-colors flex items-center gap-2
+                  px-3 sm:px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 min-h-[40px] active:scale-95
                   ${explainLevel
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                     : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300'
@@ -226,10 +226,10 @@ export default function StudyBuddyInterface() {
                 `}
               >
                 <Lightbulb className="w-4 h-4" />
-                <span className="text-sm font-medium font-handwriting">
+                <span className="text-xs sm:text-sm font-medium font-handwriting">
                   {explainLevel
-                    ? `Explain: ${explainLevel === 'eli5' ? 'ELI5' : explainLevel.replace('-', ' ')}`
-                    : 'Explain Like...'}
+                    ? `${explainLevel === 'eli5' ? 'ELI5' : explainLevel.replace('-', ' ')}`
+                    : 'Explain...'}
                 </span>
               </button>
 
@@ -347,10 +347,10 @@ export default function StudyBuddyInterface() {
         </div>
       </div>
 
-      {/* Input Area */}
-      <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-end gap-3">
+      {/* Input Area - Mobile Optimized */}
+      <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+          <div className="flex items-end gap-2 sm:gap-3">
             <div className="flex-1 relative">
               <textarea
                 ref={inputRef}
@@ -360,7 +360,7 @@ export default function StudyBuddyInterface() {
                 placeholder="Ask me anything..."
                 disabled={isLoading}
                 rows={1}
-                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 font-handwriting text-[15px]"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 font-handwriting text-sm sm:text-[15px]"
                 style={{
                   minHeight: '48px',
                   maxHeight: '200px'
@@ -370,7 +370,7 @@ export default function StudyBuddyInterface() {
             <button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="px-6 py-3 bg-gray-700 dark:bg-gray-600 hover:bg-gray-800 dark:hover:bg-gray-500 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2 font-medium font-handwriting shadow-md hover:shadow-lg"
+              className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-700 dark:bg-gray-600 hover:bg-gray-800 dark:hover:bg-gray-500 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2 font-medium font-handwriting shadow-md hover:shadow-lg min-h-[48px] active:scale-95"
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -380,8 +380,9 @@ export default function StudyBuddyInterface() {
               <span className="hidden sm:inline">Send</span>
             </button>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center font-handwriting">
-            Powered by AI • Press Enter to send, Shift+Enter for new line
+          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-2 text-center font-handwriting">
+            Powered by AI • Press Enter to send{' '}
+            <span className="hidden sm:inline">, Shift+Enter for new line</span>
           </p>
         </div>
       </div>

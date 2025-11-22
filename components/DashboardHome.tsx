@@ -215,54 +215,54 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
   return (
     <div className="h-screen overflow-y-auto bg-gray-50 dark:bg-gray-950">
       <div className="max-w-7xl mx-auto px-6 py-6 lg:px-10 lg:py-8 space-y-6">
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-accent-primary to-accent-secondary rounded-2xl p-8 text-white">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3 flex-wrap">
-                <h1 className="text-display">
+        {/* Welcome Section - Mobile Optimized */}
+        <div className="bg-gradient-to-r from-accent-primary to-accent-secondary rounded-2xl p-4 sm:p-8 text-white">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+            <div className="flex-1 w-full">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3 flex-wrap">
+                <h1 className="text-xl sm:text-display">
                   Welcome back, {user?.firstName || user?.username || 'Student'}! 👋
                 </h1>
                 {/* Login Streak Indicator */}
                 {!isLoadingStreak && currentStreak > 0 && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">
-                    <Flame className="w-5 h-5 text-orange-300" />
-                    <span className="font-bold text-lg">{currentStreak}</span>
-                    <span className="text-sm font-medium">day login streak!</span>
+                  <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/20 backdrop-blur-sm rounded-full border border-white/30 w-fit">
+                    <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-orange-300" />
+                    <span className="font-bold text-base sm:text-lg">{currentStreak}</span>
+                    <span className="text-xs sm:text-sm font-medium">day login streak!</span>
                   </div>
                 )}
               </div>
-              <p className="text-white/90 text-lg font-medium">
+              <p className="text-white/90 text-sm sm:text-lg font-medium mb-3 sm:mb-0">
                 Ready to continue your learning journey?
               </p>
-              <div className="flex items-center gap-2 mt-4 text-white">
+              <div className="flex items-center gap-2 mt-2 sm:mt-4 text-white text-sm sm:text-base">
                 <Calendar className="w-4 h-4" />
                 <span className="hidden md:inline">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                 <span className="md:hidden">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
               </div>
             </div>
 
-            {/* Upgrade/Manage Plan Button */}
-            <div className="ml-4">
+            {/* Upgrade/Manage Plan Button - Mobile Optimized */}
+            <div className="w-full sm:w-auto sm:ml-4">
               {userProfile?.subscription_tier && userProfile.subscription_tier !== 'free' ? (
                 // Subscribed users - Show plan badge + manage button
                 <button
                   onClick={() => window.location.href = '/dashboard/settings?tab=subscription'}
-                  className="flex items-center gap-2 px-6 py-3 bg-white text-accent-primary rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-105"
+                  className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 bg-white text-accent-primary rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-105 active:scale-95 w-full sm:w-auto min-h-[48px]"
                 >
                   <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-full font-bold uppercase">
                     {userProfile.subscription_tier}
                   </span>
-                  <span>Manage Plan</span>
+                  <span className="text-sm sm:text-base">Manage Plan</span>
                 </button>
               ) : (
                 // Free users - Show upgrade button
                 <button
                   onClick={() => window.location.href = '/pricing'}
-                  className="flex items-center gap-2 px-6 py-3 bg-white text-accent-primary rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-105"
+                  className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 bg-white text-accent-primary rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-105 active:scale-95 w-full sm:w-auto min-h-[48px]"
                 >
                   <Sparkles className="w-5 h-5" />
-                  <span>Upgrade</span>
+                  <span className="text-sm sm:text-base">Upgrade</span>
                 </button>
               )}
             </div>
@@ -398,7 +398,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
         {/* Learning Modes Grid */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Choose Your Learning Mode</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             {learningModes.map((mode) => {
               const Icon = mode.icon
               return (
@@ -406,31 +406,31 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                   key={mode.id}
                   onClick={() => mode.available && onModeSelect(mode.id)}
                   disabled={!mode.available}
-                  className={`relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 ${
+                  className={`relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-4 sm:p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 active:scale-95 min-h-[140px] sm:min-h-auto ${
                     mode.available ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
                   }`}
                 >
-                  <div className={`w-14 h-14 ${mode.bgClass} rounded-xl flex items-center justify-center mb-4 shadow-lg ${mode.shadowClass}`}>
-                    <Icon className="w-7 h-7 text-white" />
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 ${mode.bgClass} rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-lg ${mode.shadowClass}`}>
+                    <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
                     {mode.name}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
                     {mode.description}
                   </p>
                   {!mode.available && (
-                    <span className="absolute top-4 right-4 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-semibold rounded-full">
+                    <span className="absolute top-3 right-3 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-semibold rounded-full">
                       Soon
                     </span>
                   )}
                   {mode.premium && (
-                    <span className="absolute top-4 right-4 px-2 py-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-semibold rounded-full shadow-md">
+                    <span className="absolute top-3 right-3 px-2 py-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-semibold rounded-full shadow-md">
                       Premium
                     </span>
                   )}
                   {mode.new && mode.available && !mode.premium && (
-                    <span className="absolute top-4 right-4 px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-semibold rounded-full shadow-md">
+                    <span className="absolute top-3 right-3 px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-semibold rounded-full shadow-md">
                       NEW
                     </span>
                   )}

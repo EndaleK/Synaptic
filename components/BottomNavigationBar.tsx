@@ -54,26 +54,26 @@ export default function BottomNavigationBar({ onMenuClick, isMenuOpen }: BottomN
   }
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-center justify-around px-2 pt-2 pb-1">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
+      <div className="flex items-center justify-around px-1 py-1.5">
         {navItems.map((item) => (
           <button
             key={item.name}
             onClick={() => handleNavClick(item)}
             className={cn(
-              "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all btn-touch-icon",
+              "flex flex-col items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl transition-all min-w-[72px] min-h-[60px] active:scale-95",
               item.active
-                ? "text-accent-primary bg-accent-primary/10"
-                : "text-gray-600 dark:text-gray-400 hover:text-accent-primary hover:bg-accent-primary/5"
+                ? "text-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20"
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
             )}
           >
             <item.icon className={cn(
-              "w-5 h-5",
-              item.active && "stroke-[2.5]"
+              "w-6 h-6",
+              item.active && "scale-110 stroke-[2.5]"
             )} />
             <span className={cn(
-              "text-xs font-medium",
-              item.active && "font-semibold"
+              "text-[11px] font-semibold whitespace-nowrap",
+              item.active && "font-bold"
             )}>
               {item.name}
             </span>
@@ -84,20 +84,20 @@ export default function BottomNavigationBar({ onMenuClick, isMenuOpen }: BottomN
         <button
           onClick={onMenuClick}
           className={cn(
-            "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all btn-touch-icon",
+            "flex flex-col items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl transition-all min-w-[72px] min-h-[60px] active:scale-95",
             isMenuOpen
-              ? "text-accent-primary bg-accent-primary/10"
-              : "text-gray-600 dark:text-gray-400 hover:text-accent-primary hover:bg-accent-primary/5"
+              ? "text-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20"
+              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
           )}
         >
           {isMenuOpen ? (
-            <X className={cn("w-5 h-5", isMenuOpen && "stroke-[2.5]")} />
+            <X className={cn("w-6 h-6", isMenuOpen && "scale-110 stroke-[2.5]")} />
           ) : (
-            <Menu className="w-5 h-5" />
+            <Menu className="w-6 h-6" />
           )}
           <span className={cn(
-            "text-xs font-medium",
-            isMenuOpen && "font-semibold"
+            "text-[11px] font-semibold whitespace-nowrap",
+            isMenuOpen && "font-bold"
           )}>
             Menu
           </span>
