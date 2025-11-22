@@ -64,20 +64,17 @@ export default function UsageWidget() {
         if (!isRetry && retryCount < 2) {
           setRetryCount(prev => prev + 1)
           setTimeout(() => fetchUsage(true), 500)
-          return
+          return // Early return - don't set loading to false yet
         }
 
         // Only log and show error if all retries exhausted
-        if (retryCount >= 2) {
-          const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-          console.error('Usage fetch failed after retries:', errorMessage, err)
-          setError('Unable to load usage stats')
-        }
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+        console.error('Usage fetch failed:', errorMessage, err)
+        setError('Unable to load usage stats')
       } finally {
-        // Only set loading to false if not retrying
-        if (isRetry || retryCount >= 2) {
-          setLoading(false)
-        }
+        // Always set loading to false unless we're retrying
+        // (retry case returns early above)
+        setLoading(false)
       }
     }
 
