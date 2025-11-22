@@ -65,8 +65,43 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
         return
       }
 
+      // Clean up the code: fix multiline node labels that got split
+      // Replace line breaks within brackets to keep labels on one line
+      let cleanedCode = code.trim()
+
+      // Fix incomplete node labels by joining lines that don't end properly
+      const lines = cleanedCode.split('\n')
+      const fixedLines: string[] = []
+      let i = 0
+
+      while (i < lines.length) {
+        let currentLine = lines[i].trim()
+
+        // Check if line has an opening bracket without closing bracket
+        const openBrackets = (currentLine.match(/\[/g) || []).length
+        const closeBrackets = (currentLine.match(/\]/g) || []).length
+
+        if (openBrackets > closeBrackets && i + 1 < lines.length) {
+          // Join with next line(s) until brackets are balanced
+          let j = i + 1
+          while (j < lines.length && openBrackets > closeBrackets) {
+            const nextLine = lines[j].trim()
+            currentLine += ' ' + nextLine
+            const newCloseBrackets = (currentLine.match(/\]/g) || []).length
+            if (newCloseBrackets >= openBrackets) break
+            j++
+          }
+          i = j
+        }
+
+        fixedLines.push(currentLine)
+        i++
+      }
+
+      cleanedCode = fixedLines.join('\n')
+
       const id = `mermaid-${Date.now()}-${key}`
-      const { svg } = await mermaid.render(id, code.trim())
+      const { svg } = await mermaid.render(id, cleanedCode)
 
       setRenderedDiagrams(prev => new Map(prev).set(key, svg || 'FAILED'))
     } catch (error: any) {
