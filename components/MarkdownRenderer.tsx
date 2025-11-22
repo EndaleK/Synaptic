@@ -185,6 +185,16 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
           },
           // Style paragraphs
           p({ children }) {
+            // Check if children contains code blocks (which cannot be inside <p> tags)
+            const hasCodeBlock = React.Children.toArray(children).some(
+              (child: any) => child?.type === 'pre' || child?.props?.node?.tagName === 'pre'
+            )
+
+            // If it has code blocks, use a div instead of p to avoid invalid HTML
+            if (hasCodeBlock) {
+              return <div className="my-2 leading-relaxed">{children}</div>
+            }
+
             return <p className="my-2 leading-relaxed">{children}</p>
           },
           // Style links
