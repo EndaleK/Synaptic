@@ -20,70 +20,60 @@ mermaid.initialize({
 
 export default function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
   const [renderedDiagrams, setRenderedDiagrams] = useState<Map<string, string>>(new Map())
-  const diagramIdCounter = useRef(0)
-  const pendingDiagrams = useRef<Set<string>>(new Set())
+  const diagramCodeMap = useRef<Map<string, number>>(new Map())
+  const diagramCounter = useRef(0)
 
+  // Reset state when content changes
   useEffect(() => {
-    // Reset when content changes
     setRenderedDiagrams(new Map())
-    diagramIdCounter.current = 0
-    pendingDiagrams.current.clear()
+    diagramCodeMap.current.clear()
+    diagramCounter.current = 0
   }, [content])
 
-  const decodeHTMLEntities = (text: string): string => {
-    const textarea = document.createElement('textarea')
-    textarea.innerHTML = text
-    return textarea.value
-  }
-
   const isValidMermaidCode = (code: string): boolean => {
+    if (!code || !code.trim()) return false
+
+    const trimmed = code.trim()
+    const lines = trimmed.split('\n')
+
+    // Must have at least 2 lines (diagram type + content)
+    if (lines.length < 2) return false
+
+    // First line must not be a numbered list item
+    const firstLine = lines[0].trim().toLowerCase()
+    if (/^\d+\./.test(firstLine)) return false
+
     // Must start with a valid diagram type
-    const validTypes = ['graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 'stateDiagram',
-                       'erDiagram', 'gantt', 'pie', 'journey', 'gitGraph', 'mindmap', 'timeline']
-    const firstLine = code.trim().split('\n')[0].toLowerCase()
+    const validTypes = ['graph', 'flowchart', 'sequencediagram', 'classdiagram', 'statediagram',
+                       'erdiagram', 'gantt', 'pie', 'journey', 'gitgraph', 'mindmap', 'timeline']
     return validTypes.some(type => firstLine.startsWith(type))
   }
 
-  const renderMermaidDiagram = async (code: string): Promise<string> => {
-    if (!code || !code.trim()) {
-      return ''
+  const getDiagramKey = (code: string): string => {
+    // Check if we've seen this code before
+    if (!diagramCodeMap.current.has(code)) {
+      diagramCodeMap.current.set(code, diagramCounter.current++)
     }
-
-    try {
-      // Decode HTML entities that may have been escaped by markdown renderer
-      const decodedCode = decodeHTMLEntities(code.trim())
-
-      // Validate it's actually Mermaid syntax before attempting to render
-      if (!isValidMermaidCode(decodedCode)) {
-        console.warn('Invalid Mermaid syntax, skipping:', decodedCode.substring(0, 50))
-        return ''
-      }
-
-      const id = `mermaid-${Date.now()}-${diagramIdCounter.current++}`
-      const { svg } = await mermaid.render(id, decodedCode)
-      return svg
-    } catch (error: any) {
-      console.error('Mermaid rendering error:', error)
-      // Return empty string instead of error message for better UX
-      // The original code block will be shown as a code block instead
-      return ''
-    }
+    return `diagram-${diagramCodeMap.current.get(code)}`
   }
 
-  // Effect to render pending diagrams
-  useEffect(() => {
-    pendingDiagrams.current.forEach((diagramKey) => {
-      const [code] = diagramKey.split('|||')
-      renderMermaidDiagram(code).then((svg) => {
-        setRenderedDiagrams(prev => {
-          const next = new Map(prev)
-          next.set(diagramKey, svg || 'FAILED')
-          return next
-        })
-        pendingDiagrams.current.delete(diagramKey)
-      })
-    })
-  })
+  const renderMermaidDiagram = async (code: string, key: string): Promise<void> => {
+    try {
+      // Validate before attempting to render
+      if (!isValidMermaidCode(code)) {
+        setRenderedDiagrams(prev => new Map(prev).set(key, 'FAILED'))
+        return
+      }
+
+      const id = `mermaid-${Date.now()}-${key}`
+      const { svg } = await mermaid.render(id, code.trim())
+
+      setRenderedDiagrams(prev => new Map(prev).set(key, svg || 'FAILED'))
+    } catch (error: any) {
+      console.error('Mermaid rendering error:', error)
+      setRenderedDiagrams(prev => new Map(prev).set(key, 'FAILED'))
+    }
+  }
 
   if (!content) {
     return null
@@ -102,14 +92,13 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
 
             // Check if it's a mermaid diagram
             if (!inline && language === 'mermaid') {
-              // Use a unique key for this diagram
-              const diagramKey = `${codeString}|||${codeString.length}`
+              const diagramKey = getDiagramKey(codeString)
+              const svg = renderedDiagrams.get(diagramKey)
 
-              // If we haven't rendered this diagram yet, queue it
-              if (!renderedDiagrams.has(diagramKey) && !pendingDiagrams.current.has(diagramKey)) {
-                pendingDiagrams.current.add(diagramKey)
-                // Trigger re-render after queuing
-                setTimeout(() => setRenderedDiagrams(prev => new Map(prev)), 0)
+              // If not rendered yet, trigger rendering
+              if (!svg) {
+                // Trigger async rendering
+                renderMermaidDiagram(codeString, diagramKey)
 
                 // Show loading state
                 return (
@@ -119,11 +108,8 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
                 )
               }
 
-              // Render the cached SVG
-              const svg = renderedDiagrams.get(diagramKey)
-
-              // If rendering failed, fall back to showing code block
-              if (!svg || svg === 'FAILED') {
+              // Rendering failed - show as code block
+              if (svg === 'FAILED') {
                 return (
                   <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto my-4">
                     <code className={className} {...props}>

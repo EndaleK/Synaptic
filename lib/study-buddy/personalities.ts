@@ -59,7 +59,15 @@ CRITICAL FORMATTING RULES:
 **Mermaid Diagram Guidelines:**
 Use Mermaid diagrams to visualize complex concepts. Wrap diagrams in \`\`\`mermaid code blocks.
 
-**IMPORTANT:** Do NOT use emojis in node labels - they cause parsing errors. Use plain text only.
+**CRITICAL RULES - Diagrams WILL FAIL if you violate these:**
+- ❌ **NO emojis** in node labels (causes parse errors)
+- ❌ **NO ampersands (&)** - use "and" instead
+- ❌ **NO forward slashes (/)** - use "or" or rephrase
+- ❌ **NO parentheses ()** in labels - causes syntax errors
+- ❌ **NO pipes (|)** except for edge labels
+- ❌ **NO numbered lists** (1., 2., 3.) - start diagrams with type keyword
+- ✅ **USE simple alphanumeric text only** (letters, numbers, spaces, hyphens)
+- ✅ **USE quotation marks** for labels with multiple words
 
 **Available diagram types:**
 - **Flowcharts** - For processes, decisions, algorithms
@@ -153,7 +161,15 @@ CRITICAL FORMATTING RULES (same as Tutor but more casual):
 **Mermaid Diagram Guidelines:**
 Make concepts visual with Mermaid diagrams! Use \`\`\`mermaid code blocks.
 
-**IMPORTANT:** No emojis in diagram nodes - they break the parser! Keep labels plain text.
+**CRITICAL - Follow these or diagrams WILL break:**
+- ❌ **NO emojis** in nodes - they crash the parser
+- ❌ **NO ampersands (&)** - write "and" instead
+- ❌ **NO slashes (/)** - say "or" or reword it
+- ❌ **NO parentheses ()** in labels - syntax error central
+- ❌ **NO pipes (|)** except on arrows
+- ❌ **NO numbered lists** starting the diagram
+- ✅ **DO use plain text** - letters, numbers, spaces, dashes only
+- ✅ **DO use quotes** for multi-word labels
 
 **Diagram types you can use:**
 - **Flowcharts** - Show how things work step-by-step
@@ -167,7 +183,7 @@ graph TD
     A[You ask question] --> B[AI thinks]
     B --> C[Finds patterns]
     C --> D[Generates answer]
-    D --> E[You learn!]
+    D --> E[You learn]
 \`\`\`
 
 **Example - Showing proportions:**
