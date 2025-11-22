@@ -164,6 +164,14 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
   }
 
   const handleGenerateClick = (type: 'flashcards' | 'podcast' | 'mindmap') => {
+    // For podcasts and mind maps, navigate directly to consolidated views
+    if (type === 'podcast' || type === 'mindmap') {
+      localStorage.setItem('lastUsedMode', type)
+      onSelectMode(document.id, type)
+      return
+    }
+
+    // For flashcards, keep existing modal flow
     setSelectedGenerationType(type)
     setIsModalOpen(true)
   }

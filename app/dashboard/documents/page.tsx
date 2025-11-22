@@ -154,7 +154,8 @@ function DocumentsPageContent() {
       })
 
       setActiveMode(mode)
-      router.push('/dashboard')
+      // Include URL params for proper mode activation (especially for podcast/mindmap)
+      router.push(`/dashboard?mode=${mode}&documentId=${documentId}`)
     } catch (err) {
       console.error('Error selecting document:', err)
       toast.error(err instanceof Error ? err.message : 'Failed to open document')

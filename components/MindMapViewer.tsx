@@ -1036,34 +1036,6 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
             </button>
           </div>
         </div>
-
-        {/* Template Switcher - Compact */}
-        <div className="mt-1 flex items-center justify-between gap-2">
-          <div className="flex gap-1.5">
-            {['hierarchical', 'flowchart', 'timeline'].map((templateType) => {
-              const template = TEMPLATES[templateType as TemplateType];
-              const isActive = currentTemplate === templateType;
-              return (
-                <button
-                  key={templateType}
-                  onClick={() => handleTemplateChange(templateType as TemplateType)}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-all ${
-                    isActive
-                      ? 'bg-blue-100 dark:bg-blue-900 border border-blue-500 text-blue-700 dark:text-blue-300'
-                      : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                  title={template.metadata.description}
-                >
-                  <span className="text-sm">{template.metadata.icon}</span>
-                  <span className="hidden sm:inline">{template.metadata.name}</span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 hidden lg:block truncate">
-            {TEMPLATES[currentTemplate]?.metadata.description}
-          </div>
-        </div>
       </div>
 
       {/* React Flow Canvas */}
