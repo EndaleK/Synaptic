@@ -34,19 +34,30 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
     if (!code || !code.trim()) return false
 
     const trimmed = code.trim()
-    const lines = trimmed.split('\n')
+    const lines = trimmed.split('\n').map(l => l.trim()).filter(l => l.length > 0)
 
     // Must have at least 2 lines (diagram type + content)
     if (lines.length < 2) return false
 
     // First line must not be a numbered list item
-    const firstLine = lines[0].trim().toLowerCase()
+    const firstLine = lines[0].toLowerCase()
     if (/^\d+\./.test(firstLine)) return false
 
     // Must start with a valid diagram type
     const validTypes = ['graph', 'flowchart', 'sequencediagram', 'classdiagram', 'statediagram',
                        'erdiagram', 'gantt', 'pie', 'journey', 'gitgraph', 'mindmap', 'timeline']
-    return validTypes.some(type => firstLine.startsWith(type))
+
+    const hasValidType = validTypes.some(type => firstLine.startsWith(type))
+    if (!hasValidType) return false
+
+    // CRITICAL: Reject if ANY line looks like a numbered list (markdown contamination)
+    const hasNumberedList = lines.some(line => /^\d+\./.test(line))
+    if (hasNumberedList) {
+      console.warn('⚠️ Rejecting Mermaid: contains numbered list items', lines.filter(l => /^\d+\./.test(l)))
+      return false
+    }
+
+    return true
   }
 
   const getDiagramKey = (code: string): string => {
@@ -100,6 +111,13 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
 
       cleanedCode = fixedLines.join('\n')
 
+      // DEBUG: Log cleaned code before rendering
+      console.log('🧹 Cleaned Mermaid code:', {
+        originalLines: code.trim().split('\n').length,
+        cleanedLines: cleanedCode.split('\n').length,
+        cleanedCode: cleanedCode
+      })
+
       const id = `mermaid-${Date.now()}-${key}`
       const { svg } = await mermaid.render(id, cleanedCode)
 
@@ -123,10 +141,28 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
           code({ node, inline, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '')
             const language = match ? match[1] : ''
-            const codeString = String(children).replace(/\n$/, '')
+
+            // Extract code string properly - children can be string or array
+            let codeString = ''
+            if (typeof children === 'string') {
+              codeString = children
+            } else if (Array.isArray(children)) {
+              codeString = children.join('')
+            } else {
+              codeString = String(children)
+            }
+            codeString = codeString.replace(/\n$/, '')
 
             // Check if it's a mermaid diagram
             if (!inline && language === 'mermaid') {
+              // DEBUG: Log what we're receiving
+              console.log('🔍 Mermaid code received:', {
+                type: typeof codeString,
+                length: codeString.length,
+                preview: codeString.substring(0, 100),
+                lines: codeString.split('\n').length
+              })
+
               const diagramKey = getDiagramKey(codeString)
               const svg = renderedDiagrams.get(diagramKey)
 
