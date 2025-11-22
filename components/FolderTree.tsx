@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronRight, ChevronDown, FolderPlus, MoreVertical, Pencil, Trash2, FolderIcon } from 'lucide-react'
 import FolderModal from './FolderModal'
+import { useToast } from '@/components/ToastContainer'
 
 interface Folder {
   id: string
@@ -25,6 +26,7 @@ interface FolderTreeProps {
 }
 
 export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderChange }: FolderTreeProps) {
+  const toast = useToast()
   const [folders, setFolders] = useState<Folder[]>([])
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
@@ -168,11 +170,11 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
         onFolderChange?.()
       } else {
         const data = await response.json()
-        alert(data.error || 'Failed to rename folder')
+        toast.error(data.error || 'Failed to rename folder')
       }
     } catch (error) {
       console.error('Failed to rename folder:', error)
-      alert('Failed to rename folder')
+      toast.error('Failed to rename folder')
     }
     setContextMenu(null)
   }
@@ -210,11 +212,11 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
         }
       } else {
         const data = await response.json()
-        alert(data.error || 'Failed to delete folder')
+        toast.error(data.error || 'Failed to delete folder')
       }
     } catch (error) {
       console.error('Failed to delete folder:', error)
-      alert('Failed to delete folder')
+      toast.error('Failed to delete folder')
     }
     setContextMenu(null)
   }
@@ -252,11 +254,11 @@ export default function FolderTree({ selectedFolderId, onSelectFolder, onFolderC
         onFolderChange?.()
       } else {
         const data = await response.json()
-        alert(data.error || 'Failed to move document')
+        toast.error(data.error || 'Failed to move document')
       }
     } catch (error) {
       console.error('Failed to move document:', error)
-      alert('Failed to move document')
+      toast.error('Failed to move document')
     }
   }
 

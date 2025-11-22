@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Crown, Sparkles, TrendingUp, AlertCircle } from "lucide-react"
 import { useUser } from "@clerk/nextjs"
+import { useToast } from '@/components/ToastContainer'
 
 interface UserProfile {
   subscription_tier: 'free' | 'premium' | 'enterprise'
@@ -22,6 +23,7 @@ interface UsageLimits {
 }
 
 export default function SubscriptionStatus() {
+  const toast = useToast()
   const { user } = useUser()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [usage, setUsage] = useState<UsageLimits | null>(null)
@@ -63,7 +65,7 @@ export default function SubscriptionStatus() {
       const STRIPE_PRICE_ID = 'price_1SOk7JFjlulH6DEoUU8OO326'
 
       if (STRIPE_PRICE_ID === 'price_YOUR_ACTUAL_PRICE_ID') {
-        alert('Please configure your Stripe Price ID first. See STRIPE_SETUP_GUIDE.md for instructions.')
+        toast.warning('Please configure your Stripe Price ID first. See STRIPE_SETUP_GUIDE.md for instructions.')
         setIsUpgrading(false)
         return
       }
@@ -87,7 +89,7 @@ export default function SubscriptionStatus() {
       }
     } catch (error) {
       console.error('Error creating checkout session:', error)
-      alert('Failed to start checkout. Please try again.')
+      toast.error('Failed to start checkout. Please try again.')
       setIsUpgrading(false)
     }
   }
@@ -105,13 +107,13 @@ export default function SubscriptionStatus() {
       if (!response.ok) {
         // Provide specific error messages
         if (data.code === 'STRIPE_NOT_CONFIGURED') {
-          alert('Subscription management is temporarily unavailable. Please contact support at support@synaptic.study.')
+          toast.error('Subscription management is temporarily unavailable. Please contact support at support@synaptic.study.')
         } else if (response.status === 400) {
-          alert(data.error || 'No active subscription found.')
+          toast.error(data.error || 'No active subscription found.')
         } else if (response.status === 404) {
-          alert('User profile not found. Please try signing out and back in.')
+          toast.error('User profile not found. Please try signing out and back in.')
         } else {
-          alert(`Failed to open subscription management: ${data.details || data.error || 'Unknown error'}`)
+          toast.error(`Failed to open subscription management: ${data.details || data.error || 'Unknown error'}`)
         }
         console.error('Portal session error:', data)
         setIsManaging(false)
@@ -125,7 +127,7 @@ export default function SubscriptionStatus() {
       }
     } catch (error) {
       console.error('Error opening customer portal:', error)
-      alert('Failed to open subscription management. Please try again or contact support.')
+      toast.error('Failed to open subscription management. Please try again or contact support.')
       setIsManaging(false)
     }
   }

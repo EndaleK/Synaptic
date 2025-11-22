@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { X, FileText, Download, Eye, Loader2 } from 'lucide-react'
 import type { Essay, CitationStyle } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/components/ToastContainer'
 
 interface ExportPreviewModalProps {
   isOpen: boolean
@@ -18,6 +19,7 @@ export default function ExportPreviewModal({
   essay,
   onExport
 }: ExportPreviewModalProps) {
+  const toast = useToast()
   const [selectedFormat, setSelectedFormat] = useState<'pdf' | 'docx'>('pdf')
   const [isExporting, setIsExporting] = useState(false)
   const [showPreview, setShowPreview] = useState(true)
@@ -31,7 +33,7 @@ export default function ExportPreviewModal({
       onClose()
     } catch (error) {
       console.error('Export failed:', error)
-      alert('Export failed. Please try again.')
+      toast.error('Export failed. Please try again.')
     } finally {
       setIsExporting(false)
     }

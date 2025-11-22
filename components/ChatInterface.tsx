@@ -542,7 +542,7 @@ export default function ChatInterface() {
     }
 
     if (!chatDocument.file) {
-      alert("Please upload a document first to start chatting.")
+      toast.warning("Please upload a document first to start chatting.")
       return
     }
 

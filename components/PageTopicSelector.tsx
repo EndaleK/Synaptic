@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Check, Loader2, Sparkles, BookmarkCheck, Trash2, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
+import { useToast } from "@/components/ToastContainer"
 
 // Dynamically import ChapterSelector to avoid SSR issues
 const ChapterSelector = dynamic(() => import("./ChapterSelector"), {
@@ -50,6 +51,7 @@ export default function PageTopicSelector({
   onSelectionChange,
   className
 }: PageTopicSelectorProps) {
+  const toast = useToast()
   const [selectionMode, setSelectionMode] = useState<'full' | 'pages' | 'topics' | 'chapters'>('full')
   const [pageStart, setPageStart] = useState<string>('1')
   const [pageEnd, setPageEnd] = useState<string>(totalPages.toString())
@@ -263,7 +265,7 @@ export default function PageTopicSelector({
 
     } catch (error) {
       console.error('Error deleting preset:', error)
-      alert('Failed to delete preset. Please try again.')
+      toast.error('Failed to delete preset. Please try again.')
     }
   }
 

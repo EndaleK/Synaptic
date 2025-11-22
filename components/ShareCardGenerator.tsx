@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Download } from 'lucide-react'
+import { useToast } from '@/components/ToastContainer'
 
 interface ShareCardGeneratorProps {
   url?: string
@@ -13,6 +14,7 @@ interface ShareCardGeneratorProps {
  * Matches the design from the screenshot with logo, title, description, and QR code
  */
 export function ShareCardGenerator({ url = 'https://synaptic.study' }: ShareCardGeneratorProps) {
+  const toast = useToast()
   const cardRef = useRef<HTMLDivElement>(null)
   const [isGenerating, setIsGenerating] = useState(false)
 
@@ -35,7 +37,7 @@ export function ShareCardGenerator({ url = 'https://synaptic.study' }: ShareCard
       link.click()
     } catch (error) {
       console.error('Error generating card:', error)
-      alert('Failed to generate card. Please try again.')
+      toast.error('Failed to generate card. Please try again.')
     } finally {
       setIsGenerating(false)
     }

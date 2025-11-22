@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { Upload, FileText, X } from 'lucide-react'
 import { convertDocumentToHtml, extractTitleFromFilename } from '@/lib/document-to-html'
+import { useToast } from '@/components/ToastContainer'
 
 interface EssayUploaderProps {
   onUploadSuccess: (essayId: string, title: string, content: string) => void
@@ -10,6 +11,7 @@ interface EssayUploaderProps {
 }
 
 export default function EssayUploader({ onUploadSuccess, onUploadError }: EssayUploaderProps) {
+  const toast = useToast()
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -51,7 +53,7 @@ export default function EssayUploader({ onUploadSuccess, onUploadError }: EssayU
     if (!validTypes.includes(file.type) && !validExtensions.includes(extension || '')) {
       const error = 'Invalid file type. Please upload PDF, DOCX, DOC, or TXT files.'
       onUploadError?.(error)
-      alert(error)
+      toast.error(error)
       return
     }
 
@@ -59,7 +61,7 @@ export default function EssayUploader({ onUploadSuccess, onUploadError }: EssayU
     if (file.size > 10 * 1024 * 1024) {
       const error = 'File is too large. Maximum size is 10MB.'
       onUploadError?.(error)
-      alert(error)
+      toast.error(error)
       return
     }
 
@@ -149,7 +151,7 @@ export default function EssayUploader({ onUploadSuccess, onUploadError }: EssayU
       console.error('Upload error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to upload file'
       onUploadError?.(errorMessage)
-      alert(errorMessage)
+      toast.error(errorMessage)
       setIsUploading(false)
       setUploadProgress(0)
     }

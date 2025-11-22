@@ -34,6 +34,7 @@ import SuggestionsPanel from './SuggestionsPanel'
 import WritingStatsBar from './WritingStatsBar'
 import InlineSuggestion from './InlineSuggestion'
 import VoiceDictation from './WritingView/VoiceDictation'
+import { useToast } from '@/components/ToastContainer'
 
 interface WritingEditorProps {
   essayId?: string
@@ -61,6 +62,7 @@ export default function WritingEditor({
   suggestions = [],
   onContentChange
 }: WritingEditorProps) {
+  const toast = useToast()
   const [title, setTitle] = useState(initialTitle)
   const [isSaving, setIsSaving] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -278,7 +280,7 @@ export default function WritingEditor({
     const text = editor.state.doc.textBetween(from, to, ' ')
 
     if (text.trim().length === 0) {
-      alert('Please select some text to paraphrase')
+      toast.warning('Please select some text to paraphrase')
       return
     }
 

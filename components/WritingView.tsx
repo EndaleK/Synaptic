@@ -9,6 +9,7 @@ import Underline from '@tiptap/extension-underline'
 import CharacterCount from '@tiptap/extension-character-count'
 import { createClient } from '@/lib/supabase/client'
 import { parseDocument } from '@/lib/client-document-parser'
+import { useToast } from '@/components/ToastContainer'
 
 // Modern UI Components
 import ModernWritingHeader from './writing/ModernWritingHeader'
@@ -38,6 +39,7 @@ interface UploadedFile {
 
 export default function WritingView({ essayId, documentId }: WritingViewProps) {
   const { user, isLoaded } = useUser()
+  const toast = useToast()
   const [essay, setEssay] = useState<Essay | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -327,7 +329,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       setEssay(data.essay)
     } catch (err) {
       console.error('Error saving essay:', err)
-      alert('Failed to save essay: ' + (err instanceof Error ? err.message : 'Unknown error'))
+      toast.error('Failed to save essay: ' + (err instanceof Error ? err.message : 'Unknown error'))
     } finally {
       setIsSaving(false)
     }
@@ -357,7 +359,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       window.URL.revokeObjectURL(url)
     } catch (err) {
       console.error('Error exporting essay:', err)
-      alert('Failed to export essay')
+      toast.error('Failed to export essay')
     }
   }
 
@@ -392,7 +394,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       setShowSuggestions(true)
     } catch (err) {
       console.error('Error analyzing essay:', err)
-      alert('Failed to analyze essay')
+      toast.error('Failed to analyze essay')
     }
   }
 
@@ -404,7 +406,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       const selectedText = editor.state.doc.textBetween(selection.from, selection.to)
 
       if (!selectedText) {
-        alert('Please select some text to improve')
+        toast.warning('Please select some text to improve')
         return
       }
 
@@ -425,7 +427,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       editor.chain().focus().deleteSelection().insertContent(paraphrased).run()
     } catch (err) {
       console.error('Error improving text:', err)
-      alert('Failed to improve text')
+      toast.error('Failed to improve text')
     }
   }
 
@@ -472,7 +474,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
     if (!editor) {
       console.error('❌ Editor is null or undefined!')
-      alert('Editor not ready. Please wait a moment and try again.')
+      toast.warning('Editor not ready. Please wait a moment and try again.')
       return
     }
 
@@ -485,11 +487,11 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
         console.log('✅ Text inserted successfully into editor')
       } else {
         console.error('❌ Editor.run() returned false - insertion failed')
-        alert('Failed to insert text. Please try clicking in the editor first.')
+        toast.error('Failed to insert text. Please try clicking in the editor first.')
       }
     } catch (error) {
       console.error('❌ Error inserting text:', error)
-      alert('Error inserting text: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      toast.error('Error inserting text: ' + (error instanceof Error ? error.message : 'Unknown error'))
     }
   }
 
@@ -652,7 +654,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       const result = await parseDocument(file)
 
       if (result.error) {
-        alert(`Failed to parse file: ${result.error}`)
+        toast.error(`Failed to parse file: ${result.error}`)
         return
       }
 
@@ -683,7 +685,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       }
     } catch (error) {
       console.error('Error processing file:', error)
-      alert('Failed to extract text from the file. Please try a different file.')
+      toast.error('Failed to extract text from the file. Please try a different file.')
     }
   }
 
@@ -693,7 +695,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
   const handleVoiceClick = () => {
     if (!isEditorReady) {
-      alert('Please wait for the editor to load before using voice dictation.')
+      toast.warning('Please wait for the editor to load before using voice dictation.')
       return
     }
     console.log('🎤 Opening voice modal - editor is ready')

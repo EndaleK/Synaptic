@@ -26,6 +26,7 @@ import type { TemplateType } from '@/lib/mindmap-templates'
 import { layoutMindMap } from '@/lib/mindmap-layouts'
 import { TEMPLATES, getAllTemplates } from '@/lib/mindmap-templates'
 import MindMapDetailPanel from './MindMapDetailPanel'
+import { useToast } from '@/components/ToastContainer'
 
 interface MindMapViewerProps {
   mindmapId?: string  // Database ID for saving edits
@@ -113,6 +114,7 @@ export default function MindMapViewer({
 }: MindMapViewerProps) {
   // Next.js router for navigation
   const router = useRouter()
+  const toast = useToast()
 
   // State for template switching
   const [currentTemplate, setCurrentTemplate] = useState<TemplateType>(initialTemplate);
@@ -597,9 +599,9 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
       link.click()
     } catch (error) {
       console.error('Failed to export mind map:', error)
-      alert('Failed to export mind map as PNG')
+      toast.error('Failed to export mind map as PNG')
     }
-  }, [title])
+  }, [title, toast])
 
   // Export as JSON
   const handleExportJSON = useCallback(() => {
@@ -649,9 +651,9 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
     } catch (error) {
       setShowExportLegend(false)
       console.error('Failed to export mind map as PDF:', error)
-      alert('Failed to export mind map as PDF')
+      toast.error('Failed to export mind map as PDF')
     }
-  }, [title])
+  }, [title, toast])
 
   // PHASE 3.4: Export as SVG with embedded legend
   // Handle save mind map
@@ -758,9 +760,9 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
     } catch (error) {
       setShowExportLegend(false)
       console.error('Failed to export mind map as SVG:', error)
-      alert('Failed to export mind map as SVG')
+      toast.error('Failed to export mind map as SVG')
     }
-  }, [title])
+  }, [title, toast])
 
   return (
     <div className="relative w-full h-full">

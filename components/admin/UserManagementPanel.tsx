@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { AdminUser } from '@/lib/auth/admin'
+import { useToast } from '@/components/ToastContainer'
 
 interface UserManagementPanelProps {
   admin: AdminUser
@@ -39,6 +40,7 @@ interface UserListResponse {
 }
 
 export default function UserManagementPanel({ admin }: UserManagementPanelProps) {
+  const toast = useToast()
   const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -79,7 +81,7 @@ export default function UserManagementPanel({ admin }: UserManagementPanelProps)
 
   async function runBackfill() {
     if (!canEdit) {
-      alert('You need editor or superadmin role to run backfill')
+      toast.error('You need editor or superadmin role to run backfill')
       return
     }
 
@@ -117,18 +119,18 @@ export default function UserManagementPanel({ admin }: UserManagementPanelProps)
         }
 
         console.log('Full backfill results:', data)
-        alert(message)
+        toast.success(message)
 
         // Refresh user list and backfill status
         fetchUsers()
         checkBackfillStatus()
       } else {
         const error = await response.json()
-        alert(`Backfill failed: ${error.error}`)
+        toast.error(`Backfill failed: ${error.error}`)
       }
     } catch (error) {
       console.error('Failed to run backfill:', error)
-      alert('Failed to run backfill')
+      toast.error('Failed to run backfill')
     } finally {
       setBackfilling(false)
     }
@@ -175,11 +177,11 @@ export default function UserManagementPanel({ admin }: UserManagementPanelProps)
         setSelectedUser(null)
       } else {
         const error = await response.json()
-        alert(`Failed to update user: ${error.error}`)
+        toast.error(`Failed to update user: ${error.error}`)
       }
     } catch (error) {
       console.error('Failed to update user:', error)
-      alert('Failed to update user')
+      toast.error('Failed to update user')
     }
   }
 

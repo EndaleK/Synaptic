@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "../styles/react-pdf.css";
 
+/* Google Fonts - Handwriting font for Study Buddy */
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
+
 /* Enable class-based dark mode for Tailwind CSS v4 */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -768,6 +771,12 @@ html.font-size-large {
 
 .typography-mono {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+}
+
+/* Handwriting font for Study Buddy */
+.font-handwriting {
+  font-family: 'Patrick Hand', cursive;
+  font-weight: 400;
 }
 
 .line-height-comfortable {

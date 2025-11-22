@@ -108,7 +108,6 @@ export default function DashboardLayout({
   const studyTools = [
     { name: "Library", href: "/dashboard/library", icon: Library },
     { name: "Calendar", href: "/dashboard/study/calendar", icon: Calendar },
-    { name: "Pomodoro Timer", href: "/dashboard/study/pomodoro", icon: Clock },
     { name: "Statistics", href: "/dashboard/study/statistics", icon: BarChart3 },
     { name: "Notifications", href: "/dashboard/study/settings", icon: Bell },
   ]

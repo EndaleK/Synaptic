@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { FileText, Plus, Clock, Trash2 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { useToast } from '@/components/ToastContainer'
 
 interface Essay {
   id: string
@@ -33,6 +34,7 @@ export default function DocumentSidebar({
   onSelectTemplate,
   onDeleteEssay
 }: DocumentSidebarProps) {
+  const toast = useToast()
   const [recentEssays, setRecentEssays] = useState<Essay[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [deletingEssayId, setDeletingEssayId] = useState<string | null>(null)
@@ -105,7 +107,7 @@ export default function DocumentSidebar({
       }
     } catch (error) {
       console.error('Failed to delete essay:', error)
-      alert('Failed to delete essay. Please try again.')
+      toast.error('Failed to delete essay. Please try again.')
     } finally {
       setDeletingEssayId(null)
     }

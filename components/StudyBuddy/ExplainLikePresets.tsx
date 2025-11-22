@@ -18,7 +18,7 @@ export default function ExplainLikePresets({
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 max-w-md">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-gray-900 dark:text-white">
+        <h3 className="font-semibold text-gray-900 dark:text-white font-handwriting">
           Explain Like...
         </h3>
         {onClose && (
@@ -53,10 +53,10 @@ export default function ExplainLikePresets({
 
             {/* Content */}
             <div className="flex-1 text-left">
-              <div className="font-medium text-gray-900 dark:text-white text-sm">
+              <div className="font-medium text-gray-900 dark:text-white text-sm font-handwriting">
                 {preset.label}
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-handwriting">
                 {preset.description}
               </div>
             </div>
@@ -74,7 +74,7 @@ export default function ExplainLikePresets({
         {currentLevel && (
           <button
             onClick={() => onSelect(null)}
-            className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white py-2"
+            className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white py-2 font-handwriting"
           >
             Clear selection
           </button>

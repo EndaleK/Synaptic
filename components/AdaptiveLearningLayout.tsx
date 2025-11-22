@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import { BookOpen, MessageSquare, Mic, Network } from "lucide-react"
 import type { PreferredMode } from "@/lib/supabase/types"
+import { useToast } from '@/components/ToastContainer'
 
 interface ModeConfig {
   id: PreferredMode
@@ -53,6 +54,7 @@ interface Props {
 }
 
 export default function AdaptiveLearningLayout({ children, currentMode = "flashcards" }: Props) {
+  const toast = useToast()
   const { activeMode, setActiveMode } = useUIStore()
   const { learningStyle, preferredMode } = useUserStore()
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -70,7 +72,7 @@ export default function AdaptiveLearningLayout({ children, currentMode = "flashc
 
     const modeConfig = modes.find((m) => m.id === newMode)
     if (modeConfig?.comingSoon) {
-      alert(`${modeConfig.name} mode is coming soon! Stay tuned.`)
+      toast.info(`${modeConfig.name} mode is coming soon! Stay tuned.`)
       return
     }
 

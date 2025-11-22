@@ -7,6 +7,7 @@ import { generateOpeningMessage, suggestedTopics } from "@/lib/study-buddy/perso
 import { useToast } from "../ToastContainer"
 import PersonalityToggle from "./PersonalityToggle"
 import ExplainLikePresets from "./ExplainLikePresets"
+import MarkdownRenderer from "../MarkdownRenderer"
 
 export default function StudyBuddyInterface() {
   const toast = useToast()
@@ -184,10 +185,10 @@ export default function StudyBuddyInterface() {
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white font-handwriting">
                   Study Buddy
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-handwriting">
                   Ask me anything - I'm here to help you learn
                 </p>
               </div>
@@ -197,7 +198,7 @@ export default function StudyBuddyInterface() {
             <button
               onClick={handleNewConversation}
               disabled={messages.length === 0}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-handwriting"
               title="Start new conversation"
             >
               <RotateCcw className="w-4 h-4" />
@@ -225,7 +226,7 @@ export default function StudyBuddyInterface() {
                 `}
               >
                 <Lightbulb className="w-4 h-4" />
-                <span className="text-sm font-medium">
+                <span className="text-sm font-medium font-handwriting">
                   {explainLevel
                     ? `Explain: ${explainLevel === 'eli5' ? 'ELI5' : explainLevel.replace('-', ' ')}`
                     : 'Explain Like...'}
@@ -258,14 +259,14 @@ export default function StudyBuddyInterface() {
             <div className="space-y-6">
               {/* Opening message */}
               <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
-                <p className="text-gray-700 dark:text-gray-300">
+                <p className="text-gray-700 dark:text-gray-300 font-handwriting text-[15px] leading-relaxed">
                   {generateOpeningMessage(personalityMode)}
                 </p>
               </div>
 
               {/* Suggested topics */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 font-handwriting">
                   Try asking about:
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -277,10 +278,10 @@ export default function StudyBuddyInterface() {
                     >
                       <span className="text-2xl flex-shrink-0">{topic.icon}</span>
                       <div>
-                        <div className="font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                        <div className="font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 font-handwriting">
                           {topic.title}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-handwriting">
                           {topic.example}
                         </div>
                       </div>
@@ -306,12 +307,16 @@ export default function StudyBuddyInterface() {
                   }
                 `}
               >
-                <div className={`
-                  prose prose-sm max-w-none
-                  ${message.role === 'user' ? 'prose-invert' : 'dark:prose-invert'}
-                `}>
-                  {message.content}
-                </div>
+                {message.role === 'user' ? (
+                  <div className="font-handwriting text-[15px] leading-relaxed">
+                    {message.content}
+                  </div>
+                ) : (
+                  <MarkdownRenderer
+                    content={message.content}
+                    className="font-handwriting text-[15px] leading-relaxed"
+                  />
+                )}
               </div>
             </div>
           ))}
@@ -320,10 +325,11 @@ export default function StudyBuddyInterface() {
           {streamingMessage && (
             <div className="mb-4">
               <div className="max-w-3xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                <div className="prose prose-sm max-w-none dark:prose-invert">
-                  {streamingMessage}
-                  <span className="inline-block w-1 h-4 bg-gray-400 ml-1 animate-pulse" />
-                </div>
+                <MarkdownRenderer
+                  content={streamingMessage}
+                  className="font-handwriting text-[15px] leading-relaxed"
+                />
+                <span className="inline-block w-1 h-4 bg-gray-400 ml-1 animate-pulse" />
               </div>
             </div>
           )}
@@ -332,7 +338,7 @@ export default function StudyBuddyInterface() {
           {isLoading && !streamingMessage && (
             <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">Thinking...</span>
+              <span className="text-sm font-handwriting">Thinking...</span>
             </div>
           )}
 
@@ -353,7 +359,7 @@ export default function StudyBuddyInterface() {
                 placeholder="Ask me anything..."
                 disabled={isLoading}
                 rows={1}
-                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 font-handwriting text-[15px]"
                 style={{
                   minHeight: '48px',
                   maxHeight: '200px'
@@ -363,7 +369,7 @@ export default function StudyBuddyInterface() {
             <button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2 font-medium font-handwriting"
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -373,7 +379,7 @@ export default function StudyBuddyInterface() {
               <span className="hidden sm:inline">Send</span>
             </button>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center font-handwriting">
             Powered by AI • Press Enter to send, Shift+Enter for new line
           </p>
         </div>

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { BookOpen, Plus, Trash2, Edit2, Copy, FileText, ExternalLink, Check } from 'lucide-react'
 import type { Citation, CitationStyle } from '@/lib/supabase/types'
 import CitationImport from './WritingView/CitationImport'
+import { useToast } from '@/components/ToastContainer'
 
 interface CitationManagerProps {
   citations: Citation[]
@@ -22,6 +23,7 @@ export default function CitationManager({
   onDeleteCitation,
   onGenerateFromDocument
 }: CitationManagerProps) {
+  const toast = useToast()
   const [isAddingNew, setIsAddingNew] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -69,7 +71,7 @@ export default function CitationManager({
 
   const handleFetchMetadata = async () => {
     if (!doiInput && !urlInput) {
-      alert('Please enter a DOI or URL')
+      toast.warning('Please enter a DOI or URL')
       return
     }
 
@@ -108,10 +110,10 @@ export default function CitationManager({
       setDoiInput('')
       setUrlInput('')
 
-      alert('Citation metadata fetched successfully! Review and save.')
+      toast.success('Citation metadata fetched successfully! Review and save.')
     } catch (error: any) {
       console.error('Citation fetch error:', error)
-      alert(error.message || 'Failed to fetch citation metadata')
+      toast.error(error.message || 'Failed to fetch citation metadata')
     } finally {
       setIsFetchingMetadata(false)
     }
@@ -119,7 +121,7 @@ export default function CitationManager({
 
   const handleAddCitation = () => {
     if (!newCitation.author || !newCitation.title) {
-      alert('Author and Title are required')
+      toast.warning('Author and Title are required')
       return
     }
 

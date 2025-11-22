@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Mic, MicOff, Volume2, Loader2, Globe, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/components/ToastContainer'
 
 interface VoiceDictationProps {
   onTextReceived: (text: string) => void
@@ -54,6 +55,7 @@ const FORMATTING_COMMANDS: Record<string, string> = {
 }
 
 export default function VoiceDictation({ onTextReceived, onListeningChange, className }: VoiceDictationProps) {
+  const toast = useToast()
   const [isListening, setIsListening] = useState(false)
   const [isSupported, setIsSupported] = useState(true)
   const [interimTranscript, setInterimTranscript] = useState('')
@@ -172,7 +174,7 @@ export default function VoiceDictation({ onTextReceived, onListeningChange, clas
       }
 
       if (event.error === 'not-allowed') {
-        alert('Microphone permission denied. Please allow microphone access to use voice dictation.')
+        toast.error('Microphone permission denied. Please allow microphone access to use voice dictation.')
         shouldBeListeningRef.current = false
         setIsListening(false)
       } else if (event.error === 'no-speech') {
@@ -190,7 +192,7 @@ export default function VoiceDictation({ onTextReceived, onListeningChange, clas
         setIsListening(false)
       } else {
         // Real error occurred
-        alert(`Voice dictation error: ${event.error}. Please try again.`)
+        toast.error(`Voice dictation error: ${event.error}. Please try again.`)
         shouldBeListeningRef.current = false
         setIsListening(false)
       }
@@ -262,7 +264,7 @@ export default function VoiceDictation({ onTextReceived, onListeningChange, clas
 
   const toggleListening = async () => {
     if (!isSupported) {
-      alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.')
+      toast.warning('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.')
       return
     }
 
@@ -323,13 +325,13 @@ export default function VoiceDictation({ onTextReceived, onListeningChange, clas
         })
 
         if (error instanceof Error && error.name === 'NotAllowedError') {
-          alert('Microphone permission denied. Please:\n1. Click the lock icon in the address bar\n2. Set Microphone to "Allow"\n3. Refresh the page and try again')
+          toast.error('Microphone permission denied. Please:\n1. Click the lock icon in the address bar\n2. Set Microphone to "Allow"\n3. Refresh the page and try again')
         } else if (error instanceof Error && error.name === 'NotFoundError') {
-          alert('No microphone found. Please connect a microphone and try again.')
+          toast.error('No microphone found. Please connect a microphone and try again.')
         } else if (error instanceof Error && error.name === 'NotSupportedError') {
-          alert('Microphone access requires HTTPS. Please access via https:// or use localhost.')
+          toast.error('Microphone access requires HTTPS. Please access via https:// or use localhost.')
         } else {
-          alert('Failed to start voice dictation: ' + (error instanceof Error ? error.message : 'Unknown error'))
+          toast.error('Failed to start voice dictation: ' + (error instanceof Error ? error.message : 'Unknown error'))
         }
       }
     }

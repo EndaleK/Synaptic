@@ -14,9 +14,9 @@ import { useToast } from './ToastContainer'
 
 export default function VideoView() {
   const { user } = useUser()
+  const toast = useToast()
   const setCurrentDocument = useDocumentStore(state => state.setCurrentDocument)
   const setActiveMode = useUIStore(state => state.setActiveMode)
-  const toast = useToast()
   const [activeView, setActiveView] = useState<'search' | 'my-videos' | 'player'>('search')
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null)
   const [video, setVideo] = useState<Video | null>(null)
@@ -162,11 +162,11 @@ export default function VideoView() {
         setCurrentDocument(videoDocument)
         setActiveMode('flashcards')
       } else {
-        alert(`Successfully generated ${flashcardIds.length} flashcards! Go to the Flashcards section to view them.`)
+        toast.success(`Successfully generated ${flashcardIds.length} flashcards! Go to the Flashcards section to view them.`)
       }
     } catch (err) {
       console.error('Flashcard generation error:', err)
-      alert(err instanceof Error ? err.message : 'Failed to generate flashcards')
+      toast.error(err instanceof Error ? err.message : 'Failed to generate flashcards')
     }
   }
 
@@ -189,10 +189,10 @@ export default function VideoView() {
       }
 
       const { mindmapId } = await response.json()
-      alert(`Successfully generated mind map! View it in the Mind Map section.`)
+      toast.success(`Successfully generated mind map! View it in the Mind Map section.`)
     } catch (err) {
       console.error('Mind map generation error:', err)
-      alert(err instanceof Error ? err.message : 'Failed to generate mind map')
+      toast.error(err instanceof Error ? err.message : 'Failed to generate mind map')
     }
   }
 
@@ -215,10 +215,10 @@ export default function VideoView() {
       }
 
       const { examId } = await response.json()
-      alert(`Successfully generated mock exam! View it in the Mock Exams section.`)
+      toast.success(`Successfully generated mock exam! View it in the Mock Exams section.`)
     } catch (err) {
       console.error('Exam generation error:', err)
-      alert(err instanceof Error ? err.message : 'Failed to generate exam')
+      toast.error(err instanceof Error ? err.message : 'Failed to generate exam')
     }
   }
 
@@ -242,7 +242,7 @@ export default function VideoView() {
       setActiveMode('chat')
     } catch (err) {
       console.error('Chat navigation error:', err)
-      alert(err instanceof Error ? err.message : 'Failed to open chat')
+      toast.error(err instanceof Error ? err.message : 'Failed to open chat')
     }
   }
 
@@ -286,7 +286,7 @@ export default function VideoView() {
       }
     } catch (err) {
       console.error('Error toggling favorite:', err)
-      alert(err instanceof Error ? err.message : 'Failed to toggle favorite')
+      toast.error(err instanceof Error ? err.message : 'Failed to toggle favorite')
     }
   }
 
@@ -307,7 +307,7 @@ export default function VideoView() {
       handleBackToSearch()
     } catch (err) {
       console.error('Error deleting video:', err)
-      alert(err instanceof Error ? err.message : 'Failed to delete video')
+      toast.error(err instanceof Error ? err.message : 'Failed to delete video')
     } finally {
       setIsDeleting(false)
       setShowDeleteModal(false)
@@ -329,10 +329,10 @@ export default function VideoView() {
 
       const updatedVideo = await response.json()
       setVideo(updatedVideo)
-      alert('Video analysis enhanced successfully!')
+      toast.success('Video analysis enhanced successfully!')
     } catch (err) {
       console.error('Re-analysis error:', err)
-      alert(err instanceof Error ? err.message : 'Failed to re-analyze video')
+      toast.error(err instanceof Error ? err.message : 'Failed to re-analyze video')
     }
   }
 

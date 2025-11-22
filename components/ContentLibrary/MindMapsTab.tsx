@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Search, Loader2, Map, Calendar, Network, Eye, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/components/ToastContainer'
 
 interface MindMap {
   id: string
@@ -17,6 +18,7 @@ interface MindMap {
 }
 
 export default function MindMapsTab() {
+  const toast = useToast()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [mindmaps, setMindmaps] = useState<MindMap[]>([])
@@ -83,7 +85,7 @@ export default function MindMapsTab() {
       setMindmaps(prev => prev.filter(m => m.id !== mindmapId))
     } catch (err) {
       console.error('Error deleting mind map:', err)
-      alert('Failed to delete mind map. Please try again.')
+      toast.error('Failed to delete mind map. Please try again.')
     } finally {
       setDeletingId(null)
     }

@@ -5,6 +5,7 @@ import { Upload, FileText, Loader2, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Flashcard } from "@/lib/types"
 import { useDocumentStore } from "@/lib/store/useStore"
+import { useToast } from "@/components/ToastContainer"
 
 interface DocumentUploadProps {
   onFlashcardsGenerated: (flashcards: Flashcard[]) => void
@@ -17,6 +18,7 @@ export default function DocumentUpload({
   isLoading,
   setIsLoading
 }: DocumentUploadProps) {
+  const toast = useToast()
   const [textContent, setTextContent] = useState("")
   const [activeTab, setActiveTab] = useState<"upload" | "paste">("upload")
   const [file, setFile] = useState<File | null>(null)
@@ -58,7 +60,7 @@ export default function DocumentUpload({
           onFlashcardsGenerated(data.flashcards)
         } catch (error) {
           console.error("Error generating flashcards:", error)
-          alert(error instanceof Error ? error.message : "Failed to generate flashcards")
+          toast.error(error instanceof Error ? error.message : "Failed to generate flashcards")
         } finally {
           setIsLoading(false)
         }
@@ -147,7 +149,7 @@ export default function DocumentUpload({
       onFlashcardsGenerated(data.flashcards)
     } catch (error) {
       console.error("Error generating flashcards:", error)
-      alert(error instanceof Error ? error.message : "Failed to generate flashcards")
+      toast.error(error instanceof Error ? error.message : "Failed to generate flashcards")
     } finally {
       setIsLoading(false)
     }

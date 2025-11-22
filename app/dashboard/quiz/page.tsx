@@ -4,8 +4,10 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import LearningStyleQuiz from "@/components/LearningStyleQuiz"
 import { useUserStore } from "@/lib/store/useStore"
+import { useToast } from '@/components/ToastContainer'
 
 export default function QuizPage() {
+  const toast = useToast()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const { setLearningStyle, setHasCompletedAssessment, setAssessmentScores } = useUserStore()
@@ -39,7 +41,7 @@ export default function QuizPage() {
       )
     } catch (error) {
       console.error("Error assessing learning style:", error)
-      alert("Failed to assess learning style. Please try again.")
+      toast.error("Failed to assess learning style. Please try again.")
       setIsLoading(false)
     }
   }

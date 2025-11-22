@@ -24,7 +24,7 @@ export default function PersonalityToggle({ mode, onChange }: PersonalityToggleP
         title="Professional teacher mode - structured, academic explanations"
       >
         <GraduationCap className="w-4 h-4" />
-        <span className="font-medium text-sm">Tutor</span>
+        <span className="font-medium text-sm font-handwriting">Tutor</span>
       </button>
 
       {/* Buddy Mode Button */}
@@ -40,7 +40,7 @@ export default function PersonalityToggle({ mode, onChange }: PersonalityToggleP
         title="Friendly peer mode - casual, relatable discussions"
       >
         <Users className="w-4 h-4" />
-        <span className="font-medium text-sm">Buddy</span>
+        <span className="font-medium text-sm font-handwriting">Buddy</span>
       </button>
 
       {/* Comedy Mode Button */}
@@ -56,7 +56,7 @@ export default function PersonalityToggle({ mode, onChange }: PersonalityToggleP
         title="Comedy mode - jokes, roasts, and fun study breaks!"
       >
         <Laugh className="w-4 h-4" />
-        <span className="font-medium text-sm">Comedy</span>
+        <span className="font-medium text-sm font-handwriting">Comedy</span>
       </button>
     </div>
   )

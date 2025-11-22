@@ -6,8 +6,10 @@ import { ArrowLeft, FileText, Calendar, HardDrive, Download, Loader2, Sparkles, 
 import { Document as PDFDocument } from "@/lib/supabase/types"
 import Breadcrumb from "@/components/Breadcrumb"
 import PageTopicSelector, { SelectionData } from "@/components/PageTopicSelector"
+import { useToast } from '@/components/ToastContainer'
 
 export default function DocumentDetailPage() {
+  const toast = useToast()
   const router = useRouter()
   const params = useParams()
   const documentId = params.id as string
@@ -110,7 +112,7 @@ export default function DocumentDetailPage() {
       router.push(`/dashboard?mode=flashcards&documentId=${document.id}`)
     } catch (error) {
       console.error('Error generating flashcards:', error)
-      alert(error instanceof Error ? error.message : 'Failed to generate flashcards')
+      toast.error(error instanceof Error ? error.message : 'Failed to generate flashcards')
     } finally {
       setIsGeneratingFlashcards(false)
     }
@@ -143,7 +145,7 @@ export default function DocumentDetailPage() {
       router.push(`/dashboard?mode=podcast&documentId=${document.id}`)
     } catch (error) {
       console.error('Error generating podcast:', error)
-      alert(error instanceof Error ? error.message : 'Failed to generate podcast')
+      toast.error(error instanceof Error ? error.message : 'Failed to generate podcast')
     } finally {
       setIsGeneratingPodcast(false)
     }

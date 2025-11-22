@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { X, Crown, Check, Sparkles, Zap, TrendingUp } from "lucide-react"
+import { useToast } from "@/components/ToastContainer"
 
 interface UpgradeModalProps {
   isOpen: boolean
@@ -45,6 +46,7 @@ const featureInfo = {
 }
 
 export default function UpgradeModal({ isOpen, onClose, feature, used, limit }: UpgradeModalProps) {
+  const toast = useToast()
   const [isUpgrading, setIsUpgrading] = useState(false)
 
   if (!isOpen) return null
@@ -58,7 +60,7 @@ export default function UpgradeModal({ isOpen, onClose, feature, used, limit }: 
     const STRIPE_PRICE_ID = 'price_1SOk7JFjlulH6DEoUU8OO326'
 
     if (STRIPE_PRICE_ID === 'price_YOUR_ACTUAL_PRICE_ID') {
-      alert('Please configure your Stripe Price ID first. See STRIPE_SETUP_GUIDE.md for instructions.')
+      toast.warning('Please configure your Stripe Price ID first. See STRIPE_SETUP_GUIDE.md for instructions.')
       setIsUpgrading(false)
       return
     }
@@ -83,7 +85,7 @@ export default function UpgradeModal({ isOpen, onClose, feature, used, limit }: 
       }
     } catch (error) {
       console.error('Error creating checkout session:', error)
-      alert('Failed to start checkout. Please try again.')
+      toast.error('Failed to start checkout. Please try again.')
       setIsUpgrading(false)
     }
   }

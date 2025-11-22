@@ -21,6 +21,7 @@ import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import { useDocumentStore } from "@/lib/store/useStore"
 import { useTimeBasedTheme } from "@/lib/hooks/useTimeBasedTheme"
 import type { LearningStyle, PreferredMode, Document } from "@/lib/supabase/types"
+import { useToast } from '@/components/ToastContainer'
 
 // Dynamic imports to prevent SSR hydration issues
 const ChatInterface = dynamic(() => import("@/components/ChatInterface"), {
@@ -84,6 +85,7 @@ const StudyBuddyInterface = dynamic(() => import("@/components/StudyBuddy/StudyB
 })
 
 function DashboardContent() {
+  const toast = useToast()
   const router = useRouter()
   const { user } = useUser()
   const [flashcards, setFlashcards] = useState<Flashcard[]>([])
@@ -331,7 +333,7 @@ function DashboardContent() {
       }
     } catch (error) {
       console.error('Error saving assessment:', error)
-      alert('Failed to save assessment results. Please try again.')
+      toast.error('Failed to save assessment results. Please try again.')
     }
   }
 
@@ -353,7 +355,7 @@ function DashboardContent() {
 
   const handleRegenerate = async () => {
     if (!currentDocument?.content) {
-      alert("No document content available to regenerate flashcards")
+      toast.warning("No document content available to regenerate flashcards")
       return
     }
 
@@ -380,7 +382,7 @@ function DashboardContent() {
       setFlashcards(data.flashcards)
     } catch (error) {
       console.error("Error regenerating flashcards:", error)
-      alert(error instanceof Error ? error.message : "Failed to regenerate flashcards")
+      toast.error(error instanceof Error ? error.message : "Failed to regenerate flashcards")
     } finally {
       setIsRegenerating(false)
     }
@@ -392,7 +394,7 @@ function DashboardContent() {
 
     // Check if document is still processing
     if (document.processing_status !== 'completed') {
-      alert('This document is still processing. Please wait a moment.')
+      toast.warning('This document is still processing. Please wait a moment.')
       return
     }
 

@@ -4,8 +4,10 @@ import { useState } from "react"
 import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
 import { Check, GraduationCap } from "lucide-react"
+import { useToast } from '@/components/ToastContainer'
 
 export default function PricingPage() {
+  const toast = useToast()
   const { isSignedIn } = useAuth()
   const [isUpgrading, setIsUpgrading] = useState(false)
 
@@ -44,7 +46,7 @@ export default function PricingPage() {
       }
     } catch (error) {
       console.error('Error creating checkout session:', error)
-      alert('Failed to start checkout. Please try again.')
+      toast.error('Failed to start checkout. Please try again.')
       setIsUpgrading(false)
     }
   }

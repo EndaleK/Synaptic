@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Search, Loader2, BookOpen, Calendar, Filter, Play, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/components/ToastContainer'
 
 interface Flashcard {
   id: string
@@ -27,6 +28,7 @@ interface GroupedFlashcards {
 }
 
 export default function FlashcardsTab() {
+  const toast = useToast()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [flashcards, setFlashcards] = useState<Flashcard[]>([])
@@ -120,7 +122,7 @@ export default function FlashcardsTab() {
       setFlashcards(prev => prev.filter(card => card.document_id !== documentId))
     } catch (err) {
       console.error('Error deleting flashcards:', err)
-      alert('Failed to delete flashcards. Please try again.')
+      toast.error('Failed to delete flashcards. Please try again.')
     } finally {
       setDeletingId(null)
     }

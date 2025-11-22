@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react'
 import { ChevronLeft, ChevronRight, FileText, Trash2, Calendar, FileEdit, Menu, X, Plus } from 'lucide-react'
 import type { Essay } from '@/lib/supabase/types'
+import { useToast } from '@/components/ToastContainer'
 
 interface EssaySidebarProps {
   isOpen: boolean
@@ -25,6 +26,7 @@ const EssaySidebar = forwardRef<EssaySidebarRef, EssaySidebarProps>(({
   onEssayDelete,
   onNewEssay
 }, ref) => {
+  const toast = useToast()
   const [essays, setEssays] = useState<Essay[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -81,10 +83,10 @@ const EssaySidebar = forwardRef<EssaySidebarRef, EssaySidebarProps>(({
       // Notify parent component
       onEssayDelete?.(essayId)
 
-      alert('Essay deleted successfully')
+      toast.success('Essay deleted successfully')
     } catch (error) {
       console.error('Error deleting essay:', error)
-      alert('Failed to delete essay. Please try again.')
+      toast.error('Failed to delete essay. Please try again.')
     } finally {
       setDeletingId(null)
     }

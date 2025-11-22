@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Search, Loader2, Mic, Clock, Calendar, Play, Pause, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/components/ToastContainer'
 
 interface Podcast {
   id: string
@@ -19,6 +20,7 @@ interface Podcast {
 }
 
 export default function PodcastsTab() {
+  const toast = useToast()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [podcasts, setPodcasts] = useState<Podcast[]>([])
@@ -135,7 +137,7 @@ export default function PodcastsTab() {
       }
     } catch (err) {
       console.error('Error deleting podcast:', err)
-      alert('Failed to delete podcast. Please try again.')
+      toast.error('Failed to delete podcast. Please try again.')
     } finally {
       setDeletingId(null)
     }

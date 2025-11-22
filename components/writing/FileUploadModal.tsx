@@ -2,6 +2,7 @@
 
 import { useState, useRef, DragEvent } from "react"
 import { X, Upload, File, FileText, Image as ImageIcon } from "lucide-react"
+import { useToast } from '@/components/ToastContainer'
 
 interface UploadedFile {
   id: string
@@ -24,6 +25,7 @@ export default function FileUploadModal({
   maxSizeMB = 2,
   acceptedTypes = ['.doc', '.docx', '.txt']
 }: FileUploadModalProps) {
+  const toast = useToast()
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -54,7 +56,7 @@ export default function FileUploadModal({
           file
         })
       } else {
-        alert(`${file.name} is too large. Maximum size is ${maxSizeMB}MB.`)
+        toast.warning(`${file.name} is too large. Maximum size is ${maxSizeMB}MB.`)
       }
     })
 
