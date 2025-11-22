@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
-import { BookOpen, Brain, MessageSquare, Mic, Network, Sparkles, ArrowRight, Check, ClipboardCheck, Youtube, Database, TrendingDown, Users, Award, GraduationCap, Briefcase, Star, FileText, Zap } from "lucide-react"
+import { BookOpen, Brain, MessageSquare, Mic, Network, Sparkles, ArrowRight, Check, ClipboardCheck, Youtube, Database, TrendingDown, Users, Award, GraduationCap, Briefcase, Star, FileText, Zap, Bot, Clock } from "lucide-react"
 import Logo from "@/components/Logo"
 import { QRCodeGenerator } from "@/components/QRCodeGenerator"
 
@@ -210,6 +210,41 @@ export default function LandingPage() {
               </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                 Extract study materials from YouTube lectures. Generate flashcards, notes, and quizzes from any educational video.
+              </p>
+            </div>
+
+            {/* Feature 9: Study Buddy (NEW) */}
+            <div className="group relative p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
+              {/* NEW badge */}
+              <div className="absolute top-4 right-4 px-2 py-1 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-xs font-bold rounded-full">
+                NEW
+              </div>
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Bot className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
+                Study Buddy
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Your AI study companion. Ask anything from science to philosophy with tutor, buddy, or comedy modes for personalized learning.
+              </p>
+            </div>
+
+            {/* Feature 10: Quick Summary (NEW) */}
+            <div className="group relative p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
+              {/* NEW badge */}
+              <div className="absolute top-4 right-4 px-2 py-1 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-xs font-bold rounded-full">
+                NEW
+              </div>
+              <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Clock className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
+                Quick Summary
+              </h3>
+              <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-3">"Teach Me in 5 Minutes"</p>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Fast, energetic audio summaries from documents, URLs, or YouTube videos. Perfect for last-minute review or quick overviews.
               </p>
             </div>
           </div>
