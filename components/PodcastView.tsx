@@ -35,6 +35,12 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
   const [progress, setProgress] = useState(0)
   const [progressMessage, setProgressMessage] = useState('')
 
+  // Content selection state
+  const [contentType, setContentType] = useState<'full' | 'chapters' | 'pageRange' | 'smartTopics'>('full')
+  const [pageRange, setPageRange] = useState({ start: '', end: '' })
+  const [selectedChapters, setSelectedChapters] = useState<string[]>([])
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([])
+
   // 📊 Study session tracking
   const [sessionId, setSessionId] = useState<string | null>(null)
   const sessionStartTime = useRef<Date | null>(null)
@@ -269,49 +275,133 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden">
-        {/* Header */}
-        <div className="p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
-          <div className="flex items-start gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
-              <Mic className="w-8 h-8 text-white" />
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
+        {/* Compact Header */}
+        <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center flex-shrink-0">
+              <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <div className="flex-1">
-              <h2 className="text-3xl font-bold text-black dark:text-white mb-2">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg sm:text-xl font-bold text-black dark:text-white truncate">
                 Audio Overview
               </h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                Generate an engaging podcast discussion about "{documentName}"
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
+                Generate podcast for "{documentName}"
               </p>
             </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-8 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4">
+          {/* Content Selection */}
+          <div>
+            <label className="block text-sm font-semibold text-black dark:text-white mb-2">
+              Select Content
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <button
+                onClick={() => setContentType('full')}
+                className={`p-3 rounded-lg border-2 transition-all active:scale-95 ${
+                  contentType === 'full'
+                    ? 'border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'
+                }`}
+              >
+                <div className="text-sm font-semibold text-black dark:text-white">
+                  Full Document
+                </div>
+              </button>
+              <button
+                onClick={() => setContentType('chapters')}
+                className={`p-3 rounded-lg border-2 transition-all active:scale-95 ${
+                  contentType === 'chapters'
+                    ? 'border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'
+                }`}
+              >
+                <div className="text-sm font-semibold text-black dark:text-white">
+                  Chapters
+                </div>
+              </button>
+              <button
+                onClick={() => setContentType('pageRange')}
+                className={`p-3 rounded-lg border-2 transition-all active:scale-95 ${
+                  contentType === 'pageRange'
+                    ? 'border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'
+                }`}
+              >
+                <div className="text-sm font-semibold text-black dark:text-white">
+                  Page Range
+                </div>
+              </button>
+              <button
+                onClick={() => setContentType('smartTopics')}
+                className={`p-3 rounded-lg border-2 transition-all active:scale-95 ${
+                  contentType === 'smartTopics'
+                    ? 'border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'
+                }`}
+              >
+                <div className="text-sm font-semibold text-black dark:text-white">
+                  Smart Topics
+                </div>
+              </button>
+            </div>
+            {/* Page Range Inputs */}
+            {contentType === 'pageRange' && (
+              <div className="mt-3 flex items-center gap-2">
+                <input
+                  type="number"
+                  placeholder="Start"
+                  value={pageRange.start}
+                  onChange={(e) => setPageRange({ ...pageRange, start: e.target.value })}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white text-sm"
+                />
+                <span className="text-gray-500">to</span>
+                <input
+                  type="number"
+                  placeholder="End"
+                  value={pageRange.end}
+                  onChange={(e) => setPageRange({ ...pageRange, end: e.target.value })}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white text-sm"
+                />
+              </div>
+            )}
+            {/* Info message */}
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+              {contentType === 'full' && `Podcast will be generated from the entire document`}
+              {contentType === 'chapters' && 'Select specific chapters (feature coming soon)'}
+              {contentType === 'pageRange' && 'Specify page range to generate from'}
+              {contentType === 'smartTopics' && 'AI will extract and focus on key topics (feature coming soon)'}
+            </p>
+          </div>
+
           {/* Format Selection */}
           <div>
-            <label className="block text-sm font-semibold text-black dark:text-white mb-3">
-              Podcast Format
+            <label className="block text-sm font-semibold text-black dark:text-white mb-2">
+              Format
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {[
-                { value: 'deep-dive', label: 'Deep Dive', icon: '🎯', desc: 'In-depth exploration' },
-                { value: 'brief', label: 'Brief', icon: '⚡', desc: 'Quick overview' },
-                { value: 'critique', label: 'Critique', icon: '🔍', desc: 'Critical analysis' },
-                { value: 'debate', label: 'Debate', icon: '⚔️', desc: 'Two perspectives' }
+                { value: 'deep-dive', label: 'Deep Dive', icon: '🎯', desc: 'In-depth' },
+                { value: 'brief', label: 'Brief', icon: '⚡', desc: 'Quick' },
+                { value: 'critique', label: 'Critique', icon: '🔍', desc: 'Critical' },
+                { value: 'debate', label: 'Debate', icon: '⚔️', desc: 'Two views' }
               ].map((option) => (
                 <button
                   key={option.value}
                   onClick={() => setFormat(option.value as PodcastFormat)}
-                  className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  className={`p-3 rounded-lg border-2 transition-all active:scale-95 ${
                     format === option.value
                       ? 'border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 dark:hover:border-accent-primary/50'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'
                   }`}
                 >
-                  <div className="text-2xl mb-2">{option.icon}</div>
-                  <div className="font-semibold text-sm text-black dark:text-white mb-1">
+                  <div className="text-xl sm:text-2xl mb-1">{option.icon}</div>
+                  <div className="font-semibold text-xs sm:text-sm text-black dark:text-white">
                     {option.label}
                   </div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">
@@ -328,71 +418,28 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
               onClick={() => setShowAdvanced(!showAdvanced)}
               className="text-sm font-medium text-accent-primary hover:text-accent-secondary transition-colors"
             >
-              {showAdvanced ? '− Hide' : '+ Show'} Advanced Options
+              {showAdvanced ? '− ' : '+ '}Custom Instructions
             </button>
 
             {showAdvanced && (
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-black dark:text-white mb-2">
-                    Custom Instructions (Optional)
-                  </label>
-                  <textarea
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    placeholder="E.g., 'Focus on practical applications' or 'Explain for beginners'"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white focus:ring-2 focus:ring-accent-primary focus:border-accent-primary transition-all resize-none"
-                    rows={3}
-                  />
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    Guide the podcast hosts to focus on specific topics or adjust the discussion style
-                  </p>
-                </div>
+              <div className="mt-3">
+                <textarea
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  placeholder="E.g., 'Focus on practical applications' or 'Explain for beginners'"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white text-sm focus:ring-2 focus:ring-accent-primary focus:border-accent-primary transition-all resize-none"
+                  rows={2}
+                />
               </div>
             )}
           </div>
 
-          {/* What to Expect */}
-          <div className="bg-gradient-to-r from-accent-primary/5 to-accent-secondary/5 dark:from-accent-primary/10 dark:to-accent-secondary/10 rounded-xl p-6 border border-accent-primary/20 dark:border-accent-primary/30">
-            <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-accent-primary flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-black dark:text-white mb-2">
-                  What to Expect
-                </h3>
-                <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                  <li className="flex items-start gap-2">
-                    <span className="text-accent-primary">•</span>
-                    <span>Two expert hosts (Alex & Jordan) discuss your document</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-accent-primary">•</span>
-                    <span>~10 minutes of engaging conversation</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-accent-primary">•</span>
-                    <span>Interactive transcript with timestamps</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-accent-primary">•</span>
-                    <span>Downloadable MP3 for offline listening</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
           {/* Error Display */}
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-semibold text-red-800 dark:text-red-300 mb-1">
-                  Generation Failed
-                </h4>
-                <p className="text-sm text-red-700 dark:text-red-400">
-                  {error}
-                </p>
+                <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
               </div>
             </div>
           )}
@@ -401,49 +448,40 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="w-full py-4 px-6 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold text-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg"
+            className="w-full py-3 sm:py-4 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-semibold text-base sm:text-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95"
           >
             {isGenerating ? (
               <>
-                <Loader2 className="w-6 h-6 animate-spin" />
-                Generating Podcast...
+                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin" />
+                <span>Generating...</span>
               </>
             ) : (
               <>
-                <Mic className="w-6 h-6" />
-                Generate Audio Overview
+                <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span>Generate Podcast</span>
               </>
             )}
           </button>
 
+          {/* Progress */}
           {isGenerating && (
-            <div className="text-center space-y-3">
-              {/* Progress Bar */}
+            <div className="space-y-2">
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-accent-primary to-accent-secondary h-full transition-all duration-500 ease-out"
+                  className="bg-gradient-to-r from-accent-primary to-accent-secondary h-full transition-all duration-500"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-
-              {/* Progress Message */}
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {progressMessage || 'This may take 2-3 minutes. We\'re crafting a conversation just for you...'}
+              <p className="text-xs sm:text-sm text-center text-gray-600 dark:text-gray-400">
+                {progressMessage || 'Generating... (~2-3 minutes)'}
               </p>
-
-              {/* Progress Percentage */}
               {progress > 0 && (
-                <p className="text-xs text-gray-500 dark:text-gray-500">
+                <p className="text-xs text-center text-gray-500">
                   {progress}% complete
                 </p>
               )}
             </div>
           )}
-
-          {/* Cost Estimate */}
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-xs text-gray-500 dark:text-gray-400">
-            Estimated cost: ~$0.15 per podcast • Uses OpenAI GPT-4 + TTS
-          </div>
         </div>
       </div>
 
@@ -451,7 +489,7 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
       <DocumentSwitcherModal
         onDocumentSwitch={() => {
           // Clear podcast data when switching documents
-          setPodcastData(null)
+          setPodcast(null)
           setIsGenerating(false)
         }}
       />

@@ -213,20 +213,20 @@ export default function ExamSetupModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-3xl border border-gray-200 dark:border-gray-800 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-3xl border-t border-gray-200 dark:border-gray-800 sm:border border-gray-200 dark:border-gray-800 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10">
+        <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
                 <GraduationCap className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-black dark:text-white">
+                <h2 className="text-lg sm:text-xl font-bold text-black dark:text-white">
                   Create Practice Exam
                 </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                   {document.file_name}
                 </p>
               </div>
@@ -234,7 +234,7 @@ export default function ExamSetupModal({
             <button
               onClick={handleClose}
               disabled={isGenerating}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
+              className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 active:scale-95"
               title="Close"
             >
               <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
@@ -243,7 +243,7 @@ export default function ExamSetupModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Exam Title */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
@@ -324,25 +324,25 @@ export default function ExamSetupModal({
 
           {/* Difficulty Level */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+            <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 sm:mb-3">
               Difficulty Level
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               {difficultyOptions.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => setDifficulty(option.value)}
                   disabled={isGenerating}
-                  className={`p-3 border-2 rounded-lg transition-all disabled:opacity-50 ${
+                  className={`p-2.5 sm:p-3 border-2 rounded-lg transition-all disabled:opacity-50 active:scale-95 ${
                     difficulty === option.value
                       ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                       : 'border-gray-300 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-700'
                   }`}
                 >
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">
                     {option.label}
                   </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">
                     {option.description}
                   </div>
                 </button>
@@ -352,31 +352,31 @@ export default function ExamSetupModal({
 
           {/* Question Types */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+            <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 sm:mb-3">
               Question Types
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-2 sm:gap-3">
               {questionTypeOptions.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => handleQuestionTypeToggle(option.value)}
                   disabled={isGenerating}
-                  className={`p-3 border-2 rounded-lg transition-all disabled:opacity-50 text-left ${
+                  className={`p-2.5 sm:p-3 border-2 rounded-lg transition-all disabled:opacity-50 text-left active:scale-95 ${
                     selectedQuestionTypes.includes(option.value)
                       ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                       : 'border-gray-300 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-700'
                   }`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">
                         {option.label}
                       </div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">
                         {option.description}
                       </div>
                     </div>
-                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                       selectedQuestionTypes.includes(option.value)
                         ? 'border-indigo-500 bg-indigo-500'
                         : 'border-gray-300 dark:border-gray-600'
@@ -524,12 +524,12 @@ export default function ExamSetupModal({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200 dark:border-gray-800 sticky bottom-0 bg-white dark:bg-gray-900">
-          <div className="flex gap-3">
+        <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-800 sticky bottom-0 bg-white dark:bg-gray-900">
+          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
             <button
               onClick={handleClose}
               disabled={isGenerating}
-              className="px-6 py-3 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 sm:px-6 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-sm sm:text-base"
             >
               Cancel
             </button>
@@ -537,16 +537,16 @@ export default function ExamSetupModal({
             <button
               onClick={handleGenerate}
               disabled={isGenerating || !title.trim() || selectedQuestionTypes.length === 0}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-sm sm:text-base"
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Generating Exam...
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                  Generating...
                 </>
               ) : (
                 <>
-                  <GraduationCap className="w-5 h-5" />
+                  <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5" />
                   Generate Exam
                 </>
               )}

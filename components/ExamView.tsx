@@ -337,21 +337,21 @@ export default function ExamView() {
 
   // Render exam list (default view)
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Mock Exams</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Mock Exams</h1>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1 sm:mt-2">
               Practice with AI-generated exams from your documents
             </p>
           </div>
           <button
             onClick={handleCreateExam}
-            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30"
+            className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30 text-sm sm:text-base font-medium active:scale-95"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
             Create New Exam
           </button>
         </div>
@@ -406,33 +406,33 @@ export default function ExamView() {
 
         {/* Exam List */}
         {!isLoading && !error && exams.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {exams.map((exam) => (
               <div
                 key={exam.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all"
               >
                 {/* Exam Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                <div className="flex items-start justify-between mb-3 md:mb-4">
+                  <div className="flex-1 min-w-0 pr-2">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-1.5 sm:mb-2">
                       {exam.title}
                     </h3>
                     {exam.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
                         {exam.description}
                       </p>
                     )}
                   </div>
-                  <div className="ml-4 flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                     {/* Favorite/Bookmark Button */}
                     <button
                       onClick={(e) => handleToggleFavorite(exam, e)}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors active:scale-95"
                       title={exam.is_favorited ? "Remove from favorites" : "Add to favorites"}
                     >
                       <Star
-                        className={`w-5 h-5 ${
+                        className={`w-4 h-4 sm:w-5 sm:h-5 ${
                           exam.is_favorited
                             ? 'fill-yellow-400 text-yellow-400'
                             : 'text-gray-400 dark:text-gray-500'
@@ -446,14 +446,14 @@ export default function ExamView() {
                         e.stopPropagation()
                         setExamToDelete(exam)
                       }}
-                      className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      className="p-1.5 sm:p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors active:scale-95"
                       title="Delete exam"
                     >
-                      <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+                      <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 dark:text-red-400" />
                     </button>
 
                     {/* Difficulty Badge */}
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
                       exam.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200' :
                       exam.difficulty === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200' :
                       exam.difficulty === 'hard' ? 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200' :
@@ -465,26 +465,26 @@ export default function ExamView() {
                 </div>
 
                 {/* Exam Stats */}
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Target className="w-4 h-4" />
-                    <span>{exam.question_count} questions</span>
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-3 md:mb-4">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                    <span className="truncate">{exam.question_count} questions</span>
                   </div>
                   {exam.time_limit_minutes && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <Clock className="w-4 h-4" />
-                      <span>{exam.time_limit_minutes} min</span>
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                      <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                      <span className="truncate">{exam.time_limit_minutes} min</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Calendar className="w-4 h-4" />
-                    <span>{formatDate(exam.created_at)}</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                    <span className="truncate">{formatDate(exam.created_at)}</span>
                   </div>
                 </div>
 
                 {/* Performance Summary */}
                 {exam.attempt_count && exam.attempt_count > 0 && (
-                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-4">
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 sm:p-4 mb-3 md:mb-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Attempts</p>
@@ -517,29 +517,29 @@ export default function ExamView() {
                 )}
 
                 {/* Actions */}
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <button
                     onClick={() => handleStartExam(exam)}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors active:scale-95 text-sm font-medium"
                   >
-                    <Play className="w-5 h-5" />
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5" />
                     {exam.attempt_count && exam.attempt_count > 0 ? 'Retake' : 'Start'} Exam
                   </button>
                   {exam.latest_attempt && (
                     <button
                       onClick={() => handleViewReview(exam.latest_attempt!.id)}
-                      className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors active:scale-95 text-sm font-medium"
                     >
-                      <CheckCircle2 className="w-5 h-5" />
+                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
                       Review
                     </button>
                   )}
                   {exam.attempt_count && exam.attempt_count > 0 && (
                     <button
                       onClick={() => handleViewAnalytics(exam)}
-                      className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors active:scale-95 text-sm font-medium"
                     >
-                      <BarChart3 className="w-5 h-5" />
+                      <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
                       Analytics
                     </button>
                   )}

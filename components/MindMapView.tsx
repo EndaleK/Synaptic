@@ -68,6 +68,12 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
   const [isPreviewMode, setIsPreviewMode] = useState(false) // NEW: Track if showing unsaved preview
   const [isSaving, setIsSaving] = useState(false) // NEW: Track saving state
 
+  // Content selection state
+  const [contentType, setContentType] = useState<'full' | 'chapters' | 'pageRange' | 'smartTopics'>('full')
+  const [pageRange, setPageRange] = useState({ start: '', end: '' })
+  const [selectedChapters, setSelectedChapters] = useState<string[]>([])
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([])
+
   // 📊 Study session tracking
   const [sessionId, setSessionId] = useState<string | null>(null)
   const sessionStartTime = useRef<Date | null>(null)
@@ -600,251 +606,227 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
 
   // Generation interface
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-2xl p-8 border border-accent-primary/20 dark:border-accent-primary/30">
-        <div className="flex items-start gap-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center flex-shrink-0">
-            <Network className="w-8 h-8 text-white" />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Generate Mind Map
-            </h1>
-            <p className="text-gray-700 dark:text-gray-300 mb-3">
-              Transform <span className="font-semibold text-accent-primary">{documentName}</span> into an interactive visual concept map
-            </p>
-            <div className="flex flex-wrap gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <span className="flex items-center gap-1 px-3 py-1 bg-white dark:bg-gray-800 rounded-full">
-                <Sparkles className="w-3 h-3" />
-                Hierarchical structure
-              </span>
-              <span className="flex items-center gap-1 px-3 py-1 bg-white dark:bg-gray-800 rounded-full">
-                <Network className="w-3 h-3" />
-                Interactive nodes
-              </span>
-              <span className="flex items-center gap-1 px-3 py-1 bg-white dark:bg-gray-800 rounded-full">
-                <Sparkles className="w-3 h-3" />
-                Export to PNG/JSON
-              </span>
+    <div className="max-w-4xl mx-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
+        {/* Compact Header */}
+        <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center flex-shrink-0">
+              <Network className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">
+                Generate Mind Map
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
+                Visualize "{documentName}"
+              </p>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Intelligent Analysis Info */}
-      <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-2xl border border-blue-200 dark:border-blue-800 p-6">
-        <div className="flex items-start gap-3 mb-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
+        {/* Content */}
+        <div className="p-4 sm:p-6 space-y-4">
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Content Selection */}
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-              Intelligent Complexity Analysis
-            </h3>
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              Synaptic automatically analyzes your document to determine the optimal mind map structure
-            </p>
-          </div>
-        </div>
-        <div className="grid md:grid-cols-4 gap-3 text-sm">
-          <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Document Length</div>
-            <div className="font-semibold text-gray-900 dark:text-white">Auto-detected</div>
-          </div>
-          <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Vocabulary Richness</div>
-            <div className="font-semibold text-gray-900 dark:text-white">Analyzed</div>
-          </div>
-          <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Structure Complexity</div>
-            <div className="font-semibold text-gray-900 dark:text-white">Measured</div>
-          </div>
-          <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Technical Density</div>
-            <div className="font-semibold text-gray-900 dark:text-white">Evaluated</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">
-                Generation Failed
-              </h3>
-              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+            <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+              Select Content
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <button
-                onClick={generateMindMap}
-                className="mt-3 text-sm font-medium text-red-600 dark:text-red-400 hover:underline"
+                onClick={() => setContentType('full')}
+                className={`p-3 rounded-lg border-2 transition-all active:scale-95 ${
+                  contentType === 'full'
+                    ? 'border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'
+                }`}
               >
-                Try Again
+                <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Full Document
+                </div>
+              </button>
+              <button
+                onClick={() => setContentType('chapters')}
+                className={`p-3 rounded-lg border-2 transition-all active:scale-95 ${
+                  contentType === 'chapters'
+                    ? 'border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'
+                }`}
+              >
+                <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Chapters
+                </div>
+              </button>
+              <button
+                onClick={() => setContentType('pageRange')}
+                className={`p-3 rounded-lg border-2 transition-all active:scale-95 ${
+                  contentType === 'pageRange'
+                    ? 'border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'
+                }`}
+              >
+                <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Page Range
+                </div>
+              </button>
+              <button
+                onClick={() => setContentType('smartTopics')}
+                className={`p-3 rounded-lg border-2 transition-all active:scale-95 ${
+                  contentType === 'smartTopics'
+                    ? 'border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'
+                }`}
+              >
+                <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Smart Topics
+                </div>
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Mind Map Type Selector - Compact Button Group */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Network className="w-4 h-4 text-accent-primary" />
-            <span className="text-sm font-medium text-gray-900 dark:text-white">
-              Mind Map Type:
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Hierarchical Button */}
-            <button
-              onClick={() => setSelectedMapType('hierarchical')}
-              className={`group relative px-4 py-2 rounded-lg border transition-all ${
-                selectedMapType === 'hierarchical'
-                  ? 'border-accent-primary bg-accent-primary text-white shadow-sm'
-                  : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-accent-primary/50 hover:bg-accent-primary/5'
-              }`}
-              title="Hierarchical: Tree structure with parent-child relationships"
-            >
-              <div className="flex items-center gap-2">
-                <GitBranch className="w-4 h-4" />
-                <span className="text-sm font-medium">Hierarchical</span>
+            {/* Page Range Inputs */}
+            {contentType === 'pageRange' && (
+              <div className="mt-3 flex items-center gap-2">
+                <input
+                  type="number"
+                  placeholder="Start"
+                  value={pageRange.start}
+                  onChange={(e) => setPageRange({ ...pageRange, start: e.target.value })}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                />
+                <span className="text-gray-500">to</span>
+                <input
+                  type="number"
+                  placeholder="End"
+                  value={pageRange.end}
+                  onChange={(e) => setPageRange({ ...pageRange, end: e.target.value })}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                />
               </div>
-            </button>
-
-            {/* Radial Button */}
-            <button
-              onClick={() => setSelectedMapType('radial')}
-              className={`group relative px-4 py-2 rounded-lg border transition-all ${
-                selectedMapType === 'radial'
-                  ? 'border-accent-primary bg-accent-primary text-white shadow-sm'
-                  : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-accent-primary/50 hover:bg-accent-primary/5'
-              }`}
-              title="Radial: Circular layout with central concept"
-            >
-              <div className="flex items-center gap-2">
-                <Circle className="w-4 h-4" />
-                <span className="text-sm font-medium">Radial</span>
-              </div>
-            </button>
-
-            {/* Concept Map Button */}
-            <button
-              onClick={() => setSelectedMapType('concept')}
-              className={`group relative px-4 py-2 rounded-lg border transition-all ${
-                selectedMapType === 'concept'
-                  ? 'border-accent-primary bg-accent-primary text-white shadow-sm'
-                  : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-accent-primary/50 hover:bg-accent-primary/5'
-              }`}
-              title="Concept Map: Network structure with cross-links"
-            >
-              <div className="flex items-center gap-2">
-                <Share2 className="w-4 h-4" />
-                <span className="text-sm font-medium">Concept</span>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        {/* Type Description */}
-        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-xs text-gray-600 dark:text-gray-400">
-            {selectedMapType === 'hierarchical' && (
-              <>
-                <span className="font-semibold text-gray-900 dark:text-white">Hierarchical:</span> Tree structure with clear parent-child relationships. Best for structured topics and taxonomies.
-              </>
             )}
-            {selectedMapType === 'radial' && (
-              <>
-                <span className="font-semibold text-gray-900 dark:text-white">Radial:</span> Circular layout with central concept and radiating branches. Great for balanced topics of equal importance.
-              </>
-            )}
-            {selectedMapType === 'concept' && (
-              <>
-                <span className="font-semibold text-gray-900 dark:text-white">Concept Map:</span> Network structure with labeled relationships and cross-links. Ideal for complex topics showing knowledge integration.
-              </>
-            )}
-          </p>
-        </div>
-      </div>
-
-      {/* Generate Button */}
-      <button
-        onClick={generateMindMap}
-        disabled={isGenerating}
-        className="w-full py-4 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold text-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-      >
-        {isGenerating ? (
-          <>
-            <Loader2 className="w-6 h-6 animate-spin" />
-            Generating Mind Map...
-          </>
-        ) : (
-          <>
-            <Sparkles className="w-6 h-6" />
-            Generate Mind Map
-          </>
-        )}
-      </button>
-
-      {/* Progress Bar */}
-      {isGenerating && (
-        <div className="text-center space-y-3">
-          {/* Progress Bar */}
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-accent-primary to-accent-secondary h-full transition-all duration-500 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          {/* Progress Message */}
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {progressMessage || 'Analyzing your document...'}
-          </p>
-
-          {/* Progress Percentage */}
-          {progress > 0 && (
-            <p className="text-xs text-gray-500 dark:text-gray-500">
-              {progress}% complete
+            {/* Info message */}
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+              {contentType === 'full' && `Mind map will be generated from the entire document`}
+              {contentType === 'chapters' && 'Select specific chapters (feature coming soon)'}
+              {contentType === 'pageRange' && 'Specify page range to generate from'}
+              {contentType === 'smartTopics' && 'AI will extract and focus on key topics (feature coming soon)'}
             </p>
+          </div>
+
+          {/* Mind Map Type Selector */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+              Map Type
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {/* Hierarchical Button */}
+              <button
+                onClick={() => setSelectedMapType('hierarchical')}
+                className={`p-3 rounded-lg border-2 transition-all active:scale-95 ${
+                  selectedMapType === 'hierarchical'
+                    ? 'border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'
+                }`}
+              >
+                <GitBranch className="w-5 h-5 mx-auto mb-1 text-accent-primary" />
+                <div className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                  Hierarchical
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                  Tree
+                </div>
+              </button>
+
+              {/* Radial Button */}
+              <button
+                onClick={() => setSelectedMapType('radial')}
+                className={`p-3 rounded-lg border-2 transition-all active:scale-95 ${
+                  selectedMapType === 'radial'
+                    ? 'border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'
+                }`}
+              >
+                <Circle className="w-5 h-5 mx-auto mb-1 text-accent-primary" />
+                <div className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                  Radial
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                  Circular
+                </div>
+              </button>
+
+              {/* Concept Map Button */}
+              <button
+                onClick={() => setSelectedMapType('concept')}
+                className={`p-3 rounded-lg border-2 transition-all active:scale-95 ${
+                  selectedMapType === 'concept'
+                    ? 'border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'
+                }`}
+              >
+                <Share2 className="w-5 h-5 mx-auto mb-1 text-accent-primary" />
+                <div className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                  Concept
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                  Network
+                </div>
+              </button>
+            </div>
+            {/* Type Description */}
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+              {selectedMapType === 'hierarchical' && 'Tree structure with parent-child relationships'}
+              {selectedMapType === 'radial' && 'Circular layout with central concept'}
+              {selectedMapType === 'concept' && 'Network structure with cross-links'}
+            </p>
+          </div>
+
+          {/* Generate Button */}
+          <button
+            onClick={generateMindMap}
+            disabled={isGenerating}
+            className="w-full py-3 sm:py-4 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-semibold text-base sm:text-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span>Generate Mind Map</span>
+              </>
+            )}
+          </button>
+
+          {/* Progress */}
+          {isGenerating && (
+            <div className="space-y-2">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-accent-primary to-accent-secondary h-full transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-xs sm:text-sm text-center text-gray-600 dark:text-gray-400">
+                {progressMessage || 'Analyzing document...'}
+              </p>
+              {progress > 0 && (
+                <p className="text-xs text-center text-gray-500">
+                  {progress}% complete
+                </p>
+              )}
+            </div>
           )}
-        </div>
-      )}
-
-      {/* What to Expect Section */}
-      <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-accent-primary" />
-          What to Expect
-        </h3>
-        <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
-          <div className="flex items-start gap-2">
-            <span className="text-accent-primary font-bold">1.</span>
-            <span>Automatically extracts key concepts and relationships from your document</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="text-accent-primary font-bold">2.</span>
-            <span>Concepts organized into hierarchical structure with categories</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="text-accent-primary font-bold">3.</span>
-            <span>Interactive visualization with zoom, pan, and node exploration</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="text-accent-primary font-bold">4.</span>
-            <span>Export your mind map as PNG image or JSON data</span>
-          </div>
-        </div>
-
-        {/* Cost Estimate */}
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            <span className="font-semibold">Estimated cost:</span> ~$0.01 per mind map generation
-          </p>
         </div>
       </div>
 
