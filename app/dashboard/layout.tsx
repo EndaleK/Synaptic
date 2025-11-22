@@ -416,7 +416,7 @@ export default function DashboardLayout({
                                   }
                                   setSidebarOpen(false)
                                 }}
-                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-all mt-0.5 ${
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
                                   pomodoroStatus === 'running'
                                     ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/30"
                                     : pomodoroStatus === 'paused'
@@ -424,6 +424,7 @@ export default function DashboardLayout({
                                     : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
                                 }`}
                               >
+                                <Clock className="w-4 h-4" />
                                 <span className="flex-1">Pomodoro</span>
                               </button>
                             )}
@@ -466,7 +467,7 @@ export default function DashboardLayout({
                               }
                               setSidebarOpen(false)
                             }}
-                            className={`btn-touch-icon rounded-lg font-medium transition-all text-xs ${
+                            className={`btn-touch-icon rounded-lg font-medium transition-all ${
                               pomodoroStatus === 'running'
                                 ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/30"
                                 : pomodoroStatus === 'paused'
@@ -475,7 +476,7 @@ export default function DashboardLayout({
                             }`}
                             title="Pomodoro"
                           >
-                            P
+                            <Clock className="w-5 h-5" />
                           </button>
                         )}
                       </div>
