@@ -62,6 +62,38 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient()
 
+    // Check for duplicate webhook event (deduplication)
+    try {
+      const { data: existingEvent } = await supabase
+        .from('webhook_events')
+        .select('id, processed_at')
+        .eq('stripe_event_id', event.id)
+        .single()
+
+      if (existingEvent) {
+        logger.info('Webhook event already processed (duplicate)', {
+          eventId: event.id,
+          eventType: event.type,
+          previouslyProcessedAt: existingEvent.processed_at
+        })
+        // Return 200 OK to acknowledge receipt (idempotent)
+        return NextResponse.json({
+          received: true,
+          duplicate: true,
+          message: 'Event already processed'
+        })
+      }
+    } catch (error: any) {
+      // If error is "not found", that's expected - continue processing
+      // If error is database issue, log warning but continue anyway (fail-safe)
+      if (error?.code !== 'PGRST116') { // PGRST116 = not found
+        logger.warn('Failed to check webhook deduplication, continuing anyway', {
+          eventId: event.id,
+          error: error?.message
+        })
+      }
+    }
+
     // Handle different event types
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -355,6 +387,29 @@ export async function POST(req: NextRequest) {
           type: event.type,
           eventId: event.id
         })
+    }
+
+    // Record successful webhook processing (deduplication)
+    try {
+      await supabase
+        .from('webhook_events')
+        .insert({
+          stripe_event_id: event.id,
+          event_type: event.type,
+          event_data: null, // Optionally store event.data for debugging
+          processed_at: new Date().toISOString()
+        })
+
+      logger.debug('Webhook event recorded for deduplication', {
+        eventId: event.id,
+        eventType: event.type
+      })
+    } catch (error: any) {
+      // Log error but don't fail the webhook (already processed successfully)
+      logger.warn('Failed to record webhook event for deduplication', {
+        eventId: event.id,
+        error: error?.message
+      })
     }
 
     const duration = Date.now() - startTime
