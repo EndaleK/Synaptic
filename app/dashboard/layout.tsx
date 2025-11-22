@@ -12,6 +12,7 @@ import { SignOutButton } from "@clerk/nextjs"
 import FloatingPomodoroTimer from "@/components/FloatingPomodoroTimer"
 import BottomNavigationBar from "@/components/BottomNavigationBar"
 import { useStudySessionTracking } from "@/lib/hooks/useStudySessionTracking"
+import { usePomodoroStore } from "@/lib/store/usePomodoroStore"
 
 export default function DashboardLayout({
   children,
@@ -30,6 +31,16 @@ export default function DashboardLayout({
   const { activeMode, setActiveMode } = useUIStore()
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
+
+  // Pomodoro timer state
+  const { status: pomodoroStatus, timeRemaining, timerType, startTimer } = usePomodoroStore()
+
+  // Helper function to format timer display
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
 
   // Auto-track study sessions for all dashboard activity
   useStudySessionTracking({
@@ -378,22 +389,49 @@ export default function DashboardLayout({
 
                   {studyToolsExpanded && (
                     <div className="space-y-0.5 animate-in slide-in-from-top-2 duration-200">
-                      {studyTools.map((tool) => {
+                      {studyTools.map((tool, index) => {
                         const isActive = pathname === tool.href
                         return (
-                          <Link
-                            key={tool.href}
-                            href={tool.href}
-                            onClick={() => setSidebarOpen(false)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
-                              isActive
-                                ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
-                                : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
-                            }`}
-                          >
-                            <tool.icon className="w-4 h-4" />
-                            <span className="flex-1">{tool.name}</span>
-                          </Link>
+                          <div key={tool.href}>
+                            <Link
+                              href={tool.href}
+                              onClick={() => setSidebarOpen(false)}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
+                                isActive
+                                  ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
+                                  : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
+                              }`}
+                            >
+                              <tool.icon className="w-4 h-4" />
+                              <span className="flex-1">{tool.name}</span>
+                            </Link>
+
+                            {/* Pomodoro Timer - Show after Library */}
+                            {tool.name === "Library" && (
+                              <button
+                                onClick={() => {
+                                  if (pomodoroStatus === 'idle') {
+                                    startTimer()
+                                    toast.success('Pomodoro timer started!')
+                                  }
+                                  setSidebarOpen(false)
+                                }}
+                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-all mt-0.5 ${
+                                  pomodoroStatus === 'running'
+                                    ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/30"
+                                    : pomodoroStatus === 'paused'
+                                    ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg shadow-yellow-500/30"
+                                    : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
+                                }`}
+                              >
+                                <Clock className="w-4 h-4" />
+                                <span className="flex-1">Pomodoro</span>
+                                <span className="text-[11px] font-mono">
+                                  {formatTime(timeRemaining)}
+                                </span>
+                              </button>
+                            )}
+                          </div>
                         )
                       })}
                     </div>
@@ -405,22 +443,46 @@ export default function DashboardLayout({
                   <div className="px-4 mb-2">
                     <div className="h-px bg-gradient-to-r from-accent-primary/20 to-transparent"></div>
                   </div>
-                  {studyTools.map((tool) => {
+                  {studyTools.map((tool, index) => {
                     const isActive = pathname === tool.href
                     return (
-                      <Link
-                        key={tool.href}
-                        href={tool.href}
-                        onClick={() => setSidebarOpen(false)}
-                        className={`btn-touch-icon rounded-lg font-medium transition-all ${
-                          isActive
-                            ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
-                            : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
-                        }`}
-                        title={tool.name}
-                      >
-                        <tool.icon className="w-5 h-5" />
-                      </Link>
+                      <div key={tool.href}>
+                        <Link
+                          href={tool.href}
+                          onClick={() => setSidebarOpen(false)}
+                          className={`btn-touch-icon rounded-lg font-medium transition-all ${
+                            isActive
+                              ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
+                              : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
+                          }`}
+                          title={tool.name}
+                        >
+                          <tool.icon className="w-5 h-5" />
+                        </Link>
+
+                        {/* Pomodoro Timer - Show after Library in collapsed mode */}
+                        {tool.name === "Library" && (
+                          <button
+                            onClick={() => {
+                              if (pomodoroStatus === 'idle') {
+                                startTimer()
+                                toast.success('Pomodoro timer started!')
+                              }
+                              setSidebarOpen(false)
+                            }}
+                            className={`btn-touch-icon rounded-lg font-medium transition-all ${
+                              pomodoroStatus === 'running'
+                                ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/30"
+                                : pomodoroStatus === 'paused'
+                                ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg shadow-yellow-500/30"
+                                : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
+                            }`}
+                            title={`Pomodoro - ${formatTime(timeRemaining)}`}
+                          >
+                            <Clock className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
                     )
                   })}
                 </div>

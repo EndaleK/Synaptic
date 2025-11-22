@@ -295,7 +295,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
               Intelligent
             </span>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
             <button
               onClick={() => window.location.href = '/dashboard/library'}
               className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
@@ -361,17 +361,14 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                 Configure reminders and alerts
               </p>
             </button>
-          </div>
 
-          {/* Pomodoro Timer - Below Library */}
-          <div className="mt-4">
             <button
               onClick={() => {
                 if (status === 'idle') {
                   startTimer()
                 }
               }}
-              className="relative w-full bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer group"
+              className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer group"
             >
               {status !== 'idle' && (
                 <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-semibold rounded-full animate-pulse">
@@ -383,21 +380,17 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                   Start
                 </span>
               )}
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Clock className="w-7 h-7 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-                    Pomodoro Timer
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {status !== 'idle'
-                      ? `${timerType === 'focus' ? '🍅 Focus' : timerType === 'shortBreak' ? '☕ Break' : '🌴 Long Break'} - ${sessionsCompleted} sessions completed`
-                      : 'Click to start a 25-minute focus session'}
-                  </p>
-                </div>
+              <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center mb-4">
+                <Clock className="w-7 h-7 text-white" />
               </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Pomodoro Timer
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {status !== 'idle'
+                  ? `${timerType === 'focus' ? '🍅 Focus' : timerType === 'shortBreak' ? '☕ Break' : '🌴 Long Break'} - ${sessionsCompleted} sessions`
+                  : 'Start 25-minute focus session'}
+              </p>
             </button>
           </div>
         </div>
