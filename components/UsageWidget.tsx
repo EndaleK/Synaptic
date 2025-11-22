@@ -33,7 +33,23 @@ export default function UsageWidget() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isWidgetExpanded, setIsWidgetExpanded] = useState(true)
   const [retryCount, setRetryCount] = useState(0)
+
+  // Load collapsed state from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('usageWidget_expanded')
+    if (saved !== null) {
+      setIsWidgetExpanded(saved === 'true')
+    }
+  }, [])
+
+  // Save collapsed state to localStorage
+  const toggleWidgetExpanded = () => {
+    const newState = !isWidgetExpanded
+    setIsWidgetExpanded(newState)
+    localStorage.setItem('usageWidget_expanded', String(newState))
+  }
 
   useEffect(() => {
     // Wait for auth to be loaded AND userId to be available
@@ -125,14 +141,17 @@ export default function UsageWidget() {
   )
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm h-full flex flex-col overflow-hidden">
+      {/* Header - Always Visible */}
+      <button
+        onClick={toggleWidgetExpanded}
+        className="w-full p-6 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+      >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
             <TrendingUp className="w-5 h-5 text-white" />
           </div>
-          <div>
+          <div className="text-left">
             <h3 className="font-semibold text-gray-900 dark:text-white">
               {isPremium ? 'Premium Usage' : 'Monthly Usage'}
             </h3>
@@ -142,27 +161,39 @@ export default function UsageWidget() {
           </div>
         </div>
 
-        {!isPremium && hasWarning && (
-          <Link
-            href="/pricing"
-            className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline"
-          >
-            Upgrade
-          </Link>
-        )}
-      </div>
-
-      {/* Premium status */}
-      {isPremium ? (
-        <div className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
-          <p className="text-sm font-medium text-purple-900 dark:text-purple-100 text-center">
-            ✨ You have unlimited access to all features
-          </p>
+        <div className="flex items-center gap-3">
+          {!isPremium && hasWarning && (
+            <Link
+              href="/pricing"
+              onClick={(e) => e.stopPropagation()}
+              className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline"
+            >
+              Upgrade
+            </Link>
+          )}
+          {isWidgetExpanded ? (
+            <ChevronUp className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          )}
         </div>
-      ) : (
-        <>
-          {/* Usage items */}
-          <div className="space-y-3 flex-1">
+      </button>
+
+      {/* Expanded Content */}
+      {isWidgetExpanded && (
+        <div className="px-6 pb-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="pt-4">
+            {/* Premium status */}
+            {isPremium ? (
+              <div className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                <p className="text-sm font-medium text-purple-900 dark:text-purple-100 text-center">
+                  ✨ You have unlimited access to all features
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Usage items */}
+                <div className="space-y-3 flex-1">
             {displayItems.map((item) => {
               const percentage = item.limit === Infinity ? 0 : (item.used / item.limit) * 100
               const isNearLimit = percentage >= 80
@@ -228,18 +259,22 @@ export default function UsageWidget() {
             </button>
           )}
 
-          {/* Upgrade CTA if approaching any limit */}
-          {hasWarning && (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <Link
-                href="/pricing"
-                className="block w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-semibold rounded-xl text-center transition-all hover:scale-[1.02]"
-              >
-                Upgrade to Premium for Unlimited
-              </Link>
-            </div>
-          )}
-        </>
+                {/* Upgrade CTA if approaching any limit */}
+                {hasWarning && (
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <Link
+                      href="/pricing"
+                      onClick={(e) => e.stopPropagation()}
+                      className="block w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-semibold rounded-xl text-center transition-all hover:scale-[1.02]"
+                    >
+                      Upgrade to Premium for Unlimited
+                    </Link>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )
