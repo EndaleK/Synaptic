@@ -8,6 +8,11 @@ import mermaid from 'mermaid'
 interface MarkdownRendererProps {
   content: string
   className?: string
+  /**
+   * If true, Mermaid diagrams will be shown as code blocks instead of rendered.
+   * Use this for streaming content to avoid rendering incomplete diagrams.
+   */
+  disableDiagrams?: boolean
 }
 
 // Initialize Mermaid
@@ -18,7 +23,7 @@ mermaid.initialize({
   fontFamily: 'Patrick Hand, cursive',
 })
 
-export default function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
+export default function MarkdownRenderer({ content, className = '', disableDiagrams = false }: MarkdownRendererProps) {
   const [renderedDiagrams, setRenderedDiagrams] = useState<Map<string, string>>(new Map())
   const diagramCodeMap = useRef<Map<string, number>>(new Map())
   const diagramCounter = useRef(0)
@@ -164,6 +169,17 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
 
             // Check if it's a mermaid diagram
             if (!inline && language === 'mermaid') {
+              // If diagrams are disabled (streaming), show as code block
+              if (disableDiagrams) {
+                return (
+                  <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto my-4">
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  </pre>
+                )
+              }
+
               // DEBUG: Log what we're receiving
               console.log('🔍 Mermaid code received:', {
                 type: typeof codeString,

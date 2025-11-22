@@ -328,6 +328,7 @@ export default function StudyBuddyInterface() {
                 <MarkdownRenderer
                   content={streamingMessage}
                   className="font-handwriting text-[15px] leading-relaxed"
+                  disableDiagrams={true}
                 />
                 <span className="inline-block w-1 h-4 bg-gray-400 ml-1 animate-pulse" />
               </div>
