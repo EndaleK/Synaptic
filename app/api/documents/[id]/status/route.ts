@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
+import { validateUUIDParam } from '@/lib/validation/uuid'
 
 export const runtime = 'edge'
 
@@ -32,6 +33,16 @@ export async function GET(
     }
 
     const { id: documentId } = await params
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(documentId, 'Document ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid ID format' },
+        { status: 400 }
+      )
+    }
 
     // 2. Get user profile
     const supabase = await createClient()

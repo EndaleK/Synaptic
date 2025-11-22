@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { auth } from '@clerk/nextjs/server'
+import { validateUUIDParam } from '@/lib/validation/uuid'
 
 export async function GET(
   request: NextRequest,
@@ -35,6 +36,16 @@ export async function GET(
     const documentIdOrPath = decodeURIComponent(path)
 
     console.log('📥 Storage API: Fetching document:', documentIdOrPath)
+
+    // Try validating as UUID first (new approach)
+    let isUUID = false
+    try {
+      validateUUIDParam(documentIdOrPath, 'Document ID')
+      isUUID = true
+    } catch (error) {
+      // Not a UUID, might be a legacy storage path - continue without validation
+      console.log('⚠️ Parameter is not a UUID, treating as legacy storage path')
+    }
 
     // Initialize Supabase client
     const supabase = await createClient()

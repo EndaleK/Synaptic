@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@supabase/supabase-js'
+import { validateUUIDParam } from '@/lib/validation/uuid'
 
 /**
  * GET /api/essays/[id] - Get a specific essay by ID
@@ -16,6 +17,16 @@ export async function GET(
     }
 
     const { id } = await params
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(id, 'essay ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid essay ID format' },
+        { status: 400 }
+      )
+    }
 
     // Create Supabase client with service role
     const supabase = createClient(
@@ -80,6 +91,17 @@ export async function PATCH(
     }
 
     const { id } = await params
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(id, 'essay ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid essay ID format' },
+        { status: 400 }
+      )
+    }
+
     const body = await req.json()
 
     // Create Supabase client with service role
@@ -149,6 +171,16 @@ export async function DELETE(
     }
 
     const { id } = await params
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(id, 'essay ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid essay ID format' },
+        { status: 400 }
+      )
+    }
 
     // Create Supabase client with service role
     const supabase = createClient(

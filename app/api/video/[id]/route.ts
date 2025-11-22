@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
+import { validateUUIDParam } from '@/lib/validation/uuid'
 
 export async function GET(
   request: NextRequest,
@@ -13,6 +14,16 @@ export async function GET(
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
+      )
+    }
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(params.id, 'video ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid video ID format' },
+        { status: 400 }
       )
     }
 
@@ -68,6 +79,16 @@ export async function PUT(
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
+      )
+    }
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(params.id, 'video ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid video ID format' },
+        { status: 400 }
       )
     }
 
@@ -142,6 +163,16 @@ export async function DELETE(
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
+      )
+    }
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(params.id, 'video ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid video ID format' },
+        { status: 400 }
       )
     }
 

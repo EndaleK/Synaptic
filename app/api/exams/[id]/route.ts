@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
+import { validateUUIDParam } from '@/lib/validation/uuid'
 
 interface RouteParams {
   params: Promise<{
@@ -20,6 +21,16 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: examId } = await params
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(examId, 'exam ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid exam ID format' },
+        { status: 400 }
+      )
+    }
 
     // 1. Authenticate user
     const { userId } = await auth()
@@ -121,6 +132,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: examId } = await params
 
+    // Validate UUID format
+    try {
+      validateUUIDParam(examId, 'exam ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid exam ID format' },
+        { status: 400 }
+      )
+    }
+
     // 1. Authenticate user
     const { userId } = await auth()
     if (!userId) {
@@ -217,6 +238,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: examId } = await params
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(examId, 'exam ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid exam ID format' },
+        { status: 400 }
+      )
+    }
 
     // 1. Authenticate user
     const { userId } = await auth()

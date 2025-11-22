@@ -9,6 +9,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 import { getProviderForFeature } from '@/lib/ai'
 import { detectTorontoNotes } from '@/lib/toronto-notes-detector'
+import { validateUUIDParam } from '@/lib/validation/uuid'
 
 export async function GET(
   request: NextRequest,
@@ -22,6 +23,16 @@ export async function GET(
     }
 
     const { id: documentId } = await params
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(documentId, 'document ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid document ID format' },
+        { status: 400 }
+      )
+    }
 
     // 2. Fetch document from database
     const supabase = await createClient()

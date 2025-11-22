@@ -12,6 +12,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 import { createSSEStream, createSSEHeaders } from '@/lib/sse-utils'
 import { parseServerPDF } from '@/lib/server-pdf-parser'
+import { validateUUIDParam } from '@/lib/validation/uuid'
 
 export const maxDuration = 300 // 5 minutes for large file extraction
 export const runtime = 'nodejs'
@@ -25,6 +26,16 @@ export async function POST(
   { params }: ExtractParams
 ) {
   const documentId = (await params).id
+
+  // Validate UUID format
+  try {
+    validateUUIDParam(documentId, 'Document ID')
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Invalid ID format' },
+      { status: 400 }
+    )
+  }
 
   // Verify authentication
   const { userId } = await auth()

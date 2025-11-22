@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 import OpenAI from 'openai'
+import { validateUUIDParam } from '@/lib/validation/uuid'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -24,6 +25,17 @@ export async function POST(
     }
 
     const videoId = params.id
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(videoId, 'Video ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid ID format' },
+        { status: 400 }
+      )
+    }
+
     const supabase = await createClient()
 
     // Get user profile

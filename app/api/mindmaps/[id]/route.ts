@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
+import { validateUUIDParam } from '@/lib/validation/uuid'
 
 export const runtime = 'nodejs'
 export const maxDuration = 10
@@ -25,6 +26,16 @@ export async function GET(
     }
 
     const { id: mindmapId } = await params
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(mindmapId, 'mindmap ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid mindmap ID format' },
+        { status: 400 }
+      )
+    }
 
     const supabase = await createClient()
     const { data: profile } = await supabase
@@ -79,6 +90,17 @@ export async function PATCH(
     }
 
     const { id: mindmapId } = await params
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(mindmapId, 'mindmap ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid mindmap ID format' },
+        { status: 400 }
+      )
+    }
+
     const body = await request.json()
 
     const supabase = await createClient()
@@ -153,6 +175,16 @@ export async function DELETE(
     }
 
     const { id: mindmapId } = await params
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(mindmapId, 'mindmap ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid mindmap ID format' },
+        { status: 400 }
+      )
+    }
 
     // 2. Get user profile
     const supabase = await createClient()

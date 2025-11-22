@@ -45,6 +45,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   // Study session tracking
   const [sessionId, setSessionId] = useState<string | null>(null)
   const sessionStartTime = useRef<Date | null>(null)
+  const [sessionError, setSessionError] = useState<string | null>(null)
 
   // Deck ordering state - maintains order of cards with mastered cards at the end
   const [cardOrder, setCardOrder] = useState<number[]>(() =>
@@ -99,9 +100,16 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
           setSessionId(data.sessionId)
           sessionStartTime.current = new Date()
           console.log('[FlashcardDisplay] Study session started:', data.sessionId)
+        } else {
+          const errorMessage = 'Failed to start study session'
+          console.error(errorMessage, response.status)
+          setSessionError(errorMessage)
         }
       } catch (error) {
-        console.error('Failed to start study session:', error)
+        const errorMessage = 'Failed to start study session'
+        console.error(errorMessage, error)
+        setSessionError(errorMessage)
+        // Don't show toast on start failure - it's not critical for user experience
       }
     }
 
@@ -133,9 +141,11 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
               console.log('[FlashcardDisplay] Study session completed:', durationMinutes, 'minutes')
             } else {
               console.warn('[FlashcardDisplay] Failed to complete study session:', response.status)
+              setSessionError('Failed to save study progress')
             }
           }).catch(error => {
             console.error('[FlashcardDisplay] Error completing study session:', error)
+            setSessionError('Failed to save study progress')
           })
         }
       }

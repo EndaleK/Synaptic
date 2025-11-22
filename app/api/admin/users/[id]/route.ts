@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/admin'
 import { createClient } from '@/lib/supabase/server'
+import { validateUUIDParam } from '@/lib/validation/uuid'
 
 /**
  * GET /api/admin/users/[id]
@@ -20,6 +21,17 @@ export async function GET(
 
   try {
     const { id } = await params
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(id, 'User ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid ID format' },
+        { status: 400 }
+      )
+    }
+
     const supabase = await createClient()
 
     // Get user profile
@@ -112,6 +124,17 @@ export async function PATCH(
 
   try {
     const { id } = await params
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(id, 'User ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid ID format' },
+        { status: 400 }
+      )
+    }
+
     const body = await req.json()
     const supabase = await createClient()
 

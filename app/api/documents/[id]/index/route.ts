@@ -21,6 +21,7 @@ import { createClient } from '@/lib/supabase/server'
 import { indexDocument } from '@/lib/vector-store'
 import { parseServerPDF } from '@/lib/server-pdf-parser'
 import { createSSEStream, createSSEHeaders, ProgressTracker } from '@/lib/sse-utils'
+import { validateUUIDParam } from '@/lib/validation/uuid'
 
 // Increase timeout for large document processing
 export const maxDuration = 300 // 5 minutes (Vercel Pro limit)
@@ -36,6 +37,16 @@ export async function POST(
 ) {
   // Get document ID
   const documentId = (await params).id
+
+  // Validate UUID format
+  try {
+    validateUUIDParam(documentId, 'Document ID')
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Invalid ID format' },
+      { status: 400 }
+    )
+  }
 
   // Verify authentication
   const { userId } = await auth()

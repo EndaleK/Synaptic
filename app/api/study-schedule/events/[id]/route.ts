@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { createClient } from "@/lib/supabase/server"
 import { logger } from "@/lib/logger"
+import { validateUUIDParam } from "@/lib/validation/uuid"
 
 export const dynamic = 'force-dynamic'
 
@@ -17,6 +18,16 @@ export async function PUT(
   const eventId = params.id
 
   try {
+    // Validate UUID format
+    try {
+      validateUUIDParam(eventId, 'event ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid event ID format' },
+        { status: 400 }
+      )
+    }
+
     // Authenticate user
     const { userId } = await auth()
     if (!userId) {

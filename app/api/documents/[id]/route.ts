@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { deleteDocument as deleteDocumentFromSupabase, getDocumentById } from '@/lib/supabase/documents-server'
+import { validateUUIDParam } from '@/lib/validation/uuid'
 
 /**
  * GET /api/documents/[id]
@@ -21,6 +22,16 @@ export async function GET(
     }
 
     const { id } = await params
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(id, 'document ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid document ID format' },
+        { status: 400 }
+      )
+    }
 
     const { document, error } = await getDocumentById(id, userId)
 
@@ -60,6 +71,16 @@ export async function DELETE(
     }
 
     const { id } = await params
+
+    // Validate UUID format
+    try {
+      validateUUIDParam(id, 'document ID')
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid document ID format' },
+        { status: 400 }
+      )
+    }
 
     // First get the document to retrieve storage path
     const { document, error: fetchError } = await getDocumentById(id, userId)
