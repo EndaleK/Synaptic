@@ -125,13 +125,6 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
 
       cleanedCode = fixedLines.join('\n')
 
-      // DEBUG: Log cleaned code before rendering
-      console.log('🧹 Cleaned Mermaid code:', {
-        originalLines: code.trim().split('\n').length,
-        cleanedLines: cleanedCode.split('\n').length,
-        cleanedCode: cleanedCode
-      })
-
       const id = `mermaid-${Date.now()}-${key}`
       const { svg } = await mermaid.render(id, cleanedCode)
 
@@ -179,14 +172,6 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
                   </pre>
                 )
               }
-
-              // DEBUG: Log what we're receiving
-              console.log('🔍 Mermaid code received:', {
-                type: typeof codeString,
-                length: codeString.length,
-                preview: codeString.substring(0, 100),
-                lines: codeString.split('\n').length
-              })
 
               const diagramKey = getDiagramKey(codeString)
               const svg = renderedDiagrams.get(diagramKey)

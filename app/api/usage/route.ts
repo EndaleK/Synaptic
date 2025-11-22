@@ -158,7 +158,7 @@ export async function GET() {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Usage check failed', error, {
       userId: 'unknown',

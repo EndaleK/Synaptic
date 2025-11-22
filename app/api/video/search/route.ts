@@ -1,6 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 
+// YouTube API response types
+interface YouTubeSearchItem {
+  id: {
+    videoId: string
+  }
+}
+
+interface YouTubeVideoSnippet {
+  title: string
+  channelTitle: string
+  publishedAt: string
+  thumbnails: {
+    medium: {
+      url: string
+    }
+  }
+}
+
+interface YouTubeVideoDetails {
+  id: string
+  snippet: YouTubeVideoSnippet
+  contentDetails: {
+    duration: string
+  }
+  statistics: {
+    viewCount?: string
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
@@ -54,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get video IDs for details request
-    const videoIds = searchData.items.map((item: any) => item.id.videoId).join(',')
+    const videoIds = searchData.items.map((item: YouTubeSearchItem) => item.id.videoId).join(',')
 
     // Get video details (duration, view count, etc.)
     const detailsUrl = new URL('https://www.googleapis.com/youtube/v3/videos')
@@ -83,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Format results
-    const results = detailsData.items.map((item: any) => ({
+    const results = detailsData.items.map((item: YouTubeVideoDetails) => ({
       videoId: item.id,
       title: item.snippet.title,
       channelName: item.snippet.channelTitle,

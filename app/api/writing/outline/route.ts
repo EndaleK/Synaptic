@@ -119,7 +119,7 @@ Format the outline clearly with proper indentation and numbering.`
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Outline generation error:', error)
     return NextResponse.json(
       { error: error.message || 'Failed to generate outline' },

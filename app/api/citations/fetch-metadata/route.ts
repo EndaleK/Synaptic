@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
       success: true,
       citation
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Citation metadata fetch error:', error)
     return NextResponse.json(
       {

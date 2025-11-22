@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
+import { VideoKeyPoint, VideoTranscriptLine } from '@/lib/supabase/types'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
@@ -74,8 +75,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Combine transcript and key points
-    const transcriptText = video.transcript.map((line: any) => line.text).join(' ')
-    const keyPointsText = video.key_points?.map((point: any) => `${point.title}: ${point.description}`).join('\n\n') || ''
+    const transcriptText = video.transcript.map((line: VideoTranscriptLine) => line.text).join(' ')
+    const keyPointsText = video.key_points?.map((point: VideoKeyPoint) => `${point.title}: ${point.description}`).join('\n\n') || ''
 
     // Create or get virtual document for the video (shared by all content types)
     let document
@@ -162,7 +163,7 @@ Guidelines:
     }
 
       // Insert flashcards into database
-      const flashcardInserts = flashcards.map((card: any) => ({
+      const flashcardInserts = flashcards.map((card: { front: string; back: string }) => ({
         user_id: profile.id,
         document_id: document.id,
         front: card.front,

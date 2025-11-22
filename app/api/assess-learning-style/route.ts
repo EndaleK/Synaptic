@@ -151,7 +151,7 @@ Keep it encouraging and actionable.`
       aiAnalysis,
       recommendations: getRecommendations(dominantStyle),
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Learning style assessment error:", error)
     return NextResponse.json(
       { error: "Failed to assess learning style" },

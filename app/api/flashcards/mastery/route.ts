@@ -227,7 +227,7 @@ export async function POST(req: NextRequest) {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Mastery update error:', error)
     return NextResponse.json(
       { error: error.message || "Failed to update mastery" },

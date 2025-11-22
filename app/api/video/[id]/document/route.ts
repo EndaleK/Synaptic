@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
+import { VideoTranscriptLine } from '@/lib/supabase/types'
 import { validateUUIDParam } from '@/lib/validation/uuid'
 
 export async function GET(
@@ -67,7 +68,7 @@ export async function GET(
       )
     }
 
-    const transcriptText = video.transcript.map((line: any) => line.text).join(' ')
+    const transcriptText = video.transcript.map((line: VideoTranscriptLine) => line.text).join(' ')
     const cleanTitle = video.title.replace(/[^\w\s-]/g, '').trim()
     const libraryFileName = `Video: ${cleanTitle}`
 

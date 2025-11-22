@@ -241,7 +241,7 @@ async function handleGetReviewQueue(req: NextRequest) {
       stats
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Review queue error', error, { userId: userId || 'unknown' })
     logger.api('GET', '/api/flashcards/review-queue', 500, duration, { error: error.message })

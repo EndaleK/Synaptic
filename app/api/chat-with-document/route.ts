@@ -381,7 +381,7 @@ Please answer this question based only on the information provided in the docume
       timestamp: new Date().toISOString()
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
 
     // Get userId for error logging (may be undefined if auth failed)

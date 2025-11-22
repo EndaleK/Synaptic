@@ -95,7 +95,7 @@ export async function GET() {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('🔴 Diagnostic endpoint error:', error)
     return NextResponse.json({
       success: false,

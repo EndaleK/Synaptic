@@ -120,7 +120,7 @@ export async function PUT(
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Update event error', error, { userId: 'unknown' })
     logger.api('PUT', `/api/study-schedule/events/${eventId}`, 500, duration, { error: error.message })
@@ -189,7 +189,7 @@ export async function DELETE(
       message: "Event deleted successfully"
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Delete event error', error, { userId: 'unknown' })
     logger.api('DELETE', `/api/study-schedule/events/${eventId}`, 500, duration, { error: error.message })

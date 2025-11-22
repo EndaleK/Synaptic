@@ -457,7 +457,7 @@ async function handleGetStudyStatistics(req: NextRequest) {
       stats
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Study statistics error', error, { userId: userId || 'unknown' })
     logger.api('GET', '/api/study-statistics', 500, duration, { error: error.message })

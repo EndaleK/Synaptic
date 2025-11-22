@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       startTime: session.start_time
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Start session error', error, { userId: 'unknown' })
     logger.api('POST', '/api/study-sessions/start', 500, duration, { error: error.message })

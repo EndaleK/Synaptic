@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
       message: `Successfully imported ${getSourceName(detected.type)}: ${extractedContent.metadata.title}`
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Import API error', error, { userId, url: request.url, duration: `${duration}ms` })
     logger.api('POST', '/api/import-from-url', 500, duration, { userId, error: 'Unknown error' })

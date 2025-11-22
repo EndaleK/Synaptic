@@ -125,7 +125,7 @@ export async function PUT(
     }
 
     // Build update object (only allow specific fields)
-    const updateData: any = {}
+    const updateData: Partial<{ is_favorited: boolean }> = {}
     const { is_favorited } = body
 
     if (is_favorited !== undefined) updateData.is_favorited = is_favorited

@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
       url: session.url
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Stripe checkout session creation failed', error, {
       userId: 'unknown',

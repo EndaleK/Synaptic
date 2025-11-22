@@ -55,7 +55,7 @@ export async function GET() {
       authUrl: authUrl.toString()
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Google Calendar auth error', error)
     logger.api('GET', '/api/integrations/google-calendar/auth', 500, duration, { error: error.message })

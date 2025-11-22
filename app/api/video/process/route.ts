@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
-import { fetchYouTubeTranscriptWithRetry } from '@/lib/youtube-transcript-fetcher'
+import { fetchYouTubeTranscriptWithRetry, TranscriptSegment } from '@/lib/youtube-transcript-fetcher'
+import { VideoKeyPoint, VideoTranscriptLine } from '@/lib/supabase/types'
 import OpenAI from 'openai'
 import { incrementUsage } from '@/lib/usage-limits'
 
@@ -98,10 +99,10 @@ export async function POST(request: NextRequest) {
 
       // Check if transcript has valid timestamps (not all zeros or all same value)
       const hasBadTimestamps = hasTranscript && (
-        existingVideo.transcript.every((line: any) => line.start_time === 0) ||
-        existingVideo.transcript.every((line: any) => Math.floor(line.start_time) === 0) ||
+        existingVideo.transcript.every((line: VideoTranscriptLine) => line.start_time === 0) ||
+        existingVideo.transcript.every((line: VideoTranscriptLine) => Math.floor(line.start_time) === 0) ||
         (existingVideo.transcript.length > 5 &&
-         existingVideo.transcript.slice(0, 5).every((line: any) =>
+         existingVideo.transcript.slice(0, 5).every((line: VideoTranscriptLine) =>
            Math.floor(line.start_time) === Math.floor(existingVideo.transcript[0].start_time)
          ))
       )
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract transcript with enhanced fallback mechanisms
-    let transcript: any[] = []
+    let transcript: TranscriptSegment[] = []
     let transcriptError: string | null = null
     let transcriptSource = 'unknown'
 
@@ -186,7 +187,7 @@ export async function POST(request: NextRequest) {
 
     // Generate AI summary and key points with enhanced analysis
     let summary = ''
-    let keyPoints: any[] = []
+    let keyPoints: VideoKeyPoint[] = []
 
     if (fullTranscript) {
       const completion = await openai.chat.completions.create({

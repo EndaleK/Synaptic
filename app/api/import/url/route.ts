@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('POST /api/import/url error', error, { duration })
     logger.api('POST', '/api/import/url', 500, duration, { error: error?.message })

@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       url: portalSession.url
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
 
     // Determine error type and provide helpful message

@@ -509,7 +509,7 @@ export async function POST(req: NextRequest) {
           }
         })
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         const duration = Date.now() - startTime
         logger.error('Quick summary generation error in stream', error, { userId, duration: `${duration}ms` })
         logger.api('POST', '/api/generate-quick-summary', 500, duration, { userId, error: error.message })
@@ -522,7 +522,7 @@ export async function POST(req: NextRequest) {
     // Return streaming response
     return new Response(stream, { headers: createSSEHeaders() })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     // This catch is for pre-flight checks (auth, rate limiting, validation)
     const duration = Date.now() - startTime
     logger.error('Quick summary pre-flight error', error, { userId: (await auth()).userId, duration: `${duration}ms` })

@@ -70,7 +70,7 @@ export async function GET() {
       try {
         await client.users.getUser(user.clerk_user_id)
         // User exists in Clerk, not orphaned
-      } catch (error: any) {
+      } catch (error: unknown) {
         // User not found in Clerk - this is an orphaned record
         if (error.status === 404 || error.message?.includes('not found')) {
           orphanedUsers.push({
@@ -167,7 +167,7 @@ export async function DELETE() {
       try {
         await client.users.getUser(user.clerk_user_id)
         // User exists, not orphaned
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error.status === 404 || error.message?.includes('not found')) {
           orphanedIds.push(user.id)
         }

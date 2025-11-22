@@ -33,7 +33,7 @@ export async function GET() {
       usage: completion.usage
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({
       status: 'error',
       message: error.message || 'Unknown error',

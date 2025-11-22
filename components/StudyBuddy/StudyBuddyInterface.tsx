@@ -174,14 +174,14 @@ export default function StudyBuddyInterface() {
   const currentTopics = suggestedTopics[personalityMode]
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-white via-gray-50 to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             {/* Title */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-gray-600 dark:bg-gray-700 flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -198,7 +198,7 @@ export default function StudyBuddyInterface() {
             <button
               onClick={handleNewConversation}
               disabled={messages.length === 0}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-handwriting"
+              className="px-5 py-2.5 text-sm font-semibold text-white bg-gray-700 dark:bg-gray-600 hover:bg-gray-800 dark:hover:bg-gray-500 rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-handwriting"
               title="Start new conversation"
             >
               <RotateCcw className="w-4 h-4" />
@@ -302,8 +302,8 @@ export default function StudyBuddyInterface() {
                 className={`
                   max-w-3xl rounded-lg p-4
                   ${message.role === 'user'
-                    ? 'bg-blue-600 text-white ml-8'
-                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
+                    ? 'bg-gray-700 dark:bg-gray-600 text-white ml-8'
+                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100'
                   }
                 `}
               >
@@ -314,7 +314,7 @@ export default function StudyBuddyInterface() {
                 ) : (
                   <MarkdownRenderer
                     content={message.content}
-                    className="font-handwriting text-[15px] leading-relaxed"
+                    className="font-handwriting text-[15px] leading-relaxed text-gray-900 dark:text-gray-100"
                   />
                 )}
               </div>
@@ -324,10 +324,10 @@ export default function StudyBuddyInterface() {
           {/* Streaming message */}
           {streamingMessage && (
             <div className="mb-4">
-              <div className="max-w-3xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div className="max-w-3xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-gray-900 dark:text-gray-100">
                 <MarkdownRenderer
                   content={streamingMessage}
-                  className="font-handwriting text-[15px] leading-relaxed"
+                  className="font-handwriting text-[15px] leading-relaxed text-gray-900 dark:text-gray-100"
                   disableDiagrams={true}
                 />
                 <span className="inline-block w-1 h-4 bg-gray-400 ml-1 animate-pulse" />
@@ -370,7 +370,7 @@ export default function StudyBuddyInterface() {
             <button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2 font-medium font-handwriting"
+              className="px-6 py-3 bg-gray-700 dark:bg-gray-600 hover:bg-gray-800 dark:hover:bg-gray-500 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2 font-medium font-handwriting shadow-md hover:shadow-lg"
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

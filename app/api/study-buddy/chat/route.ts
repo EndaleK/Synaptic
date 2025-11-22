@@ -214,7 +214,7 @@ export async function POST(req: NextRequest) {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Study Buddy chat error', error, {
       userId: 'unknown',

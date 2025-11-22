@@ -485,7 +485,7 @@ export async function POST(req: NextRequest) {
       }
     })
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         const duration = Date.now() - startTime
         logger.error('Mind map generation error in stream', error, { userId, documentId, duration: `${duration}ms` })
         logger.api('POST', '/api/generate-mindmap', 500, duration, { userId, error: error?.message })
@@ -498,7 +498,7 @@ export async function POST(req: NextRequest) {
     // Return streaming response
     return new Response(stream, { headers: createSSEHeaders() })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     // This catch is for pre-flight checks (auth, rate limiting, validation)
     const duration = Date.now() - startTime
     // Get userId from auth if available

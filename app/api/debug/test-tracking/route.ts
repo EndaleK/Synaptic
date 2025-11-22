@@ -69,7 +69,7 @@ export async function POST() {
         : 'FAILURE: incrementUsage was called but no record was inserted. Database permission or RLS issue.'
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('🧪 TEST ERROR:', error)
     return NextResponse.json(
       {

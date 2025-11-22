@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
+import { VideoTranscriptLine } from '@/lib/supabase/types'
 import OpenAI from 'openai'
 import { validateUUIDParam } from '@/lib/validation/uuid'
 
@@ -78,7 +79,7 @@ export async function POST(
     console.log(`[Video ${videoId}] Re-analyzing with enhanced AI...`)
 
     // Combine transcript text for AI analysis
-    const fullTranscript = video.transcript.map((line: any) => line.text).join(' ')
+    const fullTranscript = video.transcript.map((line: VideoTranscriptLine) => line.text).join(' ')
 
     // Generate enhanced AI analysis
     const completion = await openai.chat.completions.create({

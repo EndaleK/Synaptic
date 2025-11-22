@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
       events: formattedEvents
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Get events error', error, { userId: 'unknown' })
     logger.api('GET', '/api/study-schedule/events', 500, duration, { error: error.message })
@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Create event error', error, { userId: 'unknown' })
     logger.api('POST', '/api/study-schedule/events', 500, duration, { error: error.message })

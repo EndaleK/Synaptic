@@ -420,7 +420,7 @@ Please answer this question based on the relevant excerpts provided above. The e
       totalChunks: docStats.chunkCount,
       documentName: document.file_name,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
 
     let errorUserId = 'unknown'

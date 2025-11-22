@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
       })) || []
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({
       error: error.message || "Failed to get user info"
     }, { status: 500 })

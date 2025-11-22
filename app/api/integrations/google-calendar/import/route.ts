@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
       message: `Successfully imported ${importedCount} new events from Google Calendar`
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Google Calendar import error', error)
     logger.api('POST', '/api/integrations/google-calendar/import', 500, duration, { error: error.message })

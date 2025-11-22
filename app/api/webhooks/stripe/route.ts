@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
           message: 'Event already processed'
         })
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If error is "not found", that's expected - continue processing
       // If error is database issue, log warning but continue anyway (fail-safe)
       if (error?.code !== 'PGRST116') { // PGRST116 = not found
@@ -404,7 +404,7 @@ export async function POST(req: NextRequest) {
         eventId: event.id,
         eventType: event.type
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Log error but don't fail the webhook (already processed successfully)
       logger.warn('Failed to record webhook event for deduplication', {
         eventId: event.id,
@@ -420,7 +420,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Webhook processing error', error, {
       errorMessage: error?.message

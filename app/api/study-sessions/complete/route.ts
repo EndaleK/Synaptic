@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
       completedAt: now.toISOString()
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Complete session error', error, { userId: 'unknown' })
     logger.api('POST', '/api/study-sessions/complete', 500, duration, { error: error.message })

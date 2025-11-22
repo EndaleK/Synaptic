@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
       new URL('/dashboard/study/calendar?success=calendar_connected', req.url)
     )
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Google Calendar callback error', error)
     logger.api('GET', '/api/integrations/google-calendar/callback', 500, duration, { error: error.message })

@@ -99,7 +99,7 @@ export async function POST() {
       diagnosis: 'SUCCESS! Insert worked. The issue was the missing RLS policies.'
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('🔍 DEEP TEST ERROR:', error)
     return NextResponse.json(
       {

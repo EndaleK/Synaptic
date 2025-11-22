@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
       preferences
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Study preferences error', error, { userId: 'unknown' })
     logger.api('GET', '/api/study-preferences', 500, duration, { error: error.message })
@@ -145,7 +145,7 @@ export async function PUT(req: NextRequest) {
       preferences: updatedPreferences
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Update study preferences error', error, { userId: 'unknown' })
     logger.api('PUT', '/api/study-preferences', 500, duration, { error: error.message })

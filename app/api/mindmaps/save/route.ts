@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       mindMap: savedMindMap
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Mind map save error', error, { duration: `${duration}ms` })
 

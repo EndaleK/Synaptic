@@ -61,7 +61,7 @@ export async function GET() {
         : 'Profile and tracking records exist. Issue may be elsewhere.'
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       {
         error: 'Diagnostic failed',

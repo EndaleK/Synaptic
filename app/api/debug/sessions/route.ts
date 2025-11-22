@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       { error: error.message || "Failed to fetch sessions" },
       { status: 500 }

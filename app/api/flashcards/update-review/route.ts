@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('Update review error', error, { userId: 'unknown' })
     logger.api('POST', '/api/flashcards/update-review', 500, duration, { error: error.message })
