@@ -80,7 +80,8 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
       // Replace line breaks within brackets to keep labels on one line
       let cleanedCode = code.trim()
 
-      // Fix incomplete node labels by joining lines that don't end properly
+      // Fix incomplete node labels ONLY if line ends with unclosed bracket
+      // Do NOT fix lines with multiple complete node labels like: A[X] --> B[Y]
       const lines = cleanedCode.split('\n')
       const fixedLines: string[] = []
       let i = 0
@@ -88,18 +89,26 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
       while (i < lines.length) {
         let currentLine = lines[i].trim()
 
-        // Check if line has an opening bracket without closing bracket
-        const openBrackets = (currentLine.match(/\[/g) || []).length
-        const closeBrackets = (currentLine.match(/\]/g) || []).length
+        // Only fix if line ENDS with an incomplete label (e.g., "A[Something" without "]")
+        // Check last token after splitting by whitespace
+        const tokens = currentLine.split(/\s+/)
+        const lastToken = tokens[tokens.length - 1]
 
-        if (openBrackets > closeBrackets && i + 1 < lines.length) {
-          // Join with next line(s) until brackets are balanced
+        // If last token has unclosed bracket, it needs fixing
+        const hasUnclosedBracket = lastToken.includes('[') && !lastToken.includes(']')
+
+        if (hasUnclosedBracket && i + 1 < lines.length) {
+          // Join with next line until we find the closing bracket
           let j = i + 1
-          while (j < lines.length && openBrackets > closeBrackets) {
+          while (j < lines.length) {
             const nextLine = lines[j].trim()
             currentLine += ' ' + nextLine
-            const newCloseBrackets = (currentLine.match(/\]/g) || []).length
-            if (newCloseBrackets >= openBrackets) break
+
+            // Check if we now have the closing bracket
+            const updatedTokens = currentLine.split(/\s+/)
+            const updatedLastToken = updatedTokens[updatedTokens.length - 1]
+            if (updatedLastToken.includes(']')) break
+
             j++
           }
           i = j
