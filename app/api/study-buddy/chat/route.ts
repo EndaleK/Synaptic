@@ -124,21 +124,63 @@ export async function POST(req: NextRequest) {
     })
 
     // Call AI provider (streaming response)
-    const stream = await provider.streamCompletion(conversationMessages, {
-      temperature: personalityMode === 'buddy' ? 0.8 : 0.6, // Buddy mode slightly more creative
-      maxTokens: 1500
-    })
+    if (!provider.streamComplete) {
+      // Fallback to non-streaming if provider doesn't support it
+      const completion = await provider.complete(conversationMessages, {
+        temperature: personalityMode === 'buddy' ? 0.8 : 0.6,
+        maxTokens: 1500
+      })
 
-    // Track usage (asynchronously)
-    trackStudyBuddyUsage(profile.id, messages[messages.length - 1].content.length).catch(
-      (error) => logger.error('Failed to track Study Buddy usage', error)
-    )
+      // Track usage
+      await trackStudyBuddyUsage(profile.id, messages[messages.length - 1].content.length)
 
-    const duration = Date.now() - startTime
-    logger.api('POST', '/api/study-buddy/chat', 200, duration, {
-      userId,
-      personalityMode,
-      messageCount: messages.length
+      const duration = Date.now() - startTime
+      logger.api('POST', '/api/study-buddy/chat', 200, duration, {
+        userId,
+        personalityMode,
+        messageCount: messages.length
+      })
+
+      return NextResponse.json({
+        content: completion.content,
+        done: true
+      })
+    }
+
+    // Create ReadableStream from AsyncGenerator
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const generator = provider.streamComplete!(conversationMessages, {
+            temperature: personalityMode === 'buddy' ? 0.8 : 0.6,
+            maxTokens: 1500
+          })
+
+          for await (const chunk of generator) {
+            const data = `data: ${JSON.stringify({ content: chunk })}\n\n`
+            controller.enqueue(encoder.encode(data))
+          }
+
+          // Send done signal
+          controller.enqueue(encoder.encode('data: {"done":true}\n\n'))
+          controller.close()
+
+          // Track usage (asynchronously)
+          trackStudyBuddyUsage(profile.id, messages[messages.length - 1].content.length).catch(
+            (error) => logger.error('Failed to track Study Buddy usage', error)
+          )
+
+          const duration = Date.now() - startTime
+          logger.api('POST', '/api/study-buddy/chat', 200, duration, {
+            userId,
+            personalityMode,
+            messageCount: messages.length
+          })
+        } catch (error) {
+          controller.error(error)
+        }
+      }
     })
 
     // Return streaming response
