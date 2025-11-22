@@ -56,7 +56,7 @@ export default function PersonalityToggle({ mode, onChange }: PersonalityToggleP
         title="Comedy mode - jokes, roasts, and fun study breaks!"
       >
         <Laugh className="w-4 h-4" />
-        <span className="font-medium text-sm font-handwriting">Comedy</span>
+        <span className="font-medium text-sm font-handwriting">lol 😄</span>
       </button>
     </div>
   )

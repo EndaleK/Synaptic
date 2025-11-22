@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Send, Loader2, Sparkles, Lightbulb, RotateCcw } from "lucide-react"
+import { Send, Loader2, Sparkles, Lightbulb, RotateCcw, Copy, Check, Download } from "lucide-react"
 import { useStudyBuddyStore } from "@/lib/store/useStudyBuddyStore"
 import { generateOpeningMessage, suggestedTopics } from "@/lib/study-buddy/personalities"
 import { useToast } from "../ToastContainer"
@@ -33,6 +33,7 @@ export default function StudyBuddyInterface() {
   const [isLoading, setIsLoading] = useState(false)
   const [showExplainPresets, setShowExplainPresets] = useState(false)
   const [streamingMessage, setStreamingMessage] = useState("")
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -170,6 +171,63 @@ export default function StudyBuddyInterface() {
     toast.success("Started new conversation")
   }
 
+  // Copy message to clipboard
+  const handleCopyMessage = async (messageId: string, content: string) => {
+    try {
+      await navigator.clipboard.writeText(content)
+      setCopiedMessageId(messageId)
+      toast.success("Message copied to clipboard")
+
+      // Reset copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedMessageId(null)
+      }, 2000)
+    } catch (error) {
+      console.error('Failed to copy message:', error)
+      toast.error("Failed to copy message")
+    }
+  }
+
+  // Export conversation as markdown
+  const handleExportConversation = () => {
+    if (messages.length === 0) {
+      toast.error("No conversation to export")
+      return
+    }
+
+    try {
+      // Build markdown content
+      let markdown = `# Study Buddy Conversation\n\n`
+      markdown += `**Personality Mode:** ${personalityMode}\n`
+      if (explainLevel) {
+        markdown += `**Explain Level:** ${explainLevel}\n`
+      }
+      markdown += `**Date:** ${new Date().toLocaleDateString()}\n\n---\n\n`
+
+      // Add messages
+      messages.forEach((message) => {
+        const role = message.role === 'user' ? '**You:**' : '**Study Buddy:**'
+        markdown += `${role}\n\n${message.content}\n\n---\n\n`
+      })
+
+      // Create and download file
+      const blob = new Blob([markdown], { type: 'text/markdown' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `study-buddy-chat-${new Date().toISOString().split('T')[0]}.md`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast.success("Conversation exported successfully")
+    } catch (error) {
+      console.error('Failed to export conversation:', error)
+      toast.error("Failed to export conversation")
+    }
+  }
+
   // Get current suggested topics based on personality mode
   const currentTopics = suggestedTopics[personalityMode]
 
@@ -194,16 +252,30 @@ export default function StudyBuddyInterface() {
               </div>
             </div>
 
-            {/* New Conversation Button - Mobile Optimized */}
-            <button
-              onClick={handleNewConversation}
-              disabled={messages.length === 0}
-              className="px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white bg-gray-700 dark:bg-gray-600 hover:bg-gray-800 dark:hover:bg-gray-500 rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-handwriting min-h-[40px] sm:min-h-auto active:scale-95 flex-shrink-0"
-              title="Start new conversation"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span className="hidden sm:inline">New Chat</span>
-            </button>
+            {/* Action Buttons - Mobile Optimized */}
+            <div className="flex items-center gap-2">
+              {/* Export Button */}
+              <button
+                onClick={handleExportConversation}
+                disabled={messages.length === 0}
+                className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-handwriting min-h-[40px] sm:min-h-auto active:scale-95 flex-shrink-0"
+                title="Export conversation"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Export</span>
+              </button>
+
+              {/* New Chat Button */}
+              <button
+                onClick={handleNewConversation}
+                disabled={messages.length === 0}
+                className="px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white bg-gray-700 dark:bg-gray-600 hover:bg-gray-800 dark:hover:bg-gray-500 rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-handwriting min-h-[40px] sm:min-h-auto active:scale-95 flex-shrink-0"
+                title="Start new conversation"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span className="hidden sm:inline">New Chat</span>
+              </button>
+            </div>
           </div>
 
           {/* Controls - Mobile Optimized */}
@@ -298,24 +370,49 @@ export default function StudyBuddyInterface() {
               key={message.id}
               className={`mb-4 ${message.role === 'user' ? 'flex justify-end' : ''}`}
             >
-              <div
-                className={`
-                  max-w-3xl rounded-lg p-4
-                  ${message.role === 'user'
-                    ? 'bg-gray-700 dark:bg-gray-600 text-white ml-8'
-                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100'
-                  }
-                `}
-              >
-                {message.role === 'user' ? (
-                  <div className="font-handwriting text-[15px] leading-relaxed">
-                    {message.content}
+              <div className="max-w-3xl w-full">
+                <div
+                  className={`
+                    rounded-lg p-4
+                    ${message.role === 'user'
+                      ? 'bg-gray-700 dark:bg-gray-600 text-white ml-8'
+                      : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100'
+                    }
+                  `}
+                >
+                  {message.role === 'user' ? (
+                    <div className="font-handwriting text-[15px] leading-relaxed">
+                      {message.content}
+                    </div>
+                  ) : (
+                    <MarkdownRenderer
+                      content={message.content}
+                      className="font-handwriting text-[15px] leading-relaxed text-gray-900 dark:text-gray-100"
+                    />
+                  )}
+                </div>
+
+                {/* Copy button for assistant messages */}
+                {message.role === 'assistant' && (
+                  <div className="flex justify-end mt-2 mr-2">
+                    <button
+                      onClick={() => handleCopyMessage(message.id, message.content)}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-all active:scale-95 min-h-[36px]"
+                      title="Copy message"
+                    >
+                      {copiedMessageId === message.id ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                          <span className="text-green-600 dark:text-green-400">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
                   </div>
-                ) : (
-                  <MarkdownRenderer
-                    content={message.content}
-                    className="font-handwriting text-[15px] leading-relaxed text-gray-900 dark:text-gray-100"
-                  />
                 )}
               </div>
             </div>
