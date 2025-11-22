@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
-import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar, Link2, Globe, CheckCircle2, ArrowRight, Brain, Clock, Bell, BarChart3, Target, PenTool, Youtube, GraduationCap, Library, Flame, Sparkles } from "lucide-react"
+import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar, Link2, Globe, CheckCircle2, ArrowRight, Brain, Clock, Bell, BarChart3, Target, PenTool, Youtube, GraduationCap, Library, Flame, Sparkles, ChevronDown, ChevronUp } from "lucide-react"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import { usePomodoroStore } from "@/lib/store/usePomodoroStore"
 import LearningProfileBanner from "@/components/LearningProfileBanner"
@@ -25,6 +25,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
   const [isLoadingDocs, setIsLoadingDocs] = useState(true)
   const [currentStreak, setCurrentStreak] = useState<number>(0)
   const [isLoadingStreak, setIsLoadingStreak] = useState(true)
+  const [isLearningProfileExpanded, setIsLearningProfileExpanded] = useState(false)
   const { learningStyle, assessmentScores, userProfile } = useUserStore()
   const { startTimer, status, timerType, sessionsCompleted } = usePomodoroStore()
 
@@ -444,69 +445,101 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
           onTakeAssessment={() => onOpenAssessment?.()}
         />
 
-        {/* Learning Profile Card */}
+        {/* Learning Profile Card - Collapsible */}
         {learningStyle && (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-headline-responsive text-gray-900 dark:text-white">Your Learning Profile</h2>
-              <button
-                onClick={() => window.location.href = '/dashboard/settings'}
-                className="text-sm text-accent-primary hover:underline"
-              >
-                View Full Profile
-              </button>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Dominant Style */}
-              <div className="bg-gradient-to-br from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-xl p-6 border border-accent-primary/30 dark:border-accent-primary/50">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center text-white">
-                    {(() => {
-                      const Icon = getStyleIcon(learningStyle)
-                      return <Icon className="w-6 h-6" />
-                    })()}
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Your Learning Style</p>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white capitalize">
-                      {learningStyle.replace('_', ' ')}
-                    </h3>
-                  </div>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden transition-all">
+            {/* Header - Always Visible */}
+            <button
+              onClick={() => setIsLearningProfileExpanded(!isLearningProfileExpanded)}
+              className="w-full p-6 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center text-white">
+                  {(() => {
+                    const Icon = getStyleIcon(learningStyle)
+                    return <Icon className="w-6 h-6" />
+                  })()}
                 </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  {getStyleDescription(learningStyle)}
-                </p>
+                <div className="text-left">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Learning Profile</h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">
+                    {learningStyle.replace('_', ' ')} Learner
+                  </p>
+                </div>
               </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    window.location.href = '/dashboard/settings'
+                  }}
+                  className="text-sm text-accent-primary hover:underline"
+                >
+                  View Full Profile
+                </button>
+                {isLearningProfileExpanded ? (
+                  <ChevronUp className="w-5 h-5 text-gray-400" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
+            </button>
 
-              {/* Score Breakdown */}
-              {assessmentScores && (
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your Scores</p>
-                  {Object.entries(assessmentScores).map(([style, score]) => {
-                    const percentage = (score / 30) * 100 // Assuming max score of 30
-                    return (
-                      <div key={style}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400 capitalize">
-                            {style.replace('_', ' ')}
-                          </span>
-                          <span className="text-xs font-semibold text-gray-900 dark:text-white">
-                            {Math.round(percentage)}%
-                          </span>
-                        </div>
-                        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full transition-all duration-500"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
+            {/* Expanded Content */}
+            {isLearningProfileExpanded && (
+              <div className="px-6 pb-6 pt-0 border-t border-gray-200 dark:border-gray-800">
+                <div className="grid md:grid-cols-2 gap-6 mt-6">
+                  {/* Dominant Style Details */}
+                  <div className="bg-gradient-to-br from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-xl p-6 border border-accent-primary/30 dark:border-accent-primary/50">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center text-white">
+                        {(() => {
+                          const Icon = getStyleIcon(learningStyle)
+                          return <Icon className="w-6 h-6" />
+                        })()}
                       </div>
-                    )
-                  })}
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Your Learning Style</p>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white capitalize">
+                          {learningStyle.replace('_', ' ')}
+                        </h3>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      {getStyleDescription(learningStyle)}
+                    </p>
+                  </div>
+
+                  {/* Score Breakdown */}
+                  {assessmentScores && (
+                    <div className="space-y-3">
+                      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your Scores</p>
+                      {Object.entries(assessmentScores).map(([style, score]) => {
+                        const percentage = (score / 30) * 100 // Assuming max score of 30
+                        return (
+                          <div key={style}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-medium text-gray-600 dark:text-gray-400 capitalize">
+                                {style.replace('_', ' ')}
+                              </span>
+                              <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                                {Math.round(percentage)}%
+                              </span>
+                            </div>
+                            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full transition-all duration-500"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
