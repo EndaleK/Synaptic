@@ -424,11 +424,7 @@ export default function DashboardLayout({
                                     : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
                                 }`}
                               >
-                                <Clock className="w-4 h-4" />
                                 <span className="flex-1">Pomodoro</span>
-                                <span className="text-[11px] font-mono">
-                                  {formatTime(timeRemaining)}
-                                </span>
                               </button>
                             )}
                           </div>
@@ -470,16 +466,16 @@ export default function DashboardLayout({
                               }
                               setSidebarOpen(false)
                             }}
-                            className={`btn-touch-icon rounded-lg font-medium transition-all ${
+                            className={`btn-touch-icon rounded-lg font-medium transition-all text-xs ${
                               pomodoroStatus === 'running'
                                 ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/30"
                                 : pomodoroStatus === 'paused'
                                 ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg shadow-yellow-500/30"
                                 : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
                             }`}
-                            title={`Pomodoro - ${formatTime(timeRemaining)}`}
+                            title="Pomodoro"
                           >
-                            <Clock className="w-5 h-5" />
+                            P
                           </button>
                         )}
                       </div>
