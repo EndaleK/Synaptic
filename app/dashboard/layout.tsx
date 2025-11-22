@@ -182,37 +182,37 @@ export default function DashboardLayout({
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center gap-3 group">
+          <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+            <Link href="/dashboard" className="flex items-center gap-2 group">
               {!sidebarCollapsed ? (
                 <>
-                  <div className="w-[54px] h-[54px] flex items-center justify-center flex-shrink-0">
+                  <div className="w-[46px] h-[46px] flex items-center justify-center flex-shrink-0">
                     <Image
                       src="/logo-brain-transparent.png"
                       alt="Synaptic Logo"
-                      width={54}
-                      height={54}
-                      className="w-[54px] h-[54px]"
+                      width={46}
+                      height={46}
+                      className="w-[46px] h-[46px]"
                       priority
                     />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400">
+                    <span className="text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400">
                       Synaptic
                     </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400">
                       Study Smarter
                     </span>
                   </div>
                 </>
               ) : (
-                <div className="w-[54px] h-[54px] flex items-center justify-center">
+                <div className="w-[46px] h-[46px] flex items-center justify-center">
                   <Image
                     src="/logo-brain-transparent.png"
                     alt="Synaptic Logo"
-                    width={54}
-                    height={54}
-                    className="w-[54px] h-[54px]"
+                    width={46}
+                    height={46}
+                    className="w-[46px] h-[46px]"
                     priority
                   />
                 </div>
@@ -233,9 +233,9 @@ export default function DashboardLayout({
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+          <nav className="flex-1 p-3 space-y-3 overflow-y-auto">
             {/* Main Navigation */}
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {navigation.map((item) => {
                 const isActive = item.href === "/dashboard"
                   ? pathname === item.href && activeMode === "home"
@@ -250,14 +250,14 @@ export default function DashboardLayout({
                         setActiveMode("home")
                       }
                     }}
-                    className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
                       isActive
                         ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
                         : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
                     } ${sidebarCollapsed ? "justify-center" : ""}`}
                     title={sidebarCollapsed ? item.name : undefined}
                   >
-                    <item.icon className="w-5 h-5" />
+                    <item.icon className="w-4 h-4" />
                     {!sidebarCollapsed && item.name}
                   </Link>
                 )
@@ -271,18 +271,18 @@ export default function DashboardLayout({
                 <>
                   <button
                     onClick={() => setLearningModesExpanded(!learningModesExpanded)}
-                    className="w-full px-4 mb-2"
+                    className="w-full px-3 mb-1.5"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <div className="h-px flex-1 bg-gradient-to-r from-accent-primary/20 to-transparent"></div>
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="text-[13.5px] font-semibold text-accent-primary uppercase tracking-wider">
+                      <div className="flex items-center gap-1">
+                        <h3 className="text-[11.5px] font-semibold text-accent-primary uppercase tracking-wider">
                           Learning Modes
                         </h3>
                         {learningModesExpanded ? (
-                          <ChevronUp className="w-3 h-3 text-accent-primary" />
+                          <ChevronUp className="w-2.5 h-2.5 text-accent-primary" />
                         ) : (
-                          <ChevronDown className="w-3 h-3 text-accent-primary" />
+                          <ChevronDown className="w-2.5 h-2.5 text-accent-primary" />
                         )}
                       </div>
                       <div className="h-px flex-1 bg-gradient-to-l from-accent-primary/20 to-transparent"></div>
@@ -297,7 +297,7 @@ export default function DashboardLayout({
                           <button
                             key={mode.id}
                             onClick={() => handleModeClick(mode.id, mode.comingSoon)}
-                            className={`w-full flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-all text-left ${
                               isActive
                                 ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
                                 : mode.comingSoon
@@ -305,15 +305,15 @@ export default function DashboardLayout({
                                 : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
                             }`}
                           >
-                            <mode.icon className="w-5 h-5" />
+                            <mode.icon className="w-4 h-4" />
                             <span className="flex-1">{mode.name}</span>
                             {mode.comingSoon && (
-                              <span className="px-1.5 py-0.5 text-xs bg-gray-300 dark:bg-gray-700 rounded-full">
+                              <span className="px-1.5 py-0.5 text-[10px] bg-gray-300 dark:bg-gray-700 rounded-full">
                                 Soon
                               </span>
                             )}
                             {mode.isNew && !mode.comingSoon && (
-                              <span className="px-1.5 py-0.5 text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full">
+                              <span className="px-1.5 py-0.5 text-[10px] bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full">
                                 NEW
                               </span>
                             )}
@@ -359,18 +359,18 @@ export default function DashboardLayout({
                 <>
                   <button
                     onClick={() => setStudyToolsExpanded(!studyToolsExpanded)}
-                    className="w-full px-4 mb-2"
+                    className="w-full px-3 mb-1.5"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <div className="h-px flex-1 bg-gradient-to-r from-accent-primary/20 to-transparent"></div>
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="text-[13.5px] font-semibold text-accent-primary uppercase tracking-wider">
+                      <div className="flex items-center gap-1">
+                        <h3 className="text-[11.5px] font-semibold text-accent-primary uppercase tracking-wider">
                           Study Tools
                         </h3>
                         {studyToolsExpanded ? (
-                          <ChevronUp className="w-3 h-3 text-accent-primary" />
+                          <ChevronUp className="w-2.5 h-2.5 text-accent-primary" />
                         ) : (
-                          <ChevronDown className="w-3 h-3 text-accent-primary" />
+                          <ChevronDown className="w-2.5 h-2.5 text-accent-primary" />
                         )}
                       </div>
                       <div className="h-px flex-1 bg-gradient-to-l from-accent-primary/20 to-transparent"></div>
@@ -386,13 +386,13 @@ export default function DashboardLayout({
                             key={tool.href}
                             href={tool.href}
                             onClick={() => setSidebarOpen(false)}
-                            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
                               isActive
                                 ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
                                 : "text-gray-600 dark:text-gray-400 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary dark:hover:text-accent-primary"
                             }`}
                           >
-                            <tool.icon className="w-5 h-5" />
+                            <tool.icon className="w-4 h-4" />
                             <span className="flex-1">{tool.name}</span>
                           </Link>
                         )
@@ -430,49 +430,49 @@ export default function DashboardLayout({
           </nav>
 
           {/* User Section */}
-          <div className="p-2.5 border-t border-gray-200 dark:border-gray-800 space-y-1.5">
+          <div className="p-2 border-t border-gray-200 dark:border-gray-800 space-y-1">
             {/* Theme Toggle & Sign Out Buttons */}
             <div className={`flex gap-1 ${sidebarCollapsed ? "flex-col" : ""}`}>
               {/* Theme Toggle Button */}
               <button
                 onClick={toggleTheme}
-                className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-accent-primary/10 dark:bg-accent-primary/20 hover:bg-accent-primary/20 dark:hover:bg-accent-primary/30 text-accent-primary rounded-lg transition-all text-sm font-medium border border-accent-primary/30 dark:border-accent-primary/50 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 bg-accent-primary/10 dark:bg-accent-primary/20 hover:bg-accent-primary/20 dark:hover:bg-accent-primary/30 text-accent-primary rounded-lg transition-all text-[12px] font-medium border border-accent-primary/30 dark:border-accent-primary/50 ${
                   sidebarCollapsed ? "w-full" : "flex-1"
                 }`}
                 title={sidebarCollapsed ? (isDarkMode ? "Light mode" : "Dark mode") : undefined}
               >
-                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {isDarkMode ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
                 {!sidebarCollapsed && <span>{isDarkMode ? "Light" : "Dark"}</span>}
               </button>
 
               {/* Sign Out Button */}
               <SignOutButton>
                 <button
-                  className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-all text-sm font-medium border border-red-200 dark:border-red-800 ${
+                  className={`flex items-center justify-center gap-1 px-2 py-1.5 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-all text-[12px] font-medium border border-red-200 dark:border-red-800 ${
                     sidebarCollapsed ? "w-full" : "flex-1"
                   }`}
                   title={sidebarCollapsed ? "Sign out" : undefined}
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5" />
                   {!sidebarCollapsed && <span>Sign Out</span>}
                 </button>
               </SignOutButton>
             </div>
 
             {/* User Info */}
-            <div className={`flex items-center gap-2 px-2.5 py-1.5 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-lg border border-accent-primary/20 dark:border-accent-primary/50 ${
+            <div className={`flex items-center gap-1.5 px-2 py-1.5 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-lg border border-accent-primary/20 dark:border-accent-primary/50 ${
               sidebarCollapsed ? "justify-center" : ""
             }`}>
               <div className="relative flex-shrink-0">
                 <UserButton />
-                <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
+                <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
               </div>
               {!sidebarCollapsed && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-black dark:text-white truncate">
+                  <p className="text-[12px] font-semibold text-black dark:text-white truncate">
                     {user?.fullName || user?.username || "User"}
                   </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                  <p className="text-[10px] text-gray-600 dark:text-gray-400 truncate">
                     {user?.primaryEmailAddress?.emailAddress}
                   </p>
                 </div>
@@ -480,7 +480,7 @@ export default function DashboardLayout({
             </div>
 
             {/* Copyright Notice */}
-            <div className={`px-2.5 py-0.5 text-center text-xs text-gray-500 dark:text-gray-400 ${
+            <div className={`px-2 py-0.5 text-center text-[10px] text-gray-500 dark:text-gray-400 ${
               sidebarCollapsed ? "text-center" : ""
             }`}>
               {sidebarCollapsed ? (
