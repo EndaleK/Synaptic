@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { UserButton, useUser } from "@clerk/nextjs"
-import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool, Youtube, Library, GraduationCap } from "lucide-react"
+import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool, Youtube, Library, GraduationCap, Sparkles } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useUIStore } from "@/lib/store/useStore"
 import { useToast } from "@/components/ToastContainer"
@@ -94,6 +94,7 @@ export default function DashboardLayout({
   ]
 
   const learningModes = [
+    { name: "Study Buddy", id: "studyBuddy", icon: Sparkles, comingSoon: false, isNew: true },
     { name: "Flashcards", id: "flashcards", icon: BookOpen, comingSoon: false },
     { name: "Chat", id: "chat", icon: MessageSquare, comingSoon: false },
     { name: "Podcast", id: "podcast", icon: Mic, comingSoon: false },
@@ -309,6 +310,11 @@ export default function DashboardLayout({
                             {mode.comingSoon && (
                               <span className="px-1.5 py-0.5 text-xs bg-gray-300 dark:bg-gray-700 rounded-full">
                                 Soon
+                              </span>
+                            )}
+                            {mode.isNew && !mode.comingSoon && (
+                              <span className="px-1.5 py-0.5 text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full">
+                                NEW
                               </span>
                             )}
                           </button>
