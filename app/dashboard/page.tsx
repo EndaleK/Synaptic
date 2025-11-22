@@ -71,6 +71,18 @@ const ExamView = dynamic(() => import("@/components/ExamView"), {
   )
 })
 
+const StudyBuddyInterface = dynamic(() => import("@/components/StudyBuddy/StudyBuddyInterface"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Loading Study Buddy...</p>
+      </div>
+    </div>
+  )
+})
+
 function DashboardContent() {
   const router = useRouter()
   const { user } = useUser()
@@ -421,6 +433,7 @@ function DashboardContent() {
     const tints: Record<string, string> = {
       flashcards: 'bg-[var(--bg-tint-flashcards)]',
       chat: 'bg-[var(--bg-tint-chat)]',
+      studyBuddy: 'bg-[var(--bg-tint-chat)]', // Same as chat (conversational)
       podcast: 'bg-[var(--bg-tint-podcast)]',
       'quick-summary': 'bg-[var(--bg-tint-podcast)]', // Same as podcast (audio)
       mindmap: 'bg-[var(--bg-tint-mindmap)]',
@@ -448,6 +461,13 @@ function DashboardContent() {
             }}
             onOpenAssessment={() => setShowAssessment(true)}
           />
+        )
+
+      case "studyBuddy":
+        return (
+          <div className="h-full">
+            <StudyBuddyInterface />
+          </div>
         )
 
       case "chat":

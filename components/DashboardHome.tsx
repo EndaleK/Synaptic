@@ -75,6 +75,18 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
 
   const learningModes = [
     {
+      id: "studyBuddy",
+      name: "Study Buddy",
+      icon: Sparkles,
+      description: "Ask me anything - from science to philosophy",
+      color: "blue", // Maps to --mode-chat (conversational)
+      bgClass: "bg-gradient-to-br from-blue-500 to-purple-600",
+      shadowClass: "shadow-blue-500/30",
+      available: true,
+      premium: false,
+      new: true // NEW badge indicator
+    },
+    {
       id: "flashcards",
       name: "Flashcards",
       icon: BookOpen,
@@ -414,6 +426,11 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
                   {mode.premium && (
                     <span className="absolute top-4 right-4 px-2 py-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-semibold rounded-full shadow-md">
                       Premium
+                    </span>
+                  )}
+                  {mode.new && mode.available && !mode.premium && (
+                    <span className="absolute top-4 right-4 px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-semibold rounded-full shadow-md">
+                      NEW
                     </span>
                   )}
                 </button>
