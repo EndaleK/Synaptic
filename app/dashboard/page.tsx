@@ -15,7 +15,6 @@ import QuizPromptModal from "@/components/QuizPromptModal"
 import InlineDocumentPicker from "@/components/InlineDocumentPicker"
 import ContentSelectionModal from "@/components/ContentSelectionModal"
 import Breadcrumb from "@/components/Breadcrumb"
-import TimeBasedThemeDebugger from "@/components/TimeBasedThemeDebugger"
 import { Flashcard } from "@/lib/types"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import { useDocumentStore } from "@/lib/store/useStore"
@@ -629,11 +628,6 @@ function DashboardContent() {
           onTakeQuiz={handleTakeQuiz}
           onDismiss={handleDismissQuiz}
         />
-      )}
-
-      {/* Time-Based Theme Debugger (Development Only) */}
-      {process.env.NODE_ENV === 'development' && (
-        <TimeBasedThemeDebugger warmthLevel={warmthLevel} />
       )}
 
     </>

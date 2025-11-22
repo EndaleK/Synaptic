@@ -105,21 +105,7 @@ export default function DocumentSwitcherModal({ onDocumentSwitch }: DocumentSwit
 
   return (
     <>
-      {/* Floating Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="hidden lg:flex fixed bottom-28 right-6 z-40 w-14 h-14 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all items-center justify-center group"
-        title="Switch Document (Cmd+K)"
-      >
-        <FileText className="w-6 h-6" />
-        {documents.length > 0 && (
-          <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-            {documents.length}
-          </span>
-        )}
-      </button>
-
-      {/* Modal Overlay */}
+      {/* Modal Overlay - Can still be opened with Cmd+K */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col border border-gray-200 dark:border-gray-800">

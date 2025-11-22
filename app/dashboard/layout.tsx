@@ -10,6 +10,7 @@ import { useUIStore } from "@/lib/store/useStore"
 import { useToast } from "@/components/ToastContainer"
 import { SignOutButton } from "@clerk/nextjs"
 import FloatingPomodoroTimer from "@/components/FloatingPomodoroTimer"
+import FloatingStudyBuddy from "@/components/FloatingStudyBuddy"
 import BottomNavigationBar from "@/components/BottomNavigationBar"
 import { useStudySessionTracking } from "@/lib/hooks/useStudySessionTracking"
 import { usePomodoroStore } from "@/lib/store/usePomodoroStore"
@@ -599,6 +600,9 @@ export default function DashboardLayout({
 
         {/* Persistent Pomodoro Timer - Visible across all study tools */}
         <FloatingPomodoroTimer />
+
+        {/* Floating Study Buddy - Accessible from all learning modes */}
+        <FloatingStudyBuddy />
 
         {/* Bottom Navigation Bar - Mobile Only */}
         <BottomNavigationBar
