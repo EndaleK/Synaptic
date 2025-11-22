@@ -18,6 +18,8 @@ interface UsageData {
     exams: UsageLimitData
     videos: UsageLimitData
     chat_messages: UsageLimitData
+    quick_summaries: UsageLimitData
+    study_buddy: UsageLimitData
   }
 }
 

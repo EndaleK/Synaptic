@@ -19,6 +19,8 @@ interface UsageData {
     exams: UsageLimitData
     videos: UsageLimitData
     chat_messages: UsageLimitData
+    quick_summaries: UsageLimitData
+    study_buddy: UsageLimitData
   }
 }
 
@@ -59,6 +61,8 @@ export default function UsageWarningNotification() {
           'Mock Exams': data.limits.exams,
           Videos: data.limits.videos,
           Chat: data.limits.chat_messages,
+          'Quick Summaries': data.limits.quick_summaries,
+          'Study Buddy': data.limits.study_buddy,
         }
 
         const atRiskFeatures: string[] = []

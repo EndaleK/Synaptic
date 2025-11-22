@@ -20,6 +20,8 @@ interface UsageLimits {
   exams: { used: number; limit: number }
   videos: { used: number; limit: number }
   chat_messages: { used: number; limit: number }
+  quick_summaries: { used: number; limit: number }
+  study_buddy: { used: number; limit: number }
 }
 
 export default function SubscriptionStatus() {
