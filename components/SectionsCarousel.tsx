@@ -505,7 +505,7 @@ export function SectionsCarousel() {
   ]
 
   return (
-    <section className="relative py-16 bg-white dark:bg-black overflow-hidden">
+    <section className="relative pt-16 pb-8 bg-white dark:bg-black overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Carousel Navigation - Desktop */}
         <div className="hidden md:flex justify-center items-center gap-4 mb-12">
