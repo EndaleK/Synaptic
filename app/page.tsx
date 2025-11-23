@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
-import { BookOpen, Brain, MessageSquare, Mic, Network, Sparkles, ArrowRight, Check, ClipboardCheck, Youtube, Database, TrendingDown, Users, Award, GraduationCap, Briefcase, Star, FileText, Zap, Bot, Clock, PenTool, BookOpenCheck, ChevronLeft, ChevronRight } from "lucide-react"
+import { BookOpen, Brain, MessageSquare, Mic, Network, Sparkles, ArrowRight, Check, ClipboardCheck, Youtube, Database, TrendingDown, Users, Award, GraduationCap, Briefcase, Star, FileText, Zap, Bot, Clock, PenTool, BookOpenCheck, ChevronLeft, ChevronRight, Mail, Phone } from "lucide-react"
 import Logo from "@/components/Logo"
 import { QRCodeGenerator } from "@/components/QRCodeGenerator"
 import { useState } from "react"
@@ -1327,6 +1327,28 @@ export default function LandingPage() {
                   >
                     → Go to Dashboard
                   </Link>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                  Contact Us
+                </h4>
+                <div className="space-y-3">
+                  <a
+                    href="mailto:support@synaptic.study"
+                    className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                  >
+                    <Mail className="w-4 h-4" />
+                    <span>support@synaptic.study</span>
+                  </a>
+                  <a
+                    href="tel:+18254368969"
+                    className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                  >
+                    <Phone className="w-4 h-4" />
+                    <span>+1 (825) 436-8969</span>
+                  </a>
                 </div>
               </div>
 
