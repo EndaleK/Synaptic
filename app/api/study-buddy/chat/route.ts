@@ -18,6 +18,7 @@ import { generateStudyBuddyPrompt, type PersonalityMode, type ExplainLevel } fro
 import { logger } from '@/lib/logger'
 import { checkUsageLimit, incrementUsage } from '@/lib/usage-limits'
 import { searchDocument } from '@/lib/vector-store'
+import { getUserDocuments } from '@/lib/supabase/documents-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -120,6 +121,10 @@ export async function POST(req: NextRequest) {
 
     // FEATURE FLAG: Date/Time Awareness
     // Set STUDY_BUDDY_DATE_TIME_AWARE=true in environment to enable
+    logger.info('Study Buddy Feature Flag Check', {
+      DATE_TIME_AWARE: process.env.STUDY_BUDDY_DATE_TIME_AWARE,
+      DOCUMENT_ACCESS: process.env.STUDY_BUDDY_DOCUMENT_ACCESS
+    })
     if (process.env.STUDY_BUDDY_DATE_TIME_AWARE === 'true') {
       const now = new Date()
       const currentDate = now.toLocaleDateString('en-US', {
@@ -151,18 +156,25 @@ Note: Users may be in different timezones, so be flexible with time references.`
     // FEATURE FLAG: Document Access via RAG
     // Set STUDY_BUDDY_DOCUMENT_ACCESS=true in environment to enable
     if (process.env.STUDY_BUDDY_DOCUMENT_ACCESS === 'true') {
+      logger.info('Study Buddy DOCUMENT_ACCESS flag is true, entering block')
       try {
-        // Get user's most recent documents
-        const { data: userDocuments } = await supabase
-          .from('documents')
-          .select('id, name, created_at')
-          .eq('user_id', profile.id)
-          .order('created_at', { ascending: false })
-          .limit(5)
+        // Get user's most recent documents using the same helper function as GET /api/documents
+        const { documents: userDocuments, error: documentsError } = await getUserDocuments(userId, 5, 0)
+
+        if (documentsError) {
+          logger.warn('Failed to fetch documents for Study Buddy', { error: documentsError, userId })
+          // Graceful degradation - continue without documents
+        }
+
+        logger.info('Study Buddy fetched documents', {
+          count: userDocuments?.length || 0,
+          hasDocuments: userDocuments && userDocuments.length > 0,
+          documentNames: userDocuments?.map(d => d.file_name).join(', ')
+        })
 
         if (userDocuments && userDocuments.length > 0) {
           const documentList = userDocuments
-            .map((doc, idx) => `${idx + 1}. "${doc.name}" (uploaded ${new Date(doc.created_at).toLocaleDateString()})`)
+            .map((doc, idx) => `${idx + 1}. "${doc.file_name}" (uploaded ${new Date(doc.created_at).toLocaleDateString()})`)
             .join('\n')
 
           systemPrompt += `\n\n📚 Document Access:
@@ -431,7 +443,7 @@ function shouldSearchDocuments(message: string): boolean {
  * Returns combined results sorted by relevance score
  */
 async function searchMultipleDocuments(
-  documents: Array<{ id: string; name: string; created_at: string }>,
+  documents: Array<{ id: string; file_name: string; created_at: string }>,
   query: string,
   topKPerDoc: number = 3
 ): Promise<Array<{ text: string; score: number; documentName: string }>> {
@@ -444,12 +456,12 @@ async function searchMultipleDocuments(
       return results.map(result => ({
         text: result.text,
         score: result.score,
-        documentName: doc.name
+        documentName: doc.file_name
       }))
     } catch (error) {
       logger.warn('Failed to search document in Study Buddy', {
         documentId: doc.id,
-        documentName: doc.name,
+        documentName: doc.file_name,
         error
       })
       return []
