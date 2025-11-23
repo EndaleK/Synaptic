@@ -135,6 +135,26 @@ CREATE TABLE IF NOT EXISTS mindmaps (
 );
 
 -- ============================================================================
+-- STUDY GUIDES TABLE
+-- ============================================================================
+-- Stores generated comprehensive study guides
+CREATE TABLE IF NOT EXISTS study_guides (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE,
+  document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  content JSONB NOT NULL, -- Structured study guide content (summary, objectives, topics, practice questions)
+  study_duration TEXT CHECK (study_duration IN ('1week', '2weeks', '1month', 'custom')),
+  difficulty_level TEXT CHECK (difficulty_level IN ('beginner', 'intermediate', 'advanced')),
+  pdf_url TEXT, -- URL to generated PDF in Supabase Storage
+  pdf_size INTEGER, -- File size in bytes
+  generation_status TEXT DEFAULT 'pending' CHECK (generation_status IN ('pending', 'generating', 'completed', 'failed')),
+  download_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================================================
 -- USAGE TRACKING TABLE
 -- ============================================================================
 -- Tracks API usage for billing and rate limiting
@@ -258,6 +278,7 @@ ALTER TABLE flashcards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE podcasts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mindmaps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE study_guides ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usage_tracking ENABLE ROW LEVEL SECURITY;
 ALTER TABLE exams ENABLE ROW LEVEL SECURITY;
 ALTER TABLE exam_questions ENABLE ROW LEVEL SECURITY;
@@ -318,6 +339,13 @@ CREATE POLICY "Users can view own mindmaps" ON mindmaps
   FOR SELECT USING (user_id IN (SELECT id FROM user_profiles WHERE clerk_user_id = auth.jwt()->>'sub'));
 
 CREATE POLICY "Users can manage own mindmaps" ON mindmaps
+  FOR ALL USING (user_id IN (SELECT id FROM user_profiles WHERE clerk_user_id = auth.jwt()->>'sub'));
+
+-- Study Guides
+CREATE POLICY "Users can view own study guides" ON study_guides
+  FOR SELECT USING (user_id IN (SELECT id FROM user_profiles WHERE clerk_user_id = auth.jwt()->>'sub'));
+
+CREATE POLICY "Users can manage own study guides" ON study_guides
   FOR ALL USING (user_id IN (SELECT id FROM user_profiles WHERE clerk_user_id = auth.jwt()->>'sub'));
 
 -- Usage tracking

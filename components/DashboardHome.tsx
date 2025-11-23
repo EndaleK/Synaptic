@@ -132,6 +132,17 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
       premium: false
     },
     {
+      id: "studyguide",
+      name: "Study Guide",
+      icon: BookOpen,
+      description: "Generate comprehensive study guides with practice questions",
+      color: "teal", // Maps to --mode-studyguide
+      bgClass: "bg-teal-500",
+      shadowClass: "shadow-teal-500/30",
+      available: true,
+      premium: false
+    },
+    {
       id: "writer",
       name: "Writer",
       icon: PenTool,

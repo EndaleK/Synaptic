@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAIProvider } from '@/lib/ai'
+import { getProviderForFeature } from '@/lib/ai'
 
 export const maxDuration = 60 // Allow up to 60 seconds for outline generation
 
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get AI provider (prefer DeepSeek for cost-effectiveness)
-    const provider = getAIProvider('writing-outline')
+    const provider = getProviderForFeature('chat')
 
     // Build prompt based on parameters
     const systemPrompt = `You are an expert writing coach helping students plan their essays. Your role is to create well-structured outlines that guide students through the writing process without doing the writing for them.
@@ -121,8 +121,9 @@ Format the outline clearly with proper indentation and numbering.`
 
   } catch (error: unknown) {
     console.error('Outline generation error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate outline'
     return NextResponse.json(
-      { error: error.message || 'Failed to generate outline' },
+      { error: errorMessage },
       { status: 500 }
     )
   }

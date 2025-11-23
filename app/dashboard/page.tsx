@@ -11,6 +11,7 @@ import DashboardHome from "@/components/DashboardHome"
 import PodcastView from "@/components/PodcastView"
 import QuickSummaryView from "@/components/QuickSummaryView"
 import MindMapView from "@/components/MindMapView"
+import StudyGuideView from "@/components/StudyGuideView"
 import QuizPromptModal from "@/components/QuizPromptModal"
 import InlineDocumentPicker from "@/components/InlineDocumentPicker"
 import ContentSelectionModal from "@/components/ContentSelectionModal"
@@ -119,10 +120,12 @@ function DashboardContent() {
     chat: boolean
     podcast: boolean
     mindmap: boolean
+    studyguide: boolean
   }>({
     chat: false,
     podcast: false,
-    mindmap: false
+    mindmap: false,
+    studyguide: false
   })
 
   // Load content from URL params after generation
@@ -397,7 +400,7 @@ function DashboardContent() {
       return
     }
 
-    // For Chat mode: Set document and activate chat immediately
+    // For Chat and Study Guide modes: Set document and activate immediately
     if (mode === 'chat') {
       setCurrentDocument({
         id: document.id,
@@ -408,6 +411,19 @@ function DashboardContent() {
       })
       setActiveModeDocuments(prev => ({ ...prev, chat: true }))
       setActiveMode('chat')
+      return
+    }
+
+    if (mode === 'studyguide') {
+      setCurrentDocument({
+        id: document.id,
+        name: document.file_name,
+        content: document.extracted_text || '',
+        fileType: document.file_type,
+        storagePath: document.storage_path
+      })
+      setActiveModeDocuments(prev => ({ ...prev, studyguide: true }))
+      setActiveMode('studyguide')
       return
     }
 
@@ -530,6 +546,25 @@ function DashboardContent() {
         return (
           <div className="h-full overflow-y-auto container-padding">
             <MindMapView
+              documentId={currentDocument.id}
+              documentName={currentDocument.name}
+            />
+          </div>
+        )
+
+      case "studyguide":
+        // Only show StudyGuideView if document was explicitly selected
+        if (!activeModeDocuments.studyguide) {
+          return (
+            <InlineDocumentPicker
+              onDocumentSelect={(doc) => handleDocumentSelect(doc, 'studyguide')}
+              mode="studyguide"
+            />
+          )
+        }
+        return (
+          <div className="h-full overflow-y-auto container-padding">
+            <StudyGuideView
               documentId={currentDocument.id}
               documentName={currentDocument.name}
             />

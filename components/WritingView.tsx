@@ -327,6 +327,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
       }
 
       setEssay(data.essay)
+      toast.success('Essay saved successfully')
     } catch (err) {
       console.error('Error saving essay:', err)
       toast.error('Failed to save essay: ' + (err instanceof Error ? err.message : 'Unknown error'))
@@ -797,7 +798,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
                   <div className="hidden md:block absolute top-0 bottom-0 left-20 w-px bg-red-200 dark:bg-red-900/30 opacity-20" />
 
                   {/* Content Area - Reduced padding on mobile */}
-                  <div className="relative px-4 sm:px-8 md:px-12 lg:px-24 py-6 sm:py-12 lg:py-16">
+                  <div className="relative px-2 sm:px-8 md:px-12 lg:px-24 py-4 sm:py-12 lg:py-16">
                     {/* Title Input */}
                     <input
                       type="text"
@@ -830,7 +831,6 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
                 onRemoveFile={handleRemoveFile}
                 onGenerateOutline={() => console.log('Generate outline')}
                 onImproveTone={handleImprove}
-                onCheckPlagiarism={() => console.log('Check plagiarism')}
                 onAddCitations={() => setShowCitations(true)}
               />
             </div>

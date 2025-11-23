@@ -2,12 +2,115 @@
 
 import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
-import { BookOpen, Brain, MessageSquare, Mic, Network, Sparkles, ArrowRight, Check, ClipboardCheck, Youtube, Database, TrendingDown, Users, Award, GraduationCap, Briefcase, Star, FileText, Zap, Bot, Clock } from "lucide-react"
+import { BookOpen, Brain, MessageSquare, Mic, Network, Sparkles, ArrowRight, Check, ClipboardCheck, Youtube, Database, TrendingDown, Users, Award, GraduationCap, Briefcase, Star, FileText, Zap, Bot, Clock, PenTool, BookOpenCheck, ChevronLeft, ChevronRight } from "lucide-react"
 import Logo from "@/components/Logo"
 import { QRCodeGenerator } from "@/components/QRCodeGenerator"
+import { useState } from "react"
 
 export default function LandingPage() {
   const { isSignedIn } = useAuth()
+  const [currentFeatureSlide, setCurrentFeatureSlide] = useState(0)
+
+  // Features data - all 12 tools
+  const features = [
+    {
+      icon: BookOpen,
+      title: "Smart Flashcards",
+      subtitle: "SM-2 Spaced Repetition Algorithm",
+      description: "Auto-extract key concepts and study with scientifically-proven spaced repetition that knows exactly when to quiz you.",
+      gradient: "from-accent-primary to-accent-secondary"
+    },
+    {
+      icon: MessageSquare,
+      title: "Socratic Teaching",
+      description: "Chat with your documents through guided dialogue. Synaptic's adaptive engine asks questions to deepen understanding instead of giving direct answers.",
+      gradient: "from-accent-blue to-accent-primary"
+    },
+    {
+      icon: Mic,
+      title: "Audio Learning",
+      subtitle: "83% Cheaper Than Competitors",
+      description: "Convert documents into natural-sounding podcasts. Perfect for learning while commuting, exercising, or multitasking.",
+      gradient: "from-accent-secondary to-accent-orange"
+    },
+    {
+      icon: Network,
+      title: "Mind Mapping",
+      description: "Visualize concepts with interactive maps featuring relationship types, cross-links, and knowledge integration indicators.",
+      gradient: "from-accent-orange to-accent-secondary"
+    },
+    {
+      icon: Brain,
+      title: "Adaptive Intelligence",
+      description: "Take a quick quiz to discover your learning style. The platform adapts to emphasize your preferred learning mode.",
+      gradient: "from-accent-primary to-accent-orange"
+    },
+    {
+      icon: Database,
+      title: "80MB+ Documents",
+      subtitle: "vs Competitors' 20MB Limits",
+      description: "Process massive textbooks, research papers, and training manuals. Chunked processing handles documents others can't.",
+      gradient: "from-accent-blue to-accent-secondary"
+    },
+    {
+      icon: ClipboardCheck,
+      title: "Mock Exam Simulator",
+      badge: "NEW",
+      description: "Automatically generated practice tests with performance analytics. Perfect for SAT, AP exams, certifications, and finals.",
+      gradient: "from-purple-500 to-pink-500"
+    },
+    {
+      icon: Youtube,
+      title: "Video Learning",
+      description: "Extract study materials from YouTube lectures. Generate flashcards, notes, and quizzes from any educational video.",
+      gradient: "from-red-500 to-pink-500"
+    },
+    {
+      icon: Bot,
+      title: "Study Buddy",
+      badge: "NEW",
+      description: "Your AI study companion. Ask anything from science to philosophy with tutor, buddy, or comedy modes for personalized learning.",
+      gradient: "from-blue-500 to-purple-500"
+    },
+    {
+      icon: Clock,
+      title: "Quick Summary",
+      subtitle: '"Teach Me in 5 Minutes"',
+      badge: "NEW",
+      description: "Fast, energetic audio summaries from documents, URLs, or YouTube videos. Perfect for last-minute review or quick overviews.",
+      gradient: "from-amber-500 to-orange-500"
+    },
+    {
+      icon: PenTool,
+      title: "Writing Assistant",
+      badge: "NEW",
+      description: "Essay editor with AI-powered suggestions, smart citations (APA/MLA/Chicago), voice dictation, and grammar checking. Transform your writing.",
+      gradient: "from-indigo-500 to-purple-500"
+    },
+    {
+      icon: BookOpenCheck,
+      title: "Study Guide",
+      badge: "NEW",
+      description: "Interactive study guides with comprehensive summaries, key concepts, and practice questions generated from your documents.",
+      gradient: "from-teal-500 to-green-500"
+    }
+  ]
+
+  const featuresPerSlide = 6
+  const totalSlides = Math.ceil(features.length / featuresPerSlide)
+
+  const nextSlide = () => {
+    setCurrentFeatureSlide((prev) => (prev + 1) % totalSlides)
+  }
+
+  const prevSlide = () => {
+    setCurrentFeatureSlide((prev) => (prev - 1 + totalSlides) % totalSlides)
+  }
+
+  const currentFeatures = features.slice(
+    currentFeatureSlide * featuresPerSlide,
+    (currentFeatureSlide + 1) * featuresPerSlide
+  )
 
   return (
     <div className="min-h-screen">
@@ -91,162 +194,104 @@ export default function LandingPage() {
           {/* Section Header */}
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black dark:text-white mb-4">
-              Ten Intelligent Tools, One Platform
+              Twelve Intelligent Tools, One Platform
             </h2>
             <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               From exam prep to content creation—everything you need to excel in high school, college, and beyond
             </p>
           </div>
 
-          {/* Features Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1: Flashcards */}
-            <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <BookOpen className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
-                Smart Flashcards
-              </h3>
-              <p className="text-xs font-semibold text-accent-primary mb-3">SM-2 Spaced Repetition Algorithm</p>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Auto-extract key concepts and study with scientifically-proven spaced repetition that knows exactly when to quiz you.
-              </p>
+          {/* Features Carousel */}
+          <div className="relative">
+            {/* Navigation Arrows - Desktop only */}
+            {totalSlides > 1 && (
+              <>
+                <button
+                  onClick={prevSlide}
+                  className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-16 z-10 w-12 h-12 items-center justify-center bg-white dark:bg-gray-800 rounded-full shadow-xl border-2 border-gray-200 dark:border-gray-700 hover:scale-110 hover:border-purple-500 dark:hover:border-purple-500 transition-all"
+                  aria-label="Previous features"
+                >
+                  <ChevronLeft className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                </button>
+                <button
+                  onClick={nextSlide}
+                  className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-16 z-10 w-12 h-12 items-center justify-center bg-white dark:bg-gray-800 rounded-full shadow-xl border-2 border-gray-200 dark:border-gray-700 hover:scale-110 hover:border-purple-500 dark:hover:border-purple-500 transition-all"
+                  aria-label="Next features"
+                >
+                  <ChevronRight className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                </button>
+              </>
+            )}
+
+            {/* Features Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {currentFeatures.map((feature, index) => {
+                const Icon = feature.icon
+                return (
+                  <div
+                    key={index}
+                    className="group relative p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800"
+                  >
+                    {/* NEW badge */}
+                    {feature.badge && (
+                      <div className="absolute top-4 right-4 px-2 py-1 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-xs font-bold rounded-full">
+                        {feature.badge}
+                      </div>
+                    )}
+                    <div className={`w-14 h-14 bg-gradient-to-br ${feature.gradient} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                      <Icon className="w-7 h-7 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
+                      {feature.title}
+                    </h3>
+                    {feature.subtitle && (
+                      <p className="text-xs font-semibold text-accent-primary mb-3">{feature.subtitle}</p>
+                    )}
+                    <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                      {feature.description}
+                    </p>
+                  </div>
+                )
+              })}
             </div>
 
-            {/* Feature 2: Chat */}
-            <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-accent-blue to-accent-primary rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <MessageSquare className="w-7 h-7 text-white" />
+            {/* Pagination Dots */}
+            {totalSlides > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-12">
+                {Array.from({ length: totalSlides }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentFeatureSlide(index)}
+                    className={`h-2 rounded-full transition-all ${
+                      currentFeatureSlide === index
+                        ? 'w-8 bg-gradient-to-r from-purple-600 to-pink-600'
+                        : 'w-2 bg-gray-300 dark:bg-gray-700 hover:bg-purple-400 dark:hover:bg-purple-500'
+                    }`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
               </div>
-              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
-                Socratic Teaching
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Chat with your documents through guided dialogue. Synaptic's adaptive engine asks questions
-                to deepen understanding instead of giving direct answers.
-              </p>
-            </div>
+            )}
 
-            {/* Feature 3: Podcasts */}
-            <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-accent-secondary to-accent-orange rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Mic className="w-7 h-7 text-white" />
+            {/* Mobile Navigation Buttons */}
+            {totalSlides > 1 && (
+              <div className="flex lg:hidden justify-center gap-4 mt-8">
+                <button
+                  onClick={prevSlide}
+                  className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 transition-all shadow-lg"
+                >
+                  <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">Previous</span>
+                </button>
+                <button
+                  onClick={nextSlide}
+                  className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 transition-all shadow-lg"
+                >
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">Next</span>
+                  <ChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                </button>
               </div>
-              <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
-                Audio Learning
-              </h3>
-              <p className="text-xs font-semibold text-green-600 dark:text-green-400 mb-3">83% Cheaper Than Competitors</p>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Convert documents into natural-sounding podcasts. Perfect for learning while commuting, exercising, or multitasking.
-              </p>
-            </div>
-
-            {/* Feature 4: Mind Maps */}
-            <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-accent-orange to-accent-secondary rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Network className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
-                Mind Mapping
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Visualize concepts with interactive maps featuring relationship types, cross-links, and knowledge integration indicators.
-              </p>
-            </div>
-
-            {/* Feature 5: Learning Style */}
-            <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-accent-primary to-accent-orange rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Brain className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
-                Adaptive Intelligence
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Take a quick quiz to discover your learning style. The platform
-                adapts to emphasize your preferred learning mode.
-              </p>
-            </div>
-
-            {/* Feature 6: Large Document Support */}
-            <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-accent-blue to-accent-secondary rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Database className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
-                80MB+ Documents
-              </h3>
-              <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-3">vs Competitors' 20MB Limits</p>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Process massive textbooks, research papers, and training manuals. Chunked processing handles documents others can't.
-              </p>
-            </div>
-
-            {/* Feature 7: Mock Exam Simulator (NEW) */}
-            <div className="group relative p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              {/* NEW badge */}
-              <div className="absolute top-4 right-4 px-2 py-1 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-xs font-bold rounded-full">
-                NEW
-              </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <ClipboardCheck className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
-                Mock Exam Simulator
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Automatically generated practice tests with performance analytics. Perfect for SAT, AP exams, certifications, and finals.
-              </p>
-            </div>
-
-            {/* Feature 8: Video Learning */}
-            <div className="group p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Youtube className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
-                Video Learning
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Extract study materials from YouTube lectures. Generate flashcards, notes, and quizzes from any educational video.
-              </p>
-            </div>
-
-            {/* Feature 9: Study Buddy (NEW) */}
-            <div className="group relative p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              {/* NEW badge */}
-              <div className="absolute top-4 right-4 px-2 py-1 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-xs font-bold rounded-full">
-                NEW
-              </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Bot className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
-                Study Buddy
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Your AI study companion. Ask anything from science to philosophy with tutor, buddy, or comedy modes for personalized learning.
-              </p>
-            </div>
-
-            {/* Feature 10: Quick Summary (NEW) */}
-            <div className="group relative p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl hover:shadow-2xl transition-all border border-gray-200 dark:border-gray-800">
-              {/* NEW badge */}
-              <div className="absolute top-4 right-4 px-2 py-1 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-xs font-bold rounded-full">
-                NEW
-              </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Clock className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
-                Quick Summary
-              </h3>
-              <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-3">"Teach Me in 5 Minutes"</p>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Fast, energetic audio summaries from documents, URLs, or YouTube videos. Perfect for last-minute review or quick overviews.
-              </p>
-            </div>
+            )}
           </div>
         </div>
       </section>
@@ -702,7 +747,7 @@ export default function LandingPage() {
                     Choose Your Tool
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Pick from 8 tools: Flashcards, Chat, Podcasts, Mind Maps, Mock Exams, Video, Writing, or Quiz
+                    Pick from 12 tools: Flashcards, Chat, Podcasts, Mind Maps, Mock Exams, Video, Writing, Study Guide, Quick Summary, Study Buddy, or Quiz
                   </p>
                 </div>
               </div>
@@ -917,7 +962,7 @@ export default function LandingPage() {
           {/* Bottom CTA */}
           <div className="text-center mt-12">
             <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-              These are just 3 examples—combine our 8 tools in countless ways to match your workflow
+              These are just 3 examples—combine our 12 tools in countless ways to match your workflow
             </p>
             <Link
               href={isSignedIn ? "/dashboard" : "/sign-in"}
@@ -927,6 +972,255 @@ export default function LandingPage() {
               Try It Yourself - Free
               <ArrowRight className="w-5 h-5" />
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-24 bg-gradient-to-b from-white to-gray-50 dark:from-black dark:to-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black dark:text-white mb-4">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Start free, upgrade anytime. No hidden fees, cancel whenever you want.
+            </p>
+          </div>
+
+          {/* Pricing Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Free Tier */}
+            <div className="relative rounded-3xl p-6 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-800">
+              <div className="mb-4">
+                <h3 className="text-xl font-bold mb-1 text-black dark:text-white">Free</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Perfect for trying out Synaptic</p>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span className="text-4xl font-bold text-black dark:text-white">$0</span>
+                </div>
+              </div>
+
+              <ul className="space-y-2.5 mb-6">
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">10 documents per month</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">100 flashcards per month</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">50 chat messages per month</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">5 AI-generated podcasts</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">10 mind maps per month</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Community support</span>
+                </li>
+              </ul>
+
+              <Link
+                href={isSignedIn ? "/dashboard" : "/sign-up"}
+                className="block w-full py-3 rounded-xl font-semibold text-center transition-all bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+              >
+                {isSignedIn ? "Current Plan" : "Get Started"}
+              </Link>
+            </div>
+
+            {/* Monthly Plan */}
+            <div className="relative rounded-3xl p-6 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-800">
+              <div className="mb-4">
+                <h3 className="text-xl font-bold mb-1 text-black dark:text-white">Monthly</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Flexible month-to-month</p>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span className="text-4xl font-bold text-black dark:text-white">$9.99</span>
+                  <span className="text-base text-gray-600 dark:text-gray-400">/month</span>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Billed monthly</p>
+              </div>
+
+              <ul className="space-y-2.5 mb-6">
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Unlimited documents</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Unlimited flashcards</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Unlimited podcasts & mind maps</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Priority AI processing</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Export to multiple formats</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Priority email support</span>
+                </li>
+              </ul>
+
+              <Link
+                href="/pricing"
+                className="block w-full py-3 rounded-xl font-semibold text-center transition-all bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+              >
+                Start Free Trial
+              </Link>
+            </div>
+
+            {/* Student Plan - Most Popular */}
+            <div className="relative rounded-3xl p-6 bg-black dark:bg-white border-2 border-black dark:border-white shadow-2xl">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <div className="inline-flex items-center gap-1 px-4 py-1.5 bg-gradient-to-r from-gray-600 to-black dark:from-gray-400 dark:to-white text-white dark:text-black rounded-full text-sm font-semibold">
+                  <GraduationCap className="w-4 h-4" />
+                  Most Popular
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="text-xl font-bold mb-1 text-white dark:text-black">Student</h3>
+                <p className="text-sm text-gray-300 dark:text-gray-700">Valid .edu email required</p>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span className="text-4xl font-bold text-white dark:text-black">$6.99</span>
+                  <span className="text-base text-gray-300 dark:text-gray-700">/month</span>
+                </div>
+                <p className="text-xs text-gray-300 dark:text-gray-700">Billed annually at $83.88</p>
+                <p className="text-xs font-semibold text-green-300 dark:text-green-600">💰 Save $35.88 with student discount!</p>
+              </div>
+
+              <ul className="space-y-2.5 mb-6">
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white dark:text-black flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-200 dark:text-gray-800">Unlimited everything</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white dark:text-black flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-200 dark:text-gray-800">All 12 AI-powered tools</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white dark:text-black flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-200 dark:text-gray-800">Priority AI processing</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white dark:text-black flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-200 dark:text-gray-800">Export to all formats</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white dark:text-black flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-200 dark:text-gray-800">Priority support</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white dark:text-black flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-200 dark:text-gray-800">Early access to new features</span>
+                </li>
+              </ul>
+
+              <Link
+                href="/pricing"
+                className="block w-full py-3 rounded-xl font-semibold text-center transition-all bg-white dark:bg-black text-black dark:text-white hover:scale-105"
+              >
+                Start Free Trial
+              </Link>
+            </div>
+
+            {/* Yearly Plan */}
+            <div className="relative rounded-3xl p-6 bg-gray-50 dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-800">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <div className="inline-flex items-center gap-1 px-4 py-1.5 bg-green-600 dark:bg-green-500 text-white rounded-full text-sm font-semibold">
+                  20% OFF
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="text-xl font-bold mb-1 text-black dark:text-white">Yearly</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Best value for committed learners</p>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span className="text-4xl font-bold text-black dark:text-white">$7.99</span>
+                  <span className="text-base text-gray-600 dark:text-gray-400">/month</span>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Billed annually at $95.88</p>
+                <p className="text-xs font-semibold text-green-600 dark:text-green-400">💰 Save $23.88 - like 2+ months free!</p>
+              </div>
+
+              <ul className="space-y-2.5 mb-6">
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Unlimited documents</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Unlimited flashcards</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Unlimited podcasts & mind maps</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Priority AI processing</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Export to multiple formats</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Priority email support</span>
+                </li>
+              </ul>
+
+              <Link
+                href="/pricing"
+                className="block w-full py-3 rounded-xl font-semibold text-center transition-all bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+              >
+                Start Free Trial
+              </Link>
+            </div>
+          </div>
+
+          {/* Additional Benefits */}
+          <div className="mt-12 text-center">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex items-center gap-2">
+                <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <span className="font-medium">No credit card required</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <span className="font-medium">7-day free trial</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <span className="font-medium">Cancel anytime</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -970,7 +1264,7 @@ export default function LandingPage() {
 
               {/* Subheadline with social proof */}
               <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
-                Use 8 powerful tools to ace exams, save time, and study 83% cheaper than competitors
+                Use 12 powerful tools to ace exams, save time, and study 83% cheaper than competitors
               </p>
 
               {/* Primary CTA Button */}

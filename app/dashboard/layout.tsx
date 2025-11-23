@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { UserButton, useUser } from "@clerk/nextjs"
-import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool, Youtube, Library, GraduationCap, Sparkles } from "lucide-react"
+import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool, Youtube, Library, GraduationCap, Sparkles, BookOpenCheck } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useUIStore } from "@/lib/store/useStore"
 import { useToast } from "@/components/ToastContainer"
@@ -119,6 +119,7 @@ export default function DashboardLayout({
 
   const studyTools = [
     { name: "Library", href: "/dashboard/library", icon: Library },
+    { name: "Study Guide", href: "/dashboard/study-guide", icon: BookOpenCheck },
     { name: "Calendar", href: "/dashboard/study/calendar", icon: Calendar },
     { name: "Statistics", href: "/dashboard/study/statistics", icon: BarChart3 },
     { name: "Notifications", href: "/dashboard/study/settings", icon: Bell },

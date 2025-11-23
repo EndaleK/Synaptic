@@ -88,6 +88,7 @@ export default function InlineDocumentPicker({
       case 'chat': return '💬'
       case 'podcast': return '🎧'
       case 'mindmap': return '🗺️'
+      case 'studyguide': return '📖'
       default: return '📚'
     }
   }
@@ -98,6 +99,7 @@ export default function InlineDocumentPicker({
       case 'chat': return 'Chat'
       case 'podcast': return 'Podcast'
       case 'mindmap': return 'Mind Map'
+      case 'studyguide': return 'Study Guide'
       default: return mode
     }
   }

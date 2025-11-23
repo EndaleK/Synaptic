@@ -90,9 +90,10 @@ export default function VoiceModal({
           </div>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            aria-label="Close modal"
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
@@ -122,12 +123,10 @@ export default function VoiceModal({
           </div>
 
           {/* Voice Dictation Component */}
-          <div className="mb-4">
-            <VoiceDictation
-              onTextReceived={handleTranscriptChange}
-              onListeningChange={handleListeningChange}
-            />
-          </div>
+          <VoiceDictation
+            onTextReceived={handleTranscriptChange}
+            onListeningChange={handleListeningChange}
+          />
 
           {/* Transcription Preview */}
           {transcribedText && (
@@ -140,17 +139,17 @@ export default function VoiceModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={handleClose}
-            className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            className="px-5 py-3 sm:px-4 sm:py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]"
           >
             Cancel
           </button>
           {transcribedText && (
             <button
               onClick={handleInsert}
-              className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-violet-600 text-white font-semibold hover:shadow-lg transition-all duration-200"
+              className="px-5 py-3 sm:px-4 sm:py-2 rounded-lg bg-gradient-to-r from-purple-600 to-violet-600 text-white font-semibold hover:shadow-lg transition-all duration-200 min-h-[44px]"
             >
               Insert Text
             </button>

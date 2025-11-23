@@ -106,6 +106,7 @@ function getDefaultProvider(feature: string): ProviderType {
     'flashcards': 'deepseek',        // 60-70% cheaper than OpenAI
     'chat': 'deepseek',              // 60-70% cheaper than OpenAI
     'exam': 'deepseek',              // Cost-effective for exam generation
+    'study_guide': 'deepseek',       // Cost-effective for long-form content generation
   };
 
   return defaults[feature] || 'openai';
