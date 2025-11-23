@@ -509,97 +509,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Feature Comparison Table */}
-          <div className="mb-12">
-            <div className="text-center mb-8">
-              <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-black dark:text-white mb-2">
-                How Synaptic Compares
-              </h3>
-              <p className="text-base md:text-lg text-gray-600 dark:text-gray-400">
-                More features, better pricing, superior technology
-              </p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xl">
-                <thead>
-                  <tr className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/50 dark:to-pink-900/50 border-b border-gray-200 dark:border-gray-800">
-                    <th className="text-left p-6 font-bold text-black dark:text-white">Feature</th>
-                    <th className="text-center p-6 font-bold text-purple-600 dark:text-purple-400">
-                      <div className="flex items-center justify-center gap-2">
-                        <Brain className="w-5 h-5" />
-                        Synaptic
-                      </div>
-                    </th>
-                    <th className="text-center p-6 font-semibold text-gray-600 dark:text-gray-400">Quizlet</th>
-                    <th className="text-center p-6 font-semibold text-gray-600 dark:text-gray-400">Notion AI</th>
-                    <th className="text-center p-6 font-semibold text-gray-600 dark:text-gray-400">Speechify</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                  <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="p-4 font-medium text-gray-900 dark:text-white">Smart Flashcards</td>
-                    <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
-                    <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                  </tr>
-                  <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="p-4 font-medium text-gray-900 dark:text-white">Mock Exams</td>
-                    <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                  </tr>
-                  <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="p-4 font-medium text-gray-900 dark:text-white">Audio Podcasts</td>
-                    <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                    <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
-                  </tr>
-                  <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="p-4 font-medium text-gray-900 dark:text-white">Interactive Mind Maps</td>
-                    <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                  </tr>
-                  <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="p-4 font-medium text-gray-900 dark:text-white">YouTube Integration</td>
-                    <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                  </tr>
-                  <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="p-4 font-medium text-gray-900 dark:text-white">Document Size Limit</td>
-                    <td className="p-4 text-center font-bold text-purple-600 dark:text-purple-400">80MB+</td>
-                    <td className="p-4 text-center text-gray-600 dark:text-gray-400">N/A</td>
-                    <td className="p-4 text-center text-gray-600 dark:text-gray-400">20MB</td>
-                    <td className="p-4 text-center text-gray-600 dark:text-gray-400">100MB</td>
-                  </tr>
-                  <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="p-4 font-medium text-gray-900 dark:text-white">Spaced Repetition</td>
-                    <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
-                    <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                    <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
-                  </tr>
-                  <tr className="bg-purple-50 dark:bg-purple-900/20">
-                    <td className="p-4 font-bold text-gray-900 dark:text-white">Starting Price (Monthly)</td>
-                    <td className="p-4 text-center font-bold text-purple-600 dark:text-purple-400">Free*</td>
-                    <td className="p-4 text-center text-gray-600 dark:text-gray-400">$7.99</td>
-                    <td className="p-4 text-center text-gray-600 dark:text-gray-400">$10</td>
-                    <td className="p-4 text-center text-gray-600 dark:text-gray-400">$11.58</td>
-                  </tr>
-                </tbody>
-              </table>
-              <p className="text-xs text-gray-500 dark:text-gray-500 text-center mt-4">
-                *Free tier includes 3 flashcard sets, 2 podcasts, and 2 mind maps per month
-              </p>
-            </div>
-          </div>
-
           {/* Research Citation Box */}
           <div className="bg-gradient-to-br from-orange-50 to-pink-50 dark:from-orange-900/20 dark:to-pink-900/20 rounded-2xl border-2 border-orange-200 dark:border-orange-800 p-8">
             <div className="flex items-start gap-4">
@@ -972,6 +881,99 @@ export default function LandingPage() {
               Try It Yourself - Free
               <ArrowRight className="w-5 h-5" />
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* How Synaptic Compares Section */}
+      <section className="py-24 bg-white dark:bg-black">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black dark:text-white mb-4">
+              How Synaptic Compares
+            </h2>
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400">
+              More features, better pricing, superior technology
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xl">
+              <thead>
+                <tr className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/50 dark:to-pink-900/50 border-b border-gray-200 dark:border-gray-800">
+                  <th className="text-left p-6 font-bold text-black dark:text-white">Feature</th>
+                  <th className="text-center p-6 font-bold text-purple-600 dark:text-purple-400">
+                    <div className="flex items-center justify-center gap-2">
+                      <Brain className="w-5 h-5" />
+                      Synaptic
+                    </div>
+                  </th>
+                  <th className="text-center p-6 font-semibold text-gray-600 dark:text-gray-400">Quizlet</th>
+                  <th className="text-center p-6 font-semibold text-gray-600 dark:text-gray-400">Notion AI</th>
+                  <th className="text-center p-6 font-semibold text-gray-600 dark:text-gray-400">Speechify</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <td className="p-4 font-medium text-gray-900 dark:text-white">Smart Flashcards</td>
+                  <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
+                  <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                </tr>
+                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <td className="p-4 font-medium text-gray-900 dark:text-white">Mock Exams</td>
+                  <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                </tr>
+                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <td className="p-4 font-medium text-gray-900 dark:text-white">Audio Podcasts</td>
+                  <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                  <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
+                </tr>
+                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <td className="p-4 font-medium text-gray-900 dark:text-white">Interactive Mind Maps</td>
+                  <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                </tr>
+                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <td className="p-4 font-medium text-gray-900 dark:text-white">YouTube Integration</td>
+                  <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                </tr>
+                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <td className="p-4 font-medium text-gray-900 dark:text-white">Document Size Limit</td>
+                  <td className="p-4 text-center font-bold text-purple-600 dark:text-purple-400">80MB+</td>
+                  <td className="p-4 text-center text-gray-600 dark:text-gray-400">N/A</td>
+                  <td className="p-4 text-center text-gray-600 dark:text-gray-400">20MB</td>
+                  <td className="p-4 text-center text-gray-600 dark:text-gray-400">100MB</td>
+                </tr>
+                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <td className="p-4 font-medium text-gray-900 dark:text-white">Spaced Repetition</td>
+                  <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
+                  <td className="p-4 text-center"><Check className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto" /></td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                  <td className="p-4 text-center text-gray-400 dark:text-gray-600">✗</td>
+                </tr>
+                <tr className="bg-purple-50 dark:bg-purple-900/20">
+                  <td className="p-4 font-bold text-gray-900 dark:text-white">Starting Price (Monthly)</td>
+                  <td className="p-4 text-center font-bold text-purple-600 dark:text-purple-400">Free*</td>
+                  <td className="p-4 text-center text-gray-600 dark:text-gray-400">$7.99</td>
+                  <td className="p-4 text-center text-gray-600 dark:text-gray-400">$10</td>
+                  <td className="p-4 text-center text-gray-600 dark:text-gray-400">$11.58</td>
+                </tr>
+              </tbody>
+            </table>
+            <p className="text-xs text-gray-500 dark:text-gray-500 text-center mt-4">
+              *Free tier includes 3 flashcard sets, 2 podcasts, and 2 mind maps per month
+            </p>
           </div>
         </div>
       </section>
