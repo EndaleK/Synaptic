@@ -107,9 +107,17 @@ export async function generateStudyGuidePDF(options: PDFGenerationOptions): Prom
   doc.setFont('helvetica', 'bold')
   doc.text('Study Guide', pageWidth / 2, 35, { align: 'center' })
 
+  // Title with word wrapping for long titles
   doc.setFontSize(20)
   doc.setFont('helvetica', 'normal')
-  doc.text(studyGuide.title, pageWidth / 2, 50, { align: 'center' })
+  const titleMaxWidth = pageWidth - (margin * 2)
+  const titleLines = doc.splitTextToSize(sanitizeText(studyGuide.title), titleMaxWidth)
+
+  // Center each line of the title
+  let titleY = 50
+  titleLines.forEach((line: string, index: number) => {
+    doc.text(line, pageWidth / 2, titleY + (index * 7), { align: 'center' })
+  })
 
   doc.setTextColor(0, 0, 0)
   yPosition = 100
