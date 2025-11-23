@@ -71,7 +71,8 @@ export default function LandingPage() {
       icon: Bot,
       title: "Study Buddy",
       badge: "NEW",
-      description: "Your AI study companion. Ask anything from science to philosophy with tutor, buddy, or comedy modes for personalized learning.",
+      subtitle: "Now With Document Awareness",
+      description: "Your AI study companion that knows YOUR documents. Ask questions and get answers directly from your study materials with automatic citations.",
       gradient: "from-blue-500 to-purple-500"
     },
     {
@@ -425,6 +426,138 @@ export default function LandingPage() {
       </section>
 
       <SectionsCarousel />
+
+      {/* Study Buddy Feature Spotlight */}
+      <section className="py-24 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-pink-900/20 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 bg-grid-black/[0.02] dark:bg-grid-white/[0.02]" />
+        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-400/20 dark:bg-blue-600/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-400/20 dark:bg-purple-600/10 rounded-full blur-3xl" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header with Badge */}
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full text-sm font-bold mb-6 shadow-lg">
+              <Sparkles className="w-4 h-4" />
+              JUST LAUNCHED
+            </div>
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-black dark:text-white mb-6">
+              Study Buddy Got Smarter
+            </h2>
+            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
+              Now with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 font-bold">document awareness</span> and <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 font-bold">real-time context</span>
+            </p>
+          </div>
+
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+            {/* Feature 1: Document Awareness */}
+            <div className="group bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border-2 border-blue-200 dark:border-blue-800">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Database className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
+                Knows Your Documents
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
+                Study Buddy can now see and reference all your uploaded documents. Ask questions and get answers directly from YOUR study materials.
+              </p>
+              <div className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-4">
+                <p className="text-sm font-mono text-blue-700 dark:text-blue-300">
+                  "What does my biology textbook say about mitosis?"
+                </p>
+              </div>
+            </div>
+
+            {/* Feature 2: Automatic Citations */}
+            <div className="group bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border-2 border-purple-200 dark:border-purple-800">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <FileText className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
+                Automatic Citations
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
+                Every answer includes citations showing which document the information came from, with relevance scores for transparency.
+              </p>
+              <div className="bg-purple-50 dark:bg-purple-900/30 rounded-xl p-4">
+                <p className="text-sm font-mono text-purple-700 dark:text-purple-300">
+                  📄 From "Biology Chapter 3" (Relevance: 95%)
+                </p>
+              </div>
+            </div>
+
+            {/* Feature 3: Real-Time Context */}
+            <div className="group bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border-2 border-pink-200 dark:border-pink-800">
+              <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-orange-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Clock className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
+                Time-Aware Planning
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
+                Study Buddy now knows the current date and time, helping you plan study schedules and manage deadlines effectively.
+              </p>
+              <div className="bg-pink-50 dark:bg-pink-900/30 rounded-xl p-4">
+                <p className="text-sm font-mono text-pink-700 dark:text-pink-300">
+                  "Help me prepare for my exam next Monday"
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* How It Works */}
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 md:p-12 border-2 border-gray-200 dark:border-gray-700">
+            <h3 className="text-3xl font-bold text-black dark:text-white mb-8 text-center">
+              Powered by Advanced RAG Technology
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold text-xl">
+                  1
+                </div>
+                <h4 className="font-bold text-lg text-black dark:text-white mb-2">Upload Documents</h4>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">
+                  Add your textbooks, notes, and study materials to Synaptic (up to 80MB+)
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold text-xl">
+                  2
+                </div>
+                <h4 className="font-bold text-lg text-black dark:text-white mb-2">Ask Questions</h4>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">
+                  Study Buddy searches your documents using AI-powered semantic search
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold text-xl">
+                  3
+                </div>
+                <h4 className="font-bold text-lg text-black dark:text-white mb-2">Get Smart Answers</h4>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">
+                  Receive answers with citations showing exactly where the information came from
+                </p>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div className="mt-12 text-center">
+              <Link
+                href={isSignedIn ? "/dashboard" : "/sign-up"}
+                className="inline-flex items-center gap-3 px-10 py-5 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl"
+              >
+                <Bot className="w-6 h-6" />
+                Try Study Buddy Now
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                Free plan includes 50 Study Buddy messages per month
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* How Synaptic Compares Section */}
       <section className="pt-16 pb-24 bg-white dark:bg-black">
