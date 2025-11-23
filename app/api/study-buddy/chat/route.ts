@@ -110,12 +110,91 @@ export async function POST(req: NextRequest) {
       .single()
 
     // Generate personality-aware system prompt
-    const systemPrompt = generateStudyBuddyPrompt({
+    let systemPrompt = generateStudyBuddyPrompt({
       mode: personalityMode,
       explainLevel,
       learningStyle: learningProfile?.dominant_style,
       topic
     })
+
+    // FEATURE FLAG: Date/Time Awareness
+    // Set STUDY_BUDDY_DATE_TIME_AWARE=true in environment to enable
+    if (process.env.STUDY_BUDDY_DATE_TIME_AWARE === 'true') {
+      const now = new Date()
+      const currentDate = now.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+      const currentTime = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
+
+      systemPrompt += `\n\n📅 Current Date & Time Awareness:
+- Today is ${currentDate}
+- Current time: ${currentTime}
+- Day of week: ${now.toLocaleDateString('en-US', { weekday: 'long' })}
+
+You are aware of the current date and time. Use this information when relevant:
+- Reference "today", "this week", "tomorrow" accurately
+- Help plan study schedules for upcoming dates
+- Be mindful of typical study times (late night vs morning)
+- Acknowledge time-sensitive queries ("due tomorrow", "exam next Monday")
+
+Note: Users may be in different timezones, so be flexible with time references.`
+    }
+
+    // FEATURE FLAG: Document Access via RAG
+    // Set STUDY_BUDDY_DOCUMENT_ACCESS=true in environment to enable
+    if (process.env.STUDY_BUDDY_DOCUMENT_ACCESS === 'true') {
+      try {
+        // Get user's most recent documents
+        const { data: userDocuments } = await supabase
+          .from('documents')
+          .select('id, name, created_at')
+          .eq('user_id', profile.id)
+          .order('created_at', { ascending: false })
+          .limit(5)
+
+        if (userDocuments && userDocuments.length > 0) {
+          const documentList = userDocuments
+            .map((doc, idx) => `${idx + 1}. "${doc.name}" (uploaded ${new Date(doc.created_at).toLocaleDateString()})`)
+            .join('\n')
+
+          systemPrompt += `\n\n📚 Document Access:
+You have access to the user's uploaded study documents. Here are their recent documents:
+
+${documentList}
+
+IMPORTANT GUIDELINES:
+- You can reference content from these documents when relevant to the conversation
+- If the user asks about a specific topic, you can search their documents for related information
+- When referencing document content, cite the document name
+- If information is not in the documents, say so and provide general knowledge instead
+- Don't assume what's in documents - only reference actual retrieved content
+
+How to use documents:
+- When user asks about topics that might be in their study materials, try to connect to their documents
+- Example: "Based on your uploaded notes from [Document Name], ..."
+- Example: "I don't see that topic in your current documents, but here's what I know..."`
+
+          // Store document IDs for potential RAG queries
+          // Note: Actual RAG search would happen in a follow-up enhancement
+          // For now, we just make the AI aware that documents exist
+          logger.info('Study Buddy document awareness enabled', {
+            userId,
+            documentCount: userDocuments.length
+          })
+        }
+      } catch (error) {
+        // Graceful degradation - if document fetch fails, continue without it
+        logger.warn('Failed to fetch documents for Study Buddy', { error, userId })
+        // Don't add document context, but don't fail the request
+      }
+    }
 
     // Get AI provider (prefer DeepSeek for cost efficiency)
     const provider = getProviderForFeature('chat')
