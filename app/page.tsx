@@ -1204,24 +1204,6 @@ export default function LandingPage() {
               </Link>
             </div>
           </div>
-
-          {/* Additional Benefits */}
-          <div className="mt-12 text-center">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-gray-600 dark:text-gray-400">
-              <div className="flex items-center gap-2">
-                <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
-                <span className="font-medium">No credit card required</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
-                <span className="font-medium">7-day free trial</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
-                <span className="font-medium">Cancel anytime</span>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -1288,22 +1270,6 @@ export default function LandingPage() {
                   <BookOpen className="w-5 h-5" />
                   Learn More
                 </Link>
-              </div>
-
-              {/* Trust Indicators */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-gray-600 dark:text-gray-400">
-                <div className="flex items-center gap-2">
-                  <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  <span className="font-medium">No credit card required</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  <span className="font-medium">Free tier available</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  <span className="font-medium">Cancel anytime</span>
-                </div>
               </div>
             </div>
           </div>
