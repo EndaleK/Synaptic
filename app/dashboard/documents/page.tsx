@@ -379,7 +379,7 @@ function DocumentsPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-3 sm:p-4 md:p-6">
+    <div className="min-h-screen bg-[#FAFBFC] dark:bg-[#0F172A] p-3 sm:p-4 md:p-6">
       {/* Keyboard Shortcuts Handler */}
       <KeyboardShortcutsHandler
         onUpload={() => setIsUploadModalOpen(true)}

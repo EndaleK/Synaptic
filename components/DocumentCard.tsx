@@ -201,10 +201,10 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
         onDragEnd={handleDragEnd}
         onClick={() => onToggleSelect?.(document.id)}
         className={cn(
-          "relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:shadow-lg transition-all duration-200 cursor-grab active:cursor-grabbing",
+          "relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:shadow-xl hover:border-accent-primary/30 dark:hover:border-accent-primary/50 hover:bg-[#F8F7FF]/50 dark:hover:bg-[#1A1625]/50 transition-all duration-200 cursor-grab active:cursor-grabbing flex flex-col h-full",
           isDeleting && "opacity-50 pointer-events-none",
           isDragging && "opacity-40",
-          isSelected && "ring-2 ring-blue-500 dark:ring-blue-400"
+          isSelected && "ring-2 ring-blue-500 dark:ring-blue-400 shadow-lg bg-[#F8F7FF]/30 dark:bg-[#1A1625]/30"
         )}
       >
         {/* Selection Checkbox */}
@@ -222,68 +222,66 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
           </div>
         )}
 
-        {/* Star Button */}
-        {onStar && (
-          <div className="absolute top-3 right-24">
+        {/* Top Right Actions - Star and Status */}
+        <div className="absolute top-3 right-3 flex items-center gap-2">
+          {onStar && (
             <button
               onClick={(e) => {
                 e.stopPropagation()
                 onStar(document.id, !document.is_starred)
               }}
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors z-10"
               title={document.is_starred ? "Unstar" : "Star"}
             >
               <Star
                 className={cn(
-                  "w-5 h-5",
+                  "w-4 h-4",
                   document.is_starred
                     ? "fill-yellow-400 text-yellow-400"
                     : "text-gray-400 hover:text-yellow-400"
                 )}
               />
             </button>
-          </div>
-        )}
-
-        {/* Status Badge */}
-        <div className="absolute top-3 right-3">
+          )}
           {getStatusBadge()}
         </div>
 
-        {/* File Icon */}
-        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center mb-3">
-          {getFileIcon()}
-        </div>
-
-        {/* File Info */}
-        <h3 className="text-base font-semibold text-black dark:text-white mb-1 truncate pr-20" title={document.file_name}>
-          {document.file_name}
-        </h3>
-        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-3">
-          <span>{formatFileSize(document.file_size)}</span>
-          <span>•</span>
-          <span>{formatDate(document.created_at)}</span>
+        {/* File Icon and Title Section */}
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
+            {getFileIcon()}
+          </div>
+          <div className="flex-1 min-w-0 pt-1">
+            <h3 className="text-base font-semibold text-black dark:text-white mb-1.5 truncate pr-16" title={document.file_name}>
+              {document.file_name}
+            </h3>
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <span>{formatFileSize(document.file_size)}</span>
+              <span>•</span>
+              <span className="truncate">{formatDate(document.created_at)}</span>
+            </div>
+          </div>
         </div>
 
         {/* Content Badges */}
         {isReady && (contentCounts.flashcards > 0 || contentCounts.podcasts > 0 || contentCounts.mindmaps > 0) && (
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
             {contentCounts.flashcards > 0 && (
-              <div className="flex items-center gap-1 px-2 py-1 bg-accent-primary/10 dark:bg-accent-primary/20 text-accent-primary rounded-md text-xs font-medium">
+              <div className="flex items-center gap-1 px-2.5 py-1 bg-accent-primary/10 dark:bg-accent-primary/20 text-accent-primary rounded-md text-xs font-medium">
                 <BookOpen className="w-3 h-3" />
-                {contentCounts.flashcards}
+                <span>{contentCounts.flashcards}</span>
               </div>
             )}
             {contentCounts.podcasts > 0 && (
-              <div className="flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-md text-xs font-medium">
+              <div className="flex items-center gap-1 px-2.5 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-md text-xs font-medium">
                 <Mic className="w-3 h-3" />
-                {contentCounts.podcasts}
+                <span>{contentCounts.podcasts}</span>
               </div>
             )}
             {contentCounts.mindmaps > 0 && (
-              <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md text-xs font-medium">
+              <div className="flex items-center gap-1 px-2.5 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md text-xs font-medium">
                 <Network className="w-3 h-3" />
-                {contentCounts.mindmaps}
+                <span>{contentCounts.mindmaps}</span>
               </div>
             )}
           </div>
@@ -306,69 +304,81 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
         )}
 
         {/* Action Buttons - Grid Layout */}
-        <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="grid grid-cols-2 gap-2 mb-4 mt-auto">
           {/* Flashcards Button */}
           <button
-            onClick={() => handleGenerateClick('flashcards')}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleGenerateClick('flashcards')
+            }}
             disabled={!isReady}
             className={cn(
-              "flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-medium text-sm transition-all",
+              "flex items-center justify-center gap-1.5 py-2.5 px-2.5 rounded-lg font-medium text-xs transition-all",
               isReady
-                ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:opacity-90 shadow-md hover:shadow-lg"
+                ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:opacity-90 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                 : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
             )}
             title="Generate flashcards from this document"
           >
-            <Sparkles className="w-4 h-4" />
-            <span>Flashcards</span>
+            <Sparkles className="w-3.5 h-3.5" />
+            <span className="truncate">Flashcards</span>
           </button>
 
           {/* Podcast Button */}
           <button
-            onClick={() => handleGenerateClick('podcast')}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleGenerateClick('podcast')
+            }}
             disabled={!isReady}
             className={cn(
-              "flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-medium text-sm transition-all",
+              "flex items-center justify-center gap-1.5 py-2.5 px-2.5 rounded-lg font-medium text-xs transition-all",
               isReady
-                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 shadow-md hover:shadow-lg"
+                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                 : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
             )}
             title="Generate podcast from this document"
           >
-            <Zap className="w-4 h-4" />
-            <span>Podcast</span>
+            <Zap className="w-3.5 h-3.5" />
+            <span className="truncate">Podcast</span>
           </button>
 
           {/* Mind Map Button */}
           <button
-            onClick={() => handleGenerateClick('mindmap')}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleGenerateClick('mindmap')
+            }}
             disabled={!isReady}
             className={cn(
-              "flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-medium text-sm transition-all",
+              "flex items-center justify-center gap-1.5 py-2.5 px-2.5 rounded-lg font-medium text-xs transition-all",
               isReady
-                ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:opacity-90 shadow-md hover:shadow-lg"
+                ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:opacity-90 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                 : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
             )}
             title="Generate mind map from this document"
           >
-            <Map className="w-4 h-4" />
-            <span>Mind Map</span>
+            <Map className="w-3.5 h-3.5" />
+            <span className="truncate">Mind Map</span>
           </button>
 
           {/* Chat Button */}
           <button
-            onClick={handleChatClick}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleChatClick()
+            }}
             disabled={!isReady}
             className={cn(
-              "flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-medium text-sm transition-all",
+              "flex items-center justify-center gap-1.5 py-2.5 px-2.5 rounded-lg font-medium text-xs transition-all",
               isReady
-                ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:opacity-90 shadow-md hover:shadow-lg"
+                ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:opacity-90 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                 : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
             )}
             title="Chat with this document"
           >
-            <MessageCircle className="w-4 h-4" />
-            <span>Chat</span>
+            <MessageCircle className="w-3.5 h-3.5" />
+            <span className="truncate">Chat</span>
           </button>
         </div>
 
@@ -376,8 +386,11 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
         <div className="flex items-center justify-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
           {(document.file_type.toLowerCase().includes('pdf') || document.file_name.toLowerCase().endsWith('.pdf')) && (
             <button
-              onClick={() => router.push(`/dashboard/documents/${document.id}`)}
-              className="p-2.5 bg-accent-primary/5 text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-all hover:scale-110"
+              onClick={(e) => {
+                e.stopPropagation()
+                router.push(`/dashboard/documents/${document.id}`)
+              }}
+              className="p-2 bg-accent-primary/5 text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-all hover:scale-110"
               title="View PDF"
             >
               <Eye className="w-4 h-4" />
@@ -385,15 +398,19 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
           )}
           {document.storage_path && (
             <button
-              className="p-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all hover:scale-110"
+              onClick={(e) => e.stopPropagation()}
+              className="p-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all hover:scale-110"
               title="Download"
             >
               <Download className="w-4 h-4" />
             </button>
           )}
           <button
-            onClick={handleDelete}
-            className="p-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all hover:scale-110"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleDelete()
+            }}
+            className="p-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all hover:scale-110"
             title="Delete"
           >
             <Trash2 className="w-4 h-4" />

@@ -174,7 +174,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
+    <div className="min-h-screen bg-[#FAFBFC] dark:bg-[#0F172A]">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -188,7 +188,7 @@ export default function DashboardLayout({
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
-        className={`fixed top-0 left-0 z-50 h-full bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-all duration-300 ease-in-out pl-[env(safe-area-inset-left)] ${
+        className={`fixed top-0 left-0 z-50 h-full bg-[#F8F7FF] dark:bg-[#1A1625] border-r border-gray-200 dark:border-gray-800 transform transition-all duration-300 ease-in-out pl-[env(safe-area-inset-left)] ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         } ${sidebarCollapsed ? "lg:w-20" : "w-full sm:max-w-xs lg:w-64"}`}
       >
@@ -556,7 +556,7 @@ export default function DashboardLayout({
       {/* Main content */}
       <div className={`transition-all duration-300 ${sidebarCollapsed ? "lg:pl-20" : "lg:pl-64"}`}>
         {/* Mobile header */}
-        <header className="sticky top-0 z-30 bg-white/80 dark:bg-black/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800 lg:hidden">
+        <header className="sticky top-0 z-30 bg-[#FAFBFC]/80 dark:bg-[#0F172A]/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800 lg:hidden">
           <div className="flex items-center justify-between px-4 py-3">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}

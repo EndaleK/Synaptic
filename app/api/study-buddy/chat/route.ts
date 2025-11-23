@@ -19,6 +19,8 @@ import { logger } from '@/lib/logger'
 import { checkUsageLimit, incrementUsage } from '@/lib/usage-limits'
 import { searchDocument } from '@/lib/vector-store'
 import { getUserDocuments } from '@/lib/supabase/documents-server'
+import { detectPromptInjection, validateMessageLength } from '@/lib/security/prompt-injection-detector'
+import { moderateContent } from '@/lib/security/content-moderator'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,6 +68,56 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
+
+    // SECURITY: Validate message length (prevent abuse)
+    const lastUserMessage = messages[messages.length - 1]?.content || ''
+    const lengthValidation = validateMessageLength(lastUserMessage, 5000)
+    if (!lengthValidation.isValid) {
+      logger.warn('Study Buddy message too long', {
+        userId,
+        length: lastUserMessage.length,
+        reason: lengthValidation.reason
+      })
+      return NextResponse.json(
+        { error: lengthValidation.reason || 'Message too long' },
+        { status: 400 }
+      )
+    }
+
+    // SECURITY: Detect prompt injection attempts
+    const injectionCheck = detectPromptInjection(lastUserMessage)
+    if (!injectionCheck.isSafe) {
+      logger.warn('Study Buddy prompt injection detected', {
+        userId,
+        severity: injectionCheck.severity,
+        reason: injectionCheck.reason,
+        patterns: injectionCheck.patterns
+      })
+      return NextResponse.json(
+        {
+          error: 'Your message contains patterns that violate our usage policy. Please rephrase your question.',
+          details: process.env.NODE_ENV === 'development' ? injectionCheck.reason : undefined
+        },
+        { status: 400 }
+      )
+    }
+
+    // SECURITY: Content moderation (async, don't block on this)
+    moderateContent(lastUserMessage)
+      .then(moderation => {
+        if (!moderation.isSafe) {
+          logger.warn('Study Buddy content moderation flagged', {
+            userId,
+            reason: moderation.reason,
+            categories: moderation.categories
+          })
+          // Note: We log but don't block since moderation happens async
+          // Consider blocking if needed for stricter policy
+        }
+      })
+      .catch(err => {
+        logger.error('Study Buddy moderation error', err, { userId })
+      })
 
     // Check usage limits (free tier: 100 messages/month, premium: unlimited)
     const usageCheck = await checkUsageLimit(userId, 'study_buddy')
@@ -206,7 +258,8 @@ How to use documents:
             const searchResults = await searchMultipleDocuments(
               userDocuments,
               lastUserMessage,
-              3 // Top 3 results per document
+              3, // Top 3 results per document
+              userId  // SECURITY: Pass userId for ownership verification
             )
 
             if (searchResults.length > 0) {
@@ -445,14 +498,16 @@ function shouldSearchDocuments(message: string): boolean {
 async function searchMultipleDocuments(
   documents: Array<{ id: string; file_name: string; created_at: string }>,
   query: string,
-  topKPerDoc: number = 3
+  topKPerDoc: number = 3,
+  userId?: string  // Optional: Pass userId for ownership verification
 ): Promise<Array<{ text: string; score: number; documentName: string }>> {
   const allResults: Array<{ text: string; score: number; documentName: string }> = []
 
   // Search each document in parallel
   const searchPromises = documents.map(async (doc) => {
     try {
-      const results = await searchDocument(doc.id, query, topKPerDoc)
+      // SECURITY: Pass userId for ownership verification (defense-in-depth)
+      const results = await searchDocument(doc.id, query, topKPerDoc, userId)
       return results.map(result => ({
         text: result.text,
         score: result.score,

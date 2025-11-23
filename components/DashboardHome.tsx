@@ -224,7 +224,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
   }
 
   return (
-    <div className="h-screen overflow-y-auto bg-gray-50 dark:bg-gray-950">
+    <div className="h-screen overflow-y-auto bg-[#FAFBFC] dark:bg-[#0F172A]">
       <div className="max-w-7xl mx-auto px-6 py-6 lg:px-10 lg:py-8 space-y-6">
         {/* Welcome Section - Mobile Optimized */}
         <div className="bg-gradient-to-r from-accent-primary to-accent-secondary rounded-2xl p-4 sm:p-8 text-white">

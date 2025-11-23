@@ -144,13 +144,54 @@ export async function indexDocument(
 /**
  * Search for relevant chunks using semantic similarity
  * Returns top K most similar chunks for a given query
+ *
+ * SECURITY: Optional userId parameter for ownership verification (defense-in-depth)
+ * While calling routes should verify ownership, this provides additional protection
  */
 export async function searchDocument(
   documentId: string,
   query: string,
-  topK: number = 5
+  topK: number = 5,
+  userId?: string  // Optional: Clerk user ID for ownership verification
 ): Promise<Array<{ text: string; score: number; chunkIndex: number }>> {
   try {
+    // SECURITY: Verify document ownership if userId provided (defense-in-depth)
+    if (userId) {
+      const { createClient } = await import('@/lib/supabase/server')
+      const supabase = await createClient()
+
+      // Get user profile
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('clerk_user_id', userId)
+        .single()
+
+      if (!profile) {
+        console.error('[Vector Store] User profile not found for ownership check', { userId, documentId })
+        return []
+      }
+
+      // Verify document ownership
+      const { data: document } = await supabase
+        .from('documents')
+        .select('id')
+        .eq('id', documentId)
+        .eq('user_id', profile.id)
+        .single()
+
+      if (!document) {
+        console.error('[Vector Store] Document ownership verification failed', {
+          userId,
+          documentId,
+          message: 'User does not own this document'
+        })
+        return []
+      }
+
+      console.log('[Vector Store] Document ownership verified', { userId, documentId })
+    }
+
     // Get collection for this document
     const collection = await getOrCreateCollection(documentId)
 

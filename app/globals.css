@@ -9,6 +9,7 @@
 
 :root {
   --background: #fafbfc;
+  --background-brand: #f8f7ff;  /* Subtle purple tint for brand reinforcement */
   --foreground: #1a1f36;
 
   /* Professional color palette */
@@ -133,6 +134,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0f172a;
+    --background-brand: #1a1625;  /* Subtle purple-tinted dark for brand reinforcement */
     --foreground: #f1f5f9;
 
     /* Dark mode adjustments */
