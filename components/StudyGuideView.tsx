@@ -209,6 +209,9 @@ export default function StudyGuideView({ documentId, documentName }: StudyGuideV
       '1week': '1 Week',
       '2weeks': '2 Weeks',
       '1month': '1 Month',
+      '3months': '3 Months',
+      'semester': 'Semester',
+      'year': 'Year',
       'custom': 'Custom'
     }
     return map[duration] || duration
@@ -377,6 +380,9 @@ export default function StudyGuideView({ documentId, documentName }: StudyGuideV
                     <option value="1week">1 Week</option>
                     <option value="2weeks">2 Weeks</option>
                     <option value="1month">1 Month</option>
+                    <option value="3months">3 Months</option>
+                    <option value="semester">Semester</option>
+                    <option value="year">Year</option>
                   </select>
                 </div>
 

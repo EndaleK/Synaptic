@@ -2,7 +2,7 @@ import { getProviderForFeature, type AIProvider } from "./ai"
 import type { Message } from "./ai/providers/base"
 import type { LearningStyle } from "./supabase/types"
 
-export type StudyDuration = '1week' | '2weeks' | '1month' | 'custom'
+export type StudyDuration = '1week' | '2weeks' | '1month' | '3months' | 'semester' | 'year' | 'custom'
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced'
 
 export interface StudyGuideSection {
@@ -90,6 +90,9 @@ export async function generateStudyGuide(
     '1week': 7,
     '2weeks': 14,
     '1month': 30,
+    '3months': 90,
+    'semester': 120,
+    'year': 365,
     'custom': 14
   }
   const studyDays = durationMap[studyDuration]

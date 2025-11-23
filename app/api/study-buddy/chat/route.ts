@@ -17,6 +17,7 @@ import { getProviderForFeature } from '@/lib/ai'
 import { generateStudyBuddyPrompt, type PersonalityMode, type ExplainLevel } from '@/lib/study-buddy/personalities'
 import { logger } from '@/lib/logger'
 import { checkUsageLimit, incrementUsage } from '@/lib/usage-limits'
+import { searchDocument } from '@/lib/vector-store'
 
 export const dynamic = 'force-dynamic'
 
@@ -181,9 +182,45 @@ How to use documents:
 - Example: "Based on your uploaded notes from [Document Name], ..."
 - Example: "I don't see that topic in your current documents, but here's what I know..."`
 
-          // Store document IDs for potential RAG queries
-          // Note: Actual RAG search would happen in a follow-up enhancement
-          // For now, we just make the AI aware that documents exist
+          // RAG Search: Check if latest user message needs document search
+          const lastUserMessage = messages[messages.length - 1]?.content
+          if (lastUserMessage && shouldSearchDocuments(lastUserMessage)) {
+            logger.info('Study Buddy attempting RAG search', {
+              userId,
+              query: lastUserMessage.substring(0, 100)
+            })
+
+            // Search across user's documents for relevant content
+            const searchResults = await searchMultipleDocuments(
+              userDocuments,
+              lastUserMessage,
+              3 // Top 3 results per document
+            )
+
+            if (searchResults.length > 0) {
+              // Format search results for context injection
+              const formattedResults = searchResults
+                .map(result =>
+                  `📄 From "${result.documentName}":\n${result.text}\n(Relevance: ${(result.score * 100).toFixed(0)}%)`
+                )
+                .join('\n\n')
+
+              systemPrompt += `\n\n📖 Relevant Content from User's Documents:
+
+${formattedResults}
+
+Use this content to answer the user's question. Cite the document names when referencing this information.`
+
+              logger.info('Study Buddy RAG search successful', {
+                userId,
+                resultsCount: searchResults.length,
+                documents: searchResults.map(r => r.documentName)
+              })
+            } else {
+              logger.info('Study Buddy RAG search returned no results', { userId })
+            }
+          }
+
           logger.info('Study Buddy document awareness enabled', {
             userId,
             documentCount: userDocuments.length
@@ -340,4 +377,95 @@ async function trackStudyBuddyUsage(userProfileId: string, messageLength: number
     // Don't throw - usage tracking is non-critical
     logger.warn('Failed to track Study Buddy usage', error)
   }
+}
+
+/**
+ * Determine if a user message should trigger document search
+ * Uses heuristics to detect questions about specific topics
+ */
+function shouldSearchDocuments(message: string): boolean {
+  const lowerMessage = message.toLowerCase()
+
+  // Question indicators
+  const questionWords = ['what', 'how', 'why', 'when', 'where', 'who', 'explain', 'tell me', 'can you']
+  const hasQuestion = questionWords.some(word => lowerMessage.includes(word)) || lowerMessage.includes('?')
+
+  // Topic-specific indicators (suggests user wants info from their materials)
+  const topicIndicators = [
+    'about',
+    'chapter',
+    'section',
+    'topic',
+    'lecture',
+    'notes',
+    'material',
+    'document',
+    'book',
+    'textbook',
+    'study guide',
+    'in my',
+    'from my',
+    'according to',
+  ]
+  const hasTopic = topicIndicators.some(phrase => lowerMessage.includes(phrase))
+
+  // Don't search for greetings or meta questions
+  const greetings = ['hello', 'hi ', 'hey', 'good morning', 'good afternoon', 'good evening']
+  const isGreeting = greetings.some(greeting => lowerMessage.startsWith(greeting))
+
+  const metaQuestions = [
+    'how are you',
+    'who are you',
+    'what can you do',
+    'help me',
+    'can you help',
+  ]
+  const isMeta = metaQuestions.some(meta => lowerMessage.includes(meta))
+
+  // Search if: (has question OR has topic) AND NOT (greeting OR meta)
+  return (hasQuestion || hasTopic) && !isGreeting && !isMeta
+}
+
+/**
+ * Search across multiple documents for relevant content
+ * Returns combined results sorted by relevance score
+ */
+async function searchMultipleDocuments(
+  documents: Array<{ id: string; name: string; created_at: string }>,
+  query: string,
+  topKPerDoc: number = 3
+): Promise<Array<{ text: string; score: number; documentName: string }>> {
+  const allResults: Array<{ text: string; score: number; documentName: string }> = []
+
+  // Search each document in parallel
+  const searchPromises = documents.map(async (doc) => {
+    try {
+      const results = await searchDocument(doc.id, query, topKPerDoc)
+      return results.map(result => ({
+        text: result.text,
+        score: result.score,
+        documentName: doc.name
+      }))
+    } catch (error) {
+      logger.warn('Failed to search document in Study Buddy', {
+        documentId: doc.id,
+        documentName: doc.name,
+        error
+      })
+      return []
+    }
+  })
+
+  const resultsPerDoc = await Promise.all(searchPromises)
+
+  // Flatten and combine all results
+  for (const results of resultsPerDoc) {
+    allResults.push(...results)
+  }
+
+  // Sort by score (highest first) and return top results
+  allResults.sort((a, b) => b.score - a.score)
+
+  // Return top 5 overall results (to avoid token bloat)
+  return allResults.slice(0, 5)
 }
