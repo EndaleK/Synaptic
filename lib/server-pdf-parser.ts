@@ -3,14 +3,14 @@
 // 2. PyMuPDF (robust, handles complex PDFs)
 // 3. Gemini Vision (OCR, handles scanned PDFs and very large files)
 
-import { exec } from 'child_process'
+import { execFile } from 'child_process'
 import { promisify } from 'util'
 import path from 'path'
 import fs from 'fs'
 import { extractPDFWithGemini } from './gemini-pdf-extractor'
 import { processLargePDFInChunks } from './chunked-pdf-processor'
 
-const execAsync = promisify(exec)
+const execFileAsync = promisify(execFile)
 
 interface PageData {
   pageNumber: number
@@ -111,8 +111,9 @@ export async function parsePDFWithPyMuPDF(buffer: Buffer): Promise<PDFParseResul
   try {
     console.log('🐍 Attempting PyMuPDF extraction (fallback)...')
 
-    // Save buffer to temp file
-    const tempFilePath = path.join('/tmp', `pdf-extract-${Date.now()}.pdf`)
+    // Save buffer to temp file with secure random filename
+    const randomId = Math.random().toString(36).substring(2, 15)
+    const tempFilePath = path.join('/tmp', `synaptic-pdf-${Date.now()}-${randomId}.pdf`)
     fs.writeFileSync(tempFilePath, buffer)
 
     try {
@@ -124,11 +125,13 @@ export async function parsePDFWithPyMuPDF(buffer: Buffer): Promise<PDFParseResul
       // Check if venv Python exists, otherwise use system Python
       const pythonCmd = fs.existsSync(venvPython) ? venvPython : 'python3'
 
-      console.log(`🐍 Running PyMuPDF script: ${pythonCmd} ${scriptPath}`)
+      console.log(`🐍 Running PyMuPDF script: ${pythonCmd} with args: [${scriptPath}, ${tempFilePath}]`)
 
-      // Call Python script with timeout
-      const { stdout, stderr } = await execAsync(
-        `${pythonCmd} "${scriptPath}" "${tempFilePath}"`,
+      // Call Python script with timeout using execFile (prevents command injection)
+      // execFile doesn't spawn a shell, so arguments are passed directly to the command
+      const { stdout } = await execFileAsync(
+        pythonCmd,
+        [scriptPath, tempFilePath],
         {
           timeout: 480000, // 8 minutes
           maxBuffer: 50 * 1024 * 1024 // 50MB buffer for large text output

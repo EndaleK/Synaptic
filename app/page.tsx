@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
-import { BookOpen, Brain, MessageSquare, Mic, Network, Sparkles, ArrowRight, Check, ClipboardCheck, Youtube, Database, TrendingDown, Users, Award, GraduationCap, Briefcase, Star, FileText, Zap, Bot, Clock, PenTool, BookOpenCheck, ChevronLeft, ChevronRight, Mail, Phone } from "lucide-react"
+import { BookOpen, Brain, MessageSquare, Mic, Network, Sparkles, ArrowRight, Check, ClipboardCheck, Youtube, Database, TrendingDown, Users, Award, GraduationCap, Briefcase, Star, FileText, Zap, Bot, Clock, PenTool, BookOpenCheck, ChevronLeft, ChevronRight, Mail, Phone, Shield, Lock, Eye, UserCheck, Server, FileCheck } from "lucide-react"
 import Logo from "@/components/Logo"
 import { QRCodeGenerator } from "@/components/QRCodeGenerator"
 import { SectionsCarousel } from "@/components/SectionsCarousel"
@@ -648,6 +648,171 @@ export default function LandingPage() {
             <p className="text-xs text-gray-500 dark:text-gray-500 text-center mt-4">
               *Free tier includes 3 flashcard sets, 2 podcasts, and 2 mind maps per month
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Security & Privacy Section */}
+      <section className="py-24 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-black dark:to-purple-900/20 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 bg-grid-black/[0.02] dark:bg-grid-white/[0.02]" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-400/10 dark:bg-blue-600/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-400/10 dark:bg-purple-600/5 rounded-full blur-3xl" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-3 px-5 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full text-sm font-bold mb-6 shadow-lg">
+              <Shield className="w-5 h-5" />
+              YOUR DATA IS SAFE WITH US
+            </div>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black dark:text-white mb-6">
+              Enterprise-Grade Security
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                Built for Your Peace of Mind
+              </span>
+            </h2>
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto leading-relaxed">
+              We take your privacy seriously. Your documents and learning data are protected with bank-level security and never shared with third parties.
+            </p>
+          </div>
+
+          {/* Security Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+            {/* Feature 1: Encryption */}
+            <div className="group bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border-2 border-blue-100 dark:border-blue-900">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Lock className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
+                End-to-End Encryption
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                All your documents are encrypted in transit and at rest using industry-standard AES-256 encryption. Your data is secure from upload to storage.
+              </p>
+            </div>
+
+            {/* Feature 2: Privacy */}
+            <div className="group bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border-2 border-purple-100 dark:border-purple-900">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Eye className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
+                Your Data Stays Private
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                We never sell or share your personal data. Your documents and learning history are yours alone and invisible to anyone else—including us.
+              </p>
+            </div>
+
+            {/* Feature 3: Authentication */}
+            <div className="group bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border-2 border-green-100 dark:border-green-900">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <UserCheck className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
+                Secure Authentication
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                Powered by Clerk, a trusted authentication platform. Multi-factor authentication (MFA) available to keep your account protected.
+              </p>
+            </div>
+
+            {/* Feature 4: Infrastructure */}
+            <div className="group bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border-2 border-orange-100 dark:border-orange-900">
+              <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Server className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
+                Reliable Infrastructure
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                Hosted on enterprise-grade cloud infrastructure with 99.9% uptime. Your data is automatically backed up and protected against loss.
+              </p>
+            </div>
+
+            {/* Feature 5: Compliance */}
+            <div className="group bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border-2 border-indigo-100 dark:border-indigo-900">
+              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <FileCheck className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
+                Privacy Compliant
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                We follow strict privacy regulations and best practices. You have full control to export or delete your data anytime.
+              </p>
+            </div>
+
+            {/* Feature 6: No Training */}
+            <div className="group bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border-2 border-teal-100 dark:border-teal-900">
+              <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Shield className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-black dark:text-white mb-3">
+                Not Used for AI Training
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                Your documents and study materials are never used to train AI models. Your intellectual property and private notes remain 100% yours.
+              </p>
+            </div>
+          </div>
+
+          {/* Trust Banner */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-8 md:p-12 text-center shadow-2xl">
+            <div className="flex flex-wrap justify-center items-center gap-8 mb-8">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-white font-bold text-lg">Bank-Level</p>
+                  <p className="text-blue-100 text-sm">Security</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <Lock className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-white font-bold text-lg">AES-256</p>
+                  <p className="text-blue-100 text-sm">Encryption</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <Eye className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-white font-bold text-lg">Zero</p>
+                  <p className="text-blue-100 text-sm">Data Sharing</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <UserCheck className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-white font-bold text-lg">GDPR</p>
+                  <p className="text-blue-100 text-sm">Compliant</p>
+                </div>
+              </div>
+            </div>
+            <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
+              Your Trust is Our Top Priority
+            </h3>
+            <p className="text-blue-100 text-lg mb-6 max-w-3xl mx-auto">
+              We've built Synaptic from the ground up with security and privacy at the core. Every feature is designed to protect your data while delivering the best learning experience.
+            </p>
+            <Link
+              href="/privacy"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-white text-purple-600 rounded-2xl font-bold text-lg hover:bg-blue-50 transition-all shadow-lg hover:scale-105"
+            >
+              <FileText className="w-5 h-5" />
+              Read Our Privacy Policy
+              <ArrowRight className="w-5 h-5" />
+            </Link>
           </div>
         </div>
       </section>
