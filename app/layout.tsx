@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs';
+import { Analytics } from '@vercel/analytics/react';
 import ClientWrapper from "@/components/ClientWrapper";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
@@ -146,6 +147,7 @@ export default function RootLayout({
           <ClientWrapper>
             {children}
           </ClientWrapper>
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>

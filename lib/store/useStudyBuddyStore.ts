@@ -12,7 +12,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { PersonalityMode, ExplainLevel } from '@/lib/study-buddy/personalities'
+import type { PersonalityMode, ExplainLevel, TeachingStyle } from '@/lib/study-buddy/personalities'
 
 export interface StudyBuddyMessage {
   id: string
@@ -38,6 +38,7 @@ interface StudyBuddyState {
   // User preferences
   personalityMode: PersonalityMode
   explainLevel: ExplainLevel | null
+  teachingStyle: TeachingStyle // 'socratic' = true Socratic, 'mixed' = explain + questions
 
   // Conversation history (last 10 conversations)
   conversationHistory: StudyBuddyConversation[]
@@ -45,6 +46,7 @@ interface StudyBuddyState {
   // Actions
   setPersonalityMode: (mode: PersonalityMode) => void
   setExplainLevel: (level: ExplainLevel | null) => void
+  setTeachingStyle: (style: TeachingStyle) => void
 
   // Conversation management
   startNewConversation: () => void
@@ -63,6 +65,7 @@ export const useStudyBuddyStore = create<StudyBuddyState>()(
       currentConversation: null,
       personalityMode: 'tutor',
       explainLevel: null,
+      teachingStyle: 'mixed', // Default to mixed (explains + questions)
       conversationHistory: [],
 
       setPersonalityMode: (mode) => {
@@ -71,6 +74,10 @@ export const useStudyBuddyStore = create<StudyBuddyState>()(
 
       setExplainLevel: (level) => {
         set({ explainLevel: level })
+      },
+
+      setTeachingStyle: (style) => {
+        set({ teachingStyle: style })
       },
 
       startNewConversation: () => {
@@ -164,6 +171,7 @@ export const useStudyBuddyStore = create<StudyBuddyState>()(
         // Only persist these fields
         personalityMode: state.personalityMode,
         explainLevel: state.explainLevel,
+        teachingStyle: state.teachingStyle,
         conversationHistory: state.conversationHistory,
         currentConversation: state.currentConversation
       })

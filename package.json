@@ -37,6 +37,7 @@
     "@types/xml2js": "^0.4.14",
     "@upstash/ratelimit": "^2.0.6",
     "@upstash/redis": "^1.35.6",
+    "@vercel/analytics": "^1.5.0",
     "@xyflow/react": "^12.8.6",
     "canvas": "^3.1.2",
     "cheerio": "^1.1.2",

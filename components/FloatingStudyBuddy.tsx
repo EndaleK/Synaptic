@@ -7,7 +7,7 @@ import { useDocumentStore, useUIStore } from "@/lib/store/useStore"
 import { useToast } from "./ToastContainer"
 import { cn } from "@/lib/utils"
 import MarkdownRenderer from "./MarkdownRenderer"
-import type { PersonalityMode } from "@/lib/study-buddy/personalities"
+import type { PersonalityMode, TeachingStyle } from "@/lib/study-buddy/personalities"
 
 export default function FloatingStudyBuddy() {
   const toast = useToast()
@@ -18,6 +18,8 @@ export default function FloatingStudyBuddy() {
   const {
     personalityMode,
     setPersonalityMode,
+    teachingStyle,
+    setTeachingStyle,
     getCurrentMessages,
     addMessage,
     startNewConversation,
@@ -154,6 +156,7 @@ export default function FloatingStudyBuddy() {
         body: JSON.stringify({
           messages: conversationHistory,
           personalityMode,
+          teachingStyle: personalityMode === 'tutor' ? teachingStyle : undefined,
           topic: actualMessage + contextInfo,
           documentId: currentDocument?.id,
           activeMode
@@ -360,6 +363,36 @@ export default function FloatingStudyBuddy() {
                   Fun
                 </button>
               </div>
+
+              {/* Teaching Style Toggle (Tutor mode only) */}
+              {personalityMode === 'tutor' && (
+                <div className="mt-2 flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                  <button
+                    onClick={() => setTeachingStyle('mixed')}
+                    className={cn(
+                      "flex-1 py-1.5 px-2 rounded text-xs font-medium transition-all",
+                      teachingStyle === 'mixed'
+                        ? "bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm"
+                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                    )}
+                    title="Explains concepts directly with some guiding questions"
+                  >
+                    📚 Mixed
+                  </button>
+                  <button
+                    onClick={() => setTeachingStyle('socratic')}
+                    className={cn(
+                      "flex-1 py-1.5 px-2 rounded text-xs font-medium transition-all",
+                      teachingStyle === 'socratic'
+                        ? "bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm"
+                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                    )}
+                    title="Guides you to discover answers through questions (never gives direct answers)"
+                  >
+                    🤔 Socratic
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -632,6 +665,36 @@ export default function FloatingStudyBuddy() {
             Fun
           </button>
         </div>
+
+        {/* Teaching Style Toggle (Tutor mode only) */}
+        {personalityMode === 'tutor' && (
+          <div className="mt-2 flex items-center gap-1 bg-white/10 rounded p-0.5">
+            <button
+              onClick={() => setTeachingStyle('mixed')}
+              className={cn(
+                "flex-1 py-1 px-2 rounded text-[10px] font-medium transition-all",
+                teachingStyle === 'mixed'
+                  ? "bg-white text-purple-600"
+                  : "text-white/80 hover:text-white hover:bg-white/10"
+              )}
+              title="Explains concepts directly with some guiding questions"
+            >
+              📚 Mixed
+            </button>
+            <button
+              onClick={() => setTeachingStyle('socratic')}
+              className={cn(
+                "flex-1 py-1 px-2 rounded text-[10px] font-medium transition-all",
+                teachingStyle === 'socratic'
+                  ? "bg-white text-purple-600"
+                  : "text-white/80 hover:text-white hover:bg-white/10"
+              )}
+              title="Guides you to discover answers through questions (never gives direct answers)"
+            >
+              🤔 Socratic
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Conversation History Dropdown */}

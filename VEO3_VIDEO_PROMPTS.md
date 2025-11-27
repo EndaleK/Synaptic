@@ -6,12 +6,38 @@
 **Duration**: 30-60 seconds per scene (combine in editing)
 **Style**: Clean, modern, professional educational technology
 
+## 🆕 What's New in Version 2.0
+
+This updated guide now includes Synaptic's latest features:
+
+**New Features Showcased**:
+- ⚡ **Quick Summary**: "Teach me in 5 minutes" - Instant audio summaries from documents, URLs, or YouTube
+- 🤖 **Multi-AI Intelligence**: Smart routing between OpenAI, DeepSeek (70% cheaper), and Anthropic (complex reasoning)
+- ✍️ **Writing Assistant**: AI-powered essay editor with citations and suggestions (TipTap integration)
+- 📹 **Video Learning**: YouTube search, transcript extraction, and flashcard generation from videos
+- 🧠 **Learning Style Assessment**: VAK model quiz that personalizes the learning experience
+- 🌐 **Multi-format Support**: Now supports PDFs, YouTube videos, arXiv papers, and web articles (up to 80MB+)
+
+**Updated Scenes**:
+- Scene 2: Dashboard now shows 8 feature cards (was 4)
+- Scene 3: Multi-source upload animation (PDF, YouTube, arXiv, web)
+- Scene 5: Expanded feature showcase with 5 split screens
+- Scenes 6B-6D: Three new feature demonstration scenes
+- Scene 7: Enhanced results with VAK learning style badge and multi-AI providers
+- Scene 8: Updated CTA with new feature highlights
+
+**New Video Content**:
+- 4 feature-specific highlight videos (15s each) for social media
+- Updated 30s alternative prompts with new features
+- Refreshed vertical social media prompts (Instagram/TikTok)
+- Enhanced YouTube Shorts script with all features
+
 ---
 
 ## 🎬 MASTER PROMPT (Full Video - 60 seconds)
 
 ```
-Create a professional product demo video for an AI-powered learning platform called Synaptic.
+Create a professional product demo video for an AI-powered learning platform called Synaptic.study.
 
 Visual Style: Modern, clean interface design with soft gradients (blues and purples), smooth animations, floating UI elements, glass morphism effects, professional educational aesthetic.
 
@@ -20,18 +46,20 @@ Scene Flow:
 
 2. Transition (8-10s): Student looks up, bright light illuminates screen, relieved expression. Visual transition from chaos to clean digital interface.
 
-3. Product Intro (10-18s): Sleek dashboard interface appears floating in 3D space, showing "Synaptic" logo with animated neurons connecting. Modern UI with cards showing features: Chat, Flashcards, Podcast, Mind Map. Smooth parallax scrolling.
+3. Product Intro (10-18s): Sleek dashboard interface appears floating in 3D space, showing "Synaptic.study" logo with animated neurons connecting. Modern UI with cards showing features: Chat, Flashcards, Podcast, Quick Summary, Mind Map, Writing Assistant, Video Learning. Smooth parallax scrolling.
 
-4. Document Upload (18-25s): Elegant drag-and-drop animation of large PDF file (showing "35MB • 500 pages") transforming into digital particles and reforming as organized content. Progress bar fills smoothly.
+4. Document Upload (18-25s): Elegant drag-and-drop animation showing multiple input methods: large PDF file (showing "35MB • 500 pages"), YouTube video URL, arXiv paper link, and web page URL all transforming into digital particles and reforming as organized content. Progress bar fills smoothly.
 
-5. Feature Showcase (25-40s): Split-screen montage showing:
-   - Left: AI chat interface with animated typing questions and responses
-   - Right top: Flashcard flipping animation with spaced repetition calendar
-   - Right bottom: Mind map nodes expanding and connecting with smooth lines
+5. Feature Showcase (25-45s): Dynamic split-screen montage showing:
+   - Top left: AI chat interface with Socratic questions and responses
+   - Top right: Quick Summary generating energetic 5-minute audio from YouTube video
+   - Middle left: Flashcard flipping animation with spaced repetition calendar
+   - Middle right: Writing Assistant with AI suggestions and citations
+   - Bottom: Mind map nodes expanding and connecting with smooth lines, showing multi-AI provider intelligence (OpenAI, DeepSeek, Anthropic logos subtly appearing)
 
-6. Results (40-50s): Student smiling at laptop, confident posture, clean organized desk with coffee, warm lighting. Screen shows statistics dashboard with upward trending graphs.
+6. Results (45-55s): Student smiling at laptop, confident posture, clean organized desk with coffee, warm lighting. Screen shows statistics dashboard with upward trending graphs and learning style assessment results (VAK model visualization).
 
-7. Call to Action (50-60s): "Synaptic" logo with tagline "Learn Smarter, Remember Longer" on gradient background. URL "synaptic.study" appears below with subtle glow effect.
+7. Call to Action (55-65s): "Synaptic" logo with tagline "AI-Powered Personalized Learning" on gradient background. Feature highlights scroll by: "Documents up to 80MB+", "Multi-AI Intelligence", "YouTube & Web Support". URL "synaptic.study" appears below with subtle glow effect.
 
 Camera: Cinematic camera movements, smooth dolly shots, professional color grading, soft focus backgrounds, depth of field effects.
 
@@ -59,7 +87,7 @@ Cinematic close-up shot of a stressed college student sitting at a cluttered des
 
 ### Scene 2: Dashboard Interface (10 seconds)
 ```
-Modern SaaS dashboard interface for "Synaptic" learning platform floating in 3D space against soft gradient background (blue to purple). Clean minimal design with glass morphism effects. Main screen shows grid of feature cards: "Chat with AI Teacher" with chat bubble icon, "Generate Flashcards" with lightning bolt, "Create Podcast" with headphones, "Mind Map" with network diagram. Each card has subtle hover animation with glow effect. Smooth camera orbit around interface. Professional UI/UX design, Figma prototype style, soft shadows, 60fps smooth motion.
+Modern SaaS dashboard interface for "Synaptic" learning platform floating in 3D space against soft gradient background (blue to purple). Clean minimal design with glass morphism effects. Main screen shows grid of feature cards: "Chat with AI Teacher" with chat bubble icon, "Generate Flashcards" with lightning bolt, "Create Podcast" with headphones, "Quick Summary" with clock icon, "Mind Map" with network diagram, "Writing Assistant" with pen icon, "Video Learning" with play button, "Learning Style Quiz" with brain icon. Each card has subtle hover animation with glow effect. Smooth camera orbit around interface. Professional UI/UX design, Figma prototype style, soft shadows, 60fps smooth motion.
 ```
 
 **Veo 3 Settings**:
@@ -72,7 +100,7 @@ Modern SaaS dashboard interface for "Synaptic" learning platform floating in 3D 
 
 ### Scene 3: Document Upload Animation (8 seconds)
 ```
-Close-up of elegant document upload interface. Large PDF file icon labeled "McGraw-Hill Textbook • 35.41 MB • 475 pages" appears and smoothly transforms into thousands of glowing particles that swirl upward in a helix pattern, then reconstitute as organized content chunks. Modern progress bar fills from 0% to 100% with smooth easing. Background shows blurred code editor aesthetic. Particle effects in blue and purple gradient, sci-fi data visualization style, Tron-inspired but subtle, premium motion graphics quality.
+Close-up of elegant multi-source upload interface showing four input types: Large PDF file icon labeled "McGraw-Hill Textbook • 35.41 MB • 475 pages", YouTube video thumbnail with "MIT OpenCourseWare" label, arXiv paper URL "arxiv.org/abs/2103.xxxxx", and web article preview from "Wikipedia". Each source smoothly transforms into thousands of glowing particles that swirl upward in a helix pattern, then reconstitute as unified organized content chunks. Modern progress bar fills from 0% to 100% with smooth easing. Background shows blurred code editor aesthetic with AI provider logos (OpenAI, DeepSeek, Anthropic) subtly pulsing. Particle effects in blue and purple gradient, sci-fi data visualization style, Tron-inspired but subtle, premium motion graphics quality.
 ```
 
 **Veo 3 Settings**:
@@ -122,9 +150,48 @@ Interactive mind map visualization starting from central node labeled "Neural Ne
 
 ---
 
+### Scene 6B: Quick Summary Feature (8 seconds)
+```
+Dynamic screen recording showing Quick Summary feature in action. User pastes YouTube video URL into sleek input field, clicks "Generate 5-Minute Summary" button with energetic pulse animation. Interface shows progress: "Extracting transcript... Generating summary... Creating audio..." with modern loading animations. Audio waveform visualizer appears showing energetic voice patterns. Timer counts "5:00" in corner. Text overlay highlights: "From Documents, URLs, or YouTube". Fast-paced, energetic feel with bright accent colors (orange, green). Modern podcast app aesthetic, Spotify-style interface, premium audio visualization.
+```
+
+**Veo 3 Settings**:
+- Duration: 8 seconds
+- Aspect Ratio: 16:9
+- Camera Motion: Static screen recording with dynamic UI
+- Style: Audio app interface, energetic
+
+---
+
+### Scene 6C: Writing Assistant (8 seconds)
+```
+Screen recording of Writing Assistant feature. Split screen showing: Left side has rich text editor (TipTap) with essay being written, AI suggestions appearing as inline comments with purple glow. Right side shows citation manager with academic sources auto-formatting in APA/MLA styles. User types, AI highlights sentence and suggests improvement with smooth fade-in animation. Citation appears in footer and updates in real-time. Clean academic aesthetic, Google Docs meets Grammarly style, professional word processor look. Subtle animations for AI suggestions, warm white background, professional typography.
+```
+
+**Veo 3 Settings**:
+- Duration: 8 seconds
+- Aspect Ratio: 16:9
+- Camera Motion: Static with scrolling content
+- Style: Document editor, academic
+
+---
+
+### Scene 6D: Video Learning (8 seconds)
+```
+Interface showing Video Learning feature. YouTube search bar with query "machine learning basics", results grid appears showing educational videos with thumbnails. User clicks video, transcript appears on right side with key concepts auto-highlighted in yellow. Below transcript, buttons appear: "Generate Flashcards from Video", "Create Summary", "Ask Questions". Smooth transitions, YouTube-style video player on left, interactive transcript on right. Modern video platform aesthetic, Udemy/Coursera style, clean educational design, vibrant thumbnails.
+```
+
+**Veo 3 Settings**:
+- Duration: 8 seconds
+- Aspect Ratio: 16:9
+- Camera Motion: Static with UI interactions
+- Style: Video platform, educational
+
+---
+
 ### Scene 7: Success & Results (8 seconds)
 ```
-Wide shot of the same student from Scene 1, now in bright natural daylight at clean organized desk. Student smiling confidently at laptop, good posture, coffee mug nearby, small plant on desk. Laptop screen shows Synaptic dashboard with study statistics: "28 flashcards mastered", "4.5 hours studied this week", upward trending graph. Warm golden hour lighting through window, shallow depth of field, cinematic color grading, film look, A7S III camera aesthetic, professional commercial quality.
+Wide shot of the same student from Scene 1, now in bright natural daylight at clean organized desk. Student smiling confidently at laptop, good posture, coffee mug nearby, small plant on desk. Laptop screen shows Synaptic dashboard with comprehensive study statistics: "28 flashcards mastered", "3 Quick Summaries completed", "2 essays enhanced", "4.5 hours studied this week", upward trending graph, and VAK learning style badge showing "Visual Learner - 75%". Multiple AI provider badges (OpenAI, DeepSeek, Anthropic) subtly visible. Warm golden hour lighting through window, shallow depth of field, cinematic color grading, film look, A7S III camera aesthetic, professional commercial quality.
 ```
 
 **Veo 3 Settings**:
@@ -135,13 +202,13 @@ Wide shot of the same student from Scene 1, now in bright natural daylight at cl
 
 ---
 
-### Scene 8: Call to Action (6 seconds)
+### Scene 8: Call to Action (8 seconds)
 ```
-Animated logo reveal for "Synaptic" brand. Neural network nodes connect to form the wordmark in modern sans-serif font. Gradient background shifts smoothly from deep blue to vibrant purple. Tagline fades in below: "Learn Smarter, Remember Longer" in elegant typography. Website URL "synaptic.study" appears at bottom with subtle pulse glow effect. Minimalist, premium brand aesthetic, similar to Apple product reveals, smooth motion graphics, professional color grading.
+Animated logo reveal for "Synaptic" brand. Neural network nodes connect to form the wordmark in modern sans-serif font. Gradient background shifts smoothly from deep blue to vibrant purple. Tagline fades in below: "AI-Powered Personalized Learning" in elegant typography. Feature highlights scroll by beneath: "Documents up to 80MB+", "YouTube & Web Support", "Multi-AI Intelligence (OpenAI, DeepSeek, Anthropic)", "Instant 5-Min Summaries". Website URL "synaptic.study" appears at bottom with subtle pulse glow effect. Minimalist, premium brand aesthetic, similar to Apple product reveals, smooth motion graphics, professional color grading.
 ```
 
 **Veo 3 Settings**:
-- Duration: 6 seconds
+- Duration: 8 seconds
 - Aspect Ratio: 16:9
 - Camera Motion: Static with animated elements
 - Style: Logo animation, brand reveal
@@ -182,17 +249,41 @@ Use these across ALL scenes for consistency:
 
 ### Option A: Problem → Solution (30s)
 ```
-30-second commercial for Synaptic AI learning platform. Opens with frustrated student surrounded by textbooks (5s), smooth transition to clean digital interface appearing on screen (3s), fast-paced montage of features: AI chat conversation, flashcards flipping, mind map expanding (15s), closes with happy student and logo reveal (7s). Modern SaaS aesthetic, glass morphism UI, blue/purple gradient color scheme, cinematic lighting, 4K quality, Apple commercial style.
+30-second commercial for Synaptic AI learning platform. Opens with frustrated student surrounded by textbooks (5s), smooth transition to clean digital interface appearing on screen (3s), fast-paced montage of features: AI chat conversation, Quick Summary generation from YouTube video, flashcards flipping, Writing Assistant suggestions, mind map expanding (15s), closes with happy student and logo reveal showing "Multi-AI Intelligence" badge (7s). Modern SaaS aesthetic, glass morphism UI, blue/purple gradient color scheme, cinematic lighting, 4K quality, Apple commercial style.
 ```
 
 ### Option B: Feature-First (30s)
 ```
-30-second product demo showcasing AI learning features. Opens with "Synaptic" logo animation (3s), document upload with particle transformation effect (5s), split-screen showing AI chat on left and flashcards on right with smooth animations (12s), mind map visualization zoom-out reveal (5s), call-to-action with URL and tagline (5s). Clean modern interface design, professional motion graphics, premium SaaS presentation style, smooth camera movements.
+30-second product demo showcasing AI learning features. Opens with "Synaptic" logo animation with AI provider badges (OpenAI, DeepSeek, Anthropic) appearing (3s), multi-source upload showing PDF, YouTube URL, arXiv paper with particle transformation effect (5s), quad-split screen showing AI chat, Quick Summary waveform, Writing Assistant, and flashcards with smooth animations (14s), mind map visualization zoom-out reveal (4s), call-to-action with "80MB+ Documents, YouTube & Web" highlights (4s). Clean modern interface design, professional motion graphics, premium SaaS presentation style, smooth camera movements.
 ```
 
 ### Option C: User Journey (30s)
 ```
-30-second narrative following student's learning journey. Student uploads textbook PDF to laptop (5s), selects topics in elegant modal interface (4s), watches AI generate flashcards in real-time (6s), reviews cards with spaced repetition calendar visible (5s), mind map appears showing mastered concepts (5s), final shot of confident student with success metrics on screen (5s). Warm cinematic lighting, documentary style mixed with screen recordings, natural human moments, professional color grading.
+30-second narrative following student's learning journey. Student uploads YouTube video link to laptop (3s), clicks "Generate 5-Min Summary" and listens with headphones (4s), then uploads textbook PDF (3s), selects topics in elegant modal interface (3s), watches AI generate flashcards in real-time with multi-AI badges appearing (6s), switches to Writing Assistant to draft essay with AI suggestions (4s), reviews flashcards with spaced repetition calendar visible (3s), final shot of confident student with comprehensive success metrics showing VAK learning style and all features used (4s). Warm cinematic lighting, documentary style mixed with screen recordings, natural human moments, professional color grading.
+```
+
+---
+
+## 🎯 FEATURE-SPECIFIC HIGHLIGHT VIDEOS (15 seconds each)
+
+### Quick Summary Feature Highlight (15s)
+```
+15-second feature spotlight for Quick Summary. Opens with student overwhelmed by 2-hour lecture video (2s), discovers Quick Summary feature and pastes YouTube URL (3s), clicks "Generate 5-Min Summary" with energetic animation (2s), progress bar shows "Extracting transcript → AI summarization → Voice generation" (4s), student puts on headphones and smiles while audio waveform plays with 5:00 timer (3s), final frame: "Learn in 5 Minutes - From YouTube, PDFs, or Web" with synaptic.study URL (1s). Energetic, fast-paced, Spotify/podcast app aesthetic, vibrant orange and green accent colors.
+```
+
+### Multi-AI Intelligence Highlight (15s)
+```
+15-second technical feature showcase for Multi-AI system. Opens with complex textbook page appearing (2s), interface shows "Analyzing complexity..." with document metrics (2s), three AI provider cards appear side-by-side with logos and strengths: "OpenAI - Reliable", "DeepSeek - Cost-Effective 70% Cheaper", "Anthropic - Complex Reasoning" (4s), system auto-selects Anthropic with glowing highlight and "Best for complex documents" label (2s), content generates with flowing data particles between AI logos (3s), final frame: "Smart AI Selection - Always Best Quality" with all three logos (2s). Tech-forward aesthetic, data visualization style, professional blue/purple gradients.
+```
+
+### Writing Assistant Highlight (15s)
+```
+15-second feature demo for Writing Assistant. Student opens blank essay editor (2s), types first paragraph and AI suggestion bubble appears with purple glow: "Consider adding evidence here" (3s), student clicks suggestion and citation automatically inserts with APA formatting animation (3s), AI highlights another sentence with grammar improvement (2s), student continues writing as word count increases and AI badges appear (OpenAI, DeepSeek) (3s), final frame shows polished essay with properly formatted citations and "AI-Powered Writing + Citations" text (2s). Clean academic aesthetic, Google Docs meets Grammarly style, professional typography.
+```
+
+### Learning Style Assessment Highlight (15s)
+```
+15-second intro to VAK Learning Style Quiz. Student clicks "Discover Your Learning Style" button (2s), quiz interface appears with modern question cards showing scenarios (3s), student selects answers with smooth animations and progress bar advancing (4s), results reveal with circular chart showing "Visual 75%, Auditory 15%, Kinesthetic 10%" with animated percentages counting up (3s), personalized recommendations appear: "Recommended: Mind Maps, Video Learning" (2s), final frame: "Personalized Learning - Adapts to YOU" (1s). Colorful, friendly design, quiz app aesthetic, engaging animations.
 ```
 
 ---
@@ -201,12 +292,12 @@ Use these across ALL scenes for consistency:
 
 ### Instagram Reels / TikTok (15 seconds)
 ```
-Vertical 9:16 format video for Synaptic AI study app. Quick cuts showing: Phone screen with massive PDF uploading (3s), finger tapping to select chapters (2s), AI generating flashcards animation with number counter going 1→20 (4s), flashcard flipping on phone screen with swipe gesture (3s), final frame showing "Try Free - synaptic.study" (3s). Mobile-first UI, thumb-friendly interface, vibrant colors, fast-paced Gen-Z editing style, high energy, trending audio-friendly pacing.
+Vertical 9:16 format video for Synaptic AI study app. Quick cuts showing: Phone screen pasting YouTube URL (2s), "Generate 5-Min Summary" button tap with energetic animation (2s), waveform playing (2s), swipe to PDF upload with particle effect (2s), AI generating flashcards with counter 1→20 and multi-AI badges (3s), flashcard flipping with swipe gesture (2s), final frame showing "YouTube • PDFs • 80MB+ - Try Free - synaptic.study" (2s). Mobile-first UI, thumb-friendly interface, vibrant colors, fast-paced Gen-Z editing style, high energy, trending audio-friendly pacing.
 ```
 
 ### YouTube Shorts (60 seconds vertical)
 ```
-60-second vertical explainer for Synaptic platform. Hook: Text overlay "Stop studying for 8 hours and forgetting everything" over stressed student (3s). Problem: Messy desk, overwhelmed (5s). Solution intro: "Meet Synaptic" logo on phone (4s). Feature 1: AI chat demo (12s). Feature 2: Flashcard generation (12s). Feature 3: Mind map reveal (12s). Results: Happy student with stats (8s). CTA: "Link in description" with URL (4s). Vertical phone-oriented framing, subtitle-friendly pacing, hook within first 3 seconds.
+60-second vertical explainer for Synaptic platform. Hook: Text overlay "Stop studying for 8 hours and forgetting everything" over stressed student (3s). Problem: Messy desk, overwhelmed (5s). Solution intro: "Meet Synaptic - Multi-AI Learning" logo on phone with provider badges (4s). Feature 1: Quick Summary from YouTube video with 5-min timer (10s). Feature 2: AI chat demo with Socratic teaching (10s). Feature 3: Flashcard generation with spaced repetition (10s). Feature 4: Writing Assistant with citations (8s). Feature 5: Mind map reveal (6s). Results: Happy student with comprehensive stats showing VAK learning style (6s). CTA: "80MB+ Docs • YouTube • Web - Link in description" with URL (4s). Vertical phone-oriented framing, subtitle-friendly pacing, hook within first 3 seconds.
 ```
 
 ---
@@ -301,10 +392,15 @@ Vertical 9:16 format video for Synaptic AI study app. Quick cuts showing: Phone 
 
 ### Google Veo 3 Costs (via Vertex AI)
 - **Pricing**: ~$0.10-0.20 per second generated
-- **This Project Estimate**:
-  - 8 scenes × 8 seconds average = 64 seconds
-  - 3 variations per scene = 192 seconds total
-  - Cost: ~$19.20-$38.40
+- **Full Video Estimate** (Main 8 scenes + 3 new feature scenes):
+  - 11 scenes × 8 seconds average = 88 seconds
+  - 3 variations per scene = 264 seconds total
+  - Cost: ~$26.40-$52.80
+- **Feature Highlights** (4 additional 15s videos):
+  - 4 scenes × 15 seconds = 60 seconds
+  - 2 variations per scene = 120 seconds total
+  - Cost: ~$12.00-$24.00
+- **Total Project Cost**: ~$38.40-$76.80 for all videos
 
 ### Production Timeline
 - **Day 1**: Generate all scene variations (2-4 hours including refinement)
@@ -408,7 +504,7 @@ After launch, monitor:
 
 **Created for**: Synaptic.study Veo 3 Video Production
 **Last Updated**: November 2025
-**Version**: 1.0
+**Version**: 2.0 - Updated with Quick Summary, Writing Assistant, Video Learning, Multi-AI Intelligence, and Learning Style Assessment features
 
 ---
 
@@ -416,14 +512,15 @@ After launch, monitor:
 
 1. **Copy Scene 1 Prompt** → Paste into Google AI Studio → Generate
 2. **Review 3 variants** → Select best take
-3. **Repeat for Scenes 2-8**
-4. **Import all clips into editor**
-5. **Add transitions, music, voiceover**
-6. **Export in 16:9, 1:1, 9:16 formats**
-7. **Upload to YouTube, social media, website**
+3. **Repeat for Scenes 2-8 (main video) + Scenes 6B-6D (new features)**
+4. **Generate feature highlight videos** (Quick Summary, Multi-AI, Writing Assistant, Learning Style)
+5. **Import all clips into editor**
+6. **Add transitions, music, voiceover**
+7. **Export in 16:9, 1:1, 9:16 formats**
+8. **Upload to YouTube, social media, website**
 
-**Time to First Video**: ~4-6 hours with Veo 3 + editing
-**Cost**: $20-40 for all scenes
-**Quality**: Professional promotional video ready for launch
+**Time to First Video**: ~5-8 hours with Veo 3 + editing (includes new feature scenes)
+**Cost**: $38-77 for all scenes (main video + feature highlights)
+**Quality**: Professional promotional video suite ready for launch
 
 Good luck with your Synaptic.study video! 🚀

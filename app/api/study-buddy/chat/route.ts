@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 import { getProviderForFeature } from '@/lib/ai'
-import { generateStudyBuddyPrompt, type PersonalityMode, type ExplainLevel } from '@/lib/study-buddy/personalities'
+import { generateStudyBuddyPrompt, type PersonalityMode, type ExplainLevel, type TeachingStyle } from '@/lib/study-buddy/personalities'
 import { logger } from '@/lib/logger'
 import { checkUsageLimit, incrementUsage } from '@/lib/usage-limits'
 import { searchDocument } from '@/lib/vector-store'
@@ -34,6 +34,7 @@ interface ChatRequest {
   personalityMode: PersonalityMode
   explainLevel?: ExplainLevel
   topic?: string
+  teachingStyle?: TeachingStyle // 'socratic' = true Socratic, 'mixed' = explain + questions
 }
 
 /**
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body: ChatRequest = await req.json()
-    const { messages, personalityMode, explainLevel, topic } = body
+    const { messages, personalityMode, explainLevel, topic, teachingStyle } = body
 
     if (!messages || messages.length === 0) {
       return NextResponse.json(
@@ -164,11 +165,13 @@ export async function POST(req: NextRequest) {
       .single()
 
     // Generate personality-aware system prompt
+    // Teaching style only applies to tutor mode
     let systemPrompt = generateStudyBuddyPrompt({
       mode: personalityMode,
       explainLevel,
       learningStyle: learningProfile?.dominant_style,
-      topic
+      topic,
+      teachingStyle: personalityMode === 'tutor' ? (teachingStyle || 'mixed') : undefined
     })
 
     // FEATURE FLAG: Date/Time Awareness
@@ -322,6 +325,7 @@ Use this content to answer the user's question. Cite the document names when ref
       userId,
       personalityMode,
       explainLevel,
+      teachingStyle: personalityMode === 'tutor' ? (teachingStyle || 'mixed') : undefined,
       messageCount: messages.length,
       provider: provider.constructor.name
     })
