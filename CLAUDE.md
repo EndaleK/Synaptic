@@ -43,20 +43,30 @@ npm run lint
 
 Development server runs on http://localhost:3000
 
-## Frontend Design Guidelines
+## Frontend Design Skill
 
-When making visual/design changes, follow the guidelines in `.claude/`:
+A Claude Code Skill for improving frontend design is available at `.claude/skills/frontend-design/`.
+
+**How it works**: The skill automatically loads when you ask Claude to improve UI/UX, update styling, or redesign components. It provides:
 
 | File | Purpose |
 |------|---------|
-| `.claude/design-guidelines.md` | Safe vs. risky changes (what to touch, what to avoid) |
-| `.claude/design-system.md` | Brand colors, typography, spacing tokens |
-| `.claude/design-checklist.md` | Testing checklist after design changes |
+| `SKILL.md` | Main skill file with design vectors (typography, color, motion, backgrounds) |
+| `SAFETY-GUIDELINES.md` | Safe vs. risky changes (what to touch, what to avoid) |
+| `DESIGN-SYSTEM.md` | Synaptic brand colors, typography, spacing tokens |
+| `CHECKLIST.md` | Testing checklist after design changes |
 
 **Key Rules:**
 - ✅ **SAFE**: Colors, fonts, spacing, shadows, animations, borders
 - ⚠️ **CAUTION**: Layout changes, DOM restructuring (test after)
 - ❌ **FORBIDDEN**: State logic, event handlers, API calls, auth
+
+**Design Principles** (from Anthropic's frontend aesthetics research):
+- Avoid generic "AI slop" aesthetics (Inter fonts, purple gradients on white)
+- Use distinctive typography (never Inter, Roboto, Open Sans)
+- Create atmosphere with layered backgrounds, not solid colors
+- Add motion for delight (page load animations, micro-interactions)
+- Commit to cohesive themes using CSS variables
 
 Always run through the design checklist after visual changes to ensure functionality isn't broken.
 

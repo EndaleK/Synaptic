@@ -1,16 +1,12 @@
-# Frontend Design Guidelines for Claude
+# Safety Guidelines for Frontend Design
 
-This document defines safe practices for improving Synaptic's frontend design without breaking functionality.
-
-## Core Principle
-
-**Style the APPEARANCE, never touch the BEHAVIOR.**
+These rules ensure design changes don't break functionality.
 
 ---
 
-## 🟢 SAFE CHANGES (Green Light)
+## Safe Changes (Green Light)
 
-These changes are purely visual and have ZERO risk of breaking functionality:
+These changes are purely visual with ZERO risk of breaking functionality:
 
 ### Colors & Gradients
 - Background colors (`bg-*`, `background`, `background-color`)
@@ -54,7 +50,7 @@ These changes are purely visual and have ZERO risk of breaking functionality:
 
 ---
 
-## 🟡 CAUTION CHANGES (Yellow Light)
+## Caution Changes (Yellow Light)
 
 These changes require careful testing after implementation:
 
@@ -85,7 +81,7 @@ These changes require careful testing after implementation:
 
 ---
 
-## 🔴 FORBIDDEN CHANGES (Red Light)
+## Forbidden Changes (Red Light)
 
 **NEVER modify these - they control functionality:**
 
@@ -136,27 +132,26 @@ These changes require careful testing after implementation:
 
 ### 1. Work Incrementally
 ```
-❌ Don't: Redesign entire page at once
-✅ Do: Change one component, test, repeat
+BAD:  Redesign entire page at once
+GOOD: Change one component, test, repeat
 ```
 
 ### 2. Keep Original Structure
 ```tsx
-// ❌ Don't restructure like this:
+// BAD - Don't restructure like this:
 <div className="new-wrapper">
   <ComponentThatHandlesClick />
 </div>
 
-// ✅ Do style existing elements:
+// GOOD - Style existing elements:
 <ComponentThatHandlesClick className="new-styles-here" />
 ```
 
 ### 3. Use Existing Design Tokens
-Reference `app/globals.css` for:
+Reference `app/globals.css` and DESIGN-SYSTEM.md for:
 - Brand colors: `--accent-primary`, `--accent-secondary`
 - Mode colors: `--mode-flashcards`, `--mode-chat`, etc.
 - Spacing: `--space-1` through `--space-6`
-- Typography: `--font-size-*`, `--font-weight-*`
 
 ### 4. Preserve Accessibility
 - Keep `aria-*` attributes unchanged
@@ -165,21 +160,4 @@ Reference `app/globals.css` for:
 - Keep text readable (contrast ratios)
 
 ### 5. Test After Every Change
-Run through the checklist in `.claude/design-checklist.md`
-
----
-
-## Quick Reference
-
-| Want to change... | Safe? | How |
-|-------------------|-------|-----|
-| Button color | ✅ | Modify Tailwind `bg-*` class |
-| Button click action | ❌ | NEVER TOUCH |
-| Card shadow | ✅ | Add/modify `shadow-*` class |
-| Modal open/close | ❌ | NEVER TOUCH |
-| Font size | ✅ | Modify `text-*` class |
-| Form validation | ❌ | NEVER TOUCH |
-| Spacing between items | ✅ | Modify `gap-*`, `space-*`, `p-*`, `m-*` |
-| API call | ❌ | NEVER TOUCH |
-| Border radius | ✅ | Modify `rounded-*` class |
-| State variable | ❌ | NEVER TOUCH |
+Run through CHECKLIST.md after each modification.
