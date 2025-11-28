@@ -43,6 +43,23 @@ npm run lint
 
 Development server runs on http://localhost:3000
 
+## Frontend Design Guidelines
+
+When making visual/design changes, follow the guidelines in `.claude/`:
+
+| File | Purpose |
+|------|---------|
+| `.claude/design-guidelines.md` | Safe vs. risky changes (what to touch, what to avoid) |
+| `.claude/design-system.md` | Brand colors, typography, spacing tokens |
+| `.claude/design-checklist.md` | Testing checklist after design changes |
+
+**Key Rules:**
+- ✅ **SAFE**: Colors, fonts, spacing, shadows, animations, borders
+- ⚠️ **CAUTION**: Layout changes, DOM restructuring (test after)
+- ❌ **FORBIDDEN**: State logic, event handlers, API calls, auth
+
+Always run through the design checklist after visual changes to ensure functionality isn't broken.
+
 ## Architecture
 
 ### Application Structure
