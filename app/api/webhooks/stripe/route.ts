@@ -16,7 +16,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ''
 
-// GET handler for health checks and Stripe endpoint verification
+/**
+ * GET handler for health checks and Stripe endpoint verification
+ * Production webhook: https://synaptic.study/api/webhooks/stripe
+ * Stripe events: checkout.session.completed, customer.subscription.*, invoice.payment_*
+ */
 export async function GET() {
   return NextResponse.json({
     status: 'ok',
