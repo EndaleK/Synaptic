@@ -1,12 +1,19 @@
 /**
  * Rate Limiting Utility
  *
- * Simple in-memory rate limiter for MVP
- * Upgrade to Upstash Redis for production scale
+ * Automatically uses Upstash Redis when configured, falls back to in-memory
+ * - Production: Distributed rate limiting with Redis
+ * - Development: In-memory rate limiting
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { logger } from './logger'
+import {
+  applyRateLimitRedis,
+  isRedisConfigured,
+  checkRateLimitRedis,
+  addRateLimitHeadersRedis,
+} from './rate-limit-redis'
 
 interface RateLimitConfig {
   maxRequests: number
@@ -173,19 +180,26 @@ export const RateLimits = {
 
 /**
  * Helper to apply rate limit to API route handler
+ * Automatically uses Redis if configured, falls back to in-memory
  */
 export async function applyRateLimit(
   req: NextRequest,
   config: RateLimitConfig,
   userId?: string
 ): Promise<NextResponse | null> {
+  // Use Redis if configured (production), otherwise use in-memory (development)
+  if (isRedisConfigured()) {
+    return applyRateLimitRedis(req, config, userId)
+  }
+
+  // Fallback to in-memory rate limiting
   const clientId = getClientId(req, userId)
   const result = checkRateLimit(clientId, config)
 
   if (!result.allowed) {
     const retryAfter = Math.ceil((result.resetTime - Date.now()) / 1000)
 
-    logger.warn('Rate limit exceeded in API route', {
+    logger.warn('Rate limit exceeded in API route (in-memory)', {
       path: req.nextUrl.pathname,
       clientId,
       method: req.method,
@@ -213,12 +227,19 @@ export async function applyRateLimit(
 
 /**
  * Add rate limit headers to response
+ * Automatically uses Redis if configured, falls back to in-memory
  */
-export function addRateLimitHeaders(
+export async function addRateLimitHeaders(
   response: NextResponse,
   clientId: string,
   config: RateLimitConfig
-): NextResponse {
+): Promise<NextResponse> {
+  // Use Redis if configured (production)
+  if (isRedisConfigured()) {
+    return addRateLimitHeadersRedis(response, clientId, config)
+  }
+
+  // Fallback to in-memory
   const entry = rateLimitStore.get(clientId)
 
   if (entry) {
