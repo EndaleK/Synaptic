@@ -1,24 +1,27 @@
 /**
- * Vector Store Integration with ChromaDB
+ * Vector Store Integration with Pinecone
  *
- * Provides semantic search and retrieval for large documents using RAG
- * - Stores document chunks as embeddings
+ * Migrated from ChromaDB to Pinecone for production-ready vector search
+ * - Stores document chunks as embeddings in Pinecone serverless index
  * - Enables similarity search for relevant content retrieval
  * - Supports flashcard generation, chat, podcast, and mind map features
+ * - Uses namespaces for document isolation (one namespace per document)
  */
 
-import { ChromaClient, Collection } from 'chromadb'
+import { Pinecone } from '@pinecone-database/pinecone'
 import { OpenAIEmbeddings } from '@langchain/openai'
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters'
 
-// Initialize ChromaDB client (no embedding function - we'll use OpenAI directly)
-// chromadb v3.x uses a simple { path: "url" } format
-const chromaUrl = process.env.CHROMA_URL || 'http://localhost:8000'
-console.log('[Vector Store] ChromaDB URL:', chromaUrl)
-
-const chromaClient = new ChromaClient({
-  path: chromaUrl
+// Initialize Pinecone client
+const pinecone = new Pinecone({
+  apiKey: process.env.PINECONE_API_KEY!,
 })
+
+const indexName = process.env.PINECONE_INDEX_NAME || 'synaptic-embeddings'
+console.log('[Vector Store] Pinecone Index:', indexName)
+
+// Get index reference
+const index = pinecone.index(indexName)
 
 // Initialize OpenAI embeddings for all embedding operations
 const embeddings = new OpenAIEmbeddings({
@@ -39,37 +42,16 @@ const textSplitter = new RecursiveCharacterTextSplitter({
 })
 
 /**
- * Get or create a collection for a specific document
- * Each document gets its own collection for isolation
+ * Get namespace for a specific document
+ * Each document gets its own namespace for isolation
  */
-async function getOrCreateCollection(
-  documentId: string
-): Promise<Collection> {
-  const collectionName = `doc_${documentId.replace(/[^a-zA-Z0-9]/g, '_')}`
-
-  try {
-    // Try to get existing collection
-    // IMPORTANT: Set embeddingFunction to undefined to indicate we're providing our own embeddings
-    const collection = await chromaClient.getCollection({
-      name: collectionName,
-      embeddingFunction: undefined,
-    })
-    return collection
-  } catch (error) {
-    // Create new collection if it doesn't exist
-    // IMPORTANT: Set embeddingFunction to undefined to indicate we're providing our own embeddings
-    const collection = await chromaClient.createCollection({
-      name: collectionName,
-      metadata: { documentId },
-      embeddingFunction: undefined,
-    })
-    return collection
-  }
+function getNamespace(documentId: string): string {
+  return `doc_${documentId.replace(/[^a-zA-Z0-9]/g, '_')}`
 }
 
 /**
  * Process and store a document in the vector database
- * Splits text into chunks, generates embeddings, and stores in ChromaDB
+ * Splits text into chunks, generates embeddings, and stores in Pinecone
  */
 export async function indexDocument(
   documentId: string,
@@ -87,45 +69,44 @@ export async function indexDocument(
       throw new Error('No chunks generated from document')
     }
 
-    // Get or create collection for this document
-    console.log(`[Vector Store] Getting/creating collection for ${documentId}`)
-    const collection = await getOrCreateCollection(documentId)
-    console.log(`[Vector Store] Collection ready`)
-
     // Generate embeddings for all chunks
     console.log(`[Vector Store] Generating embeddings for ${chunks.length} chunks...`)
     const embeddingVectors = await embeddings.embedDocuments(chunks)
     console.log(`[Vector Store] Embeddings generated: ${embeddingVectors.length} vectors`)
 
-    // Prepare data for ChromaDB
-    const ids = chunks.map((_, i) => `${documentId}_chunk_${i}`)
-    const metadatas = chunks.map((chunk, i) => ({
-      documentId,
-      chunkIndex: i,
-      chunkText: chunk,
-      ...metadata,
+    // Prepare vectors for Pinecone
+    const namespace = getNamespace(documentId)
+    const vectors = chunks.map((chunk, i) => ({
+      id: `${documentId}_chunk_${i}`,
+      values: embeddingVectors[i],
+      metadata: {
+        documentId,
+        chunkIndex: i,
+        chunkText: chunk,
+        text: chunk, // For compatibility
+        ...metadata,
+      },
     }))
 
-    // Store in ChromaDB with batching (1000 chunks per batch to avoid request size limits)
-    // ChromaDB has both a count limit (~5461) and a request size limit
-    // With embeddings (1536 dims × 4 bytes = ~6KB each), 1000 chunks ≈ 6-10MB per request
-    const BATCH_SIZE = 1000
+    // Store in Pinecone with batching (100 vectors per batch recommended by Pinecone)
+    const BATCH_SIZE = 100
     const totalChunks = chunks.length
-    console.log(`[Vector Store] Storing ${totalChunks} chunks in ChromaDB (batch size: ${BATCH_SIZE})...`)
+    console.log(
+      `[Vector Store] Storing ${totalChunks} chunks in Pinecone namespace "${namespace}" (batch size: ${BATCH_SIZE})...`
+    )
+
+    const ns = index.namespace(namespace)
 
     for (let i = 0; i < totalChunks; i += BATCH_SIZE) {
       const batchEnd = Math.min(i + BATCH_SIZE, totalChunks)
       const batchNumber = Math.floor(i / BATCH_SIZE) + 1
       const totalBatches = Math.ceil(totalChunks / BATCH_SIZE)
 
-      console.log(`[Vector Store] Adding batch ${batchNumber}/${totalBatches} (chunks ${i + 1}-${batchEnd})...`)
+      console.log(
+        `[Vector Store] Upserting batch ${batchNumber}/${totalBatches} (chunks ${i + 1}-${batchEnd})...`
+      )
 
-      await collection.add({
-        ids: ids.slice(i, batchEnd),
-        embeddings: embeddingVectors.slice(i, batchEnd),
-        metadatas: metadatas.slice(i, batchEnd),
-        documents: chunks.slice(i, batchEnd),
-      })
+      await ns.upsert(vectors.slice(i, batchEnd))
     }
 
     console.log(`✅ Indexed ${totalChunks} chunks for document ${documentId}`)
@@ -137,7 +118,9 @@ export async function indexDocument(
       console.error('[Vector Store] Error message:', error.message)
       console.error('[Vector Store] Error stack:', error.stack)
     }
-    throw new Error(`Failed to index document in vector store: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    throw new Error(
+      `Failed to index document in vector store: ${error instanceof Error ? error.message : 'Unknown error'}`
+    )
   }
 }
 
@@ -152,7 +135,7 @@ export async function searchDocument(
   documentId: string,
   query: string,
   topK: number = 5,
-  userId?: string  // Optional: Clerk user ID for ownership verification
+  userId?: string // Optional: Clerk user ID for ownership verification
 ): Promise<Array<{ text: string; score: number; chunkIndex: number }>> {
   try {
     // SECURITY: Verify document ownership if userId provided (defense-in-depth)
@@ -168,7 +151,10 @@ export async function searchDocument(
         .single()
 
       if (!profile) {
-        console.error('[Vector Store] User profile not found for ownership check', { userId, documentId })
+        console.error('[Vector Store] User profile not found for ownership check', {
+          userId,
+          documentId,
+        })
         return []
       }
 
@@ -184,7 +170,7 @@ export async function searchDocument(
         console.error('[Vector Store] Document ownership verification failed', {
           userId,
           documentId,
-          message: 'User does not own this document'
+          message: 'User does not own this document',
         })
         return []
       }
@@ -192,27 +178,29 @@ export async function searchDocument(
       console.log('[Vector Store] Document ownership verified', { userId, documentId })
     }
 
-    // Get collection for this document
-    const collection = await getOrCreateCollection(documentId)
+    // Get namespace for this document
+    const namespace = getNamespace(documentId)
+    const ns = index.namespace(namespace)
 
     // Generate query embedding
     const queryEmbedding = await embeddings.embedQuery(query)
 
-    // Search ChromaDB
-    const results = await collection.query({
-      queryEmbeddings: [queryEmbedding],
-      nResults: topK,
+    // Search Pinecone
+    const results = await ns.query({
+      vector: queryEmbedding,
+      topK,
+      includeMetadata: true,
     })
 
     // Format results
-    if (!results.documents[0] || !results.distances[0] || !results.metadatas[0]) {
+    if (!results.matches || results.matches.length === 0) {
       return []
     }
 
-    const formattedResults = results.documents[0].map((doc, i) => ({
-      text: doc || '',
-      score: 1 - (results.distances![0][i] || 0), // Convert distance to similarity score
-      chunkIndex: (results.metadatas![0][i] as { chunkIndex?: number })?.chunkIndex || i,
+    const formattedResults = results.matches.map((match) => ({
+      text: (match.metadata?.chunkText as string) || (match.metadata?.text as string) || '',
+      score: match.score || 0,
+      chunkIndex: (match.metadata?.chunkIndex as number) || 0,
     }))
 
     return formattedResults
@@ -227,12 +215,16 @@ export async function searchDocument(
  */
 export async function deleteDocumentVectors(documentId: string): Promise<void> {
   try {
-    const collectionName = `doc_${documentId.replace(/[^a-zA-Z0-9]/g, '_')}`
-    await chromaClient.deleteCollection({ name: collectionName })
-    console.log(`✅ Deleted vector collection for document ${documentId}`)
+    const namespace = getNamespace(documentId)
+    const ns = index.namespace(namespace)
+
+    // Delete all vectors in the namespace
+    await ns.deleteAll()
+
+    console.log(`✅ Deleted vectors for document ${documentId} from namespace ${namespace}`)
   } catch (error) {
     console.error('Vector deletion error:', error)
-    // Don't throw - collection might not exist
+    // Don't throw - namespace might not exist
   }
 }
 
@@ -244,14 +236,25 @@ export async function getDocumentStats(documentId: string): Promise<{
   chunkCount: number
 }> {
   try {
-    const collection = await getOrCreateCollection(documentId)
-    const count = await collection.count()
+    const namespace = getNamespace(documentId)
+
+    // Get namespace stats
+    const stats = await index.describeIndexStats()
+    const namespaceStats = stats.namespaces?.[namespace]
+
+    if (!namespaceStats || namespaceStats.recordCount === 0) {
+      return {
+        exists: false,
+        chunkCount: 0,
+      }
+    }
 
     return {
-      exists: count > 0,
-      chunkCount: count,
+      exists: true,
+      chunkCount: namespaceStats.recordCount || 0,
     }
   } catch (error) {
+    console.error('Stats retrieval error:', error)
     return {
       exists: false,
       chunkCount: 0,
@@ -268,15 +271,23 @@ export async function getChunksByIndices(
   indices: number[]
 ): Promise<string[]> {
   try {
-    const collection = await getOrCreateCollection(documentId)
+    const namespace = getNamespace(documentId)
+    const ns = index.namespace(namespace)
 
     const ids = indices.map((i) => `${documentId}_chunk_${i}`)
 
-    const results = await collection.get({
-      ids,
-    })
+    // Fetch vectors by ID
+    const results = await ns.fetch(ids)
 
-    return (results.documents || []).filter((doc): doc is string => doc !== null)
+    // Extract text from metadata
+    const chunks = ids
+      .map((id) => {
+        const vector = results.records?.[id]
+        return (vector?.metadata?.chunkText as string) || (vector?.metadata?.text as string) || ''
+      })
+      .filter((text) => text.length > 0)
+
+    return chunks
   } catch (error) {
     console.error('Chunk retrieval error:', error)
     return []
@@ -286,20 +297,59 @@ export async function getChunksByIndices(
 /**
  * Get all chunks for a document (for complete reconstruction)
  * WARNING: Use sparingly for large documents
+ * Note: Pinecone doesn't support listing all vectors, so this queries with a dummy vector
  */
 export async function getAllChunks(documentId: string): Promise<string[]> {
   try {
-    const collection = await getOrCreateCollection(documentId)
-    const count = await collection.count()
+    const namespace = getNamespace(documentId)
+    const ns = index.namespace(namespace)
 
-    // Get all chunks
-    const results = await collection.get({
-      limit: count,
+    // Get stats to know how many chunks exist
+    const stats = await index.describeIndexStats()
+    const namespaceStats = stats.namespaces?.[namespace]
+
+    if (!namespaceStats || namespaceStats.recordCount === 0) {
+      return []
+    }
+
+    const totalChunks = namespaceStats.recordCount
+
+    // Generate a dummy query vector to get all results
+    // This is a workaround since Pinecone doesn't have a "list all" operation
+    const dummyVector = Array(1536).fill(0) // 1536-dimensional zero vector
+
+    const results = await ns.query({
+      vector: dummyVector,
+      topK: Math.min(totalChunks, 10000), // Pinecone max is 10000
+      includeMetadata: true,
     })
 
-    return (results.documents || []).filter((doc): doc is string => doc !== null)
+    // Extract and sort chunks by index
+    const chunks = results.matches
+      ?.map((match) => ({
+        index: (match.metadata?.chunkIndex as number) || 0,
+        text: (match.metadata?.chunkText as string) || (match.metadata?.text as string) || '',
+      }))
+      .sort((a, b) => a.index - b.index)
+      .map((chunk) => chunk.text)
+      .filter((text) => text.length > 0)
+
+    return chunks || []
   } catch (error) {
     console.error('Full document retrieval error:', error)
     return []
+  }
+}
+
+/**
+ * Get index statistics (useful for monitoring)
+ */
+export async function getIndexStats() {
+  try {
+    const stats = await index.describeIndexStats()
+    return stats
+  } catch (error) {
+    console.error('Index stats error:', error)
+    return null
   }
 }
