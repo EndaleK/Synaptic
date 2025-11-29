@@ -16,6 +16,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ''
 
+// GET handler for health checks and Stripe endpoint verification
+export async function GET() {
+  return NextResponse.json({
+    status: 'ok',
+    service: 'Stripe Webhook Handler',
+    methods: ['POST'],
+    message: 'Webhook endpoint is active. Use POST requests from Stripe.',
+  })
+}
+
 export async function POST(req: NextRequest) {
   const startTime = Date.now()
 
