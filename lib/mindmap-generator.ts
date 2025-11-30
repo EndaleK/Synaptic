@@ -60,21 +60,34 @@ SOURCE FIDELITY REQUIREMENTS (CRITICAL - MUST FOLLOW):
 If following these rules results in fewer nodes than the target, that is acceptable - accuracy and source fidelity are more important than hitting the target node count.`
 
   const baseLabelingGuidelines = `
-NODE LABELING (Critical for Readability & Cognitive Load Reduction):
-- Root: Clear, inclusive concept (e.g., "Safety Protocol Implementation")
-- Level 1: Broad categories (e.g., "Heat-Related Hazards", "Emergency Procedures")
-- Levels 2-4: Specific terms/concepts (e.g., "Heat Exhaustion Symptoms", "Buddy System Protocol")
-- Use NOUNS or NOUN PHRASES (not sentences)
-- Keep VERY concise: Maximum 6 words per label (4 words ideal for deeper levels)
-- Research shows: Brief keywords reduce cognitive load and improve comprehension
-- Save detailed explanations for descriptions, not labels
+NODE LABELING - TONY BUZAN'S "ONE KEYWORD PER BRANCH" RULE (CRITICAL):
+⚠️ This is the CORE principle of effective mind mapping - STRICTLY ENFORCE:
 
-DESCRIPTION GUIDELINES (Cognitive Load Management):
-- Labels are BRIEF KEYWORDS - descriptions hold the rich detail
-- Provide comprehensive context and explanations in descriptions
-- Include specific examples, data, applications, and connections
-- Help users understand WHY this concept matters and HOW it relates to others
-- This separation (brief label + rich description) reduces visual clutter while preserving depth`
+- **Root (Level 0)**: 2-3 words maximum for central concept (e.g., "Safety Protocols", "Heat Management")
+- **ALL OTHER LEVELS (1-4)**: SINGLE KEYWORD ONLY
+  - Level 1: Single noun (e.g., "Hazards", "Prevention", "Response")
+  - Level 2: Single keyword (e.g., "Exhaustion", "Hydration", "Training")
+  - Level 3: Single term (e.g., "Symptoms", "Schedule", "Equipment")
+  - Level 4: Single word (e.g., "Dizziness", "Frequency", "Buddy")
+
+WHY SINGLE KEYWORDS MATTER (Research-Backed):
+1. **Cognitive Load**: Single words process 300% faster than phrases
+2. **Memory Recall**: Keywords trigger associations better than sentences
+3. **Visual Clarity**: Creates clean, scannable hierarchies
+4. **Creative Thinking**: Forces distillation to essence of concept
+
+STRICT ENFORCEMENT:
+- DO NOT use phrases like "Heat Exhaustion Symptoms" → Use "Symptoms" (put "heat exhaustion" in description)
+- DO NOT use sentences or multiple words → ONE keyword ONLY
+- Use NOUNS predominantly (action words only when noun doesn't work)
+- Compound words are acceptable if commonly used as single unit (e.g., "Heatstroke", "Teamwork")
+
+DESCRIPTION GUIDELINES (Where Details Belong):
+- Labels are SINGLE KEYWORDS - descriptions hold ALL the rich detail
+- Put multi-word concepts, context, and explanations in descriptions
+- Include specific examples, data, applications, and connections in descriptions
+- Example: Label "Symptoms" → Description "Heat exhaustion warning signs include dizziness, nausea, excessive sweating"
+- This separation (single keyword + rich description) is the KEY to effective mind maps`
 
   const categoryAssignment = `
 CATEGORY ASSIGNMENT (for color coding):
@@ -407,23 +420,57 @@ IMPORTANT: Your response must be ONLY a JSON object with "title", "nodes" (array
           throw new Error(`Invalid node ${index}: missing id or label. Node data: ${JSON.stringify(node)}`)
         }
 
-        // PHASE 1.3: Label Length Validation (Cognitive Load Theory)
-        // Research shows 4-6 words optimal for reducing cognitive load
+        // PHASE 2.1: ENFORCE "ONE KEYWORD PER BRANCH" RULE (Tony Buzan)
         const trimmedLabel = node.label.trim();
-        const wordCount = trimmedLabel.split(/\s+/).length;
+        const words = trimmedLabel.split(/\s+/);
+        const level = typeof node.level === 'number' ? node.level : 0;
 
-        if (wordCount > 6) {
-          console.warn(
-            `[Mind Map Validation] Node "${node.id}" label exceeds 6 words (${wordCount} words): "${trimmedLabel}"\n` +
-            `Consider using node description for details to reduce cognitive load.`
-          );
+        let finalLabel = trimmedLabel;
+        let wasAutoTruncated = false;
+
+        // Root (level 0): Allow 2-3 words
+        if (level === 0) {
+          if (words.length > 3) {
+            finalLabel = words.slice(0, 3).join(' ');
+            wasAutoTruncated = true;
+            console.warn(
+              `[Keyword Enforcement] Root node truncated from "${trimmedLabel}" → "${finalLabel}" (max 3 words for root)`
+            );
+          }
+        }
+        // All other levels: SINGLE KEYWORD ONLY
+        else {
+          if (words.length > 1) {
+            // Take first word unless it's a common article/preposition
+            const firstWord = words[0];
+            const skipWords = ['the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for', 'with'];
+
+            if (skipWords.includes(firstWord.toLowerCase()) && words.length > 1) {
+              finalLabel = words[1]; // Use second word if first is article
+            } else {
+              finalLabel = firstWord;
+            }
+
+            wasAutoTruncated = true;
+            console.warn(
+              `[Keyword Enforcement] Level ${level} node truncated: "${trimmedLabel}" → "${finalLabel}"\n` +
+              `  Full context moved to description. This enforces Tony Buzan's "one keyword per branch" rule.`
+            );
+          }
+        }
+
+        // If we truncated, prepend original label to description for context preservation
+        let finalDescription = node.description || '';
+        if (wasAutoTruncated && finalLabel !== trimmedLabel) {
+          const originalContext = `[Original: "${trimmedLabel}"] `;
+          finalDescription = originalContext + (finalDescription || '');
         }
 
         return {
           id: String(node.id), // Normalize to string (AI might return numbers)
-          label: trimmedLabel,
-          level: typeof node.level === 'number' ? node.level : 0,
-          description: node.description || '',
+          label: finalLabel,
+          level,
+          description: finalDescription,
           category: node.category || 'concept'
         }
       })
