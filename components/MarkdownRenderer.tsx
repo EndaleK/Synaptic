@@ -25,15 +25,41 @@ mermaid.initialize({
 
 export default function MarkdownRenderer({ content, className = '', disableDiagrams = false }: MarkdownRendererProps) {
   const [renderedDiagrams, setRenderedDiagrams] = useState<Map<string, string>>(new Map())
+  const [pendingDiagrams, setPendingDiagrams] = useState<Set<string>>(new Set())
   const diagramCodeMap = useRef<Map<string, number>>(new Map())
   const diagramCounter = useRef(0)
 
   // Reset state when content changes
   useEffect(() => {
     setRenderedDiagrams(new Map())
+    setPendingDiagrams(new Set())
     diagramCodeMap.current.clear()
     diagramCounter.current = 0
   }, [content])
+
+  // Process pending diagrams after render
+  useEffect(() => {
+    if (pendingDiagrams.size === 0) return
+
+    const processDiagrams = async () => {
+      // Get current pending diagrams
+      const toProcess = Array.from(pendingDiagrams)
+      setPendingDiagrams(new Set()) // Clear pending immediately to avoid re-processing
+
+      // Process each diagram
+      for (const key of toProcess) {
+        const codeEntry = Array.from(diagramCodeMap.current.entries())
+          .find(([_, id]) => `diagram-${id}` === key)
+
+        if (codeEntry) {
+          const [code, _] = codeEntry
+          await renderMermaidDiagram(code, key)
+        }
+      }
+    }
+
+    processDiagrams()
+  }, [pendingDiagrams])
 
   const isValidMermaidCode = (code: string): boolean => {
     if (!code || !code.trim()) return false
@@ -176,10 +202,12 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
               const diagramKey = getDiagramKey(codeString)
               const svg = renderedDiagrams.get(diagramKey)
 
-              // If not rendered yet, trigger rendering
+              // If not rendered yet, queue for rendering
               if (!svg) {
-                // Trigger async rendering
-                renderMermaidDiagram(codeString, diagramKey)
+                // Queue diagram for async rendering (happens in useEffect)
+                if (!pendingDiagrams.has(diagramKey)) {
+                  setPendingDiagrams(prev => new Set(prev).add(diagramKey))
+                }
 
                 // Show loading state
                 return (
