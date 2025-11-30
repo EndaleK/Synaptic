@@ -71,8 +71,8 @@ export default function LandingPage() {
       icon: Bot,
       title: "Study Buddy",
       badge: "NEW",
-      subtitle: "Now With Document Awareness",
-      description: "Your AI study companion that knows YOUR documents. Ask questions and get answers directly from your study materials with automatic citations.",
+      subtitle: "Powered by Claude AI - Your Personal Tutor",
+      description: "Context-aware AI that knows your documents, schedule, and deadlines. Get personalized study plans, smart reminders, and Socratic teaching that adapts to YOU.",
       gradient: "from-blue-500 to-purple-500"
     },
     {
@@ -118,11 +118,11 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-white to-gray-50 dark:from-black dark:to-gray-900">
+      <section className="relative overflow-hidden bg-gradient-to-b from-purple-50 via-pink-50 to-white dark:from-purple-950 dark:via-pink-950 dark:to-black">
         {/* Background decoration */}
-        <div className="absolute inset-0 bg-grid-black/[0.02] dark:bg-grid-white/[0.02]" />
+        <div className="absolute inset-0 bg-grid-purple/[0.03] dark:bg-grid-white/[0.02]" />
         <div className="absolute top-0 right-0 -z-10 transform-gpu overflow-hidden blur-3xl">
-          <div className="relative aspect-[1155/678] w-[36.125rem] bg-gradient-to-tr from-gray-200 to-gray-400 dark:from-gray-800 dark:to-gray-600 opacity-30" />
+          <div className="relative aspect-[1155/678] w-[36.125rem] bg-gradient-to-tr from-purple-400 to-pink-500 dark:from-purple-800 dark:to-pink-700 opacity-40" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
@@ -170,10 +170,10 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
               <Link
                 href={isSignedIn ? "/dashboard" : "/sign-up"}
-                className="group relative px-10 py-5 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white rounded-2xl font-bold text-xl hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-3 min-w-[260px] justify-center ring-4 ring-green-500/20 hover:ring-green-500/40"
+                className="group relative px-10 py-5 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 text-white rounded-2xl font-bold text-xl hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-3 min-w-[260px] justify-center ring-4 ring-purple-500/30 hover:ring-purple-500/50"
               >
                 <span className="relative z-10">{isSignedIn ? "Go to Dashboard" : "Get Started Free →"}</span>
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-400 to-emerald-400 opacity-0 group-hover:opacity-20 transition-opacity" />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-400 to-pink-400 opacity-0 group-hover:opacity-20 transition-opacity" />
               </Link>
               <Link
                 href="#features"
@@ -192,7 +192,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-white dark:bg-black">
+      <section id="features" className="py-20 bg-gradient-to-b from-white via-purple-50/30 to-pink-50/30 dark:from-black dark:via-purple-950/30 dark:to-pink-950/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-16">
@@ -300,7 +300,7 @@ export default function LandingPage() {
       </section>
 
       {/* Audience-Specific Smart Sections */}
-      <section className="py-24 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black">
+      <section className="py-24 bg-gradient-to-b from-pink-50/30 via-purple-50/30 to-white dark:from-pink-950/30 dark:via-purple-950/30 dark:to-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-16">
@@ -560,7 +560,7 @@ export default function LandingPage() {
       </section>
 
       {/* How Synaptic Compares Section */}
-      <section className="pt-16 pb-24 bg-white dark:bg-black">
+      <section className="pt-16 pb-24 bg-gradient-to-b from-white to-purple-50/20 dark:from-black dark:to-purple-950/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black dark:text-white mb-4">
@@ -818,7 +818,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-24 bg-gradient-to-b from-white to-gray-50 dark:from-black dark:to-gray-900">
+      <section id="pricing" className="py-24 bg-gradient-to-b from-purple-50/20 to-pink-50/30 dark:from-purple-950/20 dark:to-pink-950/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-16">
@@ -905,7 +905,7 @@ export default function LandingPage() {
       </section>
 
       {/* QR Code & Footer Section */}
-      <section className="py-12 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black border-t border-gray-200 dark:border-gray-800">
+      <section className="py-12 bg-gradient-to-b from-pink-50/30 to-white dark:from-pink-950/30 dark:to-black border-t border-purple-200 dark:border-purple-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left: QR Code */}
