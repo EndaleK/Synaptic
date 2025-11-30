@@ -384,9 +384,10 @@ function layoutHierarchical(
       },
       label: node.label, // ReactFlow default nodes use top-level label property
       style: {
-        background: getColorForCategory(node.category || 'concept', template, node.id, node.level, branchIndex),
-        color: textColor,
-        border: `${borderWidth}px solid ${getColorForLevel(node.level)}`,
+        // PHASE 1.1: Use branch-based colors instead of category colors
+        background: getBranchColor(node.level, branchIndex).bg,
+        color: getBranchColor(node.level, branchIndex).text,
+        border: `${borderWidth}px solid ${getBranchColor(node.level, branchIndex).border}`,
         borderRadius: `${borderRadius}px`,
         padding: `${padding}px`,
         minWidth: `${minWidth}px`,
@@ -706,9 +707,10 @@ function layoutRadial(
       },
       label: node.label,
       style: {
-        background: getColorForCategory(node.category || 'concept', template, node.id, node.level, branchIndex),
-        color: textColor,
-        border: `${borderWidth}px solid ${getColorForLevel(node.level)}`,
+        // PHASE 1.1: Use branch-based colors instead of category colors
+        background: getBranchColor(node.level, branchIndex).bg,
+        color: getBranchColor(node.level, branchIndex).text,
+        border: `${borderWidth}px solid ${getBranchColor(node.level, branchIndex).border}`,
         borderRadius: `${borderRadius}px`,
         padding: `${padding}px`,
         minWidth: `${minWidth}px`,
@@ -897,9 +899,10 @@ function layoutConcept(
       },
       label: node.label,
       style: {
-        background: getColorForCategory(node.category || 'concept', template, node.id, node.level, branchIndex),
-        color: textColor,
-        border: `${borderWidth}px solid ${getColorForLevel(node.level)}`,
+        // PHASE 1.1: Use branch-based colors instead of category colors
+        background: getBranchColor(node.level, branchIndex).bg,
+        color: getBranchColor(node.level, branchIndex).text,
+        border: `${borderWidth}px solid ${getBranchColor(node.level, branchIndex).border}`,
         borderRadius: `${borderRadius}px`,
         padding: `${padding}px`,
         minWidth: `${minWidth}px`,
