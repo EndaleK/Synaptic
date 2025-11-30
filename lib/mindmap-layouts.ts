@@ -286,11 +286,13 @@ function layoutHierarchical(
   const totalNodes = mindMapNodes.length;
   const maxLevel = Math.max(...mindMapNodes.map(n => n.level));
 
-  // BUGFIX: INCREASE spacing when many nodes (was inverted, causing bunching)
-  // Formula: Expand spacing beyond 20 nodes to prevent overlap
-  const densityFactor = totalNodes > 20
-    ? Math.min(2.0, 1 + (totalNodes - 20) * 0.02)  // 20→55 nodes: 100%→170% spacing
-    : 1.0;  // ≤20 nodes: normal spacing
+  // PRIORITY 1: DRAMATICALLY INCREASE spacing for large maps (2025 cognitive load research)
+  // Formula: Tiered expansion prevents node overlap and concept blending
+  const densityFactor = totalNodes > 30
+    ? Math.min(3.5, 1 + (totalNodes - 30) * 0.05)  // 5% per node, max 3.5x (55 nodes → 2.25x)
+    : totalNodes > 15
+    ? 1 + (totalNodes - 15) * 0.03  // 3% per node for medium maps (30 nodes → 1.45x)
+    : 1.0;  // ≤15 nodes: normal spacing
   const verticalMultiplier = densityFactor;
 
   // Horizontal spacing increases with depth to show progression
@@ -835,12 +837,14 @@ function layoutConcept(
     }
   });
 
-  // PHASE 3.1: Dynamic spacing algorithm (same as hierarchical)
+  // PHASE 3.1 + PRIORITY 1: Dynamic spacing algorithm with aggressive expansion
   const totalNodes = mindMapNodes.length;
-  // BUGFIX: INCREASE spacing when many nodes (was inverted, causing bunching)
-  const densityFactor = totalNodes > 20
-    ? Math.min(2.0, 1 + (totalNodes - 20) * 0.02)  // 20→55 nodes: 100%→170% spacing
-    : 1.0;  // ≤20 nodes: normal spacing
+  // PRIORITY 1: DRAMATICALLY INCREASE spacing for large maps (2025 cognitive load research)
+  const densityFactor = totalNodes > 30
+    ? Math.min(3.5, 1 + (totalNodes - 30) * 0.05)  // 5% per node, max 3.5x (55 nodes → 2.25x)
+    : totalNodes > 15
+    ? 1 + (totalNodes - 15) * 0.03  // 3% per node for medium maps (30 nodes → 1.45x)
+    : 1.0;  // ≤15 nodes: normal spacing
   const verticalMultiplier = densityFactor;
 
   const horizontalByLevel = (level: number) => {
@@ -953,28 +957,29 @@ function layoutConcept(
         targetLabel: targetNode?.label,
       },
       style: {
-        stroke: isCrossLink ? '#FF5722' : '#64748B', // ULTRA bright orange for cross-links, gray for hierarchy
-        strokeWidth: isCrossLink ? 7 : 3, // ULTRA THICKER cross-links (increased from 5 to 7)
-        strokeDasharray: isCrossLink ? '14,8' : undefined, // ULTRA prominent dashes (longer dashes)
+        // PRIORITY 3: Make cross-links SUBTLE, not dominant (2025 minimalist principle)
+        stroke: isCrossLink ? '#9CA3AF' : '#64748B', // Subtle gray for cross-links, darker gray for hierarchy
+        strokeWidth: isCrossLink ? 2 : 3, // THIN cross-links (supportive, not dominant)
+        strokeDasharray: isCrossLink ? '6,3' : undefined, // Subtle dash pattern
       },
       markerEnd: {
         type: 'arrowclosed' as any,
-        color: isCrossLink ? '#FF5722' : '#64748B',
-        width: isCrossLink ? 30 : 18, // MUCH larger arrows for cross-links
-        height: isCrossLink ? 30 : 18,
+        color: isCrossLink ? '#9CA3AF' : '#64748B',
+        width: isCrossLink ? 16 : 20, // Smaller arrows for cross-links
+        height: isCrossLink ? 16 : 20,
       },
       labelStyle: {
-        fill: isCrossLink ? '#D32F2F' : '#1f2937', // ULTRA bright red text for cross-links
-        fontWeight: isCrossLink ? 900 : 700,
-        fontSize: isCrossLink ? 18 : 14, // Bigger text for cross-links
+        fill: isCrossLink ? '#6B7280' : '#1f2937', // Muted gray text for cross-links
+        fontWeight: isCrossLink ? 400 : 500, // Normal weight for cross-links
+        fontSize: isCrossLink ? 12 : 14, // Smaller text for cross-links
         padding: '6px 12px',
-        letterSpacing: isCrossLink ? '0.8px' : '0.3px', // More spacing for emphasis
+        letterSpacing: isCrossLink ? '0.3px' : '0.3px',
       },
       labelBgStyle: {
-        fill: isCrossLink ? '#FFEBEE' : '#FFFBEA', // ULTRA bright red bg for cross-links
+        fill: isCrossLink ? '#F3F4F6' : '#FFFBEA', // Neutral light gray bg for cross-links
         fillOpacity: 1,
-        stroke: isCrossLink ? '#EF5350' : '#FDE68A', // Brighter stroke
-        strokeWidth: isCrossLink ? 3 : 1, // Thicker border
+        stroke: isCrossLink ? '#D1D5DB' : '#FDE68A', // Subtle border
+        strokeWidth: isCrossLink ? 1 : 1, // Thin border
         rx: 8,
         ry: 8,
       },

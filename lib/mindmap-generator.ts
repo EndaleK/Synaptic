@@ -291,7 +291,8 @@ CROSS-LINKS (10-20% of total edges - REQUIRED):
 
 Target: ${maxNodes} nodes maximum, ${maxDepth} levels deep
 Aim for: ~${Math.ceil(maxNodes * 0.20)} main branches (level 1), each with ${Math.floor((maxNodes - Math.ceil(maxNodes * 0.20)) / Math.ceil(maxNodes * 0.20))} sub-branches
-CRITICAL: Include ${Math.ceil(maxNodes * 0.15)} cross-links connecting concepts from different branches!
+PRIORITY 2: Include ${Math.ceil(maxNodes * 0.05)} cross-links (5% max) connecting concepts from different branches.
+Only add cross-links for CRITICAL relationships that significantly enhance understanding. Fewer, meaningful connections are better than many.
 
 ${baseSourceFidelity}
 
@@ -376,8 +377,22 @@ export async function generateMindMap(
     console.log(`Mind map: Text truncated from ${text.length} to ${processedText.length} characters`)
   }
 
-  // Generate type-specific system prompt
-  const systemPrompt = getSystemPromptForMapType(mapType, maxNodes, maxDepth)
+  // PRIORITY 4: SMART LAYOUT SELECTION (2025 cognitive load principle)
+  // For large maps (40+ nodes requested), ALWAYS use hierarchical to prevent visual chaos
+  // Concept maps with cross-links create cognitive overload beyond 40 nodes
+  let finalMapType = mapType
+  if (maxNodes >= 40 && mapType === 'concept') {
+    finalMapType = 'hierarchical'
+    console.log(`[MindMap] 🎯 SMART LAYOUT: Forcing hierarchical layout for ${maxNodes} nodes (concept map would create visual chaos)`)
+  }
+  // For very complex documents (>15K chars), prefer hierarchical even if user chose concept
+  else if (processedText.length > 15000 && maxNodes >= 30 && mapType === 'concept') {
+    finalMapType = 'hierarchical'
+    console.log(`[MindMap] 🎯 SMART LAYOUT: Forcing hierarchical for large document (${processedText.length} chars, ${maxNodes} nodes)`)
+  }
+
+  // Generate type-specific system prompt (use smart-selected layout)
+  const systemPrompt = getSystemPromptForMapType(finalMapType, maxNodes, maxDepth)
 
   // Generate type-aware user prompt
   const mapTypeDescriptions = {
@@ -386,13 +401,13 @@ export async function generateMindMap(
     concept: 'a concept map with cross-links'
   }
 
-  const userPrompt = `Extract ${mapTypeDescriptions[mapType]} mind map from this content:
+  const userPrompt = `Extract ${mapTypeDescriptions[finalMapType]} mind map from this content:
 
 <content>
 ${processedText}
 </content>
 
-Create a clear, well-structured ${mapType} mind map with ${maxNodes} nodes organized in ${maxDepth} levels.
+Create a clear, well-structured ${finalMapType} mind map with ${maxNodes} nodes organized in ${maxDepth} levels.
 
 IMPORTANT: Your response must be ONLY a JSON object with "title", "nodes" (array), and "edges" (array) fields. Do NOT use nested tree format with "children". Use the flat nodes/edges format specified in the system prompt.`
 
