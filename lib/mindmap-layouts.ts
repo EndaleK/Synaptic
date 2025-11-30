@@ -281,6 +281,21 @@ function layoutHierarchical(
     }
   });
 
+  // PHASE 3.1: Dynamic spacing algorithm based on node density and hierarchy
+  // Calculate adaptive spacing multipliers
+  const totalNodes = mindMapNodes.length;
+  const maxLevel = Math.max(...mindMapNodes.map(n => n.level));
+
+  // Dynamic vertical spacing: Tighter when many nodes, wider when few
+  // Formula: base * (1 + log scale factor based on density)
+  const densityFactor = Math.max(0.6, Math.min(1.5, 1 - (totalNodes - 10) * 0.02));
+  const verticalMultiplier = densityFactor;
+
+  // Horizontal spacing increases with depth to show progression
+  const horizontalByLevel = (level: number) => {
+    return nodeSpacing.horizontal * (1 + level * 0.15); // 15% wider each level
+  };
+
   // Layout nodes level by level with depth-based styling
   mindMapNodes.forEach((node) => {
     const nodesAtLevel = nodesByLevel.get(node.level) || [];
@@ -288,9 +303,21 @@ function layoutHierarchical(
     const totalAtLevel = nodesAtLevel.length;
     const branchIndex = branchMap.get(node.id) || indexAtLevel;
 
-    // Calculate position
-    const x = node.level * nodeSpacing.horizontal;
-    const y = (indexAtLevel - (totalAtLevel - 1) / 2) * nodeSpacing.vertical;
+    // Calculate position with DYNAMIC spacing (Phase 3.1)
+    const x = Array.from({length: node.level}, (_, i) => horizontalByLevel(i)).reduce((sum, val) => sum + val, 0);
+
+    // Vertical spacing: Adaptive based on siblings + branch separation
+    const baseVerticalSpacing = nodeSpacing.vertical * verticalMultiplier;
+
+    // Add extra spacing between different branches at level 1
+    let branchOffset = 0;
+    if (node.level === 1) {
+      // Group level-1 nodes with extra spacing between groups
+      const branchGap = baseVerticalSpacing * 0.3; // 30% extra gap between main branches
+      branchOffset = indexAtLevel * branchGap;
+    }
+
+    const y = (indexAtLevel - (totalAtLevel - 1) / 2) * baseVerticalSpacing + branchOffset;
 
     // PHASE 1: Enhanced Hierarchical Depth Styling (Research-Backed)
     // Aggressive scale ratios for clear visual hierarchy (Nielsen Norman: 58% better digestibility)
@@ -801,15 +828,34 @@ function layoutConcept(
     }
   });
 
-  // Layout nodes (same positioning as hierarchical)
+  // PHASE 3.1: Dynamic spacing algorithm (same as hierarchical)
+  const totalNodes = mindMapNodes.length;
+  const densityFactor = Math.max(0.6, Math.min(1.5, 1 - (totalNodes - 10) * 0.02));
+  const verticalMultiplier = densityFactor;
+
+  const horizontalByLevel = (level: number) => {
+    return nodeSpacing.horizontal * (1 + level * 0.15);
+  };
+
+  // Layout nodes with dynamic positioning
   mindMapNodes.forEach((node) => {
     const nodesAtLevel = nodesByLevel.get(node.level) || [];
     const indexAtLevel = nodesAtLevel.indexOf(node);
     const totalAtLevel = nodesAtLevel.length;
     const branchIndex = branchMap.get(node.id) || indexAtLevel;
 
-    const x = node.level * nodeSpacing.horizontal;
-    const y = (indexAtLevel - (totalAtLevel - 1) / 2) * nodeSpacing.vertical;
+    // Calculate position with DYNAMIC spacing (Phase 3.1)
+    const x = Array.from({length: node.level}, (_, i) => horizontalByLevel(i)).reduce((sum, val) => sum + val, 0);
+
+    const baseVerticalSpacing = nodeSpacing.vertical * verticalMultiplier;
+
+    let branchOffset = 0;
+    if (node.level === 1) {
+      const branchGap = baseVerticalSpacing * 0.3;
+      branchOffset = indexAtLevel * branchGap;
+    }
+
+    const y = (indexAtLevel - (totalAtLevel - 1) / 2) * baseVerticalSpacing + branchOffset;
 
     const fontSizeByLevel = [28, 22, 18, 16, 14]; // INCREASED: Was [22, 16, 13, 11, 10]
     const fontSize = node.level < fontSizeByLevel.length ? fontSizeByLevel[node.level] : 14; // Was: 10
