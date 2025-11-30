@@ -46,6 +46,19 @@ interface GenerateMindMapOptions {
  */
 function getSystemPromptForMapType(mapType: MindMapType, maxNodes: number, maxDepth: number): string {
   const baseSourceFidelity = `
+TONY BUZAN'S RADIANT THINKING PRINCIPLES (PHASE 4.1 - CRITICAL):
+⚠️ Mind maps mirror natural brain function - think in RADIATING patterns:
+
+1. **Central Image/Concept**: Start from ONE central idea and radiate outward
+2. **Natural Association**: Each branch triggers the next association (like neurons firing)
+3. **Hierarchy of Importance**: Main branches = most important, sub-branches = supporting details
+4. **Sensory-Rich Descriptions**: Use vivid, concrete language that evokes mental imagery
+   - Instead of: "Process step" → Use: "Rapid cooling procedure" or "Gradual warming method"
+   - Add sensory details: colors, textures, sounds, feelings when relevant to text
+5. **Personal Connections**: When text includes examples or analogies, highlight them
+6. **Dimension & Emphasis**: More important concepts deserve richer descriptions
+7. **Organic Flow**: Branches should flow naturally from parent concepts
+
 SOURCE FIDELITY REQUIREMENTS (CRITICAL - MUST FOLLOW):
 ⚠️ These rules override all other instructions when conflicts arise:
 1. **Content Restriction**: Create nodes and relationships ONLY from concepts explicitly mentioned in the provided document content
@@ -56,6 +69,7 @@ SOURCE FIDELITY REQUIREMENTS (CRITICAL - MUST FOLLOW):
 6. **Cross-Link Limitation**: Only create cross-links between concepts that are actually related IN THE TEXT, not in general knowledge
 7. **No Assumptions**: Do not assume relationships, examples, or details that aren't stated in the source text
 8. **Quote Priority**: When in doubt, use direct quotes from the text rather than paraphrasing with external context
+9. **Sensory Language**: When text uses vivid/sensory language, PRESERVE it in descriptions
 
 If following these rules results in fewer nodes than the target, that is acceptable - accuracy and source fidelity are more important than hitting the target node count.`
 
@@ -90,15 +104,26 @@ DESCRIPTION GUIDELINES (Where Details Belong):
 - This separation (single keyword + rich description) is the KEY to effective mind maps`
 
   const categoryAssignment = `
-CATEGORY ASSIGNMENT (for color coding):
-- **concept**: Abstract ideas, theories, frameworks
-- **principle**: Rules, laws, guidelines, best practices
-- **process**: Procedures, methods, workflows
-- **technique**: Specific skills, tools, applications
-- **example**: Case studies, illustrations, scenarios
-- **data**: Statistics, metrics, facts
-- **definition**: Key terms, terminology
-- **outcome**: Results, benefits, consequences`
+CATEGORY ASSIGNMENT - BUZAN'S IMAGE ASSOCIATION (PHASE 4.1):
+⚠️ Categories trigger emoji icons for powerful visual memory anchors:
+
+- **concept** 💡: Abstract ideas, theories, frameworks (lightbulb = "aha!" moment)
+- **principle** 📏: Rules, laws, guidelines, best practices (ruler = measurement/standards)
+- **process** ⚙️: Procedures, methods, workflows (gear = machinery in motion)
+- **technique** 🛠️: Specific skills, tools, applications (toolbox = practical doing)
+- **example** 📝: Case studies, illustrations, scenarios (notepad = real-world instances)
+- **data** 📊: Statistics, metrics, facts (chart = quantifiable information)
+- **definition** 📖: Key terms, terminology (book = authoritative source)
+- **outcome** 🎯: Results, benefits, consequences (target = goals achieved)
+- **person** 👤: Individuals, roles, stakeholders (person = human element)
+- **question** ❓: Inquiries, uncertainties, investigations (question mark = curiosity)
+- **solution** ✓: Answers, fixes, resolutions (checkmark = problem solved)
+- **warning** ⚠️: Risks, dangers, cautions (warning sign = attention needed)
+
+SELECTION STRATEGY:
+- Choose categories that create STRONGEST visual association for the concept
+- More important nodes → pick categories with distinctive icons (e.g., 🎯 for key outcomes)
+- When in doubt, use **concept** 💡 as default (universal "idea" symbol)`
 
   if (mapType === 'hierarchical') {
     return `You are an expert at creating HIERARCHICAL MIND MAPS - tree-structured knowledge representations optimized for top-down learning.
