@@ -367,9 +367,9 @@ function layoutHierarchical(
         fontWeight: node.level === 0 ? '700' : node.level === 1 ? '600' : node.level === 2 ? '500' : '400',
         lineHeight: lineHeight,
         letterSpacing: letterSpacing,
-        // Depth shadows: Subtle elevation for hierarchy (Material Design principle)
+        // PHASE 1.5: Dramatic 3D shadows for root node, subtle elevation for others
         boxShadow: node.level === 0
-          ? '0 8px 24px rgba(0,0,0,0.15)'
+          ? '0 12px 32px rgba(0,0,0,0.3), 0 6px 16px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.15)' // Root: dramatic 3D depth
           : node.level === 1
           ? '0 6px 16px rgba(0,0,0,0.12)'
           : '0 4px 8px rgba(0,0,0,0.1)',
@@ -684,9 +684,9 @@ function layoutRadial(
         minWidth: `${minWidth}px`,
         fontSize: `${fontSize}px`,
         fontWeight: node.level === 0 ? '800' : node.level === 1 ? '700' : '600', // Bolder for hierarchy
-        // Enhanced shadows for depth and modern feel (layered shadows for richness)
+        // PHASE 1.5: Ultra-dramatic 3D shadows for radial root node (layered shadows for richness)
         boxShadow: node.level === 0
-          ? '0 20px 50px rgba(0,0,0,0.25), 0 8px 16px rgba(0,0,0,0.15)' // Root: dramatic depth
+          ? '0 20px 50px rgba(0,0,0,0.3), 0 10px 25px rgba(0,0,0,0.2), 0 5px 12px rgba(0,0,0,0.15), inset 0 2px 4px rgba(255,255,255,0.2)' // Root: ULTRA dramatic 3D depth
           : node.level === 1
           ? '0 12px 30px rgba(0,0,0,0.2), 0 5px 12px rgba(0,0,0,0.1)' // Level 1: strong presence
           : '0 6px 20px rgba(0,0,0,0.15), 0 3px 8px rgba(0,0,0,0.08)', // Others: subtle elevation
@@ -856,8 +856,9 @@ function layoutConcept(
         minWidth: `${minWidth}px`,
         fontSize: `${fontSize}px`,
         fontWeight: node.level === 0 ? '700' : node.level === 1 ? '600' : '500',
+        // PHASE 1.5: Dramatic 3D shadows for root node in concept maps
         boxShadow: node.level === 0
-          ? '0 8px 24px rgba(0,0,0,0.15)'
+          ? '0 12px 32px rgba(0,0,0,0.3), 0 6px 16px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.15)' // Root: dramatic 3D depth
           : node.level === 1
           ? '0 6px 16px rgba(0,0,0,0.12)'
           : '0 4px 8px rgba(0,0,0,0.1)',
