@@ -518,6 +518,9 @@ function layoutRadial(
     console.log(`[RADIAL DEBUG] Level ${level}: ${nodes.length} nodes - ${nodes.map(n => `"${n.label.substring(0, 20)}"`).join(', ')}`);
   });
 
+  // BUGFIX: Define level1Nodes for branch tracking (was missing, causing runtime error)
+  const level1Nodes = nodesByLevel.get(1) || [];
+
   // Build parent-child relationships for branch assignment
   const childrenMap = new Map<string, string[]>();
   mindMapEdges.forEach(edge => {
