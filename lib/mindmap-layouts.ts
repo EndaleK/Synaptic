@@ -17,6 +17,33 @@ export interface ReactFlowMindMap {
 }
 
 /**
+ * PHASE 1.4: Category-Based Icons (Tony Buzan Principle - Rich Imagery)
+ * Emoji icons for each category to enhance visual memory and quick recognition
+ */
+const CATEGORY_ICONS: Record<string, string> = {
+  concept: '💡',      // Abstract ideas, theories, frameworks
+  principle: '📏',    // Rules, laws, guidelines
+  process: '⚙️',      // Procedures, methods, workflows
+  technique: '🛠️',    // Specific skills, tools, applications
+  example: '📝',      // Case studies, illustrations
+  data: '📊',         // Statistics, metrics, facts
+  definition: '📖',   // Key terms, terminology
+  outcome: '🎯',      // Results, benefits, consequences
+  person: '👤',       // People, authors, experts
+  question: '❓',     // Problems, inquiries
+  solution: '✓',      // Answers, resolutions
+  warning: '⚠️',      // Cautions, risks
+}
+
+/**
+ * Get icon for a category (defaults to 💡 if unknown)
+ */
+function getCategoryIcon(category?: string): string {
+  if (!category) return '💡'; // Default concept icon
+  return CATEGORY_ICONS[category] || '💡';
+}
+
+/**
  * PHASE 4.3: Calculate Source Fidelity Score (Research-Backed)
  * Estimates how well a node is supported by source material
  * Returns a score from 0-100 with categorization:
@@ -311,6 +338,9 @@ function layoutHierarchical(
     const fidelity = calculateFidelity(node)
     const fidelityBadge = getFidelityBadge(fidelity)
 
+    // PHASE 1.4: Get category icon for rich imagery
+    const categoryIcon = getCategoryIcon(node.category);
+
     // Create ReactFlow node
     reactFlowNodes.push({
       id: node.id,
@@ -321,6 +351,7 @@ function layoutHierarchical(
         description: node.description,
         level: node.level,
         category: node.category,
+        categoryIcon: categoryIcon,  // PHASE 1.4: Add icon for visual memory
         fidelity: fidelity,
         fidelityBadge: fidelityBadge,
       },
@@ -603,6 +634,9 @@ function layoutRadial(
     const fidelity = calculateFidelity(node);
     const fidelityBadge = getFidelityBadge(fidelity);
 
+    // PHASE 1.4: Get category icon
+    const categoryIcon = getCategoryIcon(node.category);
+
     // PHASE 1.1: Determine branch index for radial layout
     let branchIndex = 0;
     if (node.level === 1) {
@@ -636,6 +670,7 @@ function layoutRadial(
         description: node.description,
         level: node.level,
         category: node.category,
+        categoryIcon: categoryIcon,  // PHASE 1.4: Add icon for visual memory (radial)
         fidelity: fidelity,
         fidelityBadge: fidelityBadge,
       },
@@ -795,6 +830,9 @@ function layoutConcept(
     const fidelity = calculateFidelity(node);
     const fidelityBadge = getFidelityBadge(fidelity);
 
+    // PHASE 1.4: Get category icon
+    const categoryIcon = getCategoryIcon(node.category);
+
     reactFlowNodes.push({
       id: node.id,
       type: 'default',
@@ -804,6 +842,7 @@ function layoutConcept(
         description: node.description,
         level: node.level,
         category: node.category,
+        categoryIcon: categoryIcon,  // PHASE 1.4: Add icon for visual memory (concept)
         fidelity: fidelity,
         fidelityBadge: fidelityBadge,
       },

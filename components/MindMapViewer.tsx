@@ -72,8 +72,9 @@ const categoryColors: Record<string, { bg: string; border: string; text: string 
 }
 
 // Custom node component to ensure labels display correctly with proper styling
+// PHASE 1.4: Enhanced with category icons for visual memory
 function CustomNode({ data, style }: NodeProps) {
-  console.log('[CustomNode] Rendering:', { label: data.label, style });
+  console.log('[CustomNode] Rendering:', { label: data.label, categoryIcon: data.categoryIcon, style });
 
   return (
     <div style={{
@@ -86,8 +87,22 @@ function CustomNode({ data, style }: NodeProps) {
       minHeight: '40px',  // EMERGENCY: Force minimum dimensions
     }}>
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
-      <div style={{ whiteSpace: style?.whiteSpace || 'normal', wordWrap: 'break-word', width: '100%' }}>
-        {data.label || 'NO LABEL'}
+      <div style={{
+        whiteSpace: style?.whiteSpace || 'normal',
+        wordWrap: 'break-word',
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px'
+      }}>
+        {/* PHASE 1.4: Category icon for visual memory (Buzan principle) */}
+        {data.categoryIcon && (
+          <span style={{ fontSize: '1.2em', flexShrink: 0 }}>
+            {data.categoryIcon}
+          </span>
+        )}
+        <span>{data.label || 'NO LABEL'}</span>
       </div>
       <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
     </div>
