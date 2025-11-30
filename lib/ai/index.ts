@@ -29,26 +29,36 @@ class AIProviderFactory {
   }
 
   /**
-   * Get provider with fallback
-   * Tries primary provider, falls back to secondary if not configured
-   * Returns fallback provider even if unconfigured (let caller handle check)
+   * Get provider with cascading fallback
+   * Fallback chain: Primary → OpenAI → DeepSeek
+   * Ensures maximum availability for free users
    */
   getProviderWithFallback(
     primary: ProviderType,
     fallback: ProviderType = 'openai'
   ): AIProvider {
+    // Try primary provider
     const primaryProvider = this.getProvider(primary);
     if (primaryProvider.isConfigured()) {
       return primaryProvider;
     }
 
+    // Try fallback provider (usually OpenAI)
     const fallbackProvider = this.getProvider(fallback);
     if (fallbackProvider.isConfigured()) {
       console.warn(`Provider ${primary} not configured, falling back to ${fallback}`);
+      return fallbackProvider;
     }
 
-    // Return fallback provider even if not configured, let caller handle error
-    return fallbackProvider;
+    // Last resort: Try DeepSeek (most reliable, always configured)
+    const deepseekProvider = this.getProvider('deepseek');
+    if (deepseekProvider.isConfigured()) {
+      console.warn(`Provider ${primary} and ${fallback} not configured, falling back to DeepSeek`);
+      return deepseekProvider;
+    }
+
+    // Return primary even if not configured, let caller handle error
+    return primaryProvider;
   }
 
   /**
@@ -97,16 +107,20 @@ export function getProviderForFeature(feature: string): AIProvider {
 
 /**
  * Default provider selection per feature
+ *
+ * Strategy: Use Claude (Anthropic) for first impressions to WOW free users
+ * - Superior teaching quality = higher conversion & word-of-mouth growth
+ * - Fallback to OpenAI → DeepSeek if Anthropic unavailable
  */
 function getDefaultProvider(feature: string): ProviderType {
   const defaults: Record<string, ProviderType> = {
-    'mindmap': 'openai',             // CHANGED: OpenAI generates reliable edges for mind maps (DeepSeek produces 0 edges)
+    'chat': 'anthropic',             // ⭐ Claude's Socratic teaching impresses first-time users
+    'mindmap': 'anthropic',          // ⭐ Superior structure & relationship detection
+    'exam': 'anthropic',             // ⭐ Better quality questions = strong first impression
+    'flashcards': 'deepseek',        // Cost-effective, good quality
     'podcast_script': 'deepseek',    // Cost-effective for script generation
     'podcast_tts': 'openai',         // OpenAI has best TTS
-    'flashcards': 'deepseek',        // 60-70% cheaper than OpenAI
-    'chat': 'deepseek',              // 60-70% cheaper than OpenAI
-    'exam': 'deepseek',              // Cost-effective for exam generation
-    'study_guide': 'deepseek',       // Cost-effective for long-form content generation
+    'study_guide': 'deepseek',       // Cost-effective for long-form content
   };
 
   return defaults[feature] || 'openai';

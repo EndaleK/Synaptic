@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "migrate:pinecone": "tsx scripts/migrate-to-pinecone.ts",
-    "test:rag": "tsx scripts/test-rag.ts"
+    "test:rag": "tsx scripts/test-rag.ts",
+    "test:anthropic": "tsx scripts/test-anthropic.ts",
+    "test:apis": "tsx scripts/test-all-apis.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.67.0",
