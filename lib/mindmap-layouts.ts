@@ -224,11 +224,42 @@ function layoutHierarchical(
     nodesByLevel.get(node.level)!.push(node);
   });
 
+  // PHASE 1.1: Build branch assignment map (trace each node to its level-1 ancestor)
+  const branchMap = new Map<string, number>();
+  const level1Nodes = nodesByLevel.get(1) || [];
+
+  level1Nodes.forEach((level1Node, index) => {
+    branchMap.set(level1Node.id, index); // Level 1 nodes define branches
+  });
+
+  // For level 2+ nodes, find their level-1 ancestor
+  mindMapNodes.forEach(node => {
+    if (node.level > 1) {
+      let currentNode = node;
+      let parent = mindMapEdges.find(e => e.to === currentNode.id);
+
+      while (parent) {
+        const parentNode = mindMapNodes.find(n => n.id === parent.from);
+        if (parentNode) {
+          if (parentNode.level === 1) {
+            branchMap.set(node.id, branchMap.get(parentNode.id) || 0);
+            break;
+          }
+          currentNode = parentNode;
+          parent = mindMapEdges.find(e => e.to === currentNode.id);
+        } else {
+          break;
+        }
+      }
+    }
+  });
+
   // Layout nodes level by level with depth-based styling
   mindMapNodes.forEach((node) => {
     const nodesAtLevel = nodesByLevel.get(node.level) || [];
     const indexAtLevel = nodesAtLevel.indexOf(node);
     const totalAtLevel = nodesAtLevel.length;
+    const branchIndex = branchMap.get(node.id) || indexAtLevel;
 
     // Calculate position
     const x = node.level * nodeSpacing.horizontal;
@@ -295,7 +326,7 @@ function layoutHierarchical(
       },
       label: node.label, // ReactFlow default nodes use top-level label property
       style: {
-        background: getColorForCategory(node.category || 'concept', template, node.id),
+        background: getColorForCategory(node.category || 'concept', template, node.id, node.level, branchIndex),
         color: textColor,
         border: `${borderWidth}px solid ${getColorForLevel(node.level)}`,
         borderRadius: `${borderRadius}px`,
@@ -341,7 +372,8 @@ function layoutHierarchical(
       id: edge.id,
       source: edge.from,
       target: edge.to,
-      type: 'smoothstep',
+      type: 'default',  // PHASE 1.3: Use bezier curves for organic feel (was 'smoothstep')
+      pathOptions: { curvature: 0.5 },  // Gentle curve
       label: getRelationshipIcon(edge.relationship) + edge.relationship,  // PHASE 2.2: Add icon prefix
       animated: !isCrossLink,
       data: {
@@ -571,6 +603,30 @@ function layoutRadial(
     const fidelity = calculateFidelity(node);
     const fidelityBadge = getFidelityBadge(fidelity);
 
+    // PHASE 1.1: Determine branch index for radial layout
+    let branchIndex = 0;
+    if (node.level === 1) {
+      branchIndex = level1Nodes.indexOf(node);
+    } else if (node.level > 1) {
+      // Find level-1 ancestor
+      let currentNode = node;
+      let parent = mindMapEdges.find(e => e.to === currentNode.id);
+
+      while (parent) {
+        const parentNode = mindMapNodes.find(n => n.id === parent.from);
+        if (parentNode) {
+          if (parentNode.level === 1) {
+            branchIndex = level1Nodes.indexOf(parentNode);
+            break;
+          }
+          currentNode = parentNode;
+          parent = mindMapEdges.find(e => e.to === currentNode.id);
+        } else {
+          break;
+        }
+      }
+    }
+
     reactFlowNodes.push({
       id: node.id,
       type: 'default',
@@ -585,7 +641,7 @@ function layoutRadial(
       },
       label: node.label,
       style: {
-        background: getColorForCategory(node.category || 'concept', template, node.id),
+        background: getColorForCategory(node.category || 'concept', template, node.id, node.level, branchIndex),
         color: textColor,
         border: `${borderWidth}px solid ${getColorForLevel(node.level)}`,
         borderRadius: `${borderRadius}px`,
@@ -615,7 +671,8 @@ function layoutRadial(
       id: edge.id,
       source: edge.from,
       target: edge.to,
-      type: 'smoothstep',
+      type: 'default',  // PHASE 1.3: Bezier curves for organic radial connections
+      pathOptions: { curvature: 0.6 },  // Slightly more curve for radial layout
       label: getRelationshipIcon(edge.relationship) + edge.relationship,
       animated: true,
       data: {
@@ -680,11 +737,41 @@ function layoutConcept(
     nodesByLevel.get(node.level)!.push(node);
   });
 
+  // PHASE 1.1: Build branch assignment map (same as hierarchical)
+  const branchMap = new Map<string, number>();
+  const level1Nodes = nodesByLevel.get(1) || [];
+
+  level1Nodes.forEach((level1Node, index) => {
+    branchMap.set(level1Node.id, index);
+  });
+
+  mindMapNodes.forEach(node => {
+    if (node.level > 1) {
+      let currentNode = node;
+      let parent = mindMapEdges.find(e => e.to === currentNode.id);
+
+      while (parent) {
+        const parentNode = mindMapNodes.find(n => n.id === parent.from);
+        if (parentNode) {
+          if (parentNode.level === 1) {
+            branchMap.set(node.id, branchMap.get(parentNode.id) || 0);
+            break;
+          }
+          currentNode = parentNode;
+          parent = mindMapEdges.find(e => e.to === currentNode.id);
+        } else {
+          break;
+        }
+      }
+    }
+  });
+
   // Layout nodes (same positioning as hierarchical)
   mindMapNodes.forEach((node) => {
     const nodesAtLevel = nodesByLevel.get(node.level) || [];
     const indexAtLevel = nodesAtLevel.indexOf(node);
     const totalAtLevel = nodesAtLevel.length;
+    const branchIndex = branchMap.get(node.id) || indexAtLevel;
 
     const x = node.level * nodeSpacing.horizontal;
     const y = (indexAtLevel - (totalAtLevel - 1) / 2) * nodeSpacing.vertical;
@@ -722,7 +809,7 @@ function layoutConcept(
       },
       label: node.label,
       style: {
-        background: getColorForCategory(node.category || 'concept', template, node.id),
+        background: getColorForCategory(node.category || 'concept', template, node.id, node.level, branchIndex),
         color: textColor,
         border: `${borderWidth}px solid ${getColorForLevel(node.level)}`,
         borderRadius: `${borderRadius}px`,
@@ -758,7 +845,8 @@ function layoutConcept(
       id: edge.id,
       source: edge.from,
       target: edge.to,
-      type: 'smoothstep',
+      type: 'default',  // PHASE 1.3: Bezier curves for natural connection flow
+      pathOptions: { curvature: 0.5 },  // Gentle curve
       label: (isCrossLink ? '🔗 ' : '') + getRelationshipIcon(edge.relationship) + edge.relationship,
       animated: !isCrossLink, // Cross-links are static and bold
       data: {
@@ -1279,84 +1367,72 @@ function layoutTimeline(
 }
 
 /**
- * Expanded color palette: 25 vibrant gradients (WCAG AA compliant)
- * Each gradient maintains 4.5:1+ contrast ratio with white text
- * Covers full spectrum for maximum differentiation between nodes
+ * PHASE 1.1: Simplified Branch-Based Color Scheme (Tony Buzan Principle)
+ * Reduced from 25 gradients to 3-4 main branch colors for clearer visual grouping
+ * Each main branch gets a distinct color, sub-branches inherit with tints
+ * Based on screenshot reference and radiant thinking principles
  */
-const UNIQUE_NODE_PALETTE = [
-  // Deep Blues (3)
-  'linear-gradient(135deg, #1E40AF 0%, #1E3A8A 100%)', // Deep Blue 700→800
-  'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)', // Blue 600→700
-  'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)', // Blue 500→600
+const COLOR_SCHEME = {
+  // Root node: Maroon/Brown (warm, grounding central concept)
+  root: {
+    bg: 'linear-gradient(135deg, #8B4513 0%, #6B3410 100%)', // Saddle brown
+    text: '#FFFFFF',
+    border: '#5C2D0F'
+  },
 
-  // Purples & Violets (4)
-  'linear-gradient(135deg, #5B21B6 0%, #4C1D95 100%)', // Purple 700→800
-  'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', // Purple 600→700
-  'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)', // Purple 500→600
-  'linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%)', // Purple 400→500
+  // Level 1: Main branches (3 distinct colors for visual differentiation)
+  level1: [
+    { bg: 'linear-gradient(135deg, #2E86AB 0%, #1A5F7A 100%)', text: '#FFFFFF', border: '#145266' }, // Teal
+    { bg: 'linear-gradient(135deg, #5B4B8A 0%, #453567 100%)', text: '#FFFFFF', border: '#342651' }, // Purple
+    { bg: 'linear-gradient(135deg, #3D5A80 0%, #2A4059 100%)', text: '#FFFFFF', border: '#1F2E42' }, // Blue
+  ],
 
-  // Magentas & Pinks (4)
-  'linear-gradient(135deg, #831843 0%, #701A35 100%)', // Magenta 800→900
-  'linear-gradient(135deg, #BE185D 0%, #9F1239 100%)', // Magenta 700→800
-  'linear-gradient(135deg, #EC4899 0%, #DB2777 100%)', // Pink 500→600
-  'linear-gradient(135deg, #DB2777 0%, #BE185D 100%)', // Pink 600→700
+  // Level 2: Sub-branches (lighter tints of main colors)
+  level2: [
+    { bg: 'linear-gradient(135deg, #4AA5C8 0%, #2E86AB 100%)', text: '#FFFFFF', border: '#1A5F7A' }, // Light teal
+    { bg: 'linear-gradient(135deg, #7B68A6 0%, #5B4B8A 100%)', text: '#FFFFFF', border: '#453567' }, // Light purple
+    { bg: 'linear-gradient(135deg, #5577AA 0%, #3D5A80 100%)', text: '#FFFFFF', border: '#2A4059' }, // Light blue
+  ],
 
-  // Reds & Oranges (4)
-  'linear-gradient(135deg, #B91C1C 0%, #991B1B 100%)', // Red 700→800
-  'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)', // Red 600→700
-  'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)', // Orange 600→700
-  'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', // Orange 500→600
-
-  // Ambers & Golds (4)
-  'linear-gradient(135deg, #B45309 0%, #92400E 100%)', // Amber 700→800
-  'linear-gradient(135deg, #D97706 0%, #B45309 100%)', // Amber 600→700
-  'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', // Amber 500→600
-  'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)', // Amber 400→500
-
-  // Greens & Teals (6)
-  'linear-gradient(135deg, #15803D 0%, #166534 100%)', // Green 700→800
-  'linear-gradient(135deg, #16A34A 0%, #15803D 100%)', // Green 600→700
-  'linear-gradient(135deg, #10B981 0%, #059669 100%)', // Emerald 500→600
-  'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)', // Teal 500→600
-  'linear-gradient(135deg, #0891B2 0%, #0E7490 100%)', // Cyan 600→700
-  'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)', // Cyan 500→600
-];
+  // Level 3+: Details (even lighter tints)
+  level3: [
+    { bg: 'linear-gradient(135deg, #66BFDB 0%, #4AA5C8 100%)', text: '#FFFFFF', border: '#2E86AB' }, // Very light teal
+    { bg: 'linear-gradient(135deg, #9B85C2 0%, #7B68A6 100%)', text: '#FFFFFF', border: '#5B4B8A' }, // Very light purple
+    { bg: 'linear-gradient(135deg, #7794CC 0%, #5577AA 100%)', text: '#FFFFFF', border: '#3D5A80' }, // Very light blue
+  ]
+};
 
 /**
- * Hash function for consistent node ID to color mapping
- * Returns deterministic index into color palette based on node ID
+ * Get color based on node level and branch index
+ * Implements branch-based coloring for clear visual hierarchy
  */
-function hashNodeId(nodeId: string): number {
-  let hash = 0;
-  for (let i = 0; i < nodeId.length; i++) {
-    const char = nodeId.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
+function getBranchColor(level: number, branchIndex: number = 0): { bg: string; text: string; border: string } {
+  if (level === 0) {
+    return COLOR_SCHEME.root;
+  } else if (level === 1) {
+    const colors = COLOR_SCHEME.level1;
+    return colors[branchIndex % colors.length];
+  } else if (level === 2) {
+    const colors = COLOR_SCHEME.level2;
+    return colors[branchIndex % colors.length];
+  } else {
+    const colors = COLOR_SCHEME.level3;
+    return colors[branchIndex % colors.length];
   }
-  return Math.abs(hash);
 }
 
 /**
- * Get unique color for each node based on node ID
- * Ensures every concept gets a different vibrant gradient
- */
-function getColorForNode(nodeId: string): string {
-  const index = hashNodeId(nodeId) % UNIQUE_NODE_PALETTE.length;
-  return UNIQUE_NODE_PALETTE[index];
-}
-
-/**
- * Helper: Get background color for node (now uses unique colors per node)
+ * Helper: Get background color for node using branch-based scheme
+ * Simplified from 25-color palette to 3-4 main branch colors
  * All colors meet 4.5:1+ contrast ratio with white text (WCAG AA compliant)
  */
-function getColorForCategory(category: string, template: VisualizationTemplate, nodeId?: string): string {
-  // NEW: Use unique per-node coloring instead of category-based
-  if (nodeId) {
-    return getColorForNode(nodeId);
-  }
+function getColorForCategory(category: string, template: VisualizationTemplate, nodeId?: string, level?: number, branchIndex?: number): string {
+  // NEW: Use branch-based coloring for clear visual hierarchy
+  const levelToUse = level !== undefined ? level : 1;
+  const branchToUse = branchIndex !== undefined ? branchIndex : 0;
 
-  // Fallback to first palette color if no node ID provided
-  return UNIQUE_NODE_PALETTE[0];
+  const colors = getBranchColor(levelToUse, branchToUse);
+  return colors.bg;
 }
 
 /**

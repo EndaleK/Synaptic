@@ -1126,7 +1126,23 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
                       e.stopPropagation()
                       toggleNodeCollapse(node.id)
                     }}
-                    className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg flex items-center justify-center text-white font-bold text-base transition-all hover:scale-110 border-2 border-white dark:border-gray-700"
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      background: '#2196F3', // Exact blue from screenshot
+                      color: 'white',
+                      border: '2px solid white',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 'bold',
+                      fontSize: '16px',
+                    }}
+                    className="hover:bg-[#1976D2] hover:scale-110"
                     title={isCollapsed
                       ? `Expand to show ${descendantCount} hidden node${descendantCount !== 1 ? 's' : ''}`
                       : `Collapse to hide ${descendantCount} child node${descendantCount !== 1 ? 's' : ''}`
