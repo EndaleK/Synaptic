@@ -55,6 +55,9 @@ const COST_PER_MILLION = {
 
 /**
  * Select optimal AI provider based on document size and operation
+ *
+ * NEW: Respects feature-based provider configuration from lib/ai/index.ts
+ * For flashcards, we now ALWAYS use Claude for premium quality
  */
 export function selectAIProvider(
   textLength: number,
@@ -68,6 +71,25 @@ export function selectAIProvider(
     estimatedTokens,
     operation,
   })
+
+  // FEATURE-BASED OVERRIDE: Flashcards always use Claude for premium quality
+  // This creates superior cards that WOW first-time users
+  if (operation === 'flashcards') {
+    const estimatedCost = (estimatedTokens / 1000000) * COST_PER_MILLION.claude.input +
+                         (2000 / 1000000) * COST_PER_MILLION.claude.output
+
+    logger.info('Using Claude for flashcards (feature configuration)', {
+      textLength,
+      estimatedTokens,
+      estimatedCost: `$${estimatedCost.toFixed(4)}`,
+    })
+
+    return {
+      provider: 'claude',
+      reason: 'Using Claude Sonnet 4 for premium flashcard quality (configured in lib/ai/index.ts)',
+      estimatedCost,
+    }
+  }
 
   // For very large documents, use Gemini
   if (textLength > CONTEXT_LIMITS.claude) {
@@ -175,9 +197,27 @@ export async function generateFlashcardsAuto(
       rawFlashcards = await generateFlashcardsWithGemini(text, targetCards)
       logger.info('Gemini flashcard generation successful', { count: rawFlashcards.length })
     } else if (selection.provider === 'claude') {
-      // Calculate target cards based on content
-      const wordCount = text.split(/\s+/).length
-      const targetCards = Math.max(5, Math.min(Math.floor(wordCount / 250), 50))
+      // Use user-specified count or calculate based on content
+      let targetCards: number
+
+      if (options.count !== undefined && options.count > 0) {
+        // User specified exact count - respect it with reasonable limits
+        targetCards = Math.max(5, Math.min(options.count, 50))
+        logger.info('Using user-specified flashcard count', {
+          requested: options.count,
+          actual: targetCards,
+          textLength: text.length
+        })
+      } else {
+        // Auto-calculate based on content length
+        const wordCount = text.split(/\s+/).length
+        targetCards = Math.max(5, Math.min(Math.floor(wordCount / 250), 30)) // Default auto mode capped at 30
+        logger.info('Auto-calculated flashcard count', {
+          wordCount,
+          targetCards,
+          textLength: text.length
+        })
+      }
 
       logger.info('Attempting Claude flashcard generation', { targetCards, textLength: text.length })
       rawFlashcards = await generateFlashcardsWithClaude(text, targetCards)
