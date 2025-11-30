@@ -286,9 +286,11 @@ function layoutHierarchical(
   const totalNodes = mindMapNodes.length;
   const maxLevel = Math.max(...mindMapNodes.map(n => n.level));
 
-  // Dynamic vertical spacing: Tighter when many nodes, wider when few
-  // Formula: base * (1 + log scale factor based on density)
-  const densityFactor = Math.max(0.6, Math.min(1.5, 1 - (totalNodes - 10) * 0.02));
+  // BUGFIX: INCREASE spacing when many nodes (was inverted, causing bunching)
+  // Formula: Expand spacing beyond 20 nodes to prevent overlap
+  const densityFactor = totalNodes > 20
+    ? Math.min(2.0, 1 + (totalNodes - 20) * 0.02)  // 20→55 nodes: 100%→170% spacing
+    : 1.0;  // ≤20 nodes: normal spacing
   const verticalMultiplier = densityFactor;
 
   // Horizontal spacing increases with depth to show progression
@@ -835,7 +837,10 @@ function layoutConcept(
 
   // PHASE 3.1: Dynamic spacing algorithm (same as hierarchical)
   const totalNodes = mindMapNodes.length;
-  const densityFactor = Math.max(0.6, Math.min(1.5, 1 - (totalNodes - 10) * 0.02));
+  // BUGFIX: INCREASE spacing when many nodes (was inverted, causing bunching)
+  const densityFactor = totalNodes > 20
+    ? Math.min(2.0, 1 + (totalNodes - 20) * 0.02)  // 20→55 nodes: 100%→170% spacing
+    : 1.0;  // ≤20 nodes: normal spacing
   const verticalMultiplier = densityFactor;
 
   const horizontalByLevel = (level: number) => {
