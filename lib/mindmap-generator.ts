@@ -536,11 +536,69 @@ IMPORTANT: Your response must be ONLY a JSON object with "title", "nodes" (array
           }
         })
 
-      // CRITICAL: Validate that we have edges (mind maps are useless without connections!)
+      // PHASE 4.2: AUTO-RECOVERY when AI fails to generate edges
+      // Instead of throwing error, reconstruct edges from node hierarchy
       if (validatedEdges.length === 0 && validatedNodes.length > 1) {
-        console.error(`[MindMap] ❌ AI generated ${validatedNodes.length} nodes but 0 edges! Mind map will be disconnected.`)
-        console.error(`[MindMap] Provider: ${provider.name}`)
-        throw new Error('ZERO_EDGES_ERROR: AI failed to generate any edges. Mind map would be disconnected.')
+        console.warn(`[MindMap] ⚠️ AI generated ${validatedNodes.length} nodes but 0 edges! Attempting auto-recovery...`)
+        console.warn(`[MindMap] Provider: ${provider.name} - Reconstructing edges from node levels`)
+
+        // Auto-generate edges based on node hierarchy (level-based connections)
+        const reconstructedEdges: MindMapEdge[] = []
+
+        // Group nodes by level
+        const nodesByLevel = new Map<number, MindMapNode[]>()
+        validatedNodes.forEach(node => {
+          const level = node.level || 0
+          if (!nodesByLevel.has(level)) {
+            nodesByLevel.set(level, [])
+          }
+          nodesByLevel.get(level)!.push(node)
+        })
+
+        // Find root node (level 0)
+        const rootNodes = nodesByLevel.get(0) || []
+        const root = rootNodes[0]
+
+        if (!root) {
+          console.error(`[MindMap] ❌ Cannot reconstruct edges: No root node found`)
+          throw new Error('ZERO_EDGES_ERROR: No root node found for edge reconstruction')
+        }
+
+        // Connect each level to the previous level
+        const maxLevel = Math.max(...validatedNodes.map(n => n.level || 0))
+
+        for (let level = 1; level <= maxLevel; level++) {
+          const currentLevelNodes = nodesByLevel.get(level) || []
+          const parentLevelNodes = nodesByLevel.get(level - 1) || []
+
+          if (parentLevelNodes.length === 0) continue
+
+          // Distribute current level nodes among parent level nodes
+          currentLevelNodes.forEach((node, index) => {
+            // Round-robin assignment to parents (distributes evenly)
+            const parentIndex = index % parentLevelNodes.length
+            const parent = parentLevelNodes[parentIndex]
+
+            reconstructedEdges.push({
+              id: `auto_edge_${level}_${index}`,
+              from: parent.id,
+              to: node.id,
+              relationship: level === 1 ? 'includes' : 'contains'
+            })
+          })
+        }
+
+        validatedEdges.push(...reconstructedEdges)
+        console.log(`[MindMap] ✅ Auto-recovery successful: Reconstructed ${reconstructedEdges.length} edges from hierarchy`)
+      }
+
+      // Validate minimum edge requirement (should be n-1 edges for n nodes in a tree)
+      const minExpectedEdges = validatedNodes.length - 1
+      if (validatedEdges.length < minExpectedEdges * 0.5 && validatedNodes.length > 2) {
+        console.warn(
+          `[MindMap] ⚠️ Suspiciously few edges (${validatedEdges.length} edges for ${validatedNodes.length} nodes). ` +
+          `Expected at least ${minExpectedEdges} for connected tree. Some nodes may be orphaned.`
+        )
       }
 
       console.log(`[MindMap] ✅ Validated ${validatedNodes.length} nodes and ${validatedEdges.length} edges`)
