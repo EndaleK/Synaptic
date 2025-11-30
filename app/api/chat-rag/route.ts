@@ -355,7 +355,14 @@ User Question: ${message}
 Please answer this question based on the relevant excerpts provided above. The excerpts were retrieved using semantic search to find the most relevant information for this question.`
 
     // 12. Estimate cost
-    const modelName = provider.name === 'deepseek' ? 'deepseek-chat' : 'gpt-3.5-turbo'
+    let modelName: string
+    if (provider.name === 'deepseek') {
+      modelName = 'deepseek-chat'
+    } else if (provider.name === 'anthropic') {
+      modelName = 'claude-sonnet-4'
+    } else {
+      modelName = 'gpt-3.5-turbo'
+    }
     const promptText = systemPrompt + userPrompt
     const costEstimate = estimateRequestCost(modelName as any, promptText, 1000)
     logger.debug('Cost estimate for RAG chat', {

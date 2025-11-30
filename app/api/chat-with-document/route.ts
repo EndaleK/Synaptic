@@ -306,7 +306,14 @@ User Question: ${message}
 Please answer this question based only on the information provided in the document above. If the document doesn't contain relevant information to answer the question, please let me know.`
 
     // Estimate cost before making API call
-    const modelName = provider.name === 'deepseek' ? 'deepseek-chat' : 'gpt-3.5-turbo'
+    let modelName: string
+    if (provider.name === 'deepseek') {
+      modelName = 'deepseek-chat'
+    } else if (provider.name === 'anthropic') {
+      modelName = 'claude-sonnet-4'
+    } else {
+      modelName = 'gpt-3.5-turbo'
+    }
     const promptText = systemPrompt + userPrompt
     const costEstimate = estimateRequestCost(modelName as any, promptText, 1000)
     logger.debug("Cost estimate for chat", {
