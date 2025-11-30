@@ -117,7 +117,7 @@ function getDefaultProvider(feature: string): ProviderType {
     'chat': 'anthropic',             // ⭐ Claude's Socratic teaching impresses first-time users
     'mindmap': 'anthropic',          // ⭐ Superior structure & relationship detection
     'exam': 'anthropic',             // ⭐ Better quality questions = strong first impression
-    'flashcards': 'deepseek',        // Cost-effective, good quality
+    'flashcards': 'anthropic',       // ⭐ First feature users try - Claude creates superior card quality
     'podcast_script': 'deepseek',    // Cost-effective for script generation
     'podcast_tts': 'openai',         // OpenAI has best TTS
     'study_guide': 'deepseek',       // Cost-effective for long-form content

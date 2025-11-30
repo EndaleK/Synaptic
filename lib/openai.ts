@@ -6,6 +6,7 @@ import { chunkDocument, mergeChunkResults, getChunkingSummary, type ChunkOptions
 
 export interface FlashcardGenerationOptions {
   variation?: number
+  count?: number  // Number of flashcards to generate (overrides auto-calculation)
   learningStyle?: LearningStyle
   teachingStylePreference?: TeachingStylePreference
   varkScores?: {
@@ -49,15 +50,23 @@ export async function generateFlashcards(
     console.log(`Flashcard generation: Text truncated from ${text.length} to ${processedText.length} characters`)
   }
 
-  // Calculate number of flashcards based on content length
-  // ~1 flashcard per 200-300 words, min 5, max 30
+  // Calculate number of flashcards based on content length or use user-specified count
   const wordCount = processedText.split(/\s+/).length
   const minCards = 5
-  const maxCards = 30
-  const calculatedCards = Math.floor(wordCount / 250)
-  const targetCards = Math.max(minCards, Math.min(calculatedCards, maxCards))
+  const maxCards = 50
 
-  console.log(`Content: ${wordCount} words → Target: ${targetCards} flashcards`)
+  let targetCards: number
+
+  if (options.count !== undefined && options.count > 0) {
+    // User specified count - respect it but cap at reasonable limits
+    targetCards = Math.max(minCards, Math.min(options.count, maxCards))
+    console.log(`User requested: ${options.count} flashcards → Using: ${targetCards} flashcards`)
+  } else {
+    // Auto-calculate: ~1 flashcard per 250 words, min 5, max 30 (default auto mode is more conservative)
+    const calculatedCards = Math.floor(wordCount / 250)
+    targetCards = Math.max(minCards, Math.min(calculatedCards, 30))
+    console.log(`Auto-calculated: ${wordCount} words → ${targetCards} flashcards`)
+  }
 
   // Build base prompt
   let basePrompt = `You are tasked with extracting flashcard content from a given text chunk. Your goal is to identify key terms and their corresponding definitions or explanations that would be suitable for creating flashcards.

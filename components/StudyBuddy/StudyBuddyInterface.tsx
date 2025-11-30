@@ -324,8 +324,8 @@ export default function StudyBuddyInterface() {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 w-full">
           {/* Welcome Message */}
           {messages.length === 0 && !streamingMessage && (
             <div className="space-y-6">
@@ -370,10 +370,10 @@ export default function StudyBuddyInterface() {
               key={message.id}
               className={`mb-4 ${message.role === 'user' ? 'flex justify-end' : ''}`}
             >
-              <div className="max-w-3xl w-full">
+              <div className="max-w-3xl w-full overflow-hidden">
                 <div
                   className={`
-                    rounded-lg p-4
+                    rounded-lg p-4 break-words
                     ${message.role === 'user'
                       ? 'bg-gray-700 dark:bg-gray-600 text-white ml-8'
                       : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100'
@@ -381,7 +381,7 @@ export default function StudyBuddyInterface() {
                   `}
                 >
                   {message.role === 'user' ? (
-                    <div className="font-handwriting text-[15px] leading-relaxed">
+                    <div className="font-handwriting text-[15px] leading-relaxed break-words">
                       {message.content}
                     </div>
                   ) : (
@@ -421,7 +421,7 @@ export default function StudyBuddyInterface() {
           {/* Streaming message */}
           {streamingMessage && (
             <div className="mb-4">
-              <div className="max-w-3xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-gray-900 dark:text-gray-100">
+              <div className="max-w-3xl overflow-hidden break-words bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-gray-900 dark:text-gray-100">
                 <MarkdownRenderer
                   content={streamingMessage}
                   className="font-handwriting text-[15px] leading-relaxed text-gray-900 dark:text-gray-100"

@@ -18,14 +18,15 @@ export default function LandingPage() {
     {
       icon: BookOpen,
       title: "Smart Flashcards",
-      subtitle: "SM-2 Spaced Repetition Algorithm",
-      description: "Auto-extract key concepts and study with scientifically-proven spaced repetition that knows exactly when to quiz you.",
+      subtitle: "Powered by Claude AI - Choose Your Card Count",
+      description: "Superior AI quality from Claude Sonnet 4 creates deeper understanding. Customize 5-50 flashcards or let AI auto-calculate. SM-2 spaced repetition tracks mastery.",
       gradient: "from-accent-primary to-accent-secondary"
     },
     {
       icon: MessageSquare,
       title: "Socratic Teaching",
-      description: "Chat with your documents through guided dialogue. Synaptic's adaptive engine asks questions to deepen understanding instead of giving direct answers.",
+      subtitle: "Powered by Claude AI",
+      description: "Chat with your documents through guided dialogue. Claude's superior reasoning asks questions to deepen understanding instead of giving direct answers.",
       gradient: "from-accent-blue to-accent-primary"
     },
     {
@@ -38,7 +39,8 @@ export default function LandingPage() {
     {
       icon: Network,
       title: "Mind Mapping",
-      description: "Visualize concepts with interactive maps featuring relationship types, cross-links, and knowledge integration indicators.",
+      subtitle: "Powered by Claude AI",
+      description: "Claude's advanced reasoning creates intelligent concept maps with relationship types, cross-links, and knowledge integration indicators.",
       gradient: "from-accent-orange to-accent-secondary"
     },
     {
@@ -58,7 +60,8 @@ export default function LandingPage() {
       icon: ClipboardCheck,
       title: "Mock Exam Simulator",
       badge: "NEW",
-      description: "Automatically generated practice tests with performance analytics. Perfect for SAT, AP exams, certifications, and finals.",
+      subtitle: "Powered by Claude AI",
+      description: "Claude generates high-quality practice tests with performance analytics. Perfect for SAT, AP exams, certifications, and finals.",
       gradient: "from-purple-500 to-pink-500"
     },
     {

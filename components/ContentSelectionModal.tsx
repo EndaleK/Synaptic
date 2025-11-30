@@ -51,6 +51,10 @@ export default function ContentSelectionModal({
   // Mind map type selection (only used when generationType === 'mindmap')
   const [selectedMapType, setSelectedMapType] = useState<MindMapType>('hierarchical')
 
+  // Flashcard count selection (only used when generationType === 'flashcards')
+  const [flashcardCount, setFlashcardCount] = useState<number>(20) // Default 20 cards
+  const [useAutoCount, setUseAutoCount] = useState<boolean>(true) // Auto-calculate by default
+
   // Preset saving state
   const [showSavePreset, setShowSavePreset] = useState(false)
   const [presetName, setPresetName] = useState('')
@@ -70,6 +74,17 @@ export default function ContentSelectionModal({
       })
     }
   }, [isOpen, document.id, document.file_name, generationType])
+
+  // Calculate smart default flashcard count based on document length
+  useEffect(() => {
+    if (generationType === 'flashcards' && document.extracted_text) {
+      const wordCount = document.extracted_text.split(/\s+/).length
+      // ~1 card per 250 words, min 10, max 30 for auto-calc
+      const calculatedCount = Math.max(10, Math.min(Math.floor(wordCount / 250), 30))
+      setFlashcardCount(calculatedCount)
+      console.log(`📊 Calculated flashcard count: ${calculatedCount} from ${wordCount} words`)
+    }
+  }, [generationType, document.extracted_text])
 
   const handleGenerate = async () => {
     setIsGenerating(true)
@@ -92,7 +107,8 @@ export default function ContentSelectionModal({
         case 'flashcards':
           // Use RAG endpoint for large/indexed documents, regular endpoint for small documents
           apiEndpoint = (isRAGIndexed || isLargeDocument) ? '/api/generate-flashcards-rag' : '/api/generate-flashcards'
-          requestBody.count = 10 // Default count
+          // Pass user-selected count, or undefined for auto-calculation
+          requestBody.count = useAutoCount ? undefined : flashcardCount
           break
 
         case 'podcast':
@@ -360,6 +376,72 @@ export default function ContentSelectionModal({
               <p className="text-sm text-blue-800 dark:text-blue-200">
                 ℹ️ Full document will be used (page information not available)
               </p>
+            </div>
+          )}
+
+          {/* Flashcard Count Selector (only shown for flashcards) */}
+          {generationType === 'flashcards' && (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Number of Flashcards
+              </h3>
+
+              {/* Auto vs Manual Toggle */}
+              <div className="flex items-center gap-3 mb-4">
+                <button
+                  onClick={() => setUseAutoCount(true)}
+                  className={`flex-1 px-4 py-2.5 rounded-lg border-2 transition-all text-sm font-medium ${
+                    useAutoCount
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
+                >
+                  Auto (Recommended)
+                </button>
+                <button
+                  onClick={() => setUseAutoCount(false)}
+                  className={`flex-1 px-4 py-2.5 rounded-lg border-2 transition-all text-sm font-medium ${
+                    !useAutoCount
+                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
+                >
+                  Custom
+                </button>
+              </div>
+
+              {/* Count Slider (only shown when manual mode) */}
+              {!useAutoCount && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Flashcards to generate:</span>
+                    <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{flashcardCount}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="5"
+                    max="50"
+                    step="5"
+                    value={flashcardCount}
+                    onChange={(e) => setFlashcardCount(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <span>5 cards</span>
+                    <span>50 cards</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Auto Mode Info */}
+              {useAutoCount && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    ℹ️ Auto mode generates ~{flashcardCount} flashcards based on your document length (1 card per 250 words)
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

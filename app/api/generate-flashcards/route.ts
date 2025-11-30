@@ -70,17 +70,20 @@ async function handleGenerateFlashcards(request: NextRequest) {
     let documentId: string | null = null
     let mode: string | null = null
     let uploadedFile: File | null = null
+    let requestedCount: number | undefined = undefined
 
     if (contentType.includes('application/json')) {
       // NEW FORMAT: JSON request from ContentSelectionModal (document-based)
       const body = await request.json()
       documentId = body.documentId
       const selection = body.selection
+      requestedCount = body.count // User-specified flashcard count
 
       logger.info('Processing JSON flashcard request', {
         userId,
         documentId,
-        selectionType: selection?.type
+        selectionType: selection?.type,
+        requestedCount
       })
 
       if (!documentId) {
@@ -350,7 +353,10 @@ async function handleGenerateFlashcards(request: NextRequest) {
 
     // OPTIMIZED: Fetch user learning profile for personalization
     // Uses parallel Promise.all to fetch profile and learning profile faster
-    let generationOptions: FlashcardGenerationOptions = { variation }
+    let generationOptions: FlashcardGenerationOptions = {
+      variation,
+      count: requestedCount // Include user-requested count (undefined = auto-calculate)
+    }
 
     try {
       // Get user profile
@@ -364,6 +370,7 @@ async function handleGenerateFlashcards(request: NextRequest) {
           // Build personalization options
           generationOptions = {
             variation,
+            count: requestedCount, // Preserve user-requested count
             learningStyle: profile.learning_style as LearningStyle,
             teachingStylePreference: (learningProfile.teaching_style_preference || 'mixed') as TeachingStylePreference,
             varkScores: {
@@ -377,7 +384,8 @@ async function handleGenerateFlashcards(request: NextRequest) {
 
           logger.debug("Using personalized generation", {
             userId,
-            learningStyle: profile.learning_style
+            learningStyle: profile.learning_style,
+            requestedCount
           })
         }
       }

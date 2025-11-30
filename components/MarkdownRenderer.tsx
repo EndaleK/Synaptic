@@ -140,7 +140,7 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
   }
 
   return (
-    <div className={className}>
+    <div className={`${className} overflow-wrap-anywhere w-full`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -203,7 +203,7 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
               // Render the diagram
               return (
                 <div
-                  className="mermaid-container my-4"
+                  className="mermaid-container my-4 w-full overflow-x-auto"
                   dangerouslySetInnerHTML={{ __html: svg }}
                 />
               )
@@ -251,24 +251,24 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
           },
           // Style headers
           h1({ children }) {
-            return <h1 className="text-2xl font-bold mt-6 mb-4">{children}</h1>
+            return <h1 className="text-2xl font-bold mt-6 mb-4 break-words w-full text-left">{children}</h1>
           },
           h2({ children }) {
-            return <h2 className="text-xl font-bold mt-5 mb-3">{children}</h2>
+            return <h2 className="text-xl font-bold mt-5 mb-3 break-words w-full text-left">{children}</h2>
           },
           h3({ children }) {
-            return <h3 className="text-lg font-semibold mt-4 mb-2">{children}</h3>
+            return <h3 className="text-lg font-semibold mt-4 mb-2 break-words w-full text-left">{children}</h3>
           },
           // Style lists
           ul({ children }) {
-            return <ul className="list-disc list-inside my-3 space-y-1">{children}</ul>
+            return <ul className="list-disc list-inside my-3 space-y-1 break-words">{children}</ul>
           },
           ol({ children }) {
-            return <ol className="list-decimal list-inside my-3 space-y-1">{children}</ol>
+            return <ol className="list-decimal list-inside my-3 space-y-1 break-words">{children}</ol>
           },
           // Style paragraphs
           p({ children }) {
-            return <p className="my-2 leading-relaxed">{children}</p>
+            return <p className="my-2 leading-relaxed break-words w-full text-left">{children}</p>
           },
           // Style links
           a({ children, href }) {

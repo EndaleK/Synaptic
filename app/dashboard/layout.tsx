@@ -32,9 +32,15 @@ export default function DashboardLayout({
   const { activeMode, setActiveMode } = useUIStore()
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
 
   // Pomodoro timer state
   const { status: pomodoroStatus, timeRemaining, timerType, startTimer } = usePomodoroStore()
+
+  // Fix hydration mismatch by only rendering client-only elements after mount
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   // Helper function to format timer display
   const formatTime = (seconds: number): string => {
@@ -525,7 +531,9 @@ export default function DashboardLayout({
             }`}>
               <div className="relative flex-shrink-0">
                 <UserButton />
-                <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
+                {isMounted && (
+                  <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
+                )}
               </div>
               {!sidebarCollapsed && (
                 <div className="flex-1 min-w-0">
