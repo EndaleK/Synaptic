@@ -286,13 +286,13 @@ function layoutHierarchical(
   const totalNodes = mindMapNodes.length;
   const maxLevel = Math.max(...mindMapNodes.map(n => n.level));
 
-  // PRIORITY 1: DRAMATICALLY INCREASE spacing for large maps (2025 cognitive load research)
-  // Formula: Tiered expansion prevents node overlap and concept blending
+  // PRIORITY FIX: MASSIVELY INCREASE spacing to prevent overlaps (40 concepts in screenshot)
+  // Formula: Aggressive expansion for all map sizes to ensure readability
   const densityFactor = totalNodes > 30
-    ? Math.min(3.5, 1 + (totalNodes - 30) * 0.05)  // 5% per node, max 3.5x (55 nodes → 2.25x)
+    ? Math.min(5.0, 2.5 + (totalNodes - 30) * 0.08)  // Start at 2.5x, add 8% per node, max 5x
     : totalNodes > 15
-    ? 1 + (totalNodes - 15) * 0.03  // 3% per node for medium maps (30 nodes → 1.45x)
-    : 1.0;  // ≤15 nodes: normal spacing
+    ? 2.0 + (totalNodes - 15) * 0.05  // Start at 2x, add 5% per node (30 nodes → 2.75x)
+    : 1.5;  // ≤15 nodes: 1.5x spacing (was 1.0)
   const verticalMultiplier = densityFactor;
 
   // Horizontal spacing increases with depth to show progression
@@ -418,12 +418,12 @@ function layoutHierarchical(
     const targetNode = mindMapNodes.find(n => n.id === edge.to);
     const isCrossLink = sourceNode && targetNode && Math.abs(sourceNode.level - targetNode.level) > 1;
 
-    // PHASE 2.3: Enhanced Cross-Link Emphasis (Research-Backed)
-    // Cross-links show knowledge integration and synthesis - critical for advanced learning
+    // PRIORITY FIX: Make cross-links SUBTLE to reduce visual clutter
+    // Cross-links should support understanding, not dominate the view
     const sourceLevel = sourceNode?.level || 0;
     const strokeWidth = isCrossLink
-      ? 4  // Thicker for cross-links (was: 3) - makes them visually prominent
-      : Math.max(2, 5 - sourceLevel * 0.5); // Hierarchical: 5px → 4.5px → 4px → 3.5px → 3px → 2.5px → 2px
+      ? 1.5  // THIN for cross-links (was: 4) - subtle, not dominant
+      : Math.max(2, 4 - sourceLevel * 0.3); // Hierarchical: 4px → 3.7px → 3.4px → 3.1px → 2.8px → 2px
 
     // PHASE 2.4: Educational Tooltips (Research-Backed)
     // Tooltips explain complete propositions to reinforce learning
@@ -437,7 +437,7 @@ function layoutHierarchical(
       target: edge.to,
       type: 'default',  // PHASE 1.3: Use bezier curves for organic feel (was 'smoothstep')
       pathOptions: { curvature: 0.5 },  // Gentle curve
-      label: getRelationshipIcon(edge.relationship) + edge.relationship,  // PHASE 2.2: Add icon prefix
+      label: '',  // PRIORITY FIX: Hide labels by default to reduce clutter (show via tooltips)
       animated: !isCrossLink,
       data: {
         // PHASE 2.4: Tooltip data for educational hover experience
@@ -445,35 +445,26 @@ function layoutHierarchical(
         isCrossLink: isCrossLink,
         sourceLabel: sourceNode?.label,
         targetLabel: targetNode?.label,
+        relationship: edge.relationship, // Store for future use
       },
       style: {
-        stroke: isCrossLink ? '#FF6B35' : '#64748B', // Method 3: Orange accent for cross-links (improved contrast)
+        stroke: isCrossLink ? '#CBD5E1' : '#64748B', // PRIORITY FIX: Subtle gray for cross-links (was: orange #FF6B35)
         strokeWidth: strokeWidth,
-        strokeDasharray: isCrossLink ? '8,4' : undefined,
+        strokeDasharray: isCrossLink ? '4,3' : undefined, // Shorter dash pattern for subtlety
+        opacity: isCrossLink ? 0.4 : 0.7, // PRIORITY FIX: Lower opacity for cross-links
       },
       markerEnd: {
         type: 'arrowclosed' as any,
-        color: isCrossLink ? '#FF6B35' : '#64748B',
-        width: 20,
-        height: 20,
+        color: isCrossLink ? '#CBD5E1' : '#64748B',
+        width: isCrossLink ? 14 : 18, // Smaller arrows for cross-links
+        height: isCrossLink ? 14 : 18,
       },
-      // PHASE 2.1: Prominent Relationship Labels (Research-Backed)
-      // Labeled relationships are THE KEY differentiator for concept maps over mind maps
-      // This is what makes them educational (forms complete propositions: Node A + Relationship + Node B)
+      // PRIORITY FIX: Remove visible labels (use tooltips instead)
       labelStyle: {
-        fill: '#1f2937',
-        fontWeight: 800,              // Was: 700 (bolder for prominence)
-        fontSize: 15,                 // Was: 13 (larger for readability)
-        padding: '6px 10px',          // Was: 4px 8px (more breathing room)
-        letterSpacing: '0.3px',       // NEW: Better readability
+        display: 'none', // Hide labels completely
       },
       labelBgStyle: {
-        fill: isCrossLink ? '#FEF3C7' : '#FFFBEA',  // Warm yellow highlight (was: white)
-        fillOpacity: 1,               // Was: 0.95 (full opacity for clarity)
-        stroke: isCrossLink ? '#F59E0B' : '#FDE68A',  // NEW: Amber border for definition
-        strokeWidth: 1,               // NEW: Border for visual separation
-        rx: 8,                        // Was: 6 (slightly more rounded)
-        ry: 8,
+        display: 'none', // Hide label backgrounds
       },
     });
   });
@@ -744,17 +735,19 @@ function layoutRadial(
       target: edge.to,
       type: 'default',  // PHASE 1.3: Bezier curves for organic radial connections
       pathOptions: { curvature: 0.6 },  // Slightly more curve for radial layout
-      label: getRelationshipIcon(edge.relationship) + edge.relationship,
+      label: '',  // PRIORITY FIX: Hide labels to reduce clutter
       animated: true,
       data: {
         tooltip: `"${sourceNode?.label}" ${edge.relationship} "${targetNode?.label}"`,
         isCrossLink: false,
         sourceLabel: sourceNode?.label,
         targetLabel: targetNode?.label,
+        relationship: edge.relationship,
       },
       style: {
         stroke: '#8B5CF6', // Purple for radial branches
         strokeWidth: Math.max(2, 4 - (sourceNode?.level || 0) * 0.5),
+        opacity: 0.7, // Subtle transparency
       },
       markerEnd: {
         type: 'arrowclosed' as any,
@@ -763,18 +756,10 @@ function layoutRadial(
         height: 18,
       },
       labelStyle: {
-        fill: '#1f2937',
-        fontWeight: 700,
-        fontSize: 14,
-        padding: '5px 10px',
+        display: 'none', // Hide labels
       },
       labelBgStyle: {
-        fill: '#F3E8FF',
-        fillOpacity: 1,
-        stroke: '#C4B5FD',
-        strokeWidth: 1,
-        rx: 8,
-        ry: 8,
+        display: 'none', // Hide label backgrounds
       },
     });
   });
@@ -837,14 +822,15 @@ function layoutConcept(
     }
   });
 
-  // PHASE 3.1 + PRIORITY 1: Dynamic spacing algorithm with aggressive expansion
+  // PHASE 3.1 + PRIORITY FIX: Dynamic spacing algorithm with MASSIVE expansion (match hierarchical)
   const totalNodes = mindMapNodes.length;
-  // PRIORITY 1: DRAMATICALLY INCREASE spacing for large maps (2025 cognitive load research)
+  // PRIORITY FIX: MASSIVELY INCREASE spacing to prevent overlaps (40 concepts in screenshot)
+  // Formula: Aggressive expansion for all map sizes to ensure readability
   const densityFactor = totalNodes > 30
-    ? Math.min(3.5, 1 + (totalNodes - 30) * 0.05)  // 5% per node, max 3.5x (55 nodes → 2.25x)
+    ? Math.min(5.0, 2.5 + (totalNodes - 30) * 0.08)  // Start at 2.5x, add 8% per node, max 5x
     : totalNodes > 15
-    ? 1 + (totalNodes - 15) * 0.03  // 3% per node for medium maps (30 nodes → 1.45x)
-    : 1.0;  // ≤15 nodes: normal spacing
+    ? 2.0 + (totalNodes - 15) * 0.05  // Start at 2x, add 5% per node (30 nodes → 2.75x)
+    : 1.5;  // ≤15 nodes: 1.5x spacing (was 1.0)
   const verticalMultiplier = densityFactor;
 
   const horizontalByLevel = (level: number) => {
@@ -948,40 +934,33 @@ function layoutConcept(
       target: edge.to,
       type: 'default',  // PHASE 1.3: Bezier curves for natural connection flow
       pathOptions: { curvature: 0.5 },  // Gentle curve
-      label: (isCrossLink ? '🔗 ' : '') + getRelationshipIcon(edge.relationship) + edge.relationship,
-      animated: !isCrossLink, // Cross-links are static and bold
+      label: '',  // PRIORITY FIX: Hide labels to reduce clutter
+      animated: !isCrossLink, // Cross-links are static
       data: {
         tooltip: tooltipText,
         isCrossLink: isCrossLink,
         sourceLabel: sourceNode?.label,
         targetLabel: targetNode?.label,
+        relationship: edge.relationship,
       },
       style: {
-        // PRIORITY 3: Make cross-links SUBTLE, not dominant (2025 minimalist principle)
-        stroke: isCrossLink ? '#9CA3AF' : '#64748B', // Subtle gray for cross-links, darker gray for hierarchy
-        strokeWidth: isCrossLink ? 2 : 3, // THIN cross-links (supportive, not dominant)
-        strokeDasharray: isCrossLink ? '6,3' : undefined, // Subtle dash pattern
+        // PRIORITY FIX: Make cross-links EVEN MORE SUBTLE (already good, but consistency)
+        stroke: isCrossLink ? '#CBD5E1' : '#64748B', // Very subtle light gray for cross-links
+        strokeWidth: isCrossLink ? 1.5 : 3, // THIN cross-links (supportive, not dominant)
+        strokeDasharray: isCrossLink ? '4,3' : undefined, // Subtle dash pattern
+        opacity: isCrossLink ? 0.4 : 0.7, // Low opacity for cross-links
       },
       markerEnd: {
         type: 'arrowclosed' as any,
-        color: isCrossLink ? '#9CA3AF' : '#64748B',
-        width: isCrossLink ? 16 : 20, // Smaller arrows for cross-links
-        height: isCrossLink ? 16 : 20,
+        color: isCrossLink ? '#CBD5E1' : '#64748B',
+        width: isCrossLink ? 14 : 18, // Smaller arrows for cross-links
+        height: isCrossLink ? 14 : 18,
       },
       labelStyle: {
-        fill: isCrossLink ? '#6B7280' : '#1f2937', // Muted gray text for cross-links
-        fontWeight: isCrossLink ? 400 : 500, // Normal weight for cross-links
-        fontSize: isCrossLink ? 12 : 14, // Smaller text for cross-links
-        padding: '6px 12px',
-        letterSpacing: isCrossLink ? '0.3px' : '0.3px',
+        display: 'none', // Hide labels
       },
       labelBgStyle: {
-        fill: isCrossLink ? '#F3F4F6' : '#FFFBEA', // Neutral light gray bg for cross-links
-        fillOpacity: 1,
-        stroke: isCrossLink ? '#D1D5DB' : '#FDE68A', // Subtle border
-        strokeWidth: isCrossLink ? 1 : 1, // Thin border
-        rx: 8,
-        ry: 8,
+        display: 'none', // Hide label backgrounds
       },
     });
   });
@@ -1167,36 +1146,32 @@ function layoutFlowchart(
       source: edge.from,
       target: edge.to,
       type: isCrossLink ? 'smoothstep' : 'default',
-      label: getRelationshipIcon(edge.relationship) + edge.relationship,  // PHASE 2.2: Add icon prefix
+      label: '',  // PRIORITY FIX: Hide labels to reduce clutter
       animated: !isCrossLink,
       data: {
         tooltip: tooltipText,
         isCrossLink: isCrossLink,
         sourceLabel: sourceNode?.label,
         targetLabel: targetNode?.label,
+        relationship: edge.relationship,
       },
       style: {
-        stroke: isCrossLink ? '#9A7B64' : '#64748B', // Warm copper for cross-links, slate for hierarchy
-        strokeWidth: isCrossLink ? 3 : 4,
-        strokeDasharray: isCrossLink ? '8,4' : undefined,
+        stroke: isCrossLink ? '#CBD5E1' : '#64748B', // Subtle gray for cross-links
+        strokeWidth: isCrossLink ? 1.5 : 4,
+        strokeDasharray: isCrossLink ? '4,3' : undefined,
+        opacity: isCrossLink ? 0.4 : 0.7,
       },
       markerEnd: {
         type: 'arrowclosed' as any,
-        color: isCrossLink ? '#9A7B64' : '#64748B',
-        width: 22,
-        height: 22,
+        color: isCrossLink ? '#CBD5E1' : '#64748B',
+        width: isCrossLink ? 18 : 22,
+        height: isCrossLink ? 18 : 22,
       },
       labelStyle: {
-        fill: '#1f2937',
-        fontWeight: 700,
-        fontSize: 14,
-        padding: '4px 8px',
+        display: 'none', // Hide labels
       },
       labelBgStyle: {
-        fill: '#ffffff',
-        fillOpacity: 0.95,
-        rx: 6,
-        ry: 6,
+        display: 'none', // Hide label backgrounds
       },
     });
   });
@@ -1430,36 +1405,32 @@ function layoutTimeline(
         source: edge.from,
         target: edge.to,
         type: 'smoothstep',
-        label: getRelationshipIcon(edge.relationship) + edge.relationship,  // PHASE 2.2: Add icon prefix
+        label: '',  // PRIORITY FIX: Hide labels to reduce clutter
         animated: false,
         data: {
           tooltip: tooltipText,
           isCrossLink: false,
           sourceLabel: sourceNode.label,
           targetLabel: targetNode.label,
+          relationship: edge.relationship,
         },
         style: {
-          stroke: '#FF6B35', // Orange accent for relationships
-          strokeWidth: 3,
-          strokeDasharray: '8,4',
+          stroke: '#CBD5E1', // Subtle gray for relationships
+          strokeWidth: 1.5,
+          strokeDasharray: '4,3',
+          opacity: 0.4,
         },
         markerEnd: {
           type: 'arrowclosed' as any,
-          color: '#FF6B35',
-          width: 20,
-          height: 20,
+          color: '#CBD5E1',
+          width: 16,
+          height: 16,
         },
         labelStyle: {
-          fill: '#1f2937',
-          fontWeight: 700,
-          fontSize: 13,
-          padding: '4px 8px',
+          display: 'none', // Hide labels
         },
         labelBgStyle: {
-          fill: '#ffffff',
-          fillOpacity: 0.95,
-          rx: 6,
-          ry: 6,
+          display: 'none', // Hide label backgrounds
         },
       });
     }

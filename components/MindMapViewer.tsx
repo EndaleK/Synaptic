@@ -812,34 +812,17 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
           height: 16px !important;
         }
 
-        /* PHASE 2.3: Cross-Link Pulse Animation (Research-Backed Enhancement) */
-        /* Cross-links show knowledge integration - make them visually prominent */
-        @keyframes crossLinkPulse {
-          0%, 100% {
-            stroke-width: 4px;
-            opacity: 1;
-          }
-          50% {
-            stroke-width: 5px;
-            opacity: 0.8;
-          }
-        }
+        /* PRIORITY FIX: Disable cross-link pulse animation to reduce visual noise */
+        /* Cross-links are now subtle and static - animation removed for clarity */
 
-        /* Apply subtle pulse to cross-link edges (dashed orange edges) */
-        .react-flow__edge-path[stroke-dasharray]:not([stroke-dasharray=""]) {
-          animation: crossLinkPulse 2s ease-in-out infinite;
-        }
+        /* REMOVED: Pulsing animation that made cross-links too prominent */
+        /* Cross-links now use subtle styling from layout algorithm instead */
 
-        /* Enhanced pulse on hover */
-        .react-flow__edge:hover .react-flow__edge-path[stroke-dasharray]:not([stroke-dasharray=""]) {
-          animation: crossLinkPulse 0.8s ease-in-out infinite;
-          filter: drop-shadow(0 0 4px rgba(255, 107, 53, 0.6));
-        }
-
-        /* Dim other edges when hovering a cross-link */
-        .react-flow__edge:hover ~ .react-flow__edge:not(:hover) .react-flow__edge-path:not([stroke-dasharray]) {
-          opacity: 0.3;
-          transition: opacity 0.3s ease;
+        /* Gentle hover effect for all edges */
+        .react-flow__edge:hover .react-flow__edge-path {
+          opacity: 1;
+          stroke-width: 3px;
+          transition: all 0.2s ease;
         }
 
         /* PHASE 2.4: Educational Edge Tooltips (Research-Backed) */
