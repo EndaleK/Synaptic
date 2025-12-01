@@ -200,10 +200,18 @@ export async function POST(req: NextRequest) {
     }
 
     if (!document.extracted_text) {
-      logger.warn('Document has no extracted text (even after on-demand attempt)', { userId, documentId })
+      // Check if background extraction is queued
+      const isExtractionQueued = document.metadata?.text_extraction_queued === true
+
+      logger.warn('Document has no extracted text (even after on-demand attempt)', { userId, documentId, isExtractionQueued })
       const duration = Date.now() - startTime
       logger.api('POST', '/api/generate-mindmap', 400, duration, { userId, error: 'No extracted text' })
-      throw new Error("Document has no extracted text. This may be a scanned PDF or image-based document that requires OCR.")
+
+      throw new Error(
+        isExtractionQueued
+          ? "Document is still being processed. Text extraction is happening in the background - please wait a few moments and try again."
+          : "Document has no extracted text. This may be a scanned PDF or image-based document that requires OCR."
+      )
     }
 
     logger.debug('Document fetched successfully', {

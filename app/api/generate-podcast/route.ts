@@ -256,8 +256,16 @@ export async function POST(req: NextRequest) {
         }
 
         if (!document.extracted_text) {
-          logger.warn('Document has no extracted text (even after on-demand attempt)', { userId, documentId })
-          throw new Error('Document has no extracted text. This may be a scanned PDF or image-based document that requires OCR.')
+          // Check if background extraction is queued
+          const isExtractionQueued = document.metadata?.text_extraction_queued === true
+
+          logger.warn('Document has no extracted text (even after on-demand attempt)', { userId, documentId, isExtractionQueued })
+
+          throw new Error(
+            isExtractionQueued
+              ? "Document is still being processed. Text extraction is happening in the background - please wait a few moments and try again."
+              : "Document has no extracted text. This may be a scanned PDF or image-based document that requires OCR."
+          )
         }
 
     // Extract text based on selection (full document, page range, topic, structure, or suggestion)

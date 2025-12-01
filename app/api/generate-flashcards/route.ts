@@ -131,7 +131,7 @@ async function handleGenerateFlashcards(request: NextRequest) {
         'documents',
         () => supabase
           .from('documents')
-          .select('extracted_text, file_name')
+          .select('extracted_text, file_name, metadata')
           .eq('id', documentId!)
           .eq('user_id', profile.id)
           .single()
@@ -187,9 +187,17 @@ async function handleGenerateFlashcards(request: NextRequest) {
       }
 
       if (!textContent || textContent.length === 0) {
-        logger.warn('Document has no extracted text', { userId, documentId })
+        // Check if background extraction is queued
+        const isExtractionQueued = doc.metadata?.text_extraction_queued === true
+
+        logger.warn('Document has no extracted text', { userId, documentId, isExtractionQueued })
+
         return NextResponse.json(
-          { error: "Document has no text content. Please re-upload or try a different document." },
+          {
+            error: isExtractionQueued
+              ? "Document is still being processed. Text extraction is happening in the background - please wait a few moments and try again."
+              : "Document has no text content. Please re-upload or try a different document."
+          },
           { status: 400 }
         )
       }

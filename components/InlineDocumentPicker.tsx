@@ -50,8 +50,8 @@ export default function InlineDocumentPicker({
     try {
       setLoading(true)
       const [documentsRes, foldersRes] = await Promise.all([
-        fetch('/api/documents'),
-        fetch('/api/folders').catch(() => null)
+        fetch('/api/documents', { credentials: 'include' }),
+        fetch('/api/folders', { credentials: 'include' }).catch(() => null)
       ])
 
       if (!documentsRes.ok) {
