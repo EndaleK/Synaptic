@@ -28,6 +28,7 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
   const [pendingDiagrams, setPendingDiagrams] = useState<Set<string>>(new Set())
   const diagramCodeMap = useRef<Map<string, number>>(new Map())
   const diagramCounter = useRef(0)
+  const diagramsToQueue = useRef<Set<string>>(new Set())
 
   // Reset state when content changes
   useEffect(() => {
@@ -35,7 +36,17 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     setPendingDiagrams(new Set())
     diagramCodeMap.current.clear()
     diagramCounter.current = 0
+    diagramsToQueue.current.clear()
   }, [content])
+
+  // Transfer diagrams from ref to state after render
+  useEffect(() => {
+    if (diagramsToQueue.current.size > 0) {
+      const toQueue = new Set(diagramsToQueue.current)
+      diagramsToQueue.current.clear()
+      setPendingDiagrams(prev => new Set([...prev, ...toQueue]))
+    }
+  })
 
   // Process pending diagrams after render
   useEffect(() => {
@@ -206,7 +217,7 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
               if (!svg) {
                 // Queue diagram for async rendering (happens in useEffect)
                 if (!pendingDiagrams.has(diagramKey)) {
-                  setPendingDiagrams(prev => new Set(prev).add(diagramKey))
+                  diagramsToQueue.current.add(diagramKey)
                 }
 
                 // Show loading state

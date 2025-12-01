@@ -21,6 +21,7 @@ import { searchDocument } from '@/lib/vector-store'
 import { getUserDocuments } from '@/lib/supabase/documents-server'
 import { detectPromptInjection, validateMessageLength } from '@/lib/security/prompt-injection-detector'
 import { moderateContent } from '@/lib/security/content-moderator'
+import { searchWeb, formatSearchResultsForAI, shouldSearchWeb, extractCitations } from '@/lib/web-search'
 
 export const dynamic = 'force-dynamic'
 
@@ -301,6 +302,42 @@ Use this content to answer the user's question. Cite the document names when ref
       }
     }
 
+    // WEB SEARCH: Check if user message needs web search
+    // Enabled when TAVILY_API_KEY is set in environment
+    let searchCitations: string[] | null = null
+    if (process.env.TAVILY_API_KEY && shouldSearchWeb(lastUserMessage)) {
+      try {
+        logger.info('Study Buddy performing web search', {
+          userId,
+          query: lastUserMessage.substring(0, 100)
+        })
+
+        const searchResponse = await searchWeb(lastUserMessage, 5)
+
+        if (searchResponse.results.length > 0) {
+          // Format and add search results to system prompt
+          const formattedResults = formatSearchResultsForAI(searchResponse)
+          systemPrompt += `\n\n🌐 Web Search Results:\n\n${formattedResults}`
+
+          // Extract citations for later use (will be shown in UI)
+          searchCitations = extractCitations(searchResponse.results)
+
+          logger.info('Study Buddy web search successful', {
+            userId,
+            resultsCount: searchResponse.results.length,
+            searchTime: searchResponse.searchTime,
+            citations: searchCitations.length
+          })
+        } else {
+          logger.info('Study Buddy web search returned no results', { userId })
+        }
+      } catch (error) {
+        // Graceful degradation - if web search fails, continue without it
+        logger.warn('Study Buddy web search failed', { error, userId })
+        // Don't fail the request, just log and continue
+      }
+    }
+
     // Get AI provider (prefer DeepSeek for cost efficiency)
     const provider = getProviderForFeature('chat')
 
@@ -338,6 +375,12 @@ Use this content to answer the user's question. Cite the document names when ref
         maxTokens: 1500
       })
 
+      // Append citations if web search was used
+      let responseContent = completion.content
+      if (searchCitations && searchCitations.length > 0) {
+        responseContent += '\n\n---\n\n**Sources:**\n' + searchCitations.join('\n')
+      }
+
       // Track usage
       await incrementUsage(userId, 'study_buddy')
 
@@ -349,7 +392,7 @@ Use this content to answer the user's question. Cite the document names when ref
       })
 
       return NextResponse.json({
-        content: completion.content,
+        content: responseContent,
         done: true
       })
     }
@@ -367,6 +410,13 @@ Use this content to answer the user's question. Cite the document names when ref
           for await (const chunk of generator) {
             const data = `data: ${JSON.stringify({ content: chunk })}\n\n`
             controller.enqueue(encoder.encode(data))
+          }
+
+          // Append citations if web search was used
+          if (searchCitations && searchCitations.length > 0) {
+            const citationsText = '\n\n---\n\n**Sources:**\n' + searchCitations.join('\n')
+            const citationData = `data: ${JSON.stringify({ content: citationsText })}\n\n`
+            controller.enqueue(encoder.encode(citationData))
           }
 
           // Send done signal

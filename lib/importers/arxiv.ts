@@ -3,6 +3,69 @@
 import type { WebImportProvider, ExtractedContent, ContentMetadata } from './types'
 import { parseStringPromise } from 'xml2js'
 
+// Import PDF parsing functions (multi-tier fallback)
+async function parsePDFWithPdfParse(buffer: Buffer): Promise<{ text: string; error?: string; method?: string }> {
+  try {
+    const pdfParseModule = require('pdf-parse')
+    const pdfParse = pdfParseModule.default || pdfParseModule
+
+    console.log(`[arXiv] Starting pdf-parse extraction (buffer size: ${buffer.length} bytes)...`)
+    const data = await pdfParse(buffer, { max: 0 })
+
+    if (data.text && data.text.length > 100) {
+      console.log(`[arXiv] ✅ pdf-parse extraction successful: ${data.text.length} chars`)
+      return { text: data.text, method: 'pdf-parse' }
+    }
+
+    return { text: '', error: 'pdf-parse returned insufficient content' }
+  } catch (error) {
+    console.error('[arXiv] pdf-parse failed:', error)
+    return { text: '', error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+async function parsePDFWithPyMuPDF(buffer: Buffer): Promise<{ text: string; error?: string; method?: string }> {
+  try {
+    const { execFile } = require('child_process')
+    const { promisify } = require('util')
+    const fs = require('fs')
+    const path = require('path')
+    const os = require('os')
+
+    const execFileAsync = promisify(execFile)
+
+    // Write buffer to temp file
+    const tempDir = os.tmpdir()
+    const tempFile = path.join(tempDir, `arxiv-${Date.now()}.pdf`)
+    await fs.promises.writeFile(tempFile, buffer)
+
+    console.log(`[arXiv] 🐍 Attempting PyMuPDF extraction...`)
+
+    const scriptPath = path.join(process.cwd(), 'scripts', 'extract-pdf-pymupdf.py')
+    const { stdout, stderr } = await execFileAsync('python3', [scriptPath, tempFile], {
+      timeout: 60000,
+      maxBuffer: 50 * 1024 * 1024
+    })
+
+    // Clean up temp file
+    await fs.promises.unlink(tempFile).catch(() => {})
+
+    if (stderr && !stderr.includes('UserWarning')) {
+      console.error('[arXiv] PyMuPDF stderr:', stderr)
+    }
+
+    if (stdout && stdout.length > 100) {
+      console.log(`[arXiv] ✅ PyMuPDF extraction successful: ${stdout.length} chars`)
+      return { text: stdout, method: 'pymupdf' }
+    }
+
+    return { text: '', error: 'PyMuPDF returned insufficient content' }
+  } catch (error) {
+    console.error('[arXiv] PyMuPDF failed:', error)
+    return { text: '', error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
 export class ArxivImporter implements WebImportProvider {
   name = 'ArxivImporter'
 
@@ -95,27 +158,59 @@ export class ArxivImporter implements WebImportProvider {
     try {
       // Download PDF from arXiv
       const pdfUrl = `https://arxiv.org/pdf/${arxivId}.pdf`
+      console.log(`[arXiv] Downloading PDF: ${pdfUrl}`)
       const pdfResponse = await fetch(pdfUrl)
 
       if (!pdfResponse.ok) {
         throw new Error(`Failed to download PDF: ${pdfResponse.statusText}`)
       }
 
-      const pdfBuffer = await pdfResponse.arrayBuffer()
+      const arrayBuffer = await pdfResponse.arrayBuffer()
+      const pdfBuffer = Buffer.from(arrayBuffer)
+      const fileSizeMB = pdfBuffer.length / (1024 * 1024)
+      console.log(`[arXiv] Downloaded PDF: ${fileSizeMB.toFixed(2)} MB`)
 
-      // For now, we'll return the abstract as content
-      // In a production environment, you'd parse the PDF here
-      // using the existing PDF parser from lib/server-pdf-parser.ts
+      // Extract text from PDF using multi-tier fallback
+      // Tier 1: Try pdf-parse (fast, handles most PDFs)
+      let pdfText = ''
+      let extractionMethod = 'none'
+
+      const pdfParseResult = await parsePDFWithPdfParse(pdfBuffer)
+      if (!pdfParseResult.error && pdfParseResult.text && pdfParseResult.text.length > 100) {
+        pdfText = pdfParseResult.text
+        extractionMethod = pdfParseResult.method || 'pdf-parse'
+      } else {
+        // Tier 2: Try PyMuPDF (robust, handles complex PDFs)
+        console.log('[arXiv] pdf-parse failed, trying PyMuPDF...')
+        const pymupdfResult = await parsePDFWithPyMuPDF(pdfBuffer)
+        if (!pymupdfResult.error && pymupdfResult.text && pymupdfResult.text.length > 100) {
+          pdfText = pymupdfResult.text
+          extractionMethod = pymupdfResult.method || 'pymupdf'
+        }
+      }
+
+      // Build content with metadata + full PDF text
       const abstract = metadata.description || ''
-      const content = `# ${metadata.title}\n\n` +
+      let content = `# ${metadata.title}\n\n` +
         `**Authors:** ${Array.isArray(metadata.author) ? metadata.author.join(', ') : metadata.author}\n\n` +
         `**arXiv ID:** ${arxivId}\n\n` +
         `**Published:** ${metadata.publishedDate}\n\n` +
-        `## Abstract\n\n${abstract}\n\n` +
-        `---\n\n` +
-        `*Note: Full PDF content extraction will be available in the next version.*\n` +
-        `*For now, you can chat with the abstract and metadata.*\n\n` +
-        `**PDF URL:** ${pdfUrl}`
+        `**PDF URL:** ${pdfUrl}\n\n`
+
+      if (pdfText && pdfText.length > 100) {
+        // Successfully extracted PDF text
+        console.log(`[arXiv] ✅ Successfully extracted ${pdfText.length} characters using ${extractionMethod}`)
+        content += `## Abstract\n\n${abstract}\n\n` +
+          `---\n\n` +
+          `## Full Paper Content\n\n${pdfText}`
+      } else {
+        // Fallback to abstract only
+        console.warn('[arXiv] ⚠️ PDF extraction failed, returning abstract only')
+        content += `## Abstract\n\n${abstract}\n\n` +
+          `---\n\n` +
+          `*Note: Could not extract full PDF content. This may be a scanned PDF or complex layout.*\n` +
+          `*You can still chat with the abstract and download the PDF manually.*`
+      }
 
       return {
         content,

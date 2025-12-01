@@ -114,7 +114,7 @@ export function getProviderForFeature(feature: string): AIProvider {
  */
 function getDefaultProvider(feature: string): ProviderType {
   const defaults: Record<string, ProviderType> = {
-    'chat': 'anthropic',             // ⭐ Claude's Socratic teaching impresses first-time users
+    'chat': 'deepseek',              // DeepSeek for Study Buddy - cost-effective and reliable
     'mindmap': 'anthropic',          // ⭐ PHASE 2.2: Claude excels at complex JSON structures, relationship detection, and following strict keyword constraints (Tony Buzan principles)
     'exam': 'anthropic',             // ⭐ Better quality questions = strong first impression
     'flashcards': 'anthropic',       // ⭐ First feature users try - Claude creates superior card quality

@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Send, Loader2, Sparkles, Lightbulb, RotateCcw, Copy, Check, Download } from "lucide-react"
+import { Send, Loader2, Sparkles, Lightbulb, RotateCcw, Copy, Check, Download, Globe } from "lucide-react"
 import { useStudyBuddyStore } from "@/lib/store/useStudyBuddyStore"
 import { generateOpeningMessage, suggestedTopics } from "@/lib/study-buddy/personalities"
 import { useToast } from "../ToastContainer"
 import PersonalityToggle from "./PersonalityToggle"
 import ExplainLikePresets from "./ExplainLikePresets"
 import MarkdownRenderer from "../MarkdownRenderer"
+import { shouldSearchWeb } from "@/lib/web-search"
 
 export default function StudyBuddyInterface() {
   const toast = useToast()
@@ -31,6 +32,7 @@ export default function StudyBuddyInterface() {
   // Local state
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
   const [showExplainPresets, setShowExplainPresets] = useState(false)
   const [streamingMessage, setStreamingMessage] = useState("")
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)
@@ -52,8 +54,13 @@ export default function StudyBuddyInterface() {
     if (!input.trim() || isLoading) return
 
     const userMessage = input.trim()
+
+    // Check if this message will trigger web search
+    const willSearchWeb = shouldSearchWeb(userMessage)
+
     setInput("")
     setIsLoading(true)
+    setIsSearching(willSearchWeb)
     setStreamingMessage("")
 
     try {
@@ -144,6 +151,7 @@ export default function StudyBuddyInterface() {
       toast.error(error.message || 'Failed to get response from Study Buddy')
     } finally {
       setIsLoading(false)
+      setIsSearching(false)
       inputRef.current?.focus()
     }
   }
@@ -435,8 +443,17 @@ export default function StudyBuddyInterface() {
           {/* Loading indicator */}
           {isLoading && !streamingMessage && (
             <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm font-handwriting">Thinking...</span>
+              {isSearching ? (
+                <>
+                  <Globe className="w-4 h-4 animate-pulse" />
+                  <span className="text-sm font-handwriting">🔍 Searching the web...</span>
+                </>
+              ) : (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm font-handwriting">Thinking...</span>
+                </>
+              )}
             </div>
           )}
 
