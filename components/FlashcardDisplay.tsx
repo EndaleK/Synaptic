@@ -88,6 +88,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
         const response = await fetch('/api/study-sessions/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             documentId: currentDocument?.id,
             sessionType: 'review',
@@ -131,6 +132,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
             headers: {
               'Content-Type': 'application/json',
             },
+            credentials: 'include',
             body: JSON.stringify({
               sessionId,
               durationMinutes
@@ -208,6 +210,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
       const response = await fetch('/api/flashcards/mastery', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           flashcardId: currentCard.id,
           action: action
