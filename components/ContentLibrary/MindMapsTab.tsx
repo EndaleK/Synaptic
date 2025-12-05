@@ -35,7 +35,9 @@ export default function MindMapsTab() {
     setError(null)
 
     try {
-      const response = await fetch('/api/mindmaps')
+      const response = await fetch('/api/mindmaps', {
+        credentials: 'include'
+      })
       if (!response.ok) {
         throw new Error('Failed to fetch mind maps')
       }
@@ -74,7 +76,8 @@ export default function MindMapsTab() {
 
     try {
       const response = await fetch(`/api/mindmaps/${mindmapId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       })
 
       if (!response.ok) {

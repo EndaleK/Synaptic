@@ -47,7 +47,9 @@ export default function PodcastsTab() {
     setError(null)
 
     try {
-      const response = await fetch('/api/podcasts')
+      const response = await fetch('/api/podcasts', {
+        credentials: 'include'
+      })
       if (!response.ok) {
         throw new Error('Failed to fetch podcasts')
       }
@@ -118,7 +120,8 @@ export default function PodcastsTab() {
 
     try {
       const response = await fetch(`/api/podcasts/${podcastId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       })
 
       if (!response.ok) {

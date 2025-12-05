@@ -46,7 +46,9 @@ export default function FlashcardsTab() {
     setError(null)
 
     try {
-      const response = await fetch('/api/flashcards')
+      const response = await fetch('/api/flashcards', {
+        credentials: 'include'
+      })
       if (!response.ok) {
         throw new Error('Failed to fetch flashcards')
       }
@@ -111,7 +113,8 @@ export default function FlashcardsTab() {
 
     try {
       const response = await fetch(`/api/flashcards?documentId=${documentId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       })
 
       if (!response.ok) {
