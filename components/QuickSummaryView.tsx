@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, ChangeEvent } from "react"
-import { Clock, FileText, Link as LinkIcon, Youtube, Loader2, AlertCircle, Upload, Sparkles, Download, Zap, CheckCircle, X, ListChecks } from "lucide-react"
+import { Clock, FileText, Link as LinkIcon, Youtube, Loader2, AlertCircle, Upload, Sparkles, Download, Zap, CheckCircle, X, ListChecks, Save, FileDown } from "lucide-react"
 import PodcastPlayer, { type TranscriptEntry } from "./PodcastPlayer"
 import { useToast } from "./ToastContainer"
 
@@ -44,6 +44,9 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Save to library state
+  const [isSavingToLibrary, setIsSavingToLibrary] = useState(false)
 
   // Handle file selection
   const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -277,6 +280,114 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+  }
+
+  // Generate formatted text summary
+  const generateTextSummary = () => {
+    if (!summary) return ''
+
+    let text = `# ${summary.title}\n\n`
+    text += `${summary.description}\n\n`
+    text += `---\n\n`
+    text += `**Source:** ${summary.inputType === 'document' ? 'Document' : summary.inputType === 'url' ? 'Web Page' : 'YouTube Video'}\n`
+    text += `**Duration:** ${Math.ceil(summary.duration / 60)} minutes\n`
+    text += `**Generated:** ${new Date().toLocaleDateString()}\n\n`
+    text += `---\n\n`
+
+    if (summary.keyTakeaways && summary.keyTakeaways.length > 0) {
+      text += `## Key Takeaways\n\n`
+      summary.keyTakeaways.forEach((takeaway, index) => {
+        text += `${index + 1}. ${takeaway}\n\n`
+      })
+    }
+
+    return text
+  }
+
+  // Handle download text summary
+  const handleDownloadTextSummary = () => {
+    if (!summary) return
+
+    const textContent = generateTextSummary()
+    const blob = new Blob([textContent], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${summary.title || 'quick-summary'}-takeaways.md`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    URL.revokeObjectURL(url)
+    toast.success('Summary downloaded as markdown file')
+  }
+
+  // Handle save to library
+  const handleSaveToLibrary = async () => {
+    if (!summary) return
+
+    setIsSavingToLibrary(true)
+
+    try {
+      const textContent = generateTextSummary()
+      const fileName = `${summary.title || 'Quick Summary'} - Takeaways.txt`
+
+      // Create a text file and upload it as a document
+      const blob = new Blob([textContent], { type: 'text/plain' })
+      const file = new File([blob], fileName, { type: 'text/plain' })
+
+      // Step 1: Get signed upload URL
+      const uploadUrlResponse = await fetch('/api/documents/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: fileName,
+          fileSize: file.size,
+          fileType: 'text/plain'
+        })
+      })
+
+      if (!uploadUrlResponse.ok) {
+        const errorData = await uploadUrlResponse.json()
+        throw new Error(errorData.error || 'Failed to get upload URL')
+      }
+
+      const { uploadUrl, documentId: newDocId, storagePath } = await uploadUrlResponse.json()
+
+      // Step 2: Upload the text file
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'text/plain',
+          'x-upsert': 'true'
+        },
+        body: file
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload summary to storage')
+      }
+
+      // Step 3: Complete the upload
+      const completeResponse = await fetch(`/api/documents/${newDocId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: storagePath })
+      })
+
+      if (!completeResponse.ok) {
+        const errorData = await completeResponse.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to complete upload')
+      }
+
+      toast.success('Summary saved to your library!')
+    } catch (err: any) {
+      console.error('Save to library error:', err)
+      toast.error(err.message || 'Failed to save to library')
+    } finally {
+      setIsSavingToLibrary(false)
+    }
   }
 
   return (
@@ -582,10 +693,40 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
               {/* Key Takeaways */}
               {summary.keyTakeaways && summary.keyTakeaways.length > 0 && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-gray-700 shadow-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <ListChecks className="w-5 h-5 text-amber-500" />
-                    Key Takeaways
-                  </h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <ListChecks className="w-5 h-5 text-amber-500" />
+                      Key Takeaways
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleDownloadTextSummary}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-200 rounded-lg transition-colors"
+                        title="Download as text file"
+                      >
+                        <FileDown className="w-4 h-4" />
+                        Download
+                      </button>
+                      <button
+                        onClick={handleSaveToLibrary}
+                        disabled={isSavingToLibrary}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 text-green-700 dark:text-green-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Save to your document library"
+                      >
+                        {isSavingToLibrary ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4" />
+                            Save to Library
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                   <ul className="space-y-3">
                     {summary.keyTakeaways.map((takeaway, index) => (
                       <li key={index} className="flex items-start gap-3">
