@@ -152,6 +152,7 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
       try {
         const response = await fetch('/api/study-sessions/start', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             documentId: documentId,
@@ -220,6 +221,7 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
     try {
       const response = await fetch('/api/generate-mindmap', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           documentId,
@@ -405,6 +407,7 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
 
       const response = await fetch('/api/mindmaps/save', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           documentId,
