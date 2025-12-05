@@ -480,7 +480,13 @@ Return the JSON array now:`,
 
         if (dbError) {
           logger.error('Database save error for quick summary', dbError, { userId })
-          // Don't fail the request, audio is already uploaded
+          // Report the save failure to the user - they need to know their summary won't appear in the library
+          send({
+            type: 'warning',
+            message: 'Summary generated but failed to save to library. You can still play it but it won\'t appear in your saved content.',
+            audioUrl,
+            error: dbError.message
+          })
         }
 
         // Track usage

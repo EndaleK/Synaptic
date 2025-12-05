@@ -501,7 +501,13 @@ export async function POST(req: NextRequest) {
 
     if (dbError) {
       logger.error('Database save error for podcast', dbError, { userId, documentId })
-      // Don't fail the request, audio is already uploaded
+      // Report the save failure to the user - they need to know their podcast won't appear in the library
+      send({
+        type: 'warning',
+        message: 'Podcast generated but failed to save to library. You can still play it but it won\'t appear in your saved podcasts.',
+        audioUrl,
+        error: dbError.message
+      })
     }
 
     // Step 7: Track usage
