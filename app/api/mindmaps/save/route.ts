@@ -53,6 +53,25 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Verify the document exists before attempting to save
+    const { data: document, error: docError } = await supabase
+      .from('documents')
+      .select('id')
+      .eq('id', documentId)
+      .single()
+
+    if (docError || !document) {
+      logger.error('Document not found for mind map save', {
+        documentId,
+        userId,
+        error: docError?.message
+      })
+      return NextResponse.json(
+        { error: 'Document not found. The document may have been deleted or not saved properly.' },
+        { status: 404 }
+      )
+    }
+
     logger.debug('Saving mind map to database', {
       userId,
       documentId,
@@ -121,7 +140,7 @@ export async function POST(req: NextRequest) {
     logger.error('Mind map save error', error, { duration: `${duration}ms` })
 
     return NextResponse.json(
-      { error: error?.message || 'Failed to save mind map' },
+      { error: error instanceof Error ? error.message : 'Failed to save mind map' },
       { status: 500 }
     )
   }
