@@ -186,18 +186,66 @@ async function handleGenerateFlashcards(request: NextRequest) {
         textContent = doc.extracted_text || ''
       }
 
+      // If no extracted text but document is RAG-indexed, retrieve text from RAG
+      if ((!textContent || textContent.length === 0) && doc.metadata?.rag_indexed) {
+        logger.info('Document has no extracted_text but is RAG-indexed, retrieving from RAG', {
+          userId,
+          documentId,
+          ragChunkCount: doc.metadata?.rag_chunk_count
+        })
+
+        try {
+          const { getAllChunks } = await import('@/lib/vector-store')
+          const chunks = await getAllChunks(documentId)
+          textContent = chunks.join('\n\n')
+
+          logger.info('Retrieved text from RAG', {
+            userId,
+            documentId,
+            textLength: textContent.length,
+            chunkCount: chunks.length
+          })
+        } catch (ragError) {
+          logger.error('Failed to retrieve text from RAG', ragError, { userId, documentId })
+          return NextResponse.json(
+            {
+              error: "Failed to retrieve document content from vector store. Please try re-uploading the document."
+            },
+            { status: 500 }
+          )
+        }
+      }
+
       if (!textContent || textContent.length === 0) {
         // Check if background extraction is queued
         const isExtractionQueued = doc.metadata?.text_extraction_queued === true
+        const extractionMethod = doc.metadata?.extraction_method || 'none'
 
-        logger.warn('Document has no extracted text', { userId, documentId, isExtractionQueued })
+        logger.warn('Document has no extracted text', {
+          userId,
+          documentId,
+          isExtractionQueued,
+          extractionMethod,
+          fileType: doc.file_type
+        })
+
+        // Provide specific error messages based on extraction status
+        let errorMessage = "Document has no text content."
+
+        if (isExtractionQueued) {
+          errorMessage = "Document is still being processed. Text extraction is happening in the background - please wait a few moments and try again."
+        } else if (extractionMethod.startsWith('failed_')) {
+          // Extraction attempted but failed
+          errorMessage = "Text extraction failed for this document. Please try re-uploading the file, or use a different document format."
+        } else if (doc.file_type?.includes('wordprocessing') || doc.file_type?.includes('msword')) {
+          // DOCX/DOC that should have been extracted
+          errorMessage = "Unable to extract text from this Word document. The file may be corrupted or password-protected. Please try re-uploading or use a PDF instead."
+        } else {
+          errorMessage = "Document has no text content. Please re-upload or try a different document."
+        }
 
         return NextResponse.json(
-          {
-            error: isExtractionQueued
-              ? "Document is still being processed. Text extraction is happening in the background - please wait a few moments and try again."
-              : "Document has no text content. Please re-upload or try a different document."
-          },
+          { error: errorMessage },
           { status: 400 }
         )
       }
@@ -556,6 +604,7 @@ async function handleGenerateFlashcards(request: NextRequest) {
     })
 
     return NextResponse.json({
+      success: true, // Mobile app expects this field
       flashcards: savedFlashcards,
       documentJSON: documentJSON || null,
       textLength: textContent.length,

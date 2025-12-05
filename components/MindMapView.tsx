@@ -595,6 +595,7 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
             template={mindMapData.template || 'hierarchical'}
             templateReason={mindMapData.templateReason}
             mapType={mindMapData.mapType || selectedMapType} // NEW: Pass mind map type for layout
+            isPreviewMode={isPreviewMode} // Hide save button when parent handles saving
             documentText={documentText}
             documentId={documentId} // NEW: Pass documentId for reloading
             onReloadDocumentText={handleReloadDocumentText} // NEW: Reload callback

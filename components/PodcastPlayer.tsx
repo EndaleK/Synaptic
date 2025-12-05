@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Play, Pause, Download, RotateCcw, Volume2, VolumeX, Loader2, BookmarkPlus, BookmarkCheck } from "lucide-react"
+import { Play, Pause, Download, RotateCcw, Volume2, VolumeX, Loader2, BookmarkPlus, BookmarkCheck, Check } from "lucide-react"
 import { formatDetailedTime } from "@/lib/audio-utils"
 import { cn } from "@/lib/utils"
 import { usePodcastStore } from "@/lib/store/usePodcastStore"
+import { useToast } from "@/components/ToastContainer"
 
 export interface TranscriptEntry {
   speaker: 'host_a' | 'host_b'
@@ -35,6 +36,7 @@ export default function PodcastPlayer({
   onRegenerate,
   isRegenerating = false
 }: PodcastPlayerProps) {
+  const toast = useToast()
   const { getPosition, setPosition } = usePodcastStore()
   const audioRef = useRef<HTMLAudioElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -43,7 +45,8 @@ export default function PodcastPlayer({
   const [isMuted, setIsMuted] = useState(false)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [showTranscript, setShowTranscript] = useState(true)
-  const [isSaved, setIsSaved] = useState(true) // Podcasts are auto-saved during generation
+  const [isSaved, setIsSaved] = useState(false) // Start as unsaved for explicit user action
+  const [isDownloading, setIsDownloading] = useState(false)
   const transcriptRef = useRef<HTMLDivElement>(null)
 
   // Load actual audio duration from audio element metadata
@@ -182,21 +185,44 @@ export default function PodcastPlayer({
     }
   }, [activeLineIndex])
 
-  // Download audio
-  const handleDownload = () => {
-    const link = document.createElement('a')
-    link.href = audioUrl
-    link.download = `${title.replace(/[^a-z0-9]/gi, '_')}.mp3`
-    link.click()
+  // Download audio directly to downloads folder without navigation
+  const handleDownload = async () => {
+    if (isDownloading) return
+
+    setIsDownloading(true)
+    try {
+      // Fetch the audio file as a blob
+      const response = await fetch(audioUrl)
+      if (!response.ok) throw new Error('Failed to download audio')
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+
+      // Create a temporary link and trigger download
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${title.replace(/[^a-z0-9]/gi, '_')}.mp3`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      // Clean up the object URL
+      window.URL.revokeObjectURL(url)
+
+      toast.success('Podcast downloaded successfully!')
+    } catch (error) {
+      console.error('Download error:', error)
+      toast.error('Failed to download podcast. Please try again.')
+    } finally {
+      setIsDownloading(false)
+    }
   }
 
-  // Save to library (already saved, but provide visual feedback)
+  // Save to library - podcasts are automatically saved when generated
+  // This provides explicit user confirmation and visual feedback
   const handleSave = () => {
     setIsSaved(true)
-    // Show a brief visual confirmation
-    setTimeout(() => {
-      // Toast or notification could be added here
-    }, 1000)
+    toast.success('Podcast saved to your library!')
   }
 
   return (
@@ -273,30 +299,53 @@ export default function PodcastPlayer({
               {showTranscript ? 'Hide' : 'Show'} Transcript
             </button>
 
-            {/* Download */}
-            <button
-              onClick={handleDownload}
-              className="p-2 text-gray-600 dark:text-gray-400 hover:text-accent-primary transition-colors"
-              title="Download podcast"
-            >
-              <Download className="w-5 h-5" />
-            </button>
-
             {/* Save to Library */}
             <button
               onClick={handleSave}
+              disabled={isSaved}
               className={cn(
-                "p-2 transition-colors",
+                "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
                 isSaved
-                  ? "text-accent-primary"
-                  : "text-gray-600 dark:text-gray-400 hover:text-accent-primary"
+                  ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 cursor-default"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary"
               )}
               title={isSaved ? "Saved to library" : "Save to library"}
             >
               {isSaved ? (
-                <BookmarkCheck className="w-5 h-5" />
+                <>
+                  <Check className="w-4 h-4" />
+                  Saved
+                </>
               ) : (
-                <BookmarkPlus className="w-5 h-5" />
+                <>
+                  <BookmarkPlus className="w-4 h-4" />
+                  Save
+                </>
+              )}
+            </button>
+
+            {/* Download */}
+            <button
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                isDownloading
+                  ? "bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-wait"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-accent-primary/10 dark:hover:bg-accent-primary/20 hover:text-accent-primary"
+              )}
+              title="Download podcast"
+            >
+              {isDownloading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Downloading...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Download
+                </>
               )}
             </button>
 

@@ -38,6 +38,7 @@ interface MindMapViewerProps {
   documentText?: string
   documentId?: string  // NEW: Document ID for reloading document text
   mapType?: 'hierarchical' | 'radial' | 'concept'  // NEW: Mind map type for layout selection
+  isPreviewMode?: boolean  // NEW: Hide save button when parent handles saving
   onNodeClick?: (node: MindMapNode) => void
   onTemplateChange?: (template: TemplateType) => void
   onReloadDocumentText?: () => Promise<void>  // NEW: Callback to reload document text
@@ -123,6 +124,7 @@ export default function MindMapViewer({
   documentText,
   documentId, // NEW: Document ID for reloading
   mapType, // NEW: Mind map type for layout selection
+  isPreviewMode = false, // NEW: Hide save button when parent handles saving
   onNodeClick,
   onTemplateChange,
   onReloadDocumentText // NEW: Reload callback
@@ -962,29 +964,33 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
 
           {/* Save and Export Buttons */}
           <div className="flex gap-1.5">
-            {/* Save Button */}
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className={`flex items-center gap-1 px-2 py-1 border-0 rounded text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                isSaved && !hasUnsavedChanges
-                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                  : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:opacity-90'
-              }`}
-              title={isSaved && !hasUnsavedChanges ? "Mind map saved to library" : "Save mind map to library"}
-            >
-              {isSaved && !hasUnsavedChanges ? (
-                <BookmarkCheck className="w-3 h-3" />
-              ) : (
-                <BookmarkPlus className="w-3 h-3" />
-              )}
-              <span className="hidden sm:inline">
-                {isSaving ? 'Saving...' : isSaved && !hasUnsavedChanges ? 'Saved' : 'Save'}
-              </span>
-            </button>
+            {/* Save Button - Hidden when parent handles saving (preview mode) */}
+            {!isPreviewMode && (
+              <>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className={`flex items-center gap-1 px-2 py-1 border-0 rounded text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isSaved && !hasUnsavedChanges
+                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                      : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:opacity-90'
+                  }`}
+                  title={isSaved && !hasUnsavedChanges ? "Mind map saved to library" : "Save mind map to library"}
+                >
+                  {isSaved && !hasUnsavedChanges ? (
+                    <BookmarkCheck className="w-3 h-3" />
+                  ) : (
+                    <BookmarkPlus className="w-3 h-3" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {isSaving ? 'Saving...' : isSaved && !hasUnsavedChanges ? 'Saved' : 'Save'}
+                  </span>
+                </button>
 
-            {/* Divider */}
-            <div className="w-px bg-gray-300 dark:bg-gray-600"></div>
+                {/* Divider */}
+                <div className="w-px bg-gray-300 dark:bg-gray-600"></div>
+              </>
+            )}
 
             {/* Legend Toggle */}
             <button

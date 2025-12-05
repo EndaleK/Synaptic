@@ -1,16 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Loader2, Sparkles, Zap, Map, Save, Check, GitBranch, Radio, Network } from "lucide-react"
+import { X, Loader2, Sparkles, Save, Check } from "lucide-react"
 import { useRouter } from "next/navigation"
 import PageTopicSelector, { SelectionData } from "./PageTopicSelector"
-import { Document, type MindMapType } from "@/lib/supabase/types"
+import { Document } from "@/lib/supabase/types"
 
 interface ContentSelectionModalProps {
   isOpen: boolean
   onClose: () => void
   document: Document
-  generationType: 'flashcards' | 'podcast' | 'mindmap'
+  generationType: 'flashcards'
 }
 
 const generationConfig = {
@@ -20,20 +20,6 @@ const generationConfig = {
     title: 'Generate Flashcards',
     description: 'Create study flashcards from your selected content',
     emoji: '🎯'
-  },
-  podcast: {
-    icon: Zap,
-    color: 'from-purple-500 to-pink-500',
-    title: 'Generate Podcast',
-    description: 'Convert your content into an AI-narrated audio lesson',
-    emoji: '🎙️'
-  },
-  mindmap: {
-    icon: Map,
-    color: 'from-blue-500 to-cyan-500',
-    title: 'Generate Mind Map',
-    description: 'Create a visual concept map from your content',
-    emoji: '🗺️'
   }
 }
 
@@ -48,10 +34,7 @@ export default function ContentSelectionModal({
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Mind map type selection (only used when generationType === 'mindmap')
-  const [selectedMapType, setSelectedMapType] = useState<MindMapType>('hierarchical')
-
-  // Flashcard count selection (only used when generationType === 'flashcards')
+  // Flashcard count selection
   const [flashcardCount, setFlashcardCount] = useState<number>(20) // Default 20 cards
   const [useAutoCount, setUseAutoCount] = useState<boolean>(true) // Auto-calculate by default
 
@@ -102,30 +85,10 @@ export default function ContentSelectionModal({
       const isRAGIndexed = document.rag_indexed === true
       const isLargeDocument = document.file_size > 10 * 1024 * 1024
 
-      // Call appropriate API based on generation type and document state
-      switch (generationType) {
-        case 'flashcards':
-          // Use RAG endpoint for large/indexed documents, regular endpoint for small documents
-          apiEndpoint = (isRAGIndexed || isLargeDocument) ? '/api/generate-flashcards-rag' : '/api/generate-flashcards'
-          // Pass user-selected count, or undefined for auto-calculation
-          requestBody.count = useAutoCount ? undefined : flashcardCount
-          break
-
-        case 'podcast':
-          // Use RAG endpoint for large/indexed documents
-          apiEndpoint = (isRAGIndexed || isLargeDocument) ? '/api/generate-podcast-rag' : '/api/generate-podcast'
-          requestBody.format = 'deep-dive'
-          requestBody.targetDuration = 10
-          break
-
-        case 'mindmap':
-          // Use RAG endpoint for large/indexed documents
-          apiEndpoint = (isRAGIndexed || isLargeDocument) ? '/api/generate-mindmap-rag' : '/api/generate-mindmap'
-          // Pass mind map type to API
-          requestBody.mapType = selectedMapType
-          console.log('[ContentSelectionModal] ⚠️ Mind map type selected:', selectedMapType)
-          break
-      }
+      // Use RAG endpoint for large/indexed documents, regular endpoint for small documents
+      apiEndpoint = (isRAGIndexed || isLargeDocument) ? '/api/generate-flashcards-rag' : '/api/generate-flashcards'
+      // Pass user-selected count, or undefined for auto-calculation
+      requestBody.count = useAutoCount ? undefined : flashcardCount
 
       console.log(`🚀 Generating ${generationType} from ${selection.type}...`)
       console.log('[ContentSelectionModal] ⚠️ Request body:', JSON.stringify(requestBody, null, 2))
@@ -445,77 +408,6 @@ export default function ContentSelectionModal({
             </div>
           )}
 
-          {/* Mind Map Type Selector (only shown for mind maps) */}
-          {generationType === 'mindmap' && (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-                <Map className="w-4 h-4" />
-                Mind Map Type
-              </h3>
-              <div className="grid grid-cols-3 gap-3">
-                {/* Hierarchical */}
-                <button
-                  onClick={() => setSelectedMapType('hierarchical')}
-                  className={`p-4 rounded-lg border-2 transition-all text-left ${
-                    selectedMapType === 'hierarchical'
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <GitBranch className={`w-5 h-5 ${selectedMapType === 'hierarchical' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`} />
-                    <span className={`font-semibold text-sm ${selectedMapType === 'hierarchical' ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-gray-100'}`}>
-                      Hierarchical
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    Tree structure with clear parent-child relationships
-                  </p>
-                </button>
-
-                {/* Radial */}
-                <button
-                  onClick={() => setSelectedMapType('radial')}
-                  className={`p-4 rounded-lg border-2 transition-all text-left ${
-                    selectedMapType === 'radial'
-                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Radio className={`w-5 h-5 ${selectedMapType === 'radial' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-500'}`} />
-                    <span className={`font-semibold text-sm ${selectedMapType === 'radial' ? 'text-purple-900 dark:text-purple-100' : 'text-gray-900 dark:text-gray-100'}`}>
-                      Radial
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    Circular layout with central focus and radiating branches
-                  </p>
-                </button>
-
-                {/* Concept */}
-                <button
-                  onClick={() => setSelectedMapType('concept')}
-                  className={`p-4 rounded-lg border-2 transition-all text-left ${
-                    selectedMapType === 'concept'
-                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Network className={`w-5 h-5 ${selectedMapType === 'concept' ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`} />
-                    <span className={`font-semibold text-sm ${selectedMapType === 'concept' ? 'text-green-900 dark:text-green-100' : 'text-gray-900 dark:text-gray-100'}`}>
-                      Concept
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    Network with cross-links showing knowledge integration
-                  </p>
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Error Display */}
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
@@ -639,7 +531,7 @@ export default function ContentSelectionModal({
               ) : (
                 <>
                   <span className="text-xl">{config.emoji}</span>
-                  Generate {generationType === 'flashcards' ? 'Flashcards' : generationType === 'podcast' ? 'Podcast' : 'Mind Map'}
+                  Generate Flashcards
                 </>
               )}
             </button>

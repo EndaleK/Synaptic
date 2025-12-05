@@ -34,8 +34,11 @@ export default function SubscriptionStatus() {
   const [isManaging, setIsManaging] = useState(false)
 
   useEffect(() => {
-    fetchProfileAndUsage()
-  }, [])
+    // Only fetch when user is loaded to prevent unnecessary errors
+    if (user) {
+      fetchProfileAndUsage()
+    }
+  }, [user])
 
   const fetchProfileAndUsage = async () => {
     try {

@@ -29,7 +29,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isSaved, setIsSaved] = useState(true) // Flashcards are auto-saved during generation
+  const [isSaved, setIsSaved] = useState(false) // Start as unsaved, user can click to confirm save
   const exportMenuRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -1046,15 +1046,23 @@ ${'='.repeat(50)}`).join('\n')}`
             <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-lg flex items-center justify-center flex-shrink-0 shadow">
               <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </div>
-            <div className="flex-1 min-w-0 flex items-center justify-between gap-3">
-              <h2 className="text-lg md:text-2xl font-bold text-black dark:text-white truncate">
-                Interactive Flashcards
-              </h2>
-              {/* Progress Summary */}
-              {currentCard && hasValidDatabaseId(currentCard.id) && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-                  <span>{cardRepetitions.get(currentCard.id) ?? currentCard.repetitions ?? 0}/3 reviews</span>
-                </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-lg md:text-2xl font-bold text-black dark:text-white truncate">
+                  Interactive Flashcards
+                </h2>
+                {/* Progress Summary */}
+                {currentCard && hasValidDatabaseId(currentCard.id) && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
+                    <span>{cardRepetitions.get(currentCard.id) ?? currentCard.repetitions ?? 0}/3 reviews</span>
+                  </div>
+                )}
+              </div>
+              {/* Document Title */}
+              {currentDocument?.name && (
+                <p className="text-sm text-gray-600 dark:text-gray-400 truncate mt-1">
+                  {currentDocument.name}
+                </p>
               )}
             </div>
           </div>

@@ -6,19 +6,18 @@
  * Actions:
  * 1. Verify file exists in Supabase Storage
  * 2. Get actual file size from storage
- * 3. Mark document as "completed" immediately (FAST UX - 70-80% faster!)
- * 4. For PDFs: Queue async background job for text extraction
- * 5. For non-PDFs: Mark as completed immediately
+ * 3. Mark document as "completed" immediately
+ * 4. For small PDFs (<10MB): Extract text synchronously (ready in 2-5 seconds)
+ * 5. For large PDFs (≥10MB): Queue async background job via Inngest
+ * 6. For DOCX: Extract text synchronously with mammoth
+ * 7. For other files: Mark as completed immediately
  *
- * OPTIMIZATION Strategy (70-80% faster uploads):
- * - ALL documents: Marked as "completed" immediately → User sees document in <1 second
- * - PDFs: Text extraction happens in background via Inngest → Ready for chat/flashcards in 5-15 seconds
- * - ChromaDB: Lazy indexing → Only indexed when user first tries to use document (chat/flashcards)
- * - Result: Upload feels instant, processing happens invisibly in background
- *
- * Previous Strategy (SLOW):
- * - Small PDFs: Synchronous extraction + ChromaDB indexing → 4-18 seconds blocking
- * - Large PDFs: Async processing → 30-60 seconds
+ * PROCESSING Strategy:
+ * - Small PDFs (<10MB): Synchronous extraction → Ready for learning modes in 2-5 seconds
+ * - Large PDFs (≥10MB): Async Inngest processing → Ready in 15-60 seconds
+ * - DOCX files: Synchronous extraction with mammoth → Ready immediately
+ * - ChromaDB: Lazy indexing → Only indexed when user first tries to use document
+ * - Result: Small documents ready instantly, large documents processed in background
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -31,11 +30,12 @@ import { validateUUIDParam } from '@/lib/validation/uuid'
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 minutes (Vercel Pro max) for PDF extraction and ChromaDB indexing
 
-// File size threshold for sync vs async processing
-// Files ≥80MB will use async Inngest processing to avoid timeouts
-// Files <80MB will be processed synchronously with chunked Gemini extraction
-// Note: Chunked Gemini (~15MB chunks, ~30s each) can handle up to ~100MB within 300s timeout
-// Using 80MB threshold for safety margin
+// File size thresholds for processing strategies
+// Small PDFs (<10MB): Synchronous extraction during upload completion (fast, <5 seconds)
+// Large PDFs (≥10MB): Async Inngest processing (if configured) or lazy extraction on first use
+const SMALL_PDF_THRESHOLD = 10 * 1024 * 1024 // 10MB - sync extraction threshold
+
+// Legacy threshold for RAG/chunked processing
 const LARGE_FILE_THRESHOLD = 80 * 1024 * 1024 // 80MB
 
 export async function POST(
@@ -146,37 +146,133 @@ export async function POST(
     let extractionMethod: string = 'none'
 
     if (isPDF) {
-      // All PDFs: Trigger async background processing for text extraction
-      // User sees document immediately, text extraction happens in background
-      console.log(`🚀 Triggering async text extraction for PDF: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
+      // Small PDFs (<10MB): Extract text synchronously for immediate use
+      // Large PDFs (≥10MB): Queue async background processing via Inngest
+      if (actualFileSize < SMALL_PDF_THRESHOLD) {
+        // SMALL PDFs: Extract text synchronously (fast, typically <5 seconds)
+        console.log(`📝 Extracting text from small PDF synchronously: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
+
+        try {
+          // Download file from storage
+          const { data: fileBlob, error: downloadError } = await supabase
+            .storage
+            .from('documents')
+            .download(document.storage_path)
+
+          if (downloadError) {
+            console.error('❌ Failed to download PDF from storage:', downloadError)
+            extractionMethod = 'failed_download'
+          } else if (!fileBlob) {
+            console.error('❌ No file blob returned from storage')
+            extractionMethod = 'failed_no_blob'
+          } else {
+            console.log(`✅ Downloaded ${fileBlob.size} bytes, parsing PDF...`)
+            const arrayBuffer = await fileBlob.arrayBuffer()
+
+            // Create a File object from the blob for parseServerPDF
+            const pdfFile = new File([arrayBuffer], document.file_name, { type: 'application/pdf' })
+
+            // Use server-side PDF parser (pdf-parse with PyMuPDF fallback)
+            const { parseServerPDF } = await import('@/lib/server-pdf-parser')
+            const result = await parseServerPDF(pdfFile)
+
+            if (result.error) {
+              console.error(`❌ PDF parsing error: ${result.error}`)
+              extractionMethod = 'failed_parse'
+            } else if (!result.text || result.text.length === 0) {
+              console.error(`❌ PDF extracted empty text - may be scanned/image-based`)
+              extractionMethod = 'failed_empty'
+            } else {
+              extractedText = result.text
+              hasExtractedText = true
+              extractionMethod = result.method || 'pdf-parse'
+              console.log(`✅ PDF text extracted synchronously: ${result.text.length} characters (method: ${extractionMethod})`)
+            }
+          }
+        } catch (pdfError) {
+          console.error('❌ PDF extraction exception:', pdfError)
+          extractionMethod = 'failed_exception'
+          // Not fatal - document still marked as completed
+        }
+      } else {
+        // LARGE PDFs (≥10MB): Queue async background processing via Inngest
+        console.log(`🚀 Triggering async text extraction for large PDF: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
+
+        try {
+          await inngest.send({
+            name: 'document/process',
+            data: {
+              documentId,
+              userId: profile.id,
+              fileName: document.file_name,
+              fileType: document.file_type,
+              fileSize: actualFileSize,
+              storagePath: document.storage_path
+            }
+          })
+
+          console.log(`✅ Background text extraction job queued for: ${document.file_name}`)
+        } catch (inngestError) {
+          console.error('Failed to queue Inngest job:', inngestError)
+          // Not fatal - document still usable, text extraction will happen on first use (lazy loading)
+        }
+      }
+    } else if (document.file_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+               document.file_type === 'application/msword') {
+      // DOCX/DOC files: Extract text inline (fast enough for immediate processing)
+      console.log(`📝 Extracting text from DOCX: ${document.file_name} (type: ${document.file_type})`)
 
       try {
-        await inngest.send({
-          name: 'document/process',
-          data: {
-            documentId,
-            userId: profile.id,
-            fileName: document.file_name,
-            fileType: document.file_type,
-            fileSize: actualFileSize,
-            storagePath: document.storage_path
-          }
-        })
+        // Download file from storage
+        console.log(`📥 Downloading from storage: ${document.storage_path}`)
+        const { data: fileBlob, error: downloadError } = await supabase
+          .storage
+          .from('documents')
+          .download(document.storage_path)
 
-        console.log(`✅ Background text extraction job queued for: ${document.file_name}`)
-      } catch (inngestError) {
-        console.error('Failed to queue Inngest job:', inngestError)
+        if (downloadError) {
+          console.error('❌ Failed to download DOCX from storage:', downloadError)
+          extractionMethod = 'failed_download'
+        } else if (!fileBlob) {
+          console.error('❌ No file blob returned from storage')
+          extractionMethod = 'failed_no_blob'
+        } else {
+          console.log(`✅ Downloaded ${fileBlob.size} bytes`)
+          const arrayBuffer = await fileBlob.arrayBuffer()
+          const file = new File([arrayBuffer], document.file_name, { type: document.file_type })
+
+          // Extract text using mammoth
+          console.log(`🔍 Parsing DOCX with mammoth...`)
+          const { parseDocument } = await import('@/lib/document-parser')
+          const result = await parseDocument(file)
+
+          if (result.error) {
+            console.error(`❌ DOCX parsing error: ${result.error}`)
+            extractionMethod = 'failed_parse'
+          } else if (!result.text || result.text.length === 0) {
+            console.error(`❌ DOCX extracted empty text`)
+            extractionMethod = 'failed_empty'
+          } else {
+            extractedText = result.text
+            hasExtractedText = true
+            extractionMethod = 'mammoth'
+            console.log(`✅ DOCX text extracted: ${result.text.length} characters`)
+          }
+        }
+      } catch (docxError) {
+        console.error('❌ DOCX extraction exception:', docxError)
+        extractionMethod = 'failed_exception'
         // Not fatal - document still usable, text extraction will happen on first use (lazy loading)
       }
     } else {
-      console.log(`✅ Non-PDF file, marking as completed immediately`)
+      console.log(`✅ Non-PDF/DOCX file, marking as completed immediately`)
     }
 
     // 6. Update document record with processing results
     const updateData: any = {
       file_size: actualFileSize,
       processing_status: processingStatus, // Always 'completed' for fast UX
-      extracted_text: extractedText, // Will be null initially, populated by background job
+      extracted_text: extractedText, // For DOCX: extracted immediately, for PDF: populated by background job
       rag_indexed_at: ragIndexed ? new Date().toISOString() : null,
       rag_chunk_count: ragChunkCount,
       rag_collection_name: ragIndexed ? `doc_${documentId.replace(/[^a-zA-Z0-9]/g, '_')}` : null,
@@ -185,13 +281,20 @@ export async function POST(
         upload_completed_at: new Date().toISOString(),
         actual_file_size: actualFileSize,
         is_large_file: isLargeFile,
-        has_extracted_text: hasExtractedText, // Will be false initially
-        text_extraction_queued: isPDF, // Indicates background job is queued
-        processing_started_at: undefined, // Background job will set this
+        has_extracted_text: hasExtractedText, // True for small PDFs and DOCX (immediate extraction)
+        text_extraction_queued: isPDF && !hasExtractedText && actualFileSize >= SMALL_PDF_THRESHOLD, // Only large PDFs queue background extraction
+        processing_started_at: undefined, // Background job will set this for large PDFs
         processing_completed_at: new Date().toISOString(), // Upload completed immediately
-        extraction_method: isPDF ? 'async_inngest' : 'none', // All PDFs use async extraction now
+        extraction_method: extractionMethod, // 'pdf-parse', 'pymupdf', 'mammoth', 'async_inngest', 'none', or 'failed_*'
+        text_length: extractedText?.length || undefined,
         rag_indexed: ragIndexed, // Will be false, indexing happens lazily
-        optimization_note: 'Fast upload - text extraction happens in background for 70-80% faster UX'
+        optimization_note: isPDF
+          ? (hasExtractedText
+              ? 'Small PDF - text extracted synchronously during upload'
+              : 'Large PDF - text extraction queued for background processing')
+          : hasExtractedText
+            ? 'Text extracted immediately during upload'
+            : 'Fast upload - ready to use'
       }
     }
 
@@ -211,22 +314,29 @@ export async function POST(
     // Track document upload in usage tracking
     console.log('📊 About to track document upload:', { userId, feature: 'documents', fileName: document.file_name })
     await incrementUsage(userId, 'documents')
-    console.log(`✅ Upload completed INSTANTLY for: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
+    console.log(`✅ Upload completed for: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
 
-    if (isPDF) {
-      console.log(`🔄 Text extraction will happen in background - document ready for use immediately`)
+    if (isPDF && hasExtractedText) {
+      console.log(`✅ Small PDF text extracted synchronously - ready for immediate use!`)
+    } else if (isPDF && !hasExtractedText) {
+      console.log(`🔄 Large PDF - text extraction queued for background processing`)
     }
 
-    // 7. Return success response (processing continues in background for PDFs)
+    // 7. Return success response
+    const successMessage = isPDF
+      ? (hasExtractedText
+          ? 'Document uploaded and ready to use!'
+          : 'Document uploaded! Text extraction happening in background.')
+      : 'Document uploaded successfully!'
+
     return NextResponse.json({
       success: true,
       documentId,
       fileName: document.file_name,
       fileSize: actualFileSize,
       processingStatus,
-      message: isPDF
-        ? 'Document uploaded! Text extraction happening in background - you can use it immediately.'
-        : 'Document uploaded successfully!'
+      hasExtractedText,
+      message: successMessage
     })
 
   } catch (error) {

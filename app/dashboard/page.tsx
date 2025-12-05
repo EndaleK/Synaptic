@@ -113,7 +113,7 @@ function DashboardContent() {
   // Modal state for inline document picker flow
   const [selectedDocForModal, setSelectedDocForModal] = useState<Document | null>(null)
   const [contentModalOpen, setContentModalOpen] = useState(false)
-  const [contentModalType, setContentModalType] = useState<'flashcards' | 'podcast' | 'mindmap'>('flashcards')
+  const [contentModalType, setContentModalType] = useState<'flashcards'>('flashcards')
 
   // Track which modes have active content loaded (to distinguish from stale store data)
   const [activeModeDocuments, setActiveModeDocuments] = useState<{
@@ -283,7 +283,8 @@ function DashboardContent() {
       setActiveModeDocuments({
         chat: false,
         podcast: false,
-        mindmap: false
+        mindmap: false,
+        studyguide: false
       })
     }
   }, [currentDocument])
@@ -427,7 +428,35 @@ function DashboardContent() {
       return
     }
 
-    // For Flashcards/Podcast/Mind Map: Set document and open ContentSelectionModal
+    // For Podcast: Go directly to podcast view (has its own format selection)
+    if (mode === 'podcast') {
+      setCurrentDocument({
+        id: document.id,
+        name: document.file_name,
+        content: document.extracted_text || '',
+        fileType: document.file_type,
+        storagePath: document.storage_path
+      })
+      setActiveModeDocuments(prev => ({ ...prev, podcast: true }))
+      setActiveMode('podcast')
+      return
+    }
+
+    // For Mind Map: Go directly to mindmap view (has its own type selection)
+    if (mode === 'mindmap') {
+      setCurrentDocument({
+        id: document.id,
+        name: document.file_name,
+        content: document.extracted_text || '',
+        fileType: document.file_type,
+        storagePath: document.storage_path
+      })
+      setActiveModeDocuments(prev => ({ ...prev, mindmap: true }))
+      setActiveMode('mindmap')
+      return
+    }
+
+    // For Flashcards: Set document and open ContentSelectionModal
     setCurrentDocument({
       id: document.id,
       name: document.file_name,
@@ -436,7 +465,7 @@ function DashboardContent() {
       storagePath: document.storage_path
     })
     setSelectedDocForModal(document)
-    setContentModalType(mode as 'flashcards' | 'podcast' | 'mindmap')
+    setContentModalType('flashcards')
     setContentModalOpen(true)
   }
 

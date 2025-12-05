@@ -64,7 +64,12 @@ export default function DocumentSidebar({
       }
 
       const data = await response.json()
-      setRecentEssays(data.essays || [])
+      // Filter out default "Untitled Essay" documents that haven't been modified
+      // Only show essays that have content (word_count > 0) or a custom title
+      const filteredEssays = (data.essays || []).filter((essay: Essay) =>
+        essay.word_count > 0 || (essay.title && essay.title !== 'Untitled Essay')
+      )
+      setRecentEssays(filteredEssays)
     } catch (error) {
       console.error("Failed to fetch recent essays:", error)
       setRecentEssays([])
@@ -90,13 +95,21 @@ export default function DocumentSidebar({
 
     try {
       setDeletingEssayId(essayId)
+      console.log('[DocumentSidebar] Deleting essay:', essayId)
+
       const response = await fetch(`/api/essays/${essayId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include' // Ensure cookies are sent
       })
 
+      const data = await response.json()
+      console.log('[DocumentSidebar] Delete response:', response.status, data)
+
       if (!response.ok) {
-        throw new Error('Failed to delete essay')
+        throw new Error(data.error || 'Failed to delete essay')
       }
+
+      toast.success('Essay deleted successfully')
 
       // Refresh essay list
       await fetchRecentEssays()
@@ -122,7 +135,7 @@ export default function DocumentSidebar({
           className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-lg font-semibold shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200"
         >
           <Plus className="w-5 h-5" />
-          <span>New Essay</span>
+          <span>New</span>
         </button>
       </div>
 
@@ -174,11 +187,11 @@ export default function DocumentSidebar({
                   </div>
                 </button>
 
-                {/* Delete Button */}
+                {/* Delete Button - Always visible */}
                 <button
                   onClick={(e) => handleDeleteEssay(essay.id, e)}
                   disabled={deletingEssayId === essay.id}
-                  className="absolute top-3 right-3 p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  className="absolute top-3 right-3 p-1.5 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
                   title="Delete essay"
                 >
                   {deletingEssayId === essay.id ? (

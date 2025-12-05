@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Mic, Loader2, AlertCircle, Sparkles, History } from "lucide-react"
+import { Mic, Loader2, AlertCircle, Sparkles, History, Play } from "lucide-react"
 import PodcastPlayer, { type TranscriptEntry } from "./PodcastPlayer"
 import { useToast } from "./ToastContainer"
 import type { PodcastFormat } from "@/lib/podcast-generator"
@@ -34,6 +34,7 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [progress, setProgress] = useState(0)
   const [progressMessage, setProgressMessage] = useState('')
+  const [showGenerationForm, setShowGenerationForm] = useState(true) // Always show generation form first
 
   // Content selection state
   const [contentType, setContentType] = useState<'full' | 'chapters' | 'pageRange' | 'smartTopics'>('full')
@@ -201,6 +202,7 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
                   setProgressMessage(event.message)
                 } else if (event.type === 'complete') {
                   setPodcast(event.data.podcast)
+                  setShowGenerationForm(false) // Show the player with new podcast
                   toast.success('Podcast generated successfully!')
                 } else if (event.type === 'error') {
                   throw new Error(event.error)
@@ -215,6 +217,7 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
         // Fallback to regular JSON response (for backwards compatibility)
         const data = await response.json()
         setPodcast(data.podcast)
+        setShowGenerationForm(false) // Show the player with new podcast
         toast.success('Podcast generated successfully!')
       }
 
@@ -243,9 +246,19 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
     )
   }
 
-  if (podcast) {
+  // Show podcast player when user chooses to listen to existing podcast
+  if (podcast && !showGenerationForm) {
     return (
       <div className="space-y-6">
+        {/* Back to generation form button */}
+        <button
+          onClick={() => setShowGenerationForm(true)}
+          className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-accent-primary transition-colors"
+        >
+          <Sparkles className="w-4 h-4" />
+          Generate New Podcast
+        </button>
+
         {/* Show existing podcast count */}
         {existingPodcasts.length > 1 && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
@@ -266,7 +279,9 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
           description={podcast.description}
           duration={podcast.duration}
           transcript={podcast.transcript}
-          onRegenerate={handleRegenerate}
+          onRegenerate={() => {
+            setShowGenerationForm(true)
+          }}
           isRegenerating={isGenerating}
         />
       </div>
@@ -295,6 +310,27 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
 
         {/* Content */}
         <div className="p-4 sm:p-6 space-y-4">
+          {/* Existing Podcasts Banner */}
+          {existingPodcasts.length > 0 && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <History className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  <p className="text-sm text-green-800 dark:text-green-200">
+                    You have {existingPodcasts.length} existing podcast{existingPodcasts.length > 1 ? 's' : ''} for this document
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowGenerationForm(false)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  <Play className="w-4 h-4" />
+                  Listen
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Content Selection */}
           <div>
             <label className="block text-sm font-semibold text-black dark:text-white mb-2">

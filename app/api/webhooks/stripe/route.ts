@@ -97,13 +97,14 @@ export async function POST(req: NextRequest) {
           message: 'Event already processed'
         })
       }
-    } catch (error: unknown) {
+    } catch (error) {
       // If error is "not found", that's expected - continue processing
       // If error is database issue, log warning but continue anyway (fail-safe)
-      if (error?.code !== 'PGRST116') { // PGRST116 = not found
+      const pgError = error as { code?: string; message?: string }
+      if (pgError?.code !== 'PGRST116') { // PGRST116 = not found
         logger.warn('Failed to check webhook deduplication, continuing anyway', {
           eventId: event.id,
-          error: error?.message
+          error: pgError?.message
         })
       }
     }
@@ -418,11 +419,12 @@ export async function POST(req: NextRequest) {
         eventId: event.id,
         eventType: event.type
       })
-    } catch (error: unknown) {
+    } catch (error) {
       // Log error but don't fail the webhook (already processed successfully)
+      const dbError = error as { message?: string }
       logger.warn('Failed to record webhook event for deduplication', {
         eventId: event.id,
-        error: error?.message
+        error: dbError?.message
       })
     }
 
@@ -434,17 +436,18 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true })
 
-  } catch (error: unknown) {
+  } catch (error) {
     const duration = Date.now() - startTime
+    const err = error as Error
     logger.error('Webhook processing error', error, {
-      errorMessage: error?.message
+      errorMessage: err?.message
     })
     logger.api('POST', '/api/webhooks/stripe', 500, duration, {
-      error: error?.message
+      error: err?.message
     })
 
     return NextResponse.json(
-      { error: 'Webhook processing failed', message: error?.message },
+      { error: 'Webhook processing failed', message: err?.message },
       { status: 500 }
     )
   }
