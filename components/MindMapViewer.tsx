@@ -42,6 +42,7 @@ interface MindMapViewerProps {
   onNodeClick?: (node: MindMapNode) => void
   onTemplateChange?: (template: TemplateType) => void
   onReloadDocumentText?: () => Promise<void>  // NEW: Callback to reload document text
+  onSave?: () => Promise<void>  // Callback for initial save when no mindmapId exists
 }
 
 interface NodeDetail {
@@ -127,7 +128,8 @@ export default function MindMapViewer({
   isPreviewMode = false, // NEW: Hide save button when parent handles saving
   onNodeClick,
   onTemplateChange,
-  onReloadDocumentText // NEW: Reload callback
+  onReloadDocumentText, // NEW: Reload callback
+  onSave // Callback for initial save when no mindmapId exists
 }: MindMapViewerProps) {
   // Next.js router for navigation
   const router = useRouter()
@@ -675,10 +677,29 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
   // PHASE 3.4: Export as SVG with embedded legend
   // Handle save mind map
   const handleSave = useCallback(async () => {
+    // If no mindmapId, use the onSave callback for initial save
     if (!mindmapId) {
-      console.warn('Cannot save: no mindmap ID provided')
-      setSaveMessage('Mind map is already saved')
-      setTimeout(() => setSaveMessage(null), 2000)
+      if (onSave) {
+        setIsSaving(true)
+        setSaveMessage(null)
+        try {
+          await onSave()
+          setIsSaved(true)
+          setHasUnsavedChanges(false)
+          setSaveMessage('Mind map saved successfully!')
+          setTimeout(() => setSaveMessage(null), 3000)
+        } catch (error) {
+          console.error('Error saving mind map:', error)
+          setSaveMessage('Failed to save mind map')
+          setTimeout(() => setSaveMessage(null), 3000)
+        } finally {
+          setIsSaving(false)
+        }
+      } else {
+        console.warn('Cannot save: no mindmap ID and no onSave callback provided')
+        setSaveMessage('Mind map is already saved')
+        setTimeout(() => setSaveMessage(null), 2000)
+      }
       return
     }
 
@@ -686,7 +707,7 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
     setSaveMessage(null)
 
     try {
-      // Save current mind map state to database
+      // Update existing mind map in database
       const response = await fetch(`/api/mindmaps/${mindmapId}`, {
         method: 'PATCH',
         headers: {
@@ -729,7 +750,7 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
     } finally {
       setIsSaving(false)
     }
-  }, [mindmapId, title, flowNodes, flowEdges, currentTemplate])
+  }, [mindmapId, title, flowNodes, flowEdges, currentTemplate, onSave])
 
   const handleExportSVG = useCallback(async () => {
     const flowElement = document.querySelector('.react-flow') as HTMLElement

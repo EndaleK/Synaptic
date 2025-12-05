@@ -66,7 +66,6 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
   const [progressMessage, setProgressMessage] = useState('')
   const [selectedMapType, setSelectedMapType] = useState<MindMapType>('hierarchical')
   const [isPreviewMode, setIsPreviewMode] = useState(false) // NEW: Track if showing unsaved preview
-  const [isSaving, setIsSaving] = useState(false) // NEW: Track saving state
 
   // Content selection state
   const [contentType, setContentType] = useState<'full' | 'chapters' | 'pageRange' | 'smartTopics'>('full')
@@ -400,60 +399,51 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
   const handleSaveToLibrary = async () => {
     if (!mindMapData) return
 
-    setIsSaving(true)
-    try {
-      // Use mapType from mindMapData (set by API) or fall back to selectedMapType (from regenerate)
-      const mapTypeToSave = (mindMapData as any).mapType || selectedMapType
+    // Use mapType from mindMapData (set by API) or fall back to selectedMapType (from regenerate)
+    const mapTypeToSave = (mindMapData as any).mapType || selectedMapType
 
-      const response = await fetch('/api/mindmaps/save', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          documentId,
-          title: mindMapData.title,
-          mapType: mapTypeToSave,
-          nodes: mindMapData.nodes,
-          edges: mindMapData.edges,
-          layoutData: {
-            ...mindMapData.metadata,
-            template: mindMapData.template,
-            templateReason: mindMapData.templateReason
-          },
-          documentText: documentText || null // Include document text for node expansion feature
-        })
+    const response = await fetch('/api/mindmaps/save', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        documentId,
+        title: mindMapData.title,
+        mapType: mapTypeToSave,
+        nodes: mindMapData.nodes,
+        edges: mindMapData.edges,
+        layoutData: {
+          ...mindMapData.metadata,
+          template: mindMapData.template,
+          templateReason: mindMapData.templateReason
+        },
+        documentText: documentText || null // Include document text for node expansion feature
       })
+    })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to save mind map')
-      }
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Failed to save mind map')
+    }
 
-      const data = await response.json()
-      console.log('[MindMapView] Mind map saved successfully:', data.mindMap.id)
+    const data = await response.json()
+    console.log('[MindMapView] Mind map saved successfully:', data.mindMap.id)
 
-      // Update the mind map data with the saved ID
-      setMindMapData({
-        ...mindMapData,
-        id: data.mindMap.id
-      })
+    // Update the mind map data with the saved ID
+    setMindMapData({
+      ...mindMapData,
+      id: data.mindMap.id
+    })
 
-      // Exit preview mode
-      setIsPreviewMode(false)
+    // Exit preview mode
+    setIsPreviewMode(false)
 
-      // Refresh the existing mind maps list
-      const refreshResponse = await fetch(`/api/mindmaps?documentId=${documentId}`)
-      if (refreshResponse.ok) {
-        const refreshData = await refreshResponse.json()
-        setExistingMindMaps(refreshData.mindmaps || [])
-        console.log('[MindMapView] Refreshed mind maps list:', refreshData.mindmaps?.length, 'maps')
-      }
-
-    } catch (err) {
-      console.error('Failed to save mind map:', err)
-      setError(err instanceof Error ? err.message : 'Failed to save mind map')
-    } finally {
-      setIsSaving(false)
+    // Refresh the existing mind maps list
+    const refreshResponse = await fetch(`/api/mindmaps?documentId=${documentId}`)
+    if (refreshResponse.ok) {
+      const refreshData = await refreshResponse.json()
+      setExistingMindMaps(refreshData.mindmaps || [])
+      console.log('[MindMapView] Refreshed mind maps list:', refreshData.mindmaps?.length, 'maps')
     }
   }
 
@@ -560,23 +550,6 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
-            {isPreviewMode && (
-              <button
-                onClick={handleSaveToLibrary}
-                disabled={isSaving}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-all shadow-md disabled:opacity-50"
-              >
-                {isSaving ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-                <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save to Library'}</span>
-                <span className="sm:hidden">{isSaving ? 'Saving...' : 'Save'}</span>
-              </button>
-            )}
             <button
               onClick={handleRegenerate}
               disabled={isGenerating}
@@ -598,10 +571,10 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
             template={mindMapData.template || 'hierarchical'}
             templateReason={mindMapData.templateReason}
             mapType={mindMapData.mapType || selectedMapType} // NEW: Pass mind map type for layout
-            isPreviewMode={isPreviewMode} // Hide save button when parent handles saving
             documentText={documentText}
             documentId={documentId} // NEW: Pass documentId for reloading
             onReloadDocumentText={handleReloadDocumentText} // NEW: Reload callback
+            onSave={isPreviewMode ? handleSaveToLibrary : undefined} // Pass save callback for unsaved mind maps
           />
         </div>
       </div>
