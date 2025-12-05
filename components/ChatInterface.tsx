@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain, ChevronDown, Trash2, Home, ArrowLeft, File as FileIcon } from "lucide-react"
+import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain, ChevronDown, Trash2, Home, ArrowLeft, File as FileIcon, Image as ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 import { useDocumentStore, useUIStore } from "@/lib/store/useStore"
@@ -10,6 +10,10 @@ import { useToast } from "./ToastContainer"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
 import SectionNavigator from "./SectionNavigator"
 import type { DocumentSection } from "@/lib/document-parser/section-detector"
+
+// Dynamic imports for voice and image features
+const VoiceChat = dynamic(() => import("./chat/VoiceChat"), { ssr: false })
+const DocumentImageGallery = dynamic(() => import("./chat/DocumentImageGallery"), { ssr: false })
 
 const PDFViewer = dynamic(() => import("./PDFViewer"), {
   ssr: false,
@@ -75,6 +79,9 @@ export default function ChatInterface() {
   const [teachingMode, setTeachingMode] = useState<TeachingMode>('mixed')
   const [showModeDropdown, setShowModeDropdown] = useState(false)
   const [mobileView, setMobileView] = useState<'document' | 'chat'>('chat') // Mobile view toggle - default to chat
+  const [lastAssistantMessage, setLastAssistantMessage] = useState<string>('') // For TTS
+  const [showImageGallery, setShowImageGallery] = useState(false) // For image gallery toggle
+  const [isAssistantSpeaking, setIsAssistantSpeaking] = useState(false) // Voice output state
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const modeDropdownRef = useRef<HTMLDivElement>(null)
@@ -637,14 +644,16 @@ export default function ChatInterface() {
         console.log('[ChatInterface] Document was indexed with', data.chunks, 'chunks')
       }
 
+      const responseContent = data.response || "I apologize, but I'm having trouble processing your request."
       const assistantMessage: Message = {
         id: generateId() + '-response',
-        content: data.response || "I apologize, but I'm having trouble processing your request.",
+        content: responseContent,
         type: "assistant",
         timestamp: generateTimestamp()
       }
 
       setMessages(prev => [...prev, assistantMessage])
+      setLastAssistantMessage(responseContent) // For TTS
     } catch (error) {
       console.error("[ChatInterface] Chat error:", error)
 
@@ -888,7 +897,23 @@ export default function ChatInterface() {
               </div>
 
               {isPDFFile ? (
-                <PDFViewer file={chatDocument.file} className="h-full" />
+                <div className="h-full flex flex-col">
+                  {/* PDF Image Gallery - Collapsible panel above PDF viewer */}
+                  {currentDocument?.id && (
+                    <DocumentImageGallery
+                      documentId={currentDocument.id}
+                      className="flex-shrink-0"
+                      onImageSelect={(image) => {
+                        // Reference image in chat input
+                        setInputMessage(prev =>
+                          prev + (prev ? ' ' : '') + `[Referring to image on page ${image.pageNumber}] `
+                        )
+                        setMobileView('chat')
+                      }}
+                    />
+                  )}
+                  <PDFViewer file={chatDocument.file} className="flex-1 min-h-0" />
+                </div>
               ) : (
                 <div className="h-full overflow-auto p-4 lg:p-6">
                   <div className="max-w-3xl mx-auto">
@@ -1129,12 +1154,23 @@ export default function ChatInterface() {
 
               {/* Input Area */}
               <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 pb-20 md:pb-4">
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-end">
+                  {/* Voice Chat - Mic button and TTS controls */}
+                  <VoiceChat
+                    onTranscription={(text) => {
+                      setInputMessage(prev => prev + (prev ? ' ' : '') + text)
+                    }}
+                    textToSpeak={lastAssistantMessage}
+                    isAssistantSpeaking={isAssistantSpeaking}
+                    onSpeakingChange={setIsAssistantSpeaking}
+                    disabled={chatDocument.isProcessing || isLoading}
+                  />
+
                   <textarea
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Ask a question about the document..."
+                    placeholder="Ask a question about the document... (or use voice)"
                     disabled={chatDocument.isProcessing}
                     autoComplete="off"
                     autoCapitalize="sentences"
