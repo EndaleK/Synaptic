@@ -232,13 +232,38 @@ async function handleGetStudyStatistics(req: NextRequest) {
       'flashcards',
       () => supabase
         .from('flashcards')
-        .select('times_reviewed, times_correct')
+        .select('times_reviewed, times_correct, last_reviewed_at')
         .eq('user_id', userProfileId)
     )
 
     if (flashcardsError) {
       logger.error('Failed to fetch flashcard statistics', flashcardsError, { userId })
       // Continue with empty data rather than failing entirely
+    }
+
+    // Debug: Log flashcard statistics data
+    if (flashcards && flashcards.length > 0) {
+      const sampleCards = flashcards.slice(0, 3)
+      logger.debug('Flashcard statistics raw data', {
+        userId,
+        userProfileId,
+        flashcardCount: flashcards.length,
+        sampleCards,
+        totalTimesReviewed: flashcards.reduce((sum, f) => sum + (f.times_reviewed || 0), 0)
+      })
+    } else {
+      // Debug: Check if there are ANY flashcards in the table and what user_ids exist
+      const { data: allFlashcards } = await supabase
+        .from('flashcards')
+        .select('user_id, times_reviewed')
+        .limit(5)
+
+      logger.warn('No flashcards found for user', {
+        userId,
+        userProfileId,
+        userProfileIdType: typeof userProfileId,
+        existingFlashcardSample: allFlashcards?.map(f => ({ user_id: f.user_id, type: typeof f.user_id })) || []
+      })
     }
 
     // Track flashcard metrics
@@ -254,50 +279,51 @@ async function handleGetStudyStatistics(req: NextRequest) {
     trackApiMetric('stats.total_reviews', totalFlashcardsReviewed, 'none')
     trackApiMetric('stats.average_accuracy', averageAccuracy, 'none')
 
-    // Flashcards reviewed today and this week (using count aggregation for performance)
-    // Try review_queue first, fallback to flashcards table if review_queue doesn't exist
-    let { count: flashcardsReviewedToday, error: reviewsTodayError } = await supabase
-      .from('review_queue')
+    // Flashcards reviewed today and this week
+    // Query flashcards table directly to count cards reviewed today/this week
+    // Note: This counts unique cards reviewed, not total review instances
+    // For total review count, we use the times_reviewed field aggregation above
+
+    let flashcardsReviewedToday = 0
+    let flashcardsReviewedWeek = 0
+
+    // Get cards reviewed today (count of unique cards)
+    const { count: todayCount, error: reviewsTodayError } = await supabase
+      .from('flashcards')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userProfileId)
       .gte('last_reviewed_at', todayStart.toISOString())
 
-    // If review_queue doesn't exist (table not found), use flashcards table instead
-    if (reviewsTodayError && reviewsTodayError.code === '42P01') {
-      logger.warn('review_queue table not found, using flashcards table for review stats', { userId })
-      const result = await supabase
-        .from('flashcards')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userProfileId)
-        .gte('last_reviewed_at', todayStart.toISOString())
-      flashcardsReviewedToday = result.count
-      reviewsTodayError = result.error
-    }
-
-    if (reviewsTodayError && reviewsTodayError.code !== '42P01') {
+    if (reviewsTodayError) {
       logger.error('Failed to fetch today\'s flashcard reviews', reviewsTodayError, { userId })
+    } else {
+      flashcardsReviewedToday = todayCount || 0
     }
 
-    let { count: flashcardsReviewedWeek, error: reviewsWeekError } = await supabase
-      .from('review_queue')
+    // Get cards reviewed this week (count of unique cards)
+    const { count: weekCount, error: reviewsWeekError } = await supabase
+      .from('flashcards')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userProfileId)
       .gte('last_reviewed_at', weekStart.toISOString())
 
-    // If review_queue doesn't exist (table not found), use flashcards table instead
-    if (reviewsWeekError && reviewsWeekError.code === '42P01') {
-      const result = await supabase
-        .from('flashcards')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userProfileId)
-        .gte('last_reviewed_at', weekStart.toISOString())
-      flashcardsReviewedWeek = result.count
-      reviewsWeekError = result.error
+    if (reviewsWeekError) {
+      logger.error('Failed to fetch week\'s flashcard reviews', reviewsWeekError, { userId })
+    } else {
+      flashcardsReviewedWeek = weekCount || 0
     }
 
-    if (reviewsWeekError && reviewsWeekError.code !== '42P01') {
-      logger.error('Failed to fetch week\'s flashcard reviews', reviewsWeekError, { userId })
-    }
+    // Debug logging for flashcard statistics
+    logger.debug('Flashcard review statistics query', {
+      userId,
+      userProfileId,
+      todayStart: todayStart.toISOString(),
+      weekStart: weekStart.toISOString(),
+      flashcardsReviewedToday,
+      flashcardsReviewedWeek,
+      totalFlashcardsReviewed,
+      totalCardsCount: flashcards?.length || 0
+    })
 
     // Generate heatmap data (with timezone support)
     const heatmapData = []

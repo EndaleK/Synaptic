@@ -82,11 +82,22 @@ export async function POST(req: NextRequest) {
       logger.error('Database save error for mind map', dbError, {
         userId,
         documentId,
+        userProfileId: profile.id,
+        userProfileIdType: typeof profile.id,
         errorCode: dbError.code,
-        errorMessage: dbError.message
+        errorMessage: dbError.message,
+        errorDetails: dbError.details,
+        errorHint: dbError.hint
+      })
+      // Also log to console for immediate visibility
+      console.error('❌ Mind map save error:', {
+        errorCode: dbError.code,
+        errorMessage: dbError.message,
+        userProfileId: profile.id,
+        documentId
       })
       return NextResponse.json(
-        { error: 'Failed to save mind map to database' },
+        { error: 'Failed to save mind map to database', details: dbError.message },
         { status: 500 }
       )
     }

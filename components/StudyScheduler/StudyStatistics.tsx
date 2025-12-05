@@ -133,12 +133,21 @@ export default function StudyStatistics() {
       .sort((a, b) => b.value - a.value) // Sort by time spent (descending)
   }
 
-  const getStreakColor = (count: number): string => {
-    if (count === 0) return 'bg-gray-100 dark:bg-gray-800'
-    if (count < 30) return 'bg-green-200 dark:bg-green-900'
-    if (count < 60) return 'bg-green-400 dark:bg-green-700'
-    if (count < 90) return 'bg-green-600 dark:bg-green-500'
-    return 'bg-green-700 dark:bg-green-400'
+  // GitHub-style contribution colors
+  const getContributionColor = (minutes: number): string => {
+    if (minutes === 0) return 'bg-[#ebedf0] dark:bg-[#161b22]'
+    if (minutes < 15) return 'bg-[#9be9a8] dark:bg-[#0e4429]'
+    if (minutes < 30) return 'bg-[#40c463] dark:bg-[#006d32]'
+    if (minutes < 60) return 'bg-[#30a14e] dark:bg-[#26a641]'
+    return 'bg-[#216e39] dark:bg-[#39d353]'
+  }
+
+  const getContributionLevel = (minutes: number): number => {
+    if (minutes === 0) return 0
+    if (minutes < 15) return 1
+    if (minutes < 30) return 2
+    if (minutes < 60) return 3
+    return 4
   }
 
   const generateAIInsights = () => {
@@ -228,163 +237,196 @@ export default function StudyStatistics() {
     return insights.slice(0, 3)
   }
 
+  const [hoveredDay, setHoveredDay] = useState<{
+    date: string
+    minutes: number
+    x: number
+    y: number
+  } | null>(null)
+
   const renderHeatmap = () => {
     if (!stats?.heatmapData) return null
 
-    // GitHub-style contribution grid: rows = days of week, columns = weeks
-    const monthLabels: { weekIndex: number; month: string; span: number }[] = []
+    // Create a map for quick lookup
+    const dataMap = new Map(stats.heatmapData.map(d => [d.date, d]))
 
-    // Organize data into a grid: [week][dayOfWeek]
-    const grid: Array<Array<typeof stats.heatmapData[0] | null>> = []
+    // Calculate total contributions for the displayed period
+    const today = new Date()
 
-    // Get the first day to determine alignment
-    const firstDate = new Date(stats.heatmapData[0].date)
-    const firstDayOfWeek = firstDate.getDay() // 0 = Sunday, 1 = Monday, etc.
+    // Generate array of last 40 days (each day = one column)
+    const days: Array<{ date: Date; minutes: number; dateStr: string }> = []
+    for (let i = 39; i >= 0; i--) {
+      const date = new Date(today)
+      date.setDate(date.getDate() - i)
+      const isoStr = date.toISOString().split('T')[0]
+      const data = dataMap.get(isoStr)
+      days.push({
+        date: new Date(date),
+        minutes: data?.minutes || 0,
+        dateStr: isoStr
+      })
+    }
 
-    // Start week on Sunday (GitHub style)
-    const adjustedFirstDay = firstDayOfWeek
+    // Count study sessions in the last 40 days
+    const totalSessions = days.filter(d => d.minutes > 0).length
 
-    let currentWeek: Array<typeof stats.heatmapData[0] | null> = new Array(7).fill(null)
-    let currentDayInWeek = adjustedFirstDay
-    let currentMonth = ''
-    let monthStartWeek = 0
-
-    stats.heatmapData.forEach((day, index) => {
-      const date = new Date(day.date)
-      const monthName = date.toLocaleDateString('en-US', { month: 'short' })
-
-      // Track month changes for labels
-      if (monthName !== currentMonth) {
-        if (currentMonth && monthLabels.length > 0) {
-          // Update the span of the previous month
-          monthLabels[monthLabels.length - 1].span = grid.length - monthStartWeek
-        }
-        // Only add month label if there are at least 2 weeks to show it
-        if (index === 0 || stats.heatmapData.length - index >= 14) {
-          monthLabels.push({ weekIndex: grid.length, month: monthName, span: 1 })
-          monthStartWeek = grid.length
-        }
-        currentMonth = monthName
-      }
-
-      currentWeek[currentDayInWeek] = day
-      currentDayInWeek++
-
-      // Start new week on Saturday (when currentDayInWeek reaches 7)
-      if (currentDayInWeek === 7) {
-        grid.push([...currentWeek])
-        currentWeek = new Array(7).fill(null)
-        currentDayInWeek = 0
+    // Track month changes for labels
+    const monthLabels: { dayIndex: number; month: string }[] = []
+    let lastMonth = -1
+    days.forEach((day, idx) => {
+      const month = day.date.getMonth()
+      if (month !== lastMonth) {
+        monthLabels.push({
+          dayIndex: idx,
+          month: day.date.toLocaleDateString('en-US', { month: 'short' })
+        })
+        lastMonth = month
       }
     })
 
-    // Push remaining days
-    if (currentWeek.some(d => d !== null)) {
-      grid.push(currentWeek)
-    }
-
-    // Update last month span
-    if (monthLabels.length > 0) {
-      monthLabels[monthLabels.length - 1].span = grid.length - monthStartWeek
-    }
-
     return (
       <div className="w-full">
-        <div className="flex flex-col gap-1">
-          {/* Month labels - GitHub style */}
-          <div className="flex gap-[2px] pl-[28px] mb-1">
-            {monthLabels.map((label, idx) => (
-              <div
-                key={idx}
-                className="text-[11px] text-gray-600 dark:text-gray-400"
-                style={{
-                  width: `${label.span * 12}px`, // 10px square + 2px gap
-                  textAlign: 'left'
-                }}
-              >
-                {label.month}
-              </div>
-            ))}
-          </div>
+        {/* Contribution count header */}
+        <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+          <span className="font-medium text-gray-900 dark:text-white">{totalSessions} study sessions</span>
+          {' '}in the last 40 days
+        </div>
 
-          {/* Grid with day labels - GitHub style */}
-          <div className="flex gap-[2px]">
-            {/* Day of week labels - only Mon, Wed, Fri visible */}
-            <div className="flex flex-col gap-[2px] justify-start pr-[3px]">
-              {[
-                { label: 'Mon', visible: true },
-                { label: 'Tue', visible: false },
-                { label: 'Wed', visible: true },
-                { label: 'Thu', visible: false },
-                { label: 'Fri', visible: true },
-                { label: 'Sat', visible: false },
-                { label: 'Sun', visible: false }
-              ].map((day, idx) => (
-                <div
-                  key={idx}
-                  className="h-[10px] text-[11px] text-gray-500 dark:text-gray-400 flex items-center justify-end"
-                  style={{ width: '23px', opacity: day.visible ? 1 : 0 }}
-                >
-                  {day.label}
-                </div>
-              ))}
+        <div className="relative overflow-x-auto">
+          <div className="inline-block min-w-full">
+            {/* Month labels */}
+            <div className="flex mb-2">
+              {monthLabels.map((label, idx) => {
+                // Calculate width based on days until next month label
+                const nextLabelIndex = monthLabels[idx + 1]?.dayIndex || 40
+                const span = nextLabelIndex - label.dayIndex
+
+                return (
+                  <div
+                    key={idx}
+                    className="text-xs text-gray-500 dark:text-gray-400"
+                    style={{
+                      width: `${span * 17}px`, // 14px cell + 3px gap
+                      minWidth: span >= 3 ? 'auto' : '0',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {span >= 3 ? label.month : ''}
+                  </div>
+                )
+              })}
             </div>
 
-            {/* Contribution grid */}
-            <div className="flex gap-[2px]">
-              {grid.map((week, weekIndex) => (
-                <div key={weekIndex} className="flex flex-col gap-[2px]">
-                  {week.map((day, dayIndex) => {
-                    if (!day) {
-                      return (
-                        <div
-                          key={dayIndex}
-                          className="w-[10px] h-[10px] rounded-[1px] bg-gray-100 dark:bg-gray-800"
-                          style={{
-                            outline: '1px solid rgba(27, 31, 35, 0.06)',
-                            outlineOffset: '-1px'
-                          }}
-                        />
-                      )
-                    }
+            {/* Single row of 40 day cells */}
+            <div className="flex gap-[3px]">
+              {days.map((day, dayIndex) => {
+                const isToday = day.date.toDateString() === today.toDateString()
+                const dateDisplay = day.date.toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric'
+                })
+                const fullDateStr = day.date.toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric'
+                })
 
-                    const date = new Date(day.date)
-                    const today = new Date()
-                    const isToday = date.toDateString() === today.toDateString()
-
-                    return (
-                      <div
-                        key={dayIndex}
-                        className={`
-                          w-[10px] h-[10px] rounded-[1px] transition-all cursor-pointer
-                          ${getStreakColor(day.minutes)}
-                          ${isToday ? 'ring-1 ring-blue-500 dark:ring-blue-400' : ''}
-                          hover:ring-1 hover:ring-gray-800 dark:hover:ring-gray-200
-                        `}
-                        style={{
-                          outline: day.minutes === 0 ? '1px solid rgba(27, 31, 35, 0.06)' : 'none',
-                          outlineOffset: '-1px'
-                        }}
-                        title={`${date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}: ${day.minutes} min`}
-                      />
-                    )
-                  })}
-                </div>
-              ))}
+                return (
+                  <div
+                    key={dayIndex}
+                    className="flex flex-col items-center gap-1"
+                  >
+                    {/* Day cell */}
+                    <div
+                      className={`
+                        w-[14px] h-[14px] rounded-sm cursor-pointer transition-all
+                        ${getContributionColor(day.minutes)}
+                        ${isToday ? 'ring-2 ring-offset-1 ring-blue-500 dark:ring-blue-400' : ''}
+                        hover:ring-1 hover:ring-gray-400 dark:hover:ring-gray-500
+                      `}
+                      style={{
+                        outline: day.minutes === 0 ? '1px solid rgba(27, 31, 35, 0.06)' : 'none',
+                        outlineOffset: '-1px'
+                      }}
+                      onMouseEnter={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect()
+                        setHoveredDay({
+                          date: fullDateStr,
+                          minutes: day.minutes,
+                          x: rect.left + rect.width / 2,
+                          y: rect.top
+                        })
+                      }}
+                      onMouseLeave={() => setHoveredDay(null)}
+                    />
+                  </div>
+                )
+              })}
             </div>
-          </div>
 
-          {/* Legend - GitHub style */}
-          <div className="flex items-center justify-end gap-1 mt-2 text-xs text-gray-600 dark:text-gray-400">
-            <span className="mr-1">Less</span>
-            <div className="w-[10px] h-[10px] rounded-[1px] bg-gray-100 dark:bg-gray-800" style={{ outline: '1px solid rgba(27, 31, 35, 0.06)', outlineOffset: '-1px' }} />
-            <div className="w-[10px] h-[10px] rounded-[1px] bg-green-200 dark:bg-green-900" />
-            <div className="w-[10px] h-[10px] rounded-[1px] bg-green-400 dark:bg-green-700" />
-            <div className="w-[10px] h-[10px] rounded-[1px] bg-green-600 dark:bg-green-500" />
-            <div className="w-[10px] h-[10px] rounded-[1px] bg-green-700 dark:bg-green-400" />
-            <span className="ml-1">More</span>
+            {/* Date labels below - show every 7th day */}
+            <div className="flex gap-[3px] mt-2">
+              {days.map((day, dayIndex) => {
+                const showLabel = dayIndex % 7 === 0 || dayIndex === 39
+                return (
+                  <div
+                    key={dayIndex}
+                    className="w-[14px] flex-shrink-0 text-center"
+                  >
+                    {showLabel && (
+                      <span className="text-[9px] text-gray-500 dark:text-gray-400">
+                        {day.date.getDate()}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center justify-end gap-1 mt-4 text-xs text-gray-500 dark:text-gray-400">
+              <span className="mr-2">Less</span>
+              <div className="w-[11px] h-[11px] rounded-sm bg-[#ebedf0] dark:bg-[#161b22]" style={{ outline: '1px solid rgba(27, 31, 35, 0.06)', outlineOffset: '-1px' }} />
+              <div className="w-[11px] h-[11px] rounded-sm bg-[#9be9a8] dark:bg-[#0e4429]" />
+              <div className="w-[11px] h-[11px] rounded-sm bg-[#40c463] dark:bg-[#006d32]" />
+              <div className="w-[11px] h-[11px] rounded-sm bg-[#30a14e] dark:bg-[#26a641]" />
+              <div className="w-[11px] h-[11px] rounded-sm bg-[#216e39] dark:bg-[#39d353]" />
+              <span className="ml-2">More</span>
+            </div>
           </div>
         </div>
+
+        {/* GitHub-style tooltip */}
+        {hoveredDay && (
+          <div
+            className="fixed z-50 pointer-events-none"
+            style={{
+              left: hoveredDay.x,
+              top: hoveredDay.y - 10,
+              transform: 'translate(-50%, -100%)'
+            }}
+          >
+            <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1.5 rounded-md shadow-lg whitespace-nowrap">
+              {hoveredDay.minutes > 0 ? (
+                <span className="font-semibold">{hoveredDay.minutes} minutes</span>
+              ) : (
+                <span>No study activity</span>
+              )}
+              <span className="text-gray-300 dark:text-gray-400"> on {hoveredDay.date}</span>
+            </div>
+            {/* Tooltip arrow */}
+            <div
+              className="absolute left-1/2 -translate-x-1/2 w-0 h-0"
+              style={{
+                borderLeft: '6px solid transparent',
+                borderRight: '6px solid transparent',
+                borderTop: '6px solid rgb(17 24 39)'
+              }}
+            />
+          </div>
+        )}
       </div>
     )
   }
@@ -748,18 +790,21 @@ export default function StudyStatistics() {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Pie Chart */}
+              {/* Pie Chart with Labels */}
               <div className="flex items-center justify-center">
-                <ResponsiveContainer width="100%" height={250}>
+                <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
                       data={getModeData()}
                       cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
+                      cy="45%"
+                      innerRadius={45}
+                      outerRadius={75}
                       paddingAngle={2}
                       dataKey="value"
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      label={((props: any) => props.percent >= 0.05 ? `${Math.round(props.percent * 100)}%` : '') as any}
+                      labelLine={false}
                     >
                       {getModeData().map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -772,33 +817,42 @@ export default function StudyStatistics() {
                         borderRadius: '8px',
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                       }}
-                      formatter={(value: number) => `${value} min`}
+                      formatter={(value: number) => [`${value} min`, 'Time']}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      height={50}
+                      iconType="circle"
+                      iconSize={10}
+                      formatter={(value: string) => (
+                        <span className="text-xs text-gray-700 dark:text-gray-300 ml-1">{value}</span>
+                      )}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
 
-              {/* Mode Statistics */}
-              <div className="space-y-4">
+              {/* Mode Statistics - Scrollable & Compact */}
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
                 {getModeData().map((mode) => {
                   const total = getModeData().reduce((sum, m) => sum + m.value, 0)
                   const percentage = total > 0 ? Math.round((mode.value / total) * 100) : 0
 
                   return (
-                    <div key={mode.key} className={`${mode.bgColor} rounded-xl p-4 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600 transition-all`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl">{mode.icon}</span>
-                          <span className="font-semibold text-gray-900 dark:text-white">{mode.name}</span>
+                    <div key={mode.key} className={`${mode.bgColor} rounded-lg p-2.5 border border-transparent hover:border-gray-300 dark:hover:border-gray-600 transition-all`}>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base">{mode.icon}</span>
+                          <span className="font-medium text-sm text-gray-900 dark:text-white">{mode.name}</span>
                         </div>
                         <div className="text-right">
-                          <div className="text-lg font-bold text-gray-900 dark:text-white">{mode.value} min</div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400">{percentage}%</div>
+                          <div className="text-sm font-bold text-gray-900 dark:text-white">{mode.value} min</div>
+                          <div className="text-[10px] text-gray-600 dark:text-gray-400">{percentage}%</div>
                         </div>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                         <div
-                          className="h-2 rounded-full transition-all duration-500"
+                          className="h-1.5 rounded-full transition-all duration-500"
                           style={{
                             width: `${percentage}%`,
                             backgroundColor: mode.color
@@ -814,18 +868,22 @@ export default function StudyStatistics() {
         </div>
       )}
 
-      {/* Activity Heatmap */}
+      {/* Activity Heatmap - Last 30 days */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Calendar className="w-5 h-5 text-accent-primary" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Activity Heatmap
-            </h3>
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Activity Heatmap
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                Your study activity over the last 40 days
+              </p>
+            </div>
           </div>
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            Last {timeRange === 'week' ? '7 days' : timeRange === 'month' ? '30 days' : '365 days'}
-          </span>
         </div>
         {renderHeatmap()}
       </div>
