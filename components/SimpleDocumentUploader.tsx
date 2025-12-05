@@ -30,7 +30,8 @@ const MAX_FILE_SIZE = 500 * 1024 * 1024 // 500MB
 const ALLOWED_TYPES = [
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'text/plain'
+  'text/plain',
+  'text/markdown'
 ]
 
 export default function SimpleDocumentUploader({
@@ -52,9 +53,10 @@ export default function SimpleDocumentUploader({
     const selectedFile = e.target.files?.[0]
     if (!selectedFile) return
 
-    // Validate file type
-    if (!ALLOWED_TYPES.includes(selectedFile.type)) {
-      setError('Invalid file type. Please upload PDF, DOCX, or TXT files.')
+    // Validate file type (also check .md extension since browsers may report as text/plain)
+    const isMdFile = selectedFile.name.toLowerCase().endsWith('.md')
+    if (!ALLOWED_TYPES.includes(selectedFile.type) && !isMdFile) {
+      setError('Invalid file type. Please upload PDF, DOCX, TXT, or MD files.')
       return
     }
 
@@ -255,12 +257,12 @@ export default function SimpleDocumentUploader({
                 Drop your file here or click to browse
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Supports PDF, DOCX, TXT up to 500MB
+                Supports PDF, DOCX, TXT, MD up to 500MB
               </p>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.docx,.txt"
+                accept=".pdf,.docx,.txt,.md"
                 onChange={handleFileChange}
                 className="hidden"
               />

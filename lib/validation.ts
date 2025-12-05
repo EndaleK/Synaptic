@@ -17,6 +17,7 @@ export const FileUploadSchema = z.object({
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
     'application/msword', // .doc
     'text/plain',
+    'text/markdown', // .md
     'application/json',
   ]),
 })
@@ -123,7 +124,8 @@ export function validateFileExtension(fileName: string, mimeType: string): boole
     'application/pdf': ['pdf'],
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['docx'],
     'application/msword': ['doc'],
-    'text/plain': ['txt'],
+    'text/plain': ['txt', 'md'], // .md files may be reported as text/plain by some browsers
+    'text/markdown': ['md'],
     'application/json': ['json'],
   }
 

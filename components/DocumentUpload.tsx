@@ -260,11 +260,11 @@ export default function DocumentUpload({
                         type="file"
                         className="hidden"
                         onChange={handleFileChange}
-                        accept=".pdf,.txt,.doc,.docx,.json"
+                        accept=".pdf,.txt,.doc,.docx,.json,.md"
                       />
 
                       <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                        Supported formats: PDF, TXT, DOC, DOCX, JSON
+                        Supported formats: PDF, TXT, DOC, DOCX, JSON, MD
                       </p>
                     </div>
                   </div>

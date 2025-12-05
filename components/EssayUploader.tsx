@@ -177,7 +177,7 @@ export default function EssayUploader({ onUploadSuccess, onUploadError }: EssayU
         >
           <input
             type="file"
-            accept=".pdf,.docx,.doc,.txt"
+            accept=".pdf,.docx,.doc,.txt,.md"
             onChange={handleFileInputChange}
             className="hidden"
             id="essay-file-input"

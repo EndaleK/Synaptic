@@ -54,9 +54,11 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
     if (!file) return
 
     // Validate file type
-    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain']
-    if (!allowedTypes.includes(file.type)) {
-      setUploadError('Please upload a PDF, DOCX, or TXT file')
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'text/markdown']
+    // Also check for .md files that browsers may report as text/plain
+    const isMdFile = file.name.toLowerCase().endsWith('.md')
+    if (!allowedTypes.includes(file.type) && !isMdFile) {
+      setUploadError('Please upload a PDF, DOCX, TXT, or MD file')
       return
     }
 
@@ -503,7 +505,7 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept=".pdf,.docx,.txt"
+                        accept=".pdf,.docx,.txt,.md"
                         onChange={handleFileSelect}
                         className="hidden"
                         id="document-upload-input"
@@ -514,7 +516,7 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                       >
                         <Upload className="w-12 h-12 text-amber-400 mb-3" />
                         <p className="text-gray-900 dark:text-white font-medium mb-1">Click to upload document</p>
-                        <p className="text-sm text-gray-500 dark:text-zinc-400">PDF, DOCX, or TXT (max 10MB)</p>
+                        <p className="text-sm text-gray-500 dark:text-zinc-400">PDF, DOCX, TXT, or MD (max 10MB)</p>
                       </label>
                       {uploadError && (
                         <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/50 rounded-lg flex items-start gap-2">
