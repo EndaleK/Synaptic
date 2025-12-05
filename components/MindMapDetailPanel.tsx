@@ -222,6 +222,20 @@ export default function MindMapDetailPanel({
           ) : nodeDetails ? (
             // Loaded Content
             <>
+              {/* Reload Button - Show at top if document text is missing and reload is available */}
+              {nodeDetails.canReload && onReloadDocumentText && (
+                <div className="mb-4">
+                  <button
+                    onClick={handleReload}
+                    disabled={isReloading}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isReloading ? 'animate-spin' : ''}`} />
+                    {isReloading ? 'Loading Document Text...' : 'Reload Document Text'}
+                  </button>
+                </div>
+              )}
+
               {/* Expanded Explanation */}
               <section>
                 <div className={`flex items-center gap-2 mb-4 ${panelState === 'compact' ? 'mb-3' : 'mb-4'}`}>
@@ -237,20 +251,6 @@ export default function MindMapDetailPanel({
                     {nodeDetails.expandedExplanation}
                   </p>
                 </div>
-
-                {/* Reload Button - Show if document text is missing and reload is available */}
-                {nodeDetails.canReload && onReloadDocumentText && (
-                  <div className="mt-4">
-                    <button
-                      onClick={handleReload}
-                      disabled={isReloading}
-                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <RefreshCw className={`w-4 h-4 ${isReloading ? 'animate-spin' : ''}`} />
-                      {isReloading ? 'Loading Document Text...' : 'Reload Document Text'}
-                    </button>
-                  </div>
-                )}
               </section>
 
               {/* Quotes from Source */}

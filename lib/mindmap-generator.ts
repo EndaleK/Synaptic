@@ -42,6 +42,132 @@ interface GenerateMindMapOptions {
 }
 
 /**
+ * Attempt to recover valid JSON from a truncated or malformed response
+ * Uses multiple strategies to extract usable mind map data
+ */
+function attemptJsonRecovery(responseText: string): { title?: string; nodes?: any[]; edges?: any[] } | null {
+  console.log('[MindMap] Attempting JSON recovery...')
+
+  // Strategy 1: Find the last complete node/edge and truncate there
+  let text = responseText.trim()
+
+  // Remove markdown code blocks if present
+  text = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+
+  // Strategy 2: Try to extract just the nodes array if edges are corrupted
+  const nodesMatch = text.match(/"nodes"\s*:\s*\[([\s\S]*?)\]/)
+  const edgesMatch = text.match(/"edges"\s*:\s*\[([\s\S]*?)(\]|}|$)/)
+  const titleMatch = text.match(/"title"\s*:\s*"([^"]*)"/)
+
+  if (nodesMatch) {
+    console.log('[MindMap] Found nodes array, attempting partial recovery...')
+
+    try {
+      // Extract and parse nodes
+      const nodesStr = nodesMatch[1]
+      // Find complete node objects (ending with })
+      const nodeObjects: any[] = []
+
+      // Use regex to find complete JSON objects
+      const nodeRegex = /\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g
+      const matches = nodesStr.match(nodeRegex)
+
+      if (matches) {
+        for (const match of matches) {
+          try {
+            const node = JSON.parse(match)
+            if (node.id !== undefined && node.label) {
+              nodeObjects.push(node)
+            }
+          } catch {
+            // Skip malformed nodes
+          }
+        }
+      }
+
+      if (nodeObjects.length > 0) {
+        console.log(`[MindMap] Recovered ${nodeObjects.length} nodes`)
+
+        // Try to extract edges similarly
+        const edgeObjects: any[] = []
+        if (edgesMatch) {
+          const edgesStr = edgesMatch[1]
+          const edgeMatches = edgesStr.match(/\{[^{}]*\}/g)
+
+          if (edgeMatches) {
+            for (const match of edgeMatches) {
+              try {
+                const edge = JSON.parse(match)
+                if ((edge.from || edge.source) && (edge.to || edge.target)) {
+                  edgeObjects.push(edge)
+                }
+              } catch {
+                // Skip malformed edges
+              }
+            }
+          }
+          console.log(`[MindMap] Recovered ${edgeObjects.length} edges`)
+        }
+
+        return {
+          title: titleMatch ? titleMatch[1] : 'Mind Map',
+          nodes: nodeObjects,
+          edges: edgeObjects
+        }
+      }
+    } catch (e) {
+      console.log('[MindMap] Strategy 2 (partial extraction) failed:', e)
+    }
+  }
+
+  // Strategy 3: Try aggressive bracket balancing
+  try {
+    let balanced = text
+
+    // Count brackets
+    const openBraces = (balanced.match(/\{/g) || []).length
+    const closeBraces = (balanced.match(/\}/g) || []).length
+    const openBrackets = (balanced.match(/\[/g) || []).length
+    const closeBrackets = (balanced.match(/\]/g) || []).length
+    const quotes = (balanced.match(/"/g) || []).length
+
+    // Close any open string
+    if (quotes % 2 !== 0) {
+      balanced += '"'
+    }
+
+    // Close brackets/braces
+    for (let i = 0; i < openBrackets - closeBrackets; i++) {
+      balanced += ']'
+    }
+    for (let i = 0; i < openBraces - closeBraces; i++) {
+      balanced += '}'
+    }
+
+    // Try to find and extract JSON object
+    const jsonStart = balanced.indexOf('{')
+    if (jsonStart >= 0) {
+      balanced = balanced.substring(jsonStart)
+
+      try {
+        const parsed = JSON.parse(balanced)
+        if (parsed.nodes && Array.isArray(parsed.nodes)) {
+          console.log('[MindMap] Strategy 3 (bracket balancing) successful')
+          return parsed
+        }
+      } catch {
+        // Bracket balancing didn't work
+      }
+    }
+  } catch (e) {
+    console.log('[MindMap] Strategy 3 (bracket balancing) failed:', e)
+  }
+
+  console.log('[MindMap] All recovery strategies failed')
+  return null
+}
+
+/**
  * Generate type-specific system prompt for mind map generation
  */
 function getSystemPromptForMapType(mapType: MindMapType, maxNodes: number, maxDepth: number): string {
@@ -695,41 +821,43 @@ IMPORTANT: Your response must be ONLY a JSON object with "title", "nodes" (array
       console.error("Response end (last 500 chars):", responseText.substring(Math.max(0, responseText.length - 500)))
       console.error("Parse error:", parseError)
 
-      // Try to recover by fixing common JSON issues
-      let fixedText = responseText;
+      // ROBUST JSON RECOVERY: Try multiple strategies to fix truncated/malformed JSON
+      const recovered = attemptJsonRecovery(responseText)
+      if (recovered) {
+        console.log(`[MindMap] ✅ JSON recovery successful! Recovered ${recovered.nodes?.length || 0} nodes, ${recovered.edges?.length || 0} edges`)
 
-      // If truncated mid-array, try closing it
-      if (responseText.includes('"edges"') && !responseText.trim().endsWith('}')) {
-        console.log("Attempting to fix truncated JSON...");
-        fixedText = responseText.trim();
+        // Return the recovered mind map data
+        const validatedNodes: MindMapNode[] = (recovered.nodes || []).map((node: any, index: number) => ({
+          id: String(node.id || `node_${index}`),
+          label: String(node.label || 'Untitled'),
+          level: typeof node.level === 'number' ? node.level : 0,
+          description: node.description || '',
+          category: node.category || 'concept'
+        }))
 
-        // Close any open string
-        const openQuotes = (fixedText.match(/"/g) || []).length;
-        if (openQuotes % 2 !== 0) {
-          fixedText += '"';
-        }
+        const validatedEdges: MindMapEdge[] = (recovered.edges || [])
+          .filter((edge: any) => edge.from && edge.to)
+          .map((edge: any, index: number) => ({
+            id: edge.id ? String(edge.id) : `edge_${index}`,
+            from: String(edge.from ?? edge.source),
+            to: String(edge.to ?? edge.target),
+            relationship: edge.relationship || 'contains'
+          }))
 
-        // Close the edges array if needed
-        if (!fixedText.includes(']}')) {
-          fixedText += ']}';
-        }
+        const maxDepthFound = Math.max(...validatedNodes.map(n => n.level), 0)
+        const categories = Array.from(new Set(validatedNodes.map(n => n.category).filter(Boolean)))
 
-        // Close the main object
-        if (!fixedText.endsWith('}')) {
-          fixedText += '}';
-        }
-
-        try {
-          const recovered = JSON.parse(fixedText);
-          console.log("Successfully recovered truncated JSON!");
-          // Continue with recovered data but with reduced nodes
-          if (recovered.nodes && recovered.edges) {
-            // Re-run through validation
-            responseText = JSON.stringify(recovered);
-            throw new Error("RETRY_PARSE"); // Signal to retry parsing
+        return {
+          title: recovered.title || "Mind Map",
+          nodes: validatedNodes,
+          edges: validatedEdges,
+          template: selectedTemplate,
+          templateReason: 'Recovered from truncated response',
+          metadata: {
+            totalNodes: validatedNodes.length,
+            maxDepth: maxDepthFound,
+            categories: categories as string[]
           }
-        } catch (retryError) {
-          console.error("Recovery failed:", retryError);
         }
       }
 

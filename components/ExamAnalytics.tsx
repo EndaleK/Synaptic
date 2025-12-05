@@ -281,7 +281,7 @@ export default function ExamAnalytics({ examId }: ExamAnalyticsProps) {
                 </BarChart>
               </ResponsiveContainer>
 
-              <div className="mt-3 space-y-1.5">
+              <div className="mt-3 space-y-1.5 max-h-64 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
                 {topicPerformance.map((topic, index) => (
                   <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <div className="flex-1">
