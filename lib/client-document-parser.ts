@@ -2,6 +2,7 @@ import mammoth from "mammoth"
 
 interface ParseResult {
   text: string
+  html?: string  // HTML content with preserved structure (for DOCX)
   pageCount?: number
   error?: string
 }
@@ -73,16 +74,39 @@ async function parseDocxFile(file: File): Promise<ParseResult> {
     console.log(`Parsing DOCX file: ${file.name}`)
     const arrayBuffer = await file.arrayBuffer()
 
-    // Mammoth.js accepts arrayBuffer directly in browser environment
-    const result = await mammoth.extractRawText({ arrayBuffer })
+    // Use convertToHtml to preserve document structure (headings, bold, italic, lists)
+    const htmlResult = await mammoth.convertToHtml({ arrayBuffer }, {
+      // Style mapping to preserve semantic structure
+      styleMap: [
+        "p[style-name='Heading 1'] => h1:fresh",
+        "p[style-name='Heading 2'] => h2:fresh",
+        "p[style-name='Heading 3'] => h3:fresh",
+        "p[style-name='Title'] => h1:fresh",
+        "p[style-name='Subtitle'] => h2:fresh",
+        "b => strong",
+        "i => em",
+        "u => u"
+      ]
+    })
 
-    console.log(`DOCX extraction result: ${result.value.length} characters`)
+    // Also extract raw text for fallback/word count
+    const textResult = await mammoth.extractRawText({ arrayBuffer })
 
-    if (!result.value || result.value.trim().length === 0) {
+    console.log(`DOCX extraction result: ${htmlResult.value.length} HTML chars, ${textResult.value.length} text chars`)
+
+    if (!textResult.value || textResult.value.trim().length === 0) {
       return { text: "", error: "DOCX file appears to be empty or contains no extractable text" }
     }
 
-    return { text: result.value }
+    // Log any conversion warnings
+    if (htmlResult.messages.length > 0) {
+      console.log('DOCX conversion messages:', htmlResult.messages)
+    }
+
+    return {
+      text: textResult.value,
+      html: htmlResult.value  // Preserve structure for rich text editors
+    }
   } catch (error) {
     console.error("DOCX parsing error:", error)
     return { text: "", error: `Failed to parse DOCX: ${error instanceof Error ? error.message : "Unknown error"}` }
@@ -94,16 +118,33 @@ async function parseDocFile(file: File): Promise<ParseResult> {
     console.log(`Parsing DOC file: ${file.name}`)
     const arrayBuffer = await file.arrayBuffer()
 
-    // Mammoth.js accepts arrayBuffer directly in browser environment
-    const result = await mammoth.extractRawText({ arrayBuffer })
+    // Use convertToHtml to preserve document structure
+    const htmlResult = await mammoth.convertToHtml({ arrayBuffer }, {
+      styleMap: [
+        "p[style-name='Heading 1'] => h1:fresh",
+        "p[style-name='Heading 2'] => h2:fresh",
+        "p[style-name='Heading 3'] => h3:fresh",
+        "p[style-name='Title'] => h1:fresh",
+        "p[style-name='Subtitle'] => h2:fresh",
+        "b => strong",
+        "i => em",
+        "u => u"
+      ]
+    })
 
-    console.log(`DOC extraction result: ${result.value.length} characters`)
+    // Also extract raw text for fallback/word count
+    const textResult = await mammoth.extractRawText({ arrayBuffer })
 
-    if (!result.value || result.value.trim().length === 0) {
+    console.log(`DOC extraction result: ${htmlResult.value.length} HTML chars, ${textResult.value.length} text chars`)
+
+    if (!textResult.value || textResult.value.trim().length === 0) {
       return { text: "", error: "DOC file appears to be empty or contains no extractable text" }
     }
 
-    return { text: result.value }
+    return {
+      text: textResult.value,
+      html: htmlResult.value
+    }
   } catch (error) {
     console.error("DOC parsing error:", error)
     return { text: "", error: `Failed to parse DOC: ${error instanceof Error ? error.message : "Unknown error"}` }

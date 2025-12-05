@@ -94,16 +94,45 @@ Do NOT include markdown code blocks, explanations, or any other text. Just pure 
 
     let variations: string[]
     try {
-      const parsed = JSON.parse(completion.content || '{}')
+      let content = completion.content || ''
+
+      // Strip markdown code blocks if present (```json ... ``` or ``` ... ```)
+      const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
+      if (codeBlockMatch) {
+        content = codeBlockMatch[1].trim()
+      }
+
+      // Try to extract JSON object if there's extra text around it
+      const jsonMatch = content.match(/\{[\s\S]*"variations"[\s\S]*\}/)
+      if (jsonMatch) {
+        content = jsonMatch[0]
+      }
+
+      const parsed = JSON.parse(content)
       variations = parsed.variations || []
 
       if (!Array.isArray(variations) || variations.length === 0) {
-        throw new Error('No variations returned')
+        // Fallback: If AI returned just text without JSON structure, use it as a single variation
+        if (completion.content && completion.content.trim().length > 0) {
+          // Clean up any remaining markdown or quotes
+          let fallbackText = completion.content.trim()
+          fallbackText = fallbackText.replace(/^```[\s\S]*?```$/gm, '').trim()
+          fallbackText = fallbackText.replace(/^["']|["']$/g, '').trim()
+
+          if (fallbackText.length > 0 && fallbackText !== text) {
+            variations = [fallbackText]
+            logger.debug('Used fallback text extraction', { userId })
+          } else {
+            throw new Error('No variations returned')
+          }
+        } else {
+          throw new Error('No variations returned')
+        }
       }
     } catch (parseError) {
       logger.error('Failed to parse paraphrase response', parseError, {
         userId,
-        response: completion.content
+        response: completion.content?.substring(0, 500) // Log first 500 chars for debugging
       })
       return NextResponse.json(
         { error: 'Failed to parse AI response. Please try again.' },

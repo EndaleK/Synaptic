@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, ChangeEvent } from "react"
-import { Clock, FileText, Link as LinkIcon, Youtube, Loader2, AlertCircle, Upload, Sparkles, Download, Zap, CheckCircle, X } from "lucide-react"
+import { Clock, FileText, Link as LinkIcon, Youtube, Loader2, AlertCircle, Upload, Sparkles, Download, Zap, CheckCircle, X, ListChecks } from "lucide-react"
 import PodcastPlayer, { type TranscriptEntry } from "./PodcastPlayer"
 import { useToast } from "./ToastContainer"
 
@@ -21,6 +21,7 @@ interface SummaryData {
   transcript: TranscriptEntry[]
   inputType: 'document' | 'url' | 'youtube'
   source: string
+  keyTakeaways?: string[]
 }
 
 export default function QuickSummaryView({ documentId, documentName }: QuickSummaryViewProps) {
@@ -279,16 +280,16 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
   }
 
   return (
-    <div className="h-full flex flex-col bg-zinc-950">
+    <div className="h-full flex flex-col bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-amber-950/30 dark:to-gray-900">
       {/* Header */}
-      <div className="bg-zinc-900/50 border-b border-amber-500/20 p-4 sm:p-6">
+      <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm border-b border-amber-200 dark:border-amber-500/20 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-amber-500/10 rounded-lg">
-            <Clock className="w-6 h-6 text-amber-400" />
+          <div className="p-2 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg shadow-lg shadow-amber-500/20">
+            <Clock className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-white">Quick Summary</h1>
-            <p className="text-sm text-zinc-400">Get the gist in 5 minutes - fast, focused, and energetic</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Quick Summary</h1>
+            <p className="text-sm text-gray-600 dark:text-zinc-400">Get the gist in 5 minutes - fast, focused, and energetic</p>
           </div>
         </div>
       </div>
@@ -299,9 +300,9 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
 
           {/* Input Type Selector */}
           {!summary && (
-            <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-6">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-400" />
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-gray-700 shadow-lg shadow-amber-100/50 dark:shadow-none p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-500" />
                 Choose Your Source
               </h2>
 
@@ -311,8 +312,8 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                   onClick={() => setInputType('document')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                     inputType === 'document'
-                      ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30'
-                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
+                      : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
                   }`}
                   aria-label="Select document input"
                 >
@@ -323,8 +324,8 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                   onClick={() => setInputType('url')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                     inputType === 'url'
-                      ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30'
-                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
+                      : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
                   }`}
                   aria-label="Select URL input"
                 >
@@ -335,8 +336,8 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                   onClick={() => setInputType('youtube')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                     inputType === 'youtube'
-                      ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30'
-                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
+                      : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
                   }`}
                   aria-label="Select YouTube input"
                 >
@@ -349,13 +350,13 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
               {inputType === 'document' && (
                 <div className="space-y-4">
                   {selectedDocumentId ? (
-                    <div className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <CheckCircle className="w-5 h-5 text-green-400" />
+                          <CheckCircle className="w-5 h-5 text-green-500" />
                           <div>
-                            <p className="text-white font-medium">{selectedDocumentName}</p>
-                            <p className="text-xs text-zinc-500">Ready for summary</p>
+                            <p className="text-gray-900 dark:text-white font-medium">{selectedDocumentName}</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-500">Ready for summary</p>
                           </div>
                         </div>
                         <button
@@ -366,25 +367,25 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                               fileInputRef.current.value = ''
                             }
                           }}
-                          className="text-sm text-zinc-400 hover:text-white transition-colors"
+                          className="text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-white transition-colors"
                         >
                           Change
                         </button>
                       </div>
                     </div>
                   ) : isUploading ? (
-                    <div className="p-6 bg-zinc-800/50 rounded-lg border border-zinc-700">
+                    <div className="p-6 bg-amber-50 dark:bg-zinc-800/50 rounded-lg border border-amber-200 dark:border-zinc-700">
                       <div className="flex items-center gap-3 mb-3">
-                        <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
-                        <p className="text-white font-medium">Uploading document...</p>
+                        <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                        <p className="text-gray-900 dark:text-white font-medium">Uploading document...</p>
                       </div>
-                      <div className="w-full bg-zinc-700 rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-full h-2 overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-300"
+                          className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-300"
                           style={{ width: `${uploadProgress}%` }}
                         />
                       </div>
-                      <p className="text-sm text-zinc-400 mt-2">{uploadProgress}% complete</p>
+                      <p className="text-sm text-gray-500 dark:text-zinc-400 mt-2">{uploadProgress}% complete</p>
                     </div>
                   ) : (
                     <div>
@@ -398,16 +399,16 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                       />
                       <label
                         htmlFor="document-upload-input"
-                        className="flex flex-col items-center justify-center w-full p-8 bg-zinc-800/30 border-2 border-dashed border-zinc-700 rounded-lg cursor-pointer hover:bg-zinc-800/50 hover:border-amber-500/50 transition-all"
+                        className="flex flex-col items-center justify-center w-full p-8 bg-amber-50/50 dark:bg-zinc-800/30 border-2 border-dashed border-amber-300 dark:border-zinc-700 rounded-lg cursor-pointer hover:bg-amber-100/50 dark:hover:bg-zinc-800/50 hover:border-amber-400 dark:hover:border-amber-500/50 transition-all"
                       >
-                        <Upload className="w-12 h-12 text-zinc-500 mb-3" />
-                        <p className="text-white font-medium mb-1">Click to upload document</p>
-                        <p className="text-sm text-zinc-400">PDF, DOCX, or TXT (max 10MB)</p>
+                        <Upload className="w-12 h-12 text-amber-400 mb-3" />
+                        <p className="text-gray-900 dark:text-white font-medium mb-1">Click to upload document</p>
+                        <p className="text-sm text-gray-500 dark:text-zinc-400">PDF, DOCX, or TXT (max 10MB)</p>
                       </label>
                       {uploadError && (
-                        <div className="mt-3 p-3 bg-red-900/20 border border-red-500/50 rounded-lg flex items-start gap-2">
-                          <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                          <p className="text-sm text-red-200">{uploadError}</p>
+                        <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/50 rounded-lg flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                          <p className="text-sm text-red-600 dark:text-red-200">{uploadError}</p>
                         </div>
                       )}
                     </div>
@@ -418,7 +419,7 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
               {/* URL Input */}
               {inputType === 'url' && (
                 <div className="space-y-2">
-                  <label htmlFor="url-input" className="text-sm font-medium text-zinc-400">
+                  <label htmlFor="url-input" className="text-sm font-medium text-gray-600 dark:text-zinc-400">
                     Article or Web Page URL
                   </label>
                   <input
@@ -427,20 +428,20 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://example.com/article (not PDF links)"
-                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                     aria-label="Enter web page URL"
                   />
-                  <div className="p-3 bg-amber-900/20 border border-amber-500/30 rounded-lg">
-                    <p className="text-xs text-amber-200 mb-2">
+                  <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-500/30 rounded-lg">
+                    <p className="text-xs text-amber-700 dark:text-amber-200 mb-2">
                       <strong>⚠️ Known Limitation:</strong> URL extraction has compatibility issues
                     </p>
-                    <ul className="text-xs text-amber-200 space-y-1 ml-4">
+                    <ul className="text-xs text-amber-600 dark:text-amber-200 space-y-1 ml-4">
                       <li>• <strong>For PDFs (including arXiv):</strong> Download and use Document tab</li>
                       <li>• <strong>For articles:</strong> May work, but Document tab is more reliable</li>
                       <li>• <strong>Alternative:</strong> Copy text and paste into a .txt file</li>
                     </ul>
                   </div>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-gray-500 dark:text-zinc-500">
                     📝 <strong>Recommendation:</strong> Use Document or YouTube tabs for best results
                   </p>
                 </div>
@@ -449,7 +450,7 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
               {/* YouTube Input */}
               {inputType === 'youtube' && (
                 <div className="space-y-2">
-                  <label htmlFor="youtube-input" className="text-sm font-medium text-zinc-400">
+                  <label htmlFor="youtube-input" className="text-sm font-medium text-gray-600 dark:text-zinc-400">
                     YouTube Video URL
                   </label>
                   <input
@@ -458,17 +459,17 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                     value={youtubeUrl}
                     onChange={(e) => setYoutubeUrl(e.target.value)}
                     placeholder="https://youtube.com/watch?v=dQw4w9WgXcQ or https://youtu.be/dQw4w9WgXcQ"
-                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                     aria-label="Enter YouTube video URL"
                   />
                   <div className="space-y-1">
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-gray-500 dark:text-zinc-500">
                       ✓ Best for videos under 30 minutes
                     </p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-gray-500 dark:text-zinc-500">
                       ✓ Both youtube.com/watch?v= and youtu.be/ formats supported
                     </p>
-                    <p className="text-xs text-amber-400">
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
                       ⚠️ Video must have captions/subtitles enabled
                     </p>
                   </div>
@@ -499,14 +500,14 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
 
           {/* Progress Indicator */}
           {isGenerating && (
-            <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-gray-700 shadow-lg p-6">
               <div className="flex items-center gap-3 mb-4">
-                <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
-                <h3 className="text-lg font-semibold text-white">Creating Your Summary</h3>
+                <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Creating Your Summary</h3>
               </div>
-              <div className="w-full bg-zinc-800 rounded-full h-2 mb-2 overflow-hidden">
+              <div className="w-full bg-gray-200 dark:bg-zinc-800 rounded-full h-2 mb-2 overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-500 ease-out"
+                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500 ease-out"
                   style={{ width: `${progress}%` }}
                   role="progressbar"
                   aria-valuenow={progress}
@@ -514,9 +515,9 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                   aria-valuemax={100}
                 />
               </div>
-              <p className="text-sm text-zinc-400">{progressMessage}</p>
-              <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                <p className="text-xs text-amber-200">
+              <p className="text-sm text-gray-600 dark:text-zinc-400">{progressMessage}</p>
+              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg">
+                <p className="text-xs text-amber-700 dark:text-amber-200">
                   ⚡ This usually takes 30-60 seconds
                 </p>
               </div>
@@ -525,14 +526,14 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
 
           {/* Error Display */}
           {error && (
-            <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-4 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/50 rounded-xl p-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="text-red-400 font-semibold mb-1">Generation Failed</h3>
-                <p className="text-red-200 text-sm">{error}</p>
+                <h3 className="text-red-600 dark:text-red-400 font-semibold mb-1">Generation Failed</h3>
+                <p className="text-red-600 dark:text-red-200 text-sm">{error}</p>
                 <button
                   onClick={() => setError(null)}
-                  className="mt-3 text-xs text-red-300 hover:text-red-100 underline"
+                  className="mt-3 text-xs text-red-500 dark:text-red-300 hover:text-red-700 dark:hover:text-red-100 underline"
                 >
                   Try again
                 </button>
@@ -544,12 +545,12 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
           {summary && (
             <div className="space-y-4">
               {/* Summary Header */}
-              <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-gray-700 shadow-lg p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h2 className="text-xl font-bold text-white mb-2">{summary.title}</h2>
-                    <p className="text-sm text-zinc-400">{summary.description}</p>
-                    <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-zinc-500">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{summary.title}</h2>
+                    <p className="text-sm text-gray-600 dark:text-zinc-400">{summary.description}</p>
+                    <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-gray-500 dark:text-zinc-500">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {Math.ceil(summary.duration / 60)} min
@@ -562,7 +563,7 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                   </div>
                   <button
                     onClick={handleDownload}
-                    className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-sm"
+                    className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-white rounded-lg transition-colors text-sm"
                     aria-label="Download audio file"
                   >
                     <Download className="w-4 h-4" />
@@ -578,6 +579,26 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                 />
               </div>
 
+              {/* Key Takeaways */}
+              {summary.keyTakeaways && summary.keyTakeaways.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-gray-700 shadow-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <ListChecks className="w-5 h-5 text-amber-500" />
+                    Key Takeaways
+                  </h3>
+                  <ul className="space-y-3">
+                    {summary.keyTakeaways.map((takeaway, index) => (
+                      <li key={index} className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                          {index + 1}
+                        </span>
+                        <span className="text-gray-700 dark:text-gray-300 leading-relaxed">{takeaway}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Generate Another Button */}
               <button
                 onClick={() => {
@@ -585,7 +606,7 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                   setError(null)
                   setProgress(0)
                 }}
-                className="w-full px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="w-full px-6 py-3 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-700 dark:text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 border border-gray-200 dark:border-gray-700 shadow-sm"
               >
                 <Sparkles className="w-4 h-4" />
                 Generate Another Summary
@@ -595,26 +616,26 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
 
           {/* Feature Info */}
           {!summary && !isGenerating && (
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-amber-200 mb-3 flex items-center gap-2">
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-500/20 rounded-xl p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-amber-700 dark:text-amber-200 mb-3 flex items-center gap-2">
                 <Zap className="w-5 h-5" />
                 How It Works
               </h3>
-              <ul className="space-y-2 text-sm text-amber-100">
+              <ul className="space-y-2 text-sm text-amber-800 dark:text-amber-100">
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-400 mt-1">•</span>
+                  <span className="text-amber-500 mt-1">•</span>
                   <span><strong>5 minutes</strong> of energetic, focused content</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-400 mt-1">•</span>
+                  <span className="text-amber-500 mt-1">•</span>
                   <span><strong>AI-powered</strong> extraction of key concepts and takeaways</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-400 mt-1">•</span>
+                  <span className="text-amber-500 mt-1">•</span>
                   <span><strong>Conversational format</strong> with two hosts discussing the content</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-400 mt-1">•</span>
+                  <span className="text-amber-500 mt-1">•</span>
                   <span><strong>Perfect for</strong> quick reviews, commutes, or time-crunched studying</span>
                 </li>
               </ul>

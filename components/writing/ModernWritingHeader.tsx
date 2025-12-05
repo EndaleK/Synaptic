@@ -33,16 +33,6 @@ export default function ModernWritingHeader({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
-          {onUpload && (
-            <button
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 border border-white/30 transition-all duration-200 text-sm font-semibold"
-              onClick={onUpload}
-            >
-              <Upload className="w-4 h-4" />
-              <span>Upload</span>
-            </button>
-          )}
-
           {showResearch && (
             <button
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 border border-white/30 transition-all duration-200 text-sm font-semibold"
@@ -63,6 +53,17 @@ export default function ModernWritingHeader({
             >
               <Share2 className="w-4 h-4" />
               <span>Share</span>
+            </button>
+          )}
+
+          {onUpload && (
+            <button
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 border border-white/30 transition-all duration-200 text-sm font-semibold"
+              onClick={onUpload}
+              title="Import document"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Import</span>
             </button>
           )}
 

@@ -356,6 +356,36 @@ export async function POST(req: NextRequest) {
           provider: scriptProvider
         })
 
+        // Generate bullet point key takeaways
+        tracker.updateProgress('Extracting key takeaways...')
+
+        let keyTakeaways: string[] = []
+        try {
+          const takeawaysCompletion = await scriptProvider.complete(
+            `Extract 5-7 key takeaways from the following content. Return ONLY a JSON array of strings, no other text.
+
+Content:
+${textContent.substring(0, 8000)}
+
+Example format:
+["Key point 1", "Key point 2", "Key point 3"]
+
+Return the JSON array now:`,
+            { temperature: 0.3, maxTokens: 500 }
+          )
+
+          // Parse the response
+          const content = takeawaysCompletion.content || '[]'
+          // Extract JSON array from response
+          const jsonMatch = content.match(/\[[\s\S]*\]/)
+          if (jsonMatch) {
+            keyTakeaways = JSON.parse(jsonMatch[0])
+          }
+        } catch (takeawaysError) {
+          logger.warn('Failed to generate key takeaways', { userId, error: takeawaysError })
+          // Continue without takeaways - not critical
+        }
+
         logger.debug('Quick summary script generated', {
           userId,
           lines: script.lines.length,
@@ -504,7 +534,8 @@ export async function POST(req: NextRequest) {
               transcript,
               script: script.lines,
               inputType,
-              source: sourceDescription
+              source: sourceDescription,
+              keyTakeaways
             }
           }
         })

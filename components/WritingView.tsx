@@ -121,7 +121,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
     }
   }
 
-  // Load or create essay
+  // Load essay if ID is provided, otherwise show empty state
   useEffect(() => {
     if (!isLoaded) {
       // Wait for Clerk to finish loading
@@ -138,7 +138,8 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
     if (essayId) {
       loadEssay()
     } else {
-      createNewEssay()
+      // No essayId provided - show empty state, don't auto-create
+      setIsLoading(false)
     }
   }, [essayId, user, isLoaded])
 
@@ -222,7 +223,10 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
 
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error('Essay not found or access denied')
+          // Essay was deleted or doesn't exist - redirect to fresh writer page
+          console.log('Essay not found, redirecting to create new essay')
+          window.location.href = '/dashboard/writer'
+          return
         }
         const error = await response.json()
         console.error('API error loading essay:', error)
@@ -284,9 +288,9 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
   }
 
   const handleDeleteEssay = async (deletedEssayId: string) => {
-    // When the active essay is deleted, create a new one
+    // When the active essay is deleted, redirect to fresh writer page (no essay)
     if (deletedEssayId === essay?.id) {
-      await createNewEssay()
+      window.location.href = '/dashboard/writer'
     }
   }
 
@@ -411,24 +415,41 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
         return
       }
 
+      // Map writingTone to API style parameter
+      const styleMap: Record<string, string> = {
+        'academic': 'academic',
+        'casual': 'simplified',
+        'professional': 'professional',
+        'creative': 'expanded'
+      }
+
       const response = await fetch('/api/writing/paraphrase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: selectedText,
-          tone: writingTone
+          style: styleMap[writingTone] || 'academic',
+          numVariations: 1
         })
       })
 
-      if (!response.ok) throw new Error('Improvement failed')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Improvement failed')
+      }
 
-      const { paraphrased } = await response.json()
+      const { variations } = await response.json()
 
-      // Replace selected text
-      editor.chain().focus().deleteSelection().insertContent(paraphrased).run()
+      if (variations && variations.length > 0) {
+        // Replace selected text with the first variation
+        editor.chain().focus().deleteSelection().insertContent(variations[0]).run()
+        toast.success('Text improved successfully')
+      } else {
+        throw new Error('No improved text returned')
+      }
     } catch (err) {
       console.error('Error improving text:', err)
-      toast.error('Failed to improve text')
+      toast.error(err instanceof Error ? err.message : 'Failed to improve text')
     }
   }
 
@@ -496,9 +517,7 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
     }
   }
 
-  const handleSelectTemplate = (templateId: string) => {
-    if (!editor || !essay) return
-
+  const handleSelectTemplate = async (templateId: string) => {
     const templates: Record<string, { title: string; content: string }> = {
       '5-paragraph': {
         title: '5-Paragraph Essay',
@@ -622,6 +641,49 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
     const template = templates[templateId]
     if (!template) return
 
+    // If no essay exists, create one with the template
+    if (!essay) {
+      if (!user) return
+
+      try {
+        setIsLoading(true)
+
+        const response = await fetch('/api/essays', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: template.title,
+            content: template.content,
+            writing_type: 'academic',
+            citation_style: 'APA',
+            word_count: 0,
+            status: 'draft',
+            document_id: documentId || null
+          })
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to create essay with template')
+        }
+
+        const { essay: newEssay } = await response.json()
+        if (newEssay) {
+          // Redirect to the new essay
+          window.location.href = `/dashboard/writer?essayId=${newEssay.id}`
+        }
+      } catch (err) {
+        console.error('Error creating essay with template:', err)
+        toast.error('Failed to create essay with template')
+      } finally {
+        setIsLoading(false)
+      }
+      return
+    }
+
+    // Essay exists - apply template to current essay
+    if (!editor) return
+
     // Confirm before replacing content if there's existing text
     const currentContent = editor.getText().trim()
     if (currentContent && currentContent !== '') {
@@ -659,21 +721,28 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
         return
       }
 
-      if (result.text) {
-        // Convert plain text to HTML paragraphs
-        const htmlContent = result.text
-          .split('\n\n')
-          .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
-          .join('')
+      if (result.html || result.text) {
+        // Use HTML if available (preserves structure from DOCX), otherwise convert plain text
+        let htmlContent: string
+        if (result.html) {
+          // Use the structured HTML from mammoth (preserves headings, bold, italic, lists)
+          htmlContent = result.html
+          console.log('Using structured HTML from document')
+        } else {
+          // Fallback: Convert plain text to HTML paragraphs
+          htmlContent = result.text
+            .split('\n\n')
+            .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
+            .join('')
+          console.log('Using converted plain text')
+        }
 
         // Insert into editor
         editor.commands.setContent(htmlContent)
 
-        // Update essay title if it's "Untitled Essay"
-        if (essay.title === 'Untitled Essay') {
-          const fileName = file.name.replace(/\.[^/.]+$/, '') // Remove extension
-          setEssay({ ...essay, title: fileName })
-        }
+        // Update essay title to file name (remove extension)
+        const fileName = file.name.replace(/\.[^/.]+$/, '')
+        const newTitle = essay.title === 'Untitled Essay' ? fileName : essay.title
 
         // Add to uploaded files list for tracking
         const newFile: UploadedFile = {
@@ -683,6 +752,38 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
           type: file.type
         }
         setUploadedFiles(prev => [...prev, newFile])
+
+        // Auto-save the imported document
+        try {
+          setIsSaving(true)
+          const wordCount = editor.storage.characterCount.words()
+
+          const saveResponse = await fetch(`/api/essays/${essay.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              content: htmlContent,
+              title: newTitle,
+              word_count: wordCount
+            })
+          })
+
+          if (saveResponse.ok) {
+            const { essay: savedEssay } = await saveResponse.json()
+            setEssay(savedEssay)
+            toast.success('Document imported and saved')
+          } else {
+            // Update local state even if save failed
+            setEssay({ ...essay, title: newTitle, content: htmlContent })
+            toast.success('Document imported (save pending)')
+          }
+        } catch (saveError) {
+          console.error('Auto-save error:', saveError)
+          setEssay({ ...essay, title: newTitle, content: htmlContent })
+          toast.success('Document imported (save pending)')
+        } finally {
+          setIsSaving(false)
+        }
       }
     } catch (error) {
       console.error('Error processing file:', error)
@@ -730,7 +831,80 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
     )
   }
 
-  if (!essay) return null
+  // Empty state - no essay loaded, show welcome screen with sidebar
+  if (!essay) {
+    return (
+      <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
+        {/* Minimal Header for empty state */}
+        <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Writing Assistant</h1>
+          </div>
+        </header>
+
+        <div className="flex flex-1 overflow-hidden">
+          {/* Document Sidebar - Shows recent docs and templates */}
+          <div className="hidden lg:block">
+            <DocumentSidebar
+              onSelectEssay={(id) => window.location.href = `/dashboard/writer?essayId=${id}`}
+              onNewEssay={createNewEssay}
+              onSelectTemplate={handleSelectTemplate}
+            />
+          </div>
+
+          {/* Empty State Content */}
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center max-w-md">
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-purple-100 to-violet-100 dark:from-purple-900/30 dark:to-violet-900/30 rounded-2xl flex items-center justify-center">
+                <svg className="w-10 h-10 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                Start Writing
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-8">
+                Create a new document or select a recent one from the sidebar to begin writing.
+              </p>
+              <button
+                onClick={createNewEssay}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Create New Document
+              </button>
+
+              {/* Mobile-only: Show templates */}
+              <div className="lg:hidden mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4">
+                  Or start with a template
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: "5-paragraph", name: "5-Paragraph Essay", icon: "📄" },
+                    { id: "research", name: "Research Paper", icon: "📊" },
+                    { id: "book-review", name: "Book Review", icon: "📖" },
+                    { id: "argumentative", name: "Argumentative", icon: "💡" }
+                  ].map(template => (
+                    <button
+                      key={template.id}
+                      onClick={() => handleSelectTemplate(template.id)}
+                      className="flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                    >
+                      <span>{template.icon}</span>
+                      <span className="truncate">{template.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
@@ -762,7 +936,6 @@ export default function WritingView({ essayId, documentId }: WritingViewProps) {
           <ModernToolbar
             editor={editor}
             onVoiceClick={handleVoiceClick}
-            onUploadClick={() => setShowUploadModal(true)}
             onAnalyze={handleAnalyze}
             onImprove={handleImprove}
             citationStyle={citationStyle}
