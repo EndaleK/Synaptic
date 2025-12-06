@@ -535,7 +535,7 @@ export default function DashboardLayout({
                   <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>
                 )}
               </div>
-              {!sidebarCollapsed && (
+              {!sidebarCollapsed && isMounted && (
                 <div className="flex-1 min-w-0">
                   <p className="text-[12px] font-semibold text-black dark:text-white truncate">
                     {user?.fullName || user?.username || "User"}

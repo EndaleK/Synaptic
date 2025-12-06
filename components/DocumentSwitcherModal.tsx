@@ -67,6 +67,7 @@ export default function DocumentSwitcherModal({ onDocumentSwitch }: DocumentSwit
       fileType: doc.file_type,
       storagePath: doc.storage_path,
       sections: doc.sections,
+      fileSize: doc.file_size,
     })
 
     // Add to history

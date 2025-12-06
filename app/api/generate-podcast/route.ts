@@ -500,11 +500,22 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (dbError) {
-      logger.error('Database save error for podcast', dbError, { userId, documentId })
+      console.error('Database save error for podcast - FULL ERROR:', JSON.stringify(dbError, null, 2))
+      console.error('Profile ID type:', typeof profile.id, 'Value:', profile.id)
+      logger.error('Database save error for podcast', dbError, {
+        userId,
+        documentId,
+        profileId: profile.id,
+        profileIdType: typeof profile.id,
+        errorCode: dbError.code,
+        errorMessage: dbError.message,
+        errorDetails: dbError.details,
+        errorHint: dbError.hint
+      })
       // Report the save failure to the user - they need to know their podcast won't appear in the library
       send({
         type: 'warning',
-        message: 'Podcast generated but failed to save to library. You can still play it but it won\'t appear in your saved podcasts.',
+        message: `Podcast generated but failed to save to library: ${dbError.message}. You can still play it but it won't appear in your saved podcasts.`,
         audioUrl,
         error: dbError.message
       })

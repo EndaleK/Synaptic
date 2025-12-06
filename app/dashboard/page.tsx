@@ -152,7 +152,8 @@ function DashboardContent() {
                 name: data.document.file_name,
                 content: data.document.extracted_text || '',
                 fileType: data.document.file_type,
-                storagePath: data.document.storage_path
+                storagePath: data.document.storage_path,
+                fileSize: data.document.file_size,
               })
             }
           })
@@ -174,7 +175,8 @@ function DashboardContent() {
                 name: data.document.file_name,
                 content: data.document.extracted_text || '',
                 fileType: data.document.file_type,
-                storagePath: data.document.storage_path
+                storagePath: data.document.storage_path,
+                fileSize: data.document.file_size,
               })
             }
           })
@@ -408,7 +410,8 @@ function DashboardContent() {
         name: document.file_name,
         content: document.extracted_text || '',
         fileType: document.file_type,
-        storagePath: document.storage_path
+        storagePath: document.storage_path,
+        fileSize: document.file_size,
       })
       setActiveModeDocuments(prev => ({ ...prev, chat: true }))
       setActiveMode('chat')
@@ -421,7 +424,8 @@ function DashboardContent() {
         name: document.file_name,
         content: document.extracted_text || '',
         fileType: document.file_type,
-        storagePath: document.storage_path
+        storagePath: document.storage_path,
+        fileSize: document.file_size,
       })
       setActiveModeDocuments(prev => ({ ...prev, studyguide: true }))
       setActiveMode('studyguide')
@@ -435,7 +439,8 @@ function DashboardContent() {
         name: document.file_name,
         content: document.extracted_text || '',
         fileType: document.file_type,
-        storagePath: document.storage_path
+        storagePath: document.storage_path,
+        fileSize: document.file_size,
       })
       setActiveModeDocuments(prev => ({ ...prev, podcast: true }))
       setActiveMode('podcast')
@@ -449,7 +454,8 @@ function DashboardContent() {
         name: document.file_name,
         content: document.extracted_text || '',
         fileType: document.file_type,
-        storagePath: document.storage_path
+        storagePath: document.storage_path,
+        fileSize: document.file_size,
       })
       setActiveModeDocuments(prev => ({ ...prev, mindmap: true }))
       setActiveMode('mindmap')
@@ -462,7 +468,8 @@ function DashboardContent() {
       name: document.file_name,
       content: document.extracted_text || '',
       fileType: document.file_type,
-      storagePath: document.storage_path
+      storagePath: document.storage_path,
+      fileSize: document.file_size,
     })
     setSelectedDocForModal(document)
     setContentModalType('flashcards')

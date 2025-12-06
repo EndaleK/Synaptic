@@ -570,14 +570,25 @@ export default function ChatInterface() {
       const CONTENT_SIZE_THRESHOLD = 100000
       const contentLength = chatDocument.content?.trim().length || 0
 
+      // Truncation detection: If file is large (>1MB) but content is small,
+      // the database text is likely truncated (50K limit)
+      const fileSizeBytes = currentDocument?.fileSize || 0
+      const estimatedCharsPerByte = 0.5 // Conservative: 1 byte ≈ 0.5 chars for PDFs
+      const estimatedFullTextLength = fileSizeBytes * estimatedCharsPerByte
+      const isLikelyTruncated = fileSizeBytes > 1 * 1024 * 1024 && // File > 1MB
+        contentLength > 0 &&
+        contentLength < estimatedFullTextLength * 0.3 // Content < 30% of expected
+
       // Use RAG if:
       // 1. No content extracted yet (document still processing or very large)
       // 2. Content exceeds threshold (would exceed AI context window)
       // 3. Document has RAG indexing (indicates large file)
+      // 4. Content appears truncated based on file size (NEW)
       const isLargeFile =
         !chatDocument.content ||
         contentLength === 0 ||
         contentLength > CONTENT_SIZE_THRESHOLD ||
+        isLikelyTruncated ||
         (currentDocument?.rag_indexed_at && currentDocument?.rag_chunk_count && currentDocument.rag_chunk_count > 0)
 
       // Validate we have the necessary data
@@ -592,6 +603,10 @@ export default function ChatInterface() {
         messageLength: inputMessage.length,
         contentLength: chatDocument.content?.length || 0,
         contentLengthFormatted: `${(contentLength / 1000).toFixed(1)}K chars`,
+        fileSizeBytes,
+        fileSizeMB: (fileSizeBytes / (1024 * 1024)).toFixed(2),
+        estimatedFullTextLength: Math.round(estimatedFullTextLength),
+        isLikelyTruncated,
         fileName: chatDocument.file?.name || currentDocument?.name,
         teachingMode,
         endpoint,
@@ -600,9 +615,11 @@ export default function ChatInterface() {
         ragChunks: currentDocument?.rag_chunk_count || 0,
         documentId: currentDocument?.id,
         reason: isLargeFile
-          ? contentLength > CONTENT_SIZE_THRESHOLD
-            ? `Content too large (${(contentLength / 1000).toFixed(1)}K > 100K chars)`
-            : 'Using RAG for large document'
+          ? isLikelyTruncated
+            ? `Content likely truncated (${(contentLength / 1000).toFixed(1)}K chars from ${(fileSizeBytes / (1024 * 1024)).toFixed(1)}MB file)`
+            : contentLength > CONTENT_SIZE_THRESHOLD
+              ? `Content too large (${(contentLength / 1000).toFixed(1)}K > 100K chars)`
+              : 'Using RAG for large document'
           : `Content fits in context (${(contentLength / 1000).toFixed(1)}K chars)`
       })
 

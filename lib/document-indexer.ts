@@ -103,12 +103,29 @@ export async function indexDocumentForRAG(
       fileType: document.file_type,
     })
 
-    // 3. Check if we already have extracted text
-    let text = document.extracted_text
+    // 3. ALWAYS download and extract fresh text from storage for RAG indexing
+    // The database may have truncated text (50K limit), but RAG needs the FULL document
+    // This ensures large documents like Toronto Notes get fully indexed
+    let text: string = ''
 
-    // 4. If no extracted text, download and extract from storage
-    if (!text || text.trim().length === 0) {
-      logger.info('No extracted text found, downloading from storage', { documentId })
+    // Check if we need fresh extraction (file size > threshold or text appears truncated)
+    const dbTextLength = document.extracted_text?.length || 0
+    const fileSizeBytes = document.file_size || 0
+    const estimatedCharsPerByte = 0.5 // Rough estimate: 1 byte ≈ 0.5 chars after extraction
+    const estimatedFullTextLength = fileSizeBytes * estimatedCharsPerByte
+    const isLikelyTruncated = dbTextLength > 0 && dbTextLength < estimatedFullTextLength * 0.5
+
+    // For large files (>1MB), always re-extract from storage to ensure full text
+    const shouldReExtract = fileSizeBytes > 1 * 1024 * 1024 || isLikelyTruncated
+
+    if (shouldReExtract || !document.extracted_text || document.extracted_text.trim().length === 0) {
+      logger.info('Downloading fresh text from storage for RAG indexing', {
+        documentId,
+        reason: !document.extracted_text ? 'no_db_text' :
+                isLikelyTruncated ? 'likely_truncated' : 'large_file',
+        dbTextLength,
+        fileSizeBytes
+      })
 
       const { data: fileData, error: downloadError } = await supabase
         .storage
@@ -119,15 +136,21 @@ export async function indexDocumentForRAG(
         throw new Error(`Failed to download document: ${downloadError?.message || 'Unknown error'}`)
       }
 
-      // Check file size - skip on-demand parsing for very large PDFs (>10MB)
+      // Check file size - allow PDFs up to 100MB for RAG re-extraction
+      // Server-pdf-parser handles up to 500MB with PyMuPDF fallback
       const fileSizeMB = fileData.size / (1024 * 1024)
-      if (document.file_type === 'application/pdf' && fileSizeMB > 10) {
+      if (document.file_type === 'application/pdf' && fileSizeMB > 100) {
         throw new Error(
           `This PDF is too large (${fileSizeMB.toFixed(1)}MB) for on-demand text extraction. ` +
-          `The document text should have been extracted during upload. ` +
-          `Please try re-uploading the document, or use a smaller PDF file.`
+          `The maximum supported size is 100MB. ` +
+          `Please try re-uploading or splitting the document.`
         )
       }
+
+      logger.info('Re-extracting PDF for RAG indexing', {
+        documentId,
+        fileSizeMB: fileSizeMB.toFixed(2),
+      })
 
       // Extract text based on file type
       if (document.file_type === 'application/pdf') {
@@ -148,7 +171,9 @@ export async function indexDocumentForRAG(
         textLength: text.length,
       })
     } else {
-      logger.info('Using existing extracted text', {
+      // Small file with existing text - use cached DB text
+      text = document.extracted_text!
+      logger.info('Using existing extracted text (small file)', {
         documentId,
         textLength: text.length,
       })
