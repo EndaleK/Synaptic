@@ -6,11 +6,27 @@ import { useDocumentStore } from "@/lib/store/useStore"
 import type { Document } from "@/lib/supabase/types"
 
 interface DocumentSwitcherModalProps {
+  isOpen?: boolean
+  onClose?: () => void
   onDocumentSwitch?: () => void
 }
 
-export default function DocumentSwitcherModal({ onDocumentSwitch }: DocumentSwitcherModalProps) {
-  const [isOpen, setIsOpen] = useState(false)
+export default function DocumentSwitcherModal({ isOpen: externalIsOpen, onClose, onDocumentSwitch }: DocumentSwitcherModalProps) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false)
+
+  // Use external control if provided, otherwise use internal state
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen
+  const setIsOpen = (value: boolean) => {
+    if (externalIsOpen !== undefined) {
+      // Controlled mode - call onClose when closing
+      if (!value && onClose) {
+        onClose()
+      }
+    } else {
+      // Uncontrolled mode - use internal state
+      setInternalIsOpen(value)
+    }
+  }
   const [documents, setDocuments] = useState<Document[]>([])
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([])
   const [searchQuery, setSearchQuery] = useState("")
