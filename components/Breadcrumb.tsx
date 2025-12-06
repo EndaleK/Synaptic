@@ -1,12 +1,10 @@
 "use client"
 
-import { useState } from "react"
 import { ChevronRight, Home, FileText } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useUIStore, useDocumentStore } from "@/lib/store/useStore"
 import { cn } from "@/lib/utils"
-import DocumentSwitcherModal from "./DocumentSwitcherModal"
 
 interface BreadcrumbItem {
   label: string
@@ -17,7 +15,7 @@ interface BreadcrumbItem {
 interface BreadcrumbProps {
   items?: BreadcrumbItem[]
   className?: string
-  onDocumentSwitch?: () => void
+  onSwitchDocument?: () => void
 }
 
 // Predefined breadcrumb configurations
@@ -31,15 +29,14 @@ export const settingsBreadcrumb: BreadcrumbItem[] = [
   { label: "Settings" }
 ]
 
-export default function Breadcrumb({ items, className, onDocumentSwitch }: BreadcrumbProps = {}) {
+export default function Breadcrumb({ items, className, onSwitchDocument }: BreadcrumbProps = {}) {
   const pathname = usePathname()
   const { activeMode } = useUIStore()
   const { currentDocument } = useDocumentStore()
-  const [showSwitcher, setShowSwitcher] = useState(false)
 
   // Modes that require a document to be selected
   const documentRequiredModes = ['flashcards', 'chat', 'podcast', 'mindmap', 'studyguide']
-  const showSelectDocumentButton = documentRequiredModes.includes(activeMode)
+  const showSelectDocumentButton = documentRequiredModes.includes(activeMode) && onSwitchDocument
 
   // Generate breadcrumb items based on current route and mode
   const getBreadcrumbItems = (): BreadcrumbItem[] => {
@@ -145,7 +142,7 @@ export default function Breadcrumb({ items, className, onDocumentSwitch }: Bread
           <>
             <span className="mx-2 text-gray-300 dark:text-gray-600">|</span>
             <button
-              onClick={() => setShowSwitcher(true)}
+              onClick={onSwitchDocument}
               className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-accent-primary/10 text-accent-primary hover:bg-accent-primary/20 transition-colors flex-shrink-0"
             >
               <FileText className="w-3.5 h-3.5" />
@@ -157,16 +154,6 @@ export default function Breadcrumb({ items, className, onDocumentSwitch }: Bread
           </>
         )}
       </nav>
-
-      {/* Document Switcher Modal */}
-      <DocumentSwitcherModal
-        isOpen={showSwitcher}
-        onClose={() => setShowSwitcher(false)}
-        onDocumentSwitch={() => {
-          setShowSwitcher(false)
-          onDocumentSwitch?.()
-        }}
-      />
     </>
   )
 }

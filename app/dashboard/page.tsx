@@ -291,6 +291,23 @@ function DashboardContent() {
     }
   }, [currentDocument])
 
+  // Handle "Switch Document" button click - reset to document picker for current mode
+  const handleSwitchDocument = () => {
+    // Reset the current mode's document state to show the picker
+    if (activeMode === 'flashcards') {
+      setFlashcards([])
+      setRegenerationCount(0)
+    } else if (activeMode === 'chat') {
+      setActiveModeDocuments(prev => ({ ...prev, chat: false }))
+    } else if (activeMode === 'podcast') {
+      setActiveModeDocuments(prev => ({ ...prev, podcast: false }))
+    } else if (activeMode === 'mindmap') {
+      setActiveModeDocuments(prev => ({ ...prev, mindmap: false }))
+    } else if (activeMode === 'studyguide') {
+      setActiveModeDocuments(prev => ({ ...prev, studyguide: false }))
+    }
+  }
+
   // Handle assessment completion
   const handleAssessmentComplete = async (result: {
     dominant_style: LearningStyle
@@ -668,7 +685,7 @@ function DashboardContent() {
         }}
       >
         <div className="flex-shrink-0 container-padding-x pt-4">
-          <Breadcrumb />
+          <Breadcrumb onSwitchDocument={handleSwitchDocument} />
         </div>
         <div className="flex-1 overflow-hidden">
           {renderModeContent()}
