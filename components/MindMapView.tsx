@@ -66,6 +66,7 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
   const [progressMessage, setProgressMessage] = useState('')
   const [selectedMapType, setSelectedMapType] = useState<MindMapType>('hierarchical')
   const [isPreviewMode, setIsPreviewMode] = useState(false) // NEW: Track if showing unsaved preview
+  const [showGenerationForm, setShowGenerationForm] = useState(true) // Show generation form first
 
   // Content selection state
   const [contentType, setContentType] = useState<'full' | 'chapters' | 'pageRange' | 'smartTopics'>('full')
@@ -87,53 +88,9 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
           const data = await response.json()
           setExistingMindMaps(data.mindmaps || [])
 
-          // Auto-load the most recent mind map
-          if (data.mindmaps && data.mindmaps.length > 0) {
-            const latest = data.mindmaps[0]
-            setMindMapData({
-              id: latest.id, // Include database ID for saving edits
-              title: latest.title,
-              nodes: latest.nodes,
-              edges: latest.edges,
-              template: latest.layout_data?.template,
-              templateReason: latest.layout_data?.templateReason,
-              metadata: latest.layout_data?.metadata
-            })
-
-            // Use stored document_text if available (preferred), otherwise fetch from document
-            if (latest.document_text) {
-              setDocumentText(latest.document_text)
-              console.log('[MindMapView] ✓ Loaded document text from mind map:', latest.document_text.length, 'chars')
-            } else {
-              console.warn('[MindMapView] ⚠️ No document_text in saved mind map, trying fallback fetch from document API')
-              // Fallback: Fetch document text for node expansion
-              try {
-                const docResponse = await fetch(`/api/documents/${documentId}`)
-                console.log('[MindMapView] Document API response status:', docResponse.status)
-
-                if (docResponse.ok) {
-                  const docData = await docResponse.json()
-                  console.log('[MindMapView] Document API returned:', {
-                    hasDocument: !!docData.document,
-                    hasExtractedText: !!docData.document?.extracted_text,
-                    extractedTextLength: docData.document?.extracted_text?.length || 0
-                  })
-
-                  if (docData.document?.extracted_text) {
-                    setDocumentText(docData.document.extracted_text)
-                    console.log('[MindMapView] ✓ Loaded document text from document API:', docData.document.extracted_text.length, 'chars')
-                  } else {
-                    console.error('[MindMapView] ✗ Document API returned no extracted_text')
-                  }
-                } else {
-                  console.error('[MindMapView] ✗ Document API returned error:', docResponse.status, await docResponse.text())
-                }
-              } catch (docErr) {
-                console.error('[MindMapView] ✗ Failed to fetch document text:', docErr)
-                // Continue anyway - node expansion just won't be available
-              }
-            }
-          }
+          // Don't auto-load - let user choose via "View" button in banner
+          // This matches the podcast behavior
+          console.log('[MindMapView] Found', data.mindmaps?.length || 0, 'existing mind maps')
         }
       } catch (err) {
         console.error('Failed to fetch existing mind maps:', err)
@@ -295,6 +252,7 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
                   console.log('[MindMapView] ⚠️ SETTING PREVIEW MODE - Mind map should display now')
                   setMindMapData(mindMapData)
                   setIsPreviewMode(true) // NEW: Mark as preview (unsaved)
+                  setShowGenerationForm(false) // Switch to viewer after generation
                   console.log('[MindMapView] ⚠️ Preview mode state set to TRUE')
 
                   // Sync the selectedMapType state with the generated map type
@@ -355,6 +313,7 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
         })
         setMindMapData(mindMapData)
         setIsPreviewMode(true) // NEW: Mark as preview (unsaved)
+        setShowGenerationForm(false) // Switch to viewer after generation
 
         // Store complexity analysis
         if (data.complexityAnalysis) {
@@ -496,10 +455,19 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
     )
   }
 
-  // If mind map exists, show viewer - MAXIMIZED VIEW
-  if (mindMapData) {
+  // Show mind map viewer when user chooses to view (via banner button or after generation)
+  if (mindMapData && !showGenerationForm) {
     return (
       <div className="h-full flex flex-col">
+        {/* Back to generation form button */}
+        <button
+          onClick={() => setShowGenerationForm(true)}
+          className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-accent-primary transition-colors mx-4 mt-2 mb-1"
+        >
+          <Sparkles className="w-4 h-4" />
+          Generate New Mind Map
+        </button>
+
         {/* Show existing mind map count */}
         {existingMindMaps.length > 1 && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-2.5 mb-2 mx-4 mt-2">
@@ -604,6 +572,45 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
 
         {/* Content */}
         <div className="p-4 sm:p-6 space-y-4">
+          {/* Existing Mind Maps Banner */}
+          {existingMindMaps.length > 0 && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <History className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  <p className="text-sm text-green-800 dark:text-green-200">
+                    You have {existingMindMaps.length} existing mind map{existingMindMaps.length > 1 ? 's' : ''} for this document
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    // Load the most recent mind map
+                    const latest = existingMindMaps[0]
+                    setMindMapData({
+                      id: latest.id,
+                      title: latest.title,
+                      nodes: latest.nodes,
+                      edges: latest.edges,
+                      template: latest.layout_data?.template,
+                      templateReason: latest.layout_data?.templateReason,
+                      metadata: latest.layout_data?.metadata
+                    })
+                    // Load document text if available
+                    if (latest.document_text) {
+                      setDocumentText(latest.document_text)
+                    }
+                    // Switch to viewer
+                    setShowGenerationForm(false)
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  <Network className="w-4 h-4" />
+                  View
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Error Display */}
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-start gap-2">

@@ -22,6 +22,48 @@ interface PodcastData {
   transcript: TranscriptEntry[]
 }
 
+/**
+ * Transform database script format to transcript format expected by PodcastPlayer
+ * Database stores: { lines: [{ speaker, text, emotion }] }
+ * PodcastPlayer expects: [{ speaker, speakerName, text, startTime, endTime }]
+ */
+function transformScriptToTranscript(script: any, totalDuration: number): TranscriptEntry[] {
+  // Handle case where script is already in transcript format (has speakerName)
+  if (Array.isArray(script) && script.length > 0 && script[0]?.speakerName) {
+    return script
+  }
+
+  // Handle case where script is PodcastScript format with lines array
+  const lines = script?.lines || script || []
+  if (!Array.isArray(lines) || lines.length === 0) {
+    return []
+  }
+
+  // Estimate time per line based on text length
+  const totalChars = lines.reduce((sum: number, line: any) => sum + (line?.text?.length || 0), 0)
+  let currentTime = 0
+
+  return lines.map((line: any) => {
+    const text = line?.text || ''
+    const speaker = line?.speaker || 'host_a'
+    // Estimate duration proportional to text length
+    const lineDuration = totalChars > 0
+      ? (text.length / totalChars) * totalDuration
+      : totalDuration / lines.length
+
+    const entry: TranscriptEntry = {
+      speaker: speaker as 'host_a' | 'host_b',
+      speakerName: speaker === 'host_a' ? 'Alex' : 'Jordan',
+      text,
+      startTime: currentTime,
+      endTime: currentTime + lineDuration
+    }
+
+    currentTime += lineDuration
+    return entry
+  })
+}
+
 export default function PodcastView({ documentId, documentName }: PodcastViewProps) {
   const toast = useToast()
   const [isGenerating, setIsGenerating] = useState(false)
@@ -59,6 +101,8 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
           // Auto-load the most recent podcast
           if (data.podcasts && data.podcasts.length > 0) {
             const latest = data.podcasts[0]
+            // Transform database script format to transcript format for PodcastPlayer
+            const transcript = transformScriptToTranscript(latest.script, latest.duration_seconds)
             setPodcast({
               id: latest.id,
               title: latest.title,
@@ -66,7 +110,7 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
               audioUrl: latest.audio_url,
               duration: latest.duration_seconds,
               fileSize: latest.file_size,
-              transcript: latest.script
+              transcript
             })
           }
         }

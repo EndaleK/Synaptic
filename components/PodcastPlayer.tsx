@@ -383,45 +383,51 @@ export default function PodcastPlayer({
             <h3 className="text-lg font-semibold text-black dark:text-white mb-4">
               Transcript
             </h3>
-            {transcript.map((line, index) => (
-              <div
-                key={index}
-                data-index={index}
-                onClick={() => jumpToTime(line.startTime)}
-                className={cn(
-                  "p-3 rounded-lg cursor-pointer transition-all",
-                  index === activeLineIndex
-                    ? "bg-accent-primary/20 dark:bg-accent-primary/30 border-l-4 border-accent-primary"
-                    : "hover:bg-gray-100 dark:hover:bg-gray-800"
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0">
-                    <div className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
-                      line.speaker === 'host_a'
-                        ? "bg-blue-500 text-white"
-                        : "bg-pink-500 text-white"
-                    )}>
-                      {line.speakerName[0]}
+            {transcript.map((line, index) => {
+              // Defensive: ensure speakerName exists, fallback to speaker-based name
+              const speakerName = line.speakerName || (line.speaker === 'host_a' ? 'Alex' : 'Jordan')
+              const startTime = line.startTime ?? 0
+
+              return (
+                <div
+                  key={index}
+                  data-index={index}
+                  onClick={() => jumpToTime(startTime)}
+                  className={cn(
+                    "p-3 rounded-lg cursor-pointer transition-all",
+                    index === activeLineIndex
+                      ? "bg-accent-primary/20 dark:bg-accent-primary/30 border-l-4 border-accent-primary"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
+                        line.speaker === 'host_a'
+                          ? "bg-blue-500 text-white"
+                          : "bg-pink-500 text-white"
+                      )}>
+                        {speakerName[0]}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-sm text-black dark:text-white">
-                        {line.speakerName}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatDetailedTime(line.startTime)}
-                      </span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-sm text-black dark:text-white">
+                          {speakerName}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatDetailedTime(startTime)}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                        {line.text}
+                      </p>
                     </div>
-                    <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-                      {line.text}
-                    </p>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
