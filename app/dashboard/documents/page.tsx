@@ -136,12 +136,9 @@ function DocumentsPageContent() {
         return
       }
 
-      // Update last accessed
-      await fetch(`/api/documents/${documentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ last_accessed_at: new Date().toISOString() })
-      })
+      // Update last accessed (fire and forget - don't block navigation)
+      // Note: PATCH endpoint not implemented, this is a no-op for now
+      // TODO: Implement PATCH /api/documents/[id] if last_accessed tracking is needed
 
       setCurrentDocument({
         id: document.id,
