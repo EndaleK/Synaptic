@@ -121,7 +121,6 @@ export async function POST(req: NextRequest) {
           file_type: 'application/pdf',
           file_size: extractedContent.pdfBuffer.length,
           storage_path: storagePath,
-          file_url: urlData?.publicUrl || null,
           extracted_text: extractedContent.content, // Text for AI features
           processing_status: 'completed',
           metadata: {
@@ -129,16 +128,22 @@ export async function POST(req: NextRequest) {
             imported_from: 'url',
             original_url: url,
             importer: importer.name,
-            detected_type: detected.type
+            detected_type: detected.type,
+            file_url: urlData?.publicUrl || null // Store public URL in metadata
           }
         })
         .select()
         .single()
 
       if (insertError || !document) {
-        logger.error('Failed to create document', insertError, { userId, url })
+        logger.error('Failed to create document', {
+          error: insertError?.message || 'Unknown error',
+          code: insertError?.code,
+          details: insertError?.details,
+          hint: insertError?.hint
+        }, { userId, url })
         return NextResponse.json(
-          { error: 'Failed to save imported document' },
+          { error: `Failed to save imported document: ${insertError?.message || 'Unknown error'}` },
           { status: 500 }
         )
       }
