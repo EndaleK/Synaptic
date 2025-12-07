@@ -32,8 +32,51 @@ async function extractFromHTML(arxivId: string): Promise<{ text: string; error?:
     // Use Cheerio to parse HTML (lightweight, Vercel-compatible)
     const $ = cheerio.load(html)
 
-    // Remove unwanted elements
-    $('script, style, nav, header, footer, .ltx_page_header, .ltx_page_footer, .ltx_bibliography').remove()
+    // Remove unwanted elements (navigation, scripts, bibliography, etc.)
+    $('script, style, nav, header, footer').remove()
+    $('.ltx_page_header, .ltx_page_footer, .ltx_bibliography, .ltx_TOC').remove()
+    $('.ltx_dates, .ltx_authors_short, .ltx_role_affiliationtext').remove()
+    $('figure, .ltx_figure, .ltx_table').remove() // Remove figures/tables that don't convert well
+
+    // Clean up arXiv-specific elements - unwrap spans that just add styling
+    $('span.ltx_text, span.ltx_tag, span.ltx_role_refnum').each((_, el) => {
+      $(el).replaceWith($(el).text())
+    })
+
+    // Replace cite elements with just their text
+    $('cite').each((_, el) => {
+      $(el).replaceWith($(el).text())
+    })
+
+    // Replace math elements with placeholder (they don't render in markdown anyway)
+    $('math, .ltx_Math, .ltx_equation').each((_, el) => {
+      const altText = $(el).attr('alttext') || $(el).text().trim()
+      if (altText && altText.length < 100) {
+        $(el).replaceWith(`[Math: ${altText}]`)
+      } else {
+        $(el).replaceWith('[Mathematical expression]')
+      }
+    })
+
+    // Convert ltx section headings to proper h tags
+    $('.ltx_title_section').each((_, el) => {
+      const text = $(el).text().trim()
+      $(el).replaceWith(`<h2>${text}</h2>`)
+    })
+    $('.ltx_title_subsection').each((_, el) => {
+      const text = $(el).text().trim()
+      $(el).replaceWith(`<h3>${text}</h3>`)
+    })
+    $('.ltx_title_subsubsection').each((_, el) => {
+      const text = $(el).text().trim()
+      $(el).replaceWith(`<h4>${text}</h4>`)
+    })
+
+    // Convert ltx paragraphs to proper p tags
+    $('.ltx_para').each((_, el) => {
+      const html = $(el).html() || ''
+      $(el).replaceWith(`<p>${html}</p>`)
+    })
 
     // Try to find the main article content
     let articleHtml = ''
@@ -79,7 +122,25 @@ async function extractFromHTML(arxivId: string): Promise<{ text: string; error?:
       codeBlockStyle: 'fenced'
     })
 
-    const markdown = turndown.turndown(articleHtml)
+    // Add rule to handle remaining ltx_* elements - just extract text
+    turndown.addRule('ltxElements', {
+      filter: (node) => {
+        return node.className && typeof node.className === 'string' && node.className.includes('ltx_')
+      },
+      replacement: (content) => content
+    })
+
+    let markdown = turndown.turndown(articleHtml)
+
+    // Clean up the markdown
+    // Remove excessive whitespace
+    markdown = markdown.replace(/\n{3,}/g, '\n\n')
+    // Remove leftover HTML-like artifacts
+    markdown = markdown.replace(/<[^>]+>/g, '')
+    // Clean up citation brackets like [1, 2, 3]
+    markdown = markdown.replace(/\[\s*,\s*/g, '[').replace(/\s*,\s*\]/g, ']')
+    // Remove empty brackets
+    markdown = markdown.replace(/\[\s*\]/g, '')
 
     console.log(`[arXiv] ✅ HTML extraction successful: ${markdown.length} chars`)
     return { text: markdown, method: 'html-cheerio' }
