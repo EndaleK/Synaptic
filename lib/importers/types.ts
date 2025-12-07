@@ -16,7 +16,10 @@ export interface ContentMetadata {
 export interface ExtractedContent {
   content: string
   metadata: ContentMetadata
-  format: 'text' | 'markdown' | 'html'
+  format: 'text' | 'markdown' | 'html' | 'pdf'
+  // For PDF imports - the actual PDF file data
+  pdfBuffer?: Buffer
+  pdfFileName?: string
 }
 
 export interface WebImportProvider {

@@ -306,36 +306,8 @@ export class ArxivImporter implements WebImportProvider {
       const pdfUrl = `https://arxiv.org/pdf/${arxivId}.pdf`
       const abstract = metadata.description || ''
 
-      // Build header content
-      let content = `# ${metadata.title}\n\n` +
-        `**Authors:** ${Array.isArray(metadata.author) ? metadata.author.join(', ') : metadata.author}\n\n` +
-        `**arXiv ID:** ${arxivId}\n\n` +
-        `**Published:** ${metadata.publishedDate}\n\n` +
-        `**PDF URL:** ${pdfUrl}\n\n`
-
-      // TIER 1: Try HTML extraction first (works on Vercel, best formatting)
-      const htmlResult = await extractFromHTML(arxivId)
-      if (!htmlResult.error && htmlResult.text && htmlResult.text.length > 500) {
-        console.log(`[arXiv] ✅ Successfully extracted ${htmlResult.text.length} characters using HTML`)
-        content += `## Abstract\n\n${abstract}\n\n` +
-          `---\n\n` +
-          `## Full Paper Content\n\n${htmlResult.text}`
-
-        return {
-          content,
-          metadata: {
-            ...metadata,
-            additionalData: {
-              ...metadata.additionalData,
-              extractionMethod: 'html'
-            }
-          },
-          format: 'markdown'
-        }
-      }
-
-      // TIER 2: Try PDF extraction with pdf-parse (fallback for older papers)
-      console.log('[arXiv] HTML not available, trying PDF extraction...')
+      // Always download the PDF first - this will be stored as the document
+      console.log(`[arXiv] Downloading PDF from: ${pdfUrl}`)
       const pdfResponse = await fetch(pdfUrl, {
         headers: {
           'User-Agent': 'SynapticBot/1.0 (+https://synaptic.study/bot)'
@@ -351,47 +323,64 @@ export class ArxivImporter implements WebImportProvider {
       const fileSizeMB = pdfBuffer.length / (1024 * 1024)
       console.log(`[arXiv] Downloaded PDF: ${fileSizeMB.toFixed(2)} MB`)
 
-      let pdfText = ''
+      // Generate a clean filename
+      const sanitizedTitle = (metadata.title || arxivId)
+        .replace(/[^a-zA-Z0-9\s-]/g, '')
+        .replace(/\s+/g, '_')
+        .substring(0, 100)
+      const pdfFileName = `${sanitizedTitle}_${arxivId}.pdf`
+
+      // Extract text for AI features (chat, flashcards, etc.)
+      let extractedText = ''
       let extractionMethod = 'none'
 
-      const pdfParseResult = await parsePDFWithPdfParse(pdfBuffer)
-      if (!pdfParseResult.error && pdfParseResult.text && pdfParseResult.text.length > 100) {
-        pdfText = pdfParseResult.text
-        extractionMethod = pdfParseResult.method || 'pdf-parse'
+      // TIER 1: Try HTML extraction (better formatting, works on Vercel)
+      const htmlResult = await extractFromHTML(arxivId)
+      if (!htmlResult.error && htmlResult.text && htmlResult.text.length > 500) {
+        extractedText = htmlResult.text
+        extractionMethod = 'html-cheerio'
+        console.log(`[arXiv] ✅ Text extracted via HTML: ${extractedText.length} chars`)
       } else {
-        // TIER 3: Try PyMuPDF (only works locally, not on Vercel)
-        console.log('[arXiv] pdf-parse failed, trying PyMuPDF...')
-        const pymupdfResult = await parsePDFWithPyMuPDF(pdfBuffer)
-        if (!pymupdfResult.error && pymupdfResult.text && pymupdfResult.text.length > 100) {
-          pdfText = pymupdfResult.text
-          extractionMethod = pymupdfResult.method || 'pymupdf'
+        // TIER 2: Try pdf-parse
+        const pdfParseResult = await parsePDFWithPdfParse(pdfBuffer)
+        if (!pdfParseResult.error && pdfParseResult.text && pdfParseResult.text.length > 100) {
+          extractedText = pdfParseResult.text
+          extractionMethod = 'pdf-parse'
+          console.log(`[arXiv] ✅ Text extracted via pdf-parse: ${extractedText.length} chars`)
+        } else {
+          // TIER 3: Try PyMuPDF (only works locally)
+          const pymupdfResult = await parsePDFWithPyMuPDF(pdfBuffer)
+          if (!pymupdfResult.error && pymupdfResult.text && pymupdfResult.text.length > 100) {
+            extractedText = pymupdfResult.text
+            extractionMethod = 'pymupdf'
+            console.log(`[arXiv] ✅ Text extracted via PyMuPDF: ${extractedText.length} chars`)
+          }
         }
       }
 
-      if (pdfText && pdfText.length > 100) {
-        console.log(`[arXiv] ✅ Successfully extracted ${pdfText.length} characters using ${extractionMethod}`)
-        content += `## Abstract\n\n${abstract}\n\n` +
-          `---\n\n` +
-          `## Full Paper Content\n\n${pdfText}`
-      } else {
-        // Final fallback to abstract only
-        console.warn('[arXiv] ⚠️ All extraction methods failed, returning abstract only')
-        content += `## Abstract\n\n${abstract}\n\n` +
-          `---\n\n` +
-          `*Note: Could not extract full paper content. This may be a scanned PDF or complex layout.*\n` +
-          `*You can still chat with the abstract and download the PDF manually from the link above.*`
+      // If no text extracted, use abstract as fallback
+      if (!extractedText || extractedText.length < 100) {
+        extractedText = `# ${metadata.title}\n\n## Abstract\n\n${abstract}\n\n` +
+          `*Note: Full text extraction was not possible. The PDF is available for viewing.*`
+        extractionMethod = 'abstract-only'
+        console.warn('[arXiv] ⚠️ Using abstract only for text')
       }
 
+      // Return PDF format with both the PDF buffer and extracted text
       return {
-        content,
+        content: extractedText,
         metadata: {
           ...metadata,
           additionalData: {
             ...metadata.additionalData,
-            extractionMethod: extractionMethod
+            extractionMethod,
+            pdfUrl,
+            fileSize: pdfBuffer.length
           }
         },
-        format: 'markdown'
+        format: 'pdf',
+        pdfBuffer,
+        pdfFileName
       }
     } catch (error) {
       console.error('arXiv content extraction error:', error)

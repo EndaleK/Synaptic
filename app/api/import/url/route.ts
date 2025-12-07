@@ -2,6 +2,7 @@
  * API Route: POST /api/import/url
  *
  * Import content from external URLs (arXiv, web pages, Medium, etc.)
+ * For arXiv: Downloads and stores the PDF, extracts text for AI features
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -14,7 +15,7 @@ import { logger } from '@/lib/logger'
 import { z } from 'zod'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60 // 60 seconds for fetching and processing
+export const maxDuration = 120 // 120 seconds for downloading and uploading PDFs
 
 const requestSchema = z.object({
   url: z.string().url('Invalid URL format')
@@ -81,7 +82,91 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 7. Create document in database
+    // 7. Handle PDF format (arXiv papers)
+    if (extractedContent.format === 'pdf' && extractedContent.pdfBuffer && extractedContent.pdfFileName) {
+      logger.info('Uploading PDF to storage', {
+        userId,
+        fileName: extractedContent.pdfFileName,
+        fileSize: extractedContent.pdfBuffer.length
+      })
+
+      // Upload PDF to Supabase storage
+      const storagePath = `${profile.id}/${Date.now()}_${extractedContent.pdfFileName}`
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(storagePath, extractedContent.pdfBuffer, {
+          contentType: 'application/pdf',
+          upsert: false
+        })
+
+      if (uploadError) {
+        logger.error('PDF upload failed', uploadError, { userId, storagePath })
+        return NextResponse.json(
+          { error: `Failed to upload PDF: ${uploadError.message}` },
+          { status: 500 }
+        )
+      }
+
+      // Get public URL for the PDF
+      const { data: urlData } = supabase.storage
+        .from('documents')
+        .getPublicUrl(storagePath)
+
+      // Create document record with PDF
+      const { data: document, error: insertError } = await supabase
+        .from('documents')
+        .insert({
+          user_id: profile.id,
+          file_name: extractedContent.pdfFileName,
+          file_type: 'application/pdf',
+          file_size: extractedContent.pdfBuffer.length,
+          storage_path: storagePath,
+          file_url: urlData?.publicUrl || null,
+          extracted_text: extractedContent.content, // Text for AI features
+          processing_status: 'completed',
+          metadata: {
+            ...extractedContent.metadata,
+            imported_from: 'url',
+            original_url: url,
+            importer: importer.name,
+            detected_type: detected.type
+          }
+        })
+        .select()
+        .single()
+
+      if (insertError || !document) {
+        logger.error('Failed to create document', insertError, { userId, url })
+        return NextResponse.json(
+          { error: 'Failed to save imported document' },
+          { status: 500 }
+        )
+      }
+
+      const duration = Date.now() - startTime
+      logger.api('POST', '/api/import/url', 200, duration, {
+        userId,
+        documentId: document.id,
+        url,
+        type: detected.type,
+        format: 'pdf',
+        fileSize: extractedContent.pdfBuffer.length
+      })
+
+      return NextResponse.json({
+        success: true,
+        document: {
+          id: document.id,
+          file_name: document.file_name,
+          file_type: document.file_type,
+          title: extractedContent.metadata.title,
+          source: url,
+          type: detected.type
+        }
+      })
+    }
+
+    // 8. Handle markdown/text format (web pages)
     const fileName = `${extractedContent.metadata.title || 'Imported Document'}.md`
     const { data: document, error: insertError } = await supabase
       .from('documents')
@@ -134,7 +219,7 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     const duration = Date.now() - startTime
     logger.error('POST /api/import/url error', error, { duration })
-    logger.api('POST', '/api/import/url', 500, duration, { error: error?.message })
+    logger.api('POST', '/api/import/url', 500, duration, { error: (error as Error)?.message })
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -146,7 +231,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error: 'Failed to import from URL',
-        details: error?.message || 'Unknown error'
+        details: (error as Error)?.message || 'Unknown error'
       },
       { status: 500 }
     )
