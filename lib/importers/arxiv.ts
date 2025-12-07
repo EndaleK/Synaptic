@@ -1,9 +1,67 @@
 // arXiv Academic Paper Importer
+// Uses HTML rendering (ar5iv) as primary source, with PDF fallback
 
 import type { WebImportProvider, ExtractedContent, ContentMetadata } from './types'
 import { parseStringPromise } from 'xml2js'
+import { Readability } from '@mozilla/readability'
+import TurndownService from 'turndown'
 
-// Import PDF parsing functions (multi-tier fallback)
+// Dynamic import for JSDOM to avoid ESM/CommonJS issues
+async function getJSDOM() {
+  const { JSDOM } = await import('jsdom')
+  return JSDOM
+}
+
+// HTML extraction using Readability (works on Vercel)
+async function extractFromHTML(arxivId: string): Promise<{ text: string; error?: string; method?: string }> {
+  try {
+    // arXiv provides HTML versions at https://arxiv.org/html/{id}
+    const htmlUrl = `https://arxiv.org/html/${arxivId}`
+    console.log(`[arXiv] Trying HTML extraction from: ${htmlUrl}`)
+
+    const response = await fetch(htmlUrl, {
+      headers: {
+        'User-Agent': 'SynapticBot/1.0 (+https://synaptic.study/bot)'
+      }
+    })
+
+    if (!response.ok) {
+      return { text: '', error: `HTML not available (${response.status})` }
+    }
+
+    const html = await response.text()
+    const JSDOM = await getJSDOM()
+    const dom = new JSDOM(html, { url: htmlUrl })
+    const document = dom.window.document
+
+    // Use Readability to extract main content
+    const reader = new Readability(document, {
+      charThreshold: 100
+    })
+
+    const article = reader.parse()
+
+    if (!article || !article.textContent || article.textContent.length < 500) {
+      return { text: '', error: 'HTML extraction returned insufficient content' }
+    }
+
+    // Convert to markdown for better formatting
+    const turndown = new TurndownService({
+      headingStyle: 'atx',
+      codeBlockStyle: 'fenced'
+    })
+
+    const markdown = turndown.turndown(article.content)
+
+    console.log(`[arXiv] ✅ HTML extraction successful: ${markdown.length} chars`)
+    return { text: markdown, method: 'html' }
+  } catch (error) {
+    console.error('[arXiv] HTML extraction failed:', error)
+    return { text: '', error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+// PDF extraction using pdf-parse (fallback for older papers)
 async function parsePDFWithPdfParse(buffer: Buffer): Promise<{ text: string; error?: string; method?: string }> {
   try {
     const pdfParseModule = require('pdf-parse')
@@ -156,10 +214,44 @@ export class ArxivImporter implements WebImportProvider {
     }
 
     try {
-      // Download PDF from arXiv
       const pdfUrl = `https://arxiv.org/pdf/${arxivId}.pdf`
-      console.log(`[arXiv] Downloading PDF: ${pdfUrl}`)
-      const pdfResponse = await fetch(pdfUrl)
+      const abstract = metadata.description || ''
+
+      // Build header content
+      let content = `# ${metadata.title}\n\n` +
+        `**Authors:** ${Array.isArray(metadata.author) ? metadata.author.join(', ') : metadata.author}\n\n` +
+        `**arXiv ID:** ${arxivId}\n\n` +
+        `**Published:** ${metadata.publishedDate}\n\n` +
+        `**PDF URL:** ${pdfUrl}\n\n`
+
+      // TIER 1: Try HTML extraction first (works on Vercel, best formatting)
+      const htmlResult = await extractFromHTML(arxivId)
+      if (!htmlResult.error && htmlResult.text && htmlResult.text.length > 500) {
+        console.log(`[arXiv] ✅ Successfully extracted ${htmlResult.text.length} characters using HTML`)
+        content += `## Abstract\n\n${abstract}\n\n` +
+          `---\n\n` +
+          `## Full Paper Content\n\n${htmlResult.text}`
+
+        return {
+          content,
+          metadata: {
+            ...metadata,
+            additionalData: {
+              ...metadata.additionalData,
+              extractionMethod: 'html'
+            }
+          },
+          format: 'markdown'
+        }
+      }
+
+      // TIER 2: Try PDF extraction with pdf-parse (fallback for older papers)
+      console.log('[arXiv] HTML not available, trying PDF extraction...')
+      const pdfResponse = await fetch(pdfUrl, {
+        headers: {
+          'User-Agent': 'SynapticBot/1.0 (+https://synaptic.study/bot)'
+        }
+      })
 
       if (!pdfResponse.ok) {
         throw new Error(`Failed to download PDF: ${pdfResponse.statusText}`)
@@ -170,8 +262,6 @@ export class ArxivImporter implements WebImportProvider {
       const fileSizeMB = pdfBuffer.length / (1024 * 1024)
       console.log(`[arXiv] Downloaded PDF: ${fileSizeMB.toFixed(2)} MB`)
 
-      // Extract text from PDF using multi-tier fallback
-      // Tier 1: Try pdf-parse (fast, handles most PDFs)
       let pdfText = ''
       let extractionMethod = 'none'
 
@@ -180,7 +270,7 @@ export class ArxivImporter implements WebImportProvider {
         pdfText = pdfParseResult.text
         extractionMethod = pdfParseResult.method || 'pdf-parse'
       } else {
-        // Tier 2: Try PyMuPDF (robust, handles complex PDFs)
+        // TIER 3: Try PyMuPDF (only works locally, not on Vercel)
         console.log('[arXiv] pdf-parse failed, trying PyMuPDF...')
         const pymupdfResult = await parsePDFWithPyMuPDF(pdfBuffer)
         if (!pymupdfResult.error && pymupdfResult.text && pymupdfResult.text.length > 100) {
@@ -189,32 +279,29 @@ export class ArxivImporter implements WebImportProvider {
         }
       }
 
-      // Build content with metadata + full PDF text
-      const abstract = metadata.description || ''
-      let content = `# ${metadata.title}\n\n` +
-        `**Authors:** ${Array.isArray(metadata.author) ? metadata.author.join(', ') : metadata.author}\n\n` +
-        `**arXiv ID:** ${arxivId}\n\n` +
-        `**Published:** ${metadata.publishedDate}\n\n` +
-        `**PDF URL:** ${pdfUrl}\n\n`
-
       if (pdfText && pdfText.length > 100) {
-        // Successfully extracted PDF text
         console.log(`[arXiv] ✅ Successfully extracted ${pdfText.length} characters using ${extractionMethod}`)
         content += `## Abstract\n\n${abstract}\n\n` +
           `---\n\n` +
           `## Full Paper Content\n\n${pdfText}`
       } else {
-        // Fallback to abstract only
-        console.warn('[arXiv] ⚠️ PDF extraction failed, returning abstract only')
+        // Final fallback to abstract only
+        console.warn('[arXiv] ⚠️ All extraction methods failed, returning abstract only')
         content += `## Abstract\n\n${abstract}\n\n` +
           `---\n\n` +
-          `*Note: Could not extract full PDF content. This may be a scanned PDF or complex layout.*\n` +
-          `*You can still chat with the abstract and download the PDF manually.*`
+          `*Note: Could not extract full paper content. This may be a scanned PDF or complex layout.*\n` +
+          `*You can still chat with the abstract and download the PDF manually from the link above.*`
       }
 
       return {
         content,
-        metadata,
+        metadata: {
+          ...metadata,
+          additionalData: {
+            ...metadata.additionalData,
+            extractionMethod: extractionMethod
+          }
+        },
         format: 'markdown'
       }
     } catch (error) {
