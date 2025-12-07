@@ -21,6 +21,7 @@ mermaid.initialize({
   theme: 'default',
   securityLevel: 'loose',
   fontFamily: 'Patrick Hand, cursive',
+  suppressErrors: true,
 })
 
 export default function MarkdownRenderer({ content, className = '', disableDiagrams = false }: MarkdownRendererProps) {
