@@ -1,18 +1,12 @@
 // arXiv Academic Paper Importer
-// Uses HTML rendering (ar5iv) as primary source, with PDF fallback
+// Uses HTML rendering as primary source, with PDF fallback
 
 import type { WebImportProvider, ExtractedContent, ContentMetadata } from './types'
 import { parseStringPromise } from 'xml2js'
-import { Readability } from '@mozilla/readability'
+import * as cheerio from 'cheerio'
 import TurndownService from 'turndown'
 
-// Dynamic import for JSDOM to avoid ESM/CommonJS issues
-async function getJSDOM() {
-  const { JSDOM } = await import('jsdom')
-  return JSDOM
-}
-
-// HTML extraction using Readability (works on Vercel)
+// HTML extraction using Cheerio (works on Vercel - no JSDOM ESM issues)
 async function extractFromHTML(arxivId: string): Promise<{ text: string; error?: string; method?: string }> {
   try {
     // arXiv provides HTML versions at https://arxiv.org/html/{id}
@@ -35,26 +29,48 @@ async function extractFromHTML(arxivId: string): Promise<{ text: string; error?:
     const html = await response.text()
     console.log(`[arXiv] HTML fetched: ${html.length} bytes`)
 
-    const JSDOM = await getJSDOM()
-    const dom = new JSDOM(html, { url: htmlUrl })
-    const document = dom.window.document
+    // Use Cheerio to parse HTML (lightweight, Vercel-compatible)
+    const $ = cheerio.load(html)
 
-    // Use Readability to extract main content
-    const reader = new Readability(document, {
-      charThreshold: 100
-    })
+    // Remove unwanted elements
+    $('script, style, nav, header, footer, .ltx_page_header, .ltx_page_footer, .ltx_bibliography').remove()
 
-    const article = reader.parse()
+    // Try to find the main article content
+    let articleHtml = ''
 
-    if (!article) {
-      console.log('[arXiv] Readability returned null article')
-      return { text: '', error: 'Readability failed to parse HTML' }
+    // arXiv HTML uses ltx_document class for main content
+    const ltxDocument = $('.ltx_document')
+    if (ltxDocument.length > 0) {
+      articleHtml = ltxDocument.html() || ''
+      console.log(`[arXiv] Found .ltx_document: ${articleHtml.length} chars`)
     }
 
-    console.log(`[arXiv] Readability parsed: title="${article.title}", textContent=${article.textContent?.length || 0} chars`)
+    // Fallback to article tag
+    if (!articleHtml || articleHtml.length < 500) {
+      const article = $('article')
+      if (article.length > 0) {
+        articleHtml = article.html() || ''
+        console.log(`[arXiv] Found <article>: ${articleHtml.length} chars`)
+      }
+    }
 
-    if (!article.textContent || article.textContent.length < 500) {
-      return { text: '', error: `HTML extraction returned insufficient content (${article.textContent?.length || 0} chars)` }
+    // Fallback to main tag
+    if (!articleHtml || articleHtml.length < 500) {
+      const main = $('main')
+      if (main.length > 0) {
+        articleHtml = main.html() || ''
+        console.log(`[arXiv] Found <main>: ${articleHtml.length} chars`)
+      }
+    }
+
+    // Final fallback to body
+    if (!articleHtml || articleHtml.length < 500) {
+      articleHtml = $('body').html() || ''
+      console.log(`[arXiv] Using <body>: ${articleHtml.length} chars`)
+    }
+
+    if (!articleHtml || articleHtml.length < 500) {
+      return { text: '', error: `HTML extraction returned insufficient content (${articleHtml?.length || 0} chars)` }
     }
 
     // Convert to markdown for better formatting
@@ -63,10 +79,10 @@ async function extractFromHTML(arxivId: string): Promise<{ text: string; error?:
       codeBlockStyle: 'fenced'
     })
 
-    const markdown = turndown.turndown(article.content)
+    const markdown = turndown.turndown(articleHtml)
 
     console.log(`[arXiv] ✅ HTML extraction successful: ${markdown.length} chars`)
-    return { text: markdown, method: 'html' }
+    return { text: markdown, method: 'html-cheerio' }
   } catch (error) {
     console.error('[arXiv] HTML extraction failed:', error)
     return { text: '', error: error instanceof Error ? error.message : 'Unknown error' }
