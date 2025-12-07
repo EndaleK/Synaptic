@@ -25,11 +25,16 @@ async function extractFromHTML(arxivId: string): Promise<{ text: string; error?:
       }
     })
 
+    console.log(`[arXiv] HTML fetch response: ${response.status} ${response.statusText}`)
+
     if (!response.ok) {
+      console.log(`[arXiv] HTML not available: ${response.status}`)
       return { text: '', error: `HTML not available (${response.status})` }
     }
 
     const html = await response.text()
+    console.log(`[arXiv] HTML fetched: ${html.length} bytes`)
+
     const JSDOM = await getJSDOM()
     const dom = new JSDOM(html, { url: htmlUrl })
     const document = dom.window.document
@@ -41,8 +46,15 @@ async function extractFromHTML(arxivId: string): Promise<{ text: string; error?:
 
     const article = reader.parse()
 
-    if (!article || !article.textContent || article.textContent.length < 500) {
-      return { text: '', error: 'HTML extraction returned insufficient content' }
+    if (!article) {
+      console.log('[arXiv] Readability returned null article')
+      return { text: '', error: 'Readability failed to parse HTML' }
+    }
+
+    console.log(`[arXiv] Readability parsed: title="${article.title}", textContent=${article.textContent?.length || 0} chars`)
+
+    if (!article.textContent || article.textContent.length < 500) {
+      return { text: '', error: `HTML extraction returned insufficient content (${article.textContent?.length || 0} chars)` }
     }
 
     // Convert to markdown for better formatting
