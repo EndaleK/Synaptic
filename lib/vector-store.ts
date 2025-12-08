@@ -148,10 +148,44 @@ function isStructuralQuery(query: string): boolean {
     'table of contents', 'toc', 'outline', 'structure',
     'topics', 'parts', 'part', 'contents', 'index',
     'what is covered', 'what does it cover', 'overview',
-    'how many', 'list of', 'main topics', 'headings'
+    'how many', 'list of', 'list all', 'main topics', 'headings',
+    'what are the', 'show me the', 'tell me the'
   ]
   const lowerQuery = query.toLowerCase()
   return structuralKeywords.some(keyword => lowerQuery.includes(keyword))
+}
+
+/**
+ * Check if a chunk likely contains chapter headers or TOC content
+ * Returns a score indicating how many chapter references are found
+ */
+function getChapterContentScore(text: string): number {
+  let score = 0
+
+  // Count chapter references (main indicator)
+  const chapterMatches = text.match(/chapter\s+\d+/gi) || []
+  score += chapterMatches.length * 2
+
+  // Count numbered sections like "1. Introduction"
+  const numberedSections = text.match(/^\d+\.\s+[A-Z]/gm) || []
+  score += numberedSections.length
+
+  // Check for TOC indicators
+  if (/table of contents/gi.test(text)) score += 5
+  if (/contents/gi.test(text) && /\d+/g.test(text)) score += 3
+
+  // Check for Part headers
+  const partMatches = text.match(/Part\s+[IVX]+/gi) || []
+  score += partMatches.length
+
+  return score
+}
+
+/**
+ * Check if a chunk likely contains chapter headers or TOC content
+ */
+function containsChapterContent(text: string): boolean {
+  return getChapterContentScore(text) > 0
 }
 
 /**
@@ -164,6 +198,58 @@ function enhanceQuery(query: string): string {
     return `${query} table of contents chapters sections outline structure topics covered`
   }
   return query
+}
+
+/**
+ * Find all chunks that contain chapter/TOC content by scanning early chunks
+ * This is crucial for structural queries about chapter lists
+ */
+async function findChapterChunks(
+  documentId: string,
+  maxChunksToScan: number = 50
+): Promise<Array<{ text: string; chunkIndex: number; score: number }>> {
+  const namespace = getNamespace(documentId)
+  const ns = index.namespace(namespace)
+
+  // Get stats to know how many chunks exist
+  const stats = await index.describeIndexStats()
+  const namespaceStats = stats.namespaces?.[namespace]
+
+  if (!namespaceStats || namespaceStats.recordCount === 0) {
+    return []
+  }
+
+  const totalChunks = namespaceStats.recordCount
+  const chunksToScan = Math.min(maxChunksToScan, totalChunks)
+
+  // Fetch early chunks (TOC is usually in first 20-50 chunks of a book)
+  const indicesToFetch = Array.from({ length: chunksToScan }, (_, i) => i)
+  const ids = indicesToFetch.map((i) => `${documentId}_chunk_${i}`)
+
+  const results = await ns.fetch(ids)
+
+  // Score each chunk for chapter content
+  const scoredChunks: Array<{ text: string; chunkIndex: number; score: number }> = []
+
+  for (let i = 0; i < indicesToFetch.length; i++) {
+    const id = ids[i]
+    const vector = results.records?.[id]
+    const text = (vector?.metadata?.chunkText as string) || (vector?.metadata?.text as string) || ''
+
+    if (text) {
+      const score = getChapterContentScore(text)
+      if (score > 0) {
+        scoredChunks.push({
+          text,
+          chunkIndex: i,
+          score,
+        })
+      }
+    }
+  }
+
+  // Sort by score (highest first) to prioritize chunks with most chapter references
+  return scoredChunks.sort((a, b) => b.score - a.score)
 }
 
 /**
@@ -228,9 +314,9 @@ export async function searchDocument(
     const isStructural = isStructuralQuery(query)
     const enhancedQuery = enhanceQuery(query)
 
-    // For structural queries, retrieve more chunks (10) to capture table of contents
-    // Also include early chunks (first 5) which often contain TOC
-    const effectiveTopK = isStructural ? Math.max(topK, 10) : topK
+    // For structural queries, retrieve more chunks (20) to capture table of contents
+    // Structural queries need more context to find all chapters
+    const effectiveTopK = isStructural ? Math.max(topK, 20) : topK
 
     console.log('[Vector Store] Search query:', {
       original: query,
@@ -239,7 +325,71 @@ export async function searchDocument(
       effectiveTopK,
     })
 
-    // Generate query embedding using enhanced query
+    // For structural queries about chapters/TOC, use dedicated chapter finder
+    // This scans early chunks for chapter patterns (much more reliable than semantic search)
+    if (isStructural) {
+      console.log('[Vector Store] Structural query detected, scanning for chapter content...')
+
+      // Find all chunks with chapter content (scans first 50 chunks)
+      const chapterChunks = await findChapterChunks(documentId, 50)
+
+      if (chapterChunks.length > 0) {
+        console.log(`[Vector Store] Found ${chapterChunks.length} chunks with chapter content`)
+
+        // Sort by chunk index to preserve document order (TOC appears sequentially)
+        const sortedChunks = chapterChunks
+          .sort((a, b) => a.chunkIndex - b.chunkIndex)
+          .map(chunk => ({
+            text: chunk.text,
+            score: 0.9, // High score since these are direct pattern matches
+            chunkIndex: chunk.chunkIndex,
+          }))
+
+        // Also do semantic search and merge results for completeness
+        const queryEmbedding = await embeddings.embedQuery(enhancedQuery)
+        const semanticResults = await ns.query({
+          vector: queryEmbedding,
+          topK: effectiveTopK,
+          includeMetadata: true,
+        })
+
+        if (semanticResults.matches && semanticResults.matches.length > 0) {
+          const existingIndices = new Set(sortedChunks.map(c => c.chunkIndex))
+
+          const additionalResults = semanticResults.matches
+            .filter(match => !existingIndices.has((match.metadata?.chunkIndex as number) || 0))
+            .map(match => ({
+              text: (match.metadata?.chunkText as string) || (match.metadata?.text as string) || '',
+              score: match.score || 0,
+              chunkIndex: (match.metadata?.chunkIndex as number) || 0,
+            }))
+
+          // Combine pattern-matched chunks with semantic results, sorted by chunk index
+          const allResults = [...sortedChunks, ...additionalResults]
+            .sort((a, b) => a.chunkIndex - b.chunkIndex)
+
+          console.log(`[Vector Store] Returning ${allResults.length} total chunks for structural query`)
+          return allResults
+        }
+
+        return sortedChunks
+      }
+
+      // Fallback: if no chapter patterns found, fetch first 20 early chunks
+      console.log('[Vector Store] No chapter patterns found, fetching early chunks as fallback')
+      const earlyIndices = Array.from({ length: 20 }, (_, i) => i)
+      const earlyChunks = await getChunksByIndices(documentId, earlyIndices)
+
+      if (earlyChunks.length > 0) {
+        return earlyChunks.map((text, idx) => ({
+          text,
+          score: 0.5,
+          chunkIndex: idx,
+        }))
+      }
+    }
+
+    // Standard semantic search for non-structural queries
     const queryEmbedding = await embeddings.embedQuery(enhancedQuery)
 
     // Search Pinecone
@@ -251,46 +401,14 @@ export async function searchDocument(
 
     // Format results
     if (!results.matches || results.matches.length === 0) {
-      // For structural queries with no results, try fetching early document chunks
-      if (isStructural) {
-        console.log('[Vector Store] No semantic results for structural query, fetching early chunks')
-        const earlyChunks = await getChunksByIndices(documentId, [0, 1, 2, 3, 4])
-        if (earlyChunks.length > 0) {
-          return earlyChunks.map((text, idx) => ({
-            text,
-            score: 0.5, // Lower confidence score
-            chunkIndex: idx,
-          }))
-        }
-      }
       return []
     }
 
-    let formattedResults = results.matches.map((match) => ({
+    const formattedResults = results.matches.map((match) => ({
       text: (match.metadata?.chunkText as string) || (match.metadata?.text as string) || '',
       score: match.score || 0,
       chunkIndex: (match.metadata?.chunkIndex as number) || 0,
     }))
-
-    // For structural queries, also include early chunks (often contain TOC)
-    // if they're not already in the results
-    if (isStructural) {
-      const existingIndices = new Set(formattedResults.map(r => r.chunkIndex))
-      const earlyIndices = [0, 1, 2, 3, 4].filter(idx => !existingIndices.has(idx))
-
-      if (earlyIndices.length > 0) {
-        const earlyChunks = await getChunksByIndices(documentId, earlyIndices)
-        const earlyResults = earlyChunks.map((text, i) => ({
-          text,
-          score: 0.6, // Lower than semantic matches
-          chunkIndex: earlyIndices[i],
-        }))
-
-        // Combine and sort by chunk index for structural queries (preserves document order)
-        formattedResults = [...formattedResults, ...earlyResults]
-          .sort((a, b) => a.chunkIndex - b.chunkIndex)
-      }
-    }
 
     return formattedResults
   } catch (error) {
