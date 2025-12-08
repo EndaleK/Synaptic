@@ -45,10 +45,18 @@ async function parsePDFWithPdfParse(buffer: Buffer): Promise<PDFParseResult> {
 
     console.log(`Starting pdf-parse extraction (buffer size: ${buffer.length} bytes)...`)
 
+    // Custom render function to prevent pdf-parse from loading its internal test file
+    // This fixes the "ENOENT: no such file or directory, open './test/data/05-versions-space.pdf'" error
+    const renderPage = (pageData: any) => {
+      return pageData.getTextContent().then((textContent: any) => {
+        return textContent.items.map((item: any) => item.str).join(' ')
+      })
+    }
+
     const data = await pdfParse(buffer, {
       // Options for better performance
       max: 0, // Parse all pages (0 = no limit)
-      version: 'v2.0.550' // Use specific PDF.js version for consistency
+      pagerender: renderPage // Custom render function prevents test file loading
     })
 
     const extractedText = data.text
