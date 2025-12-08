@@ -144,6 +144,7 @@ export async function POST(
     let ragIndexed = false
     let ragChunkCount = 0
     let extractionMethod: string = 'none'
+    let pageCount: number | undefined = undefined
 
     if (isPDF) {
       // Small PDFs (<10MB): Extract text synchronously for immediate use
@@ -186,7 +187,8 @@ export async function POST(
               extractedText = result.text
               hasExtractedText = true
               extractionMethod = result.method || 'pdf-parse'
-              console.log(`✅ PDF text extracted synchronously: ${result.text.length} characters (method: ${extractionMethod})`)
+              pageCount = result.pageCount // Capture page count for topic selection UI
+              console.log(`✅ PDF text extracted synchronously: ${result.text.length} characters, ${pageCount} pages (method: ${extractionMethod})`)
             }
           }
         } catch (pdfError) {
@@ -287,6 +289,7 @@ export async function POST(
         processing_completed_at: new Date().toISOString(), // Upload completed immediately
         extraction_method: extractionMethod, // 'pdf-parse', 'pymupdf', 'mammoth', 'async_inngest', 'none', or 'failed_*'
         text_length: extractedText?.length || undefined,
+        page_count: pageCount, // CRITICAL: Enables topic selection UI in flashcard generation
         rag_indexed: ragIndexed, // Will be false, indexing happens lazily
         optimization_note: isPDF
           ? (hasExtractedText

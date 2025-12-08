@@ -260,7 +260,13 @@ Guidelines:
 - If the document doesn't contain information about the topic, ask: "What sections of the document have you explored? What related concepts did you find?"
 - Never lecture or explain - always question and guide
 - Encourage critical thinking through "Why?", "How?", "What if?", "What evidence?" questions
-- If you catch yourself stating facts, STOP and rephrase as a question`
+- If you catch yourself stating facts, STOP and rephrase as a question
+
+📊 RESPONSE FORMAT:
+- Use **LaTeX equations** when discussing math: $inline$ or $$block$$
+- Use **Mermaid diagrams** for processes, relationships, and flows
+- Use **tables** for comparisons and organized data
+- Use **markdown formatting** (headers, bold, lists) for clarity`
 
     } else if (effectiveTeachingMode === 'direct') {
       // Direct mode: Provide clear, straightforward answers
@@ -272,7 +278,14 @@ Key guidelines:
 - If the document doesn't contain information to answer the question, clearly state that
 - Be specific and cite relevant parts of the document when possible
 - Use straightforward, well-organized explanations
-- If asked about topics not in the document, politely redirect to document content`
+- If asked about topics not in the document, politely redirect to document content
+
+📊 RESPONSE FORMAT:
+- Use **LaTeX equations** when discussing math: $inline$ or $$block$$
+- Use **Mermaid diagrams** for processes, relationships, and flows
+- Use **tables** for comparisons and organized data
+- Use **markdown formatting** (headers, bold, lists) for clarity
+- Match response depth to question complexity`
 
     } else {
       // Mixed mode: Balance between direct answers and guided exploration
@@ -286,7 +299,14 @@ Key guidelines:
 - Example: "Based on the document, X is [brief answer]. Now, what implications do you see? How might this connect to...?"
 - Balance giving information with prompting discovery
 - Be specific and cite relevant parts of the document when possible
-- If asked about topics not in the document, politely redirect to document content`
+- If asked about topics not in the document, politely redirect to document content
+
+📊 RESPONSE FORMAT:
+- Use **LaTeX equations** when discussing math: $inline$ or $$block$$
+- Use **Mermaid diagrams** for processes, relationships, and flows
+- Use **tables** for comparisons and organized data
+- Use **markdown formatting** (headers, bold, lists) for clarity
+- Match response depth to question complexity`
     }
 
     // Apply personalization if profile exists (this adds learning style adaptations on top of teaching mode)
@@ -338,7 +358,7 @@ Please answer this question based only on the information provided in the docume
       ],
       {
         temperature: 0.1, // Lower temperature for more focused, factual responses
-        maxTokens: 1000,
+        maxTokens: 2000, // Increased for detailed responses with equations and diagrams
       }
     )
     const aiDuration = Date.now() - aiStartTime

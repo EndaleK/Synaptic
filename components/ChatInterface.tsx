@@ -10,6 +10,7 @@ import { useToast } from "./ToastContainer"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
 import SectionNavigator from "./SectionNavigator"
 import InfoTipBanner from "./InfoTipBanner"
+import MarkdownRenderer from "./MarkdownRenderer"
 import type { DocumentSection } from "@/lib/document-parser/section-detector"
 
 // Dynamic imports for voice and image features
@@ -338,7 +339,11 @@ export default function ChatInterface() {
   }, [isClient])
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    // Use block: "end" and inline: "nearest" to scroll only within the messages container
+    // This prevents the entire page from scrolling when the chat is in a fixed-height layout
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
   }
 
   useEffect(() => {
@@ -893,7 +898,7 @@ export default function ChatInterface() {
 
             {/* Document Viewer Column - Full width on mobile, 50% on desktop */}
             <div className={cn(
-              "border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900",
+              "border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 h-full overflow-hidden",
               "w-full lg:w-1/2",
               mobileView === 'chat' && "hidden lg:block"
             )}>
@@ -955,12 +960,12 @@ export default function ChatInterface() {
 
             {/* Chat Column - Full width on mobile, 50% on desktop */}
             <div className={cn(
-              "flex flex-col",
+              "flex flex-col h-full overflow-hidden",
               "w-full lg:w-1/2",
               mobileView === 'document' && "hidden lg:flex"
             )}>
               {/* Mobile Header for Chat View */}
-              <div className="lg:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+              <div className="lg:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3 flex-shrink-0">
                 <button
                   onClick={() => setMobileView('document')}
                   className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium"
@@ -977,7 +982,7 @@ export default function ChatInterface() {
               </div>
 
               {/* Desktop Header */}
-              <div className="hidden lg:block bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-3">
+              <div className="hidden lg:block bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-3 flex-shrink-0">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
@@ -1158,7 +1163,14 @@ export default function ChatInterface() {
                                 : "bg-accent-primary/5 dark:bg-accent-primary/10 text-gray-900 dark:text-gray-100 border border-accent-primary/30 dark:border-accent-primary/50"
                             )}
                           >
-                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                            {message.type === "user" ? (
+                              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                            ) : (
+                              <MarkdownRenderer
+                                content={message.content}
+                                className="text-sm prose-sm max-w-none prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-900 dark:prose-p:text-gray-100"
+                              />
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1186,7 +1198,7 @@ export default function ChatInterface() {
               </div>
 
               {/* Input Area */}
-              <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 pb-20 md:pb-4">
+              <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 pb-20 md:pb-4 flex-shrink-0">
                 <div className="flex gap-2 items-end">
                   {/* Voice Chat - Mic button and TTS controls */}
                   <VoiceChat

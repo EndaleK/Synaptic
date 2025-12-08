@@ -330,7 +330,14 @@ IMPORTANT: The excerpts provided are retrieved using semantic search and may not
 - If the excerpts don't contain the answer, clearly state that the information wasn't found in the retrieved sections
 - For structural questions (chapters, sections, table of contents), look carefully in the excerpts for numbered lists, headings, or content outlines
 - Be honest when information is incomplete or unavailable in the provided excerpts
-- Never make up information that isn't in the excerpts`
+- Never make up information that isn't in the excerpts
+
+📊 RESPONSE FORMAT:
+- Use **LaTeX equations** when discussing math: $inline$ or $$block$$
+- Use **Mermaid diagrams** for processes, relationships, and flows
+- Use **tables** for comparisons and organized data
+- Use **markdown formatting** (headers, bold, lists) for clarity
+- Match response depth to question complexity`
 
     if (effectiveTeachingMode === 'socratic') {
       baseSystemPrompt = `You are a Socratic tutor using the classical Socratic method. NEVER give direct answers. ALWAYS respond with guiding questions that lead students to discover answers themselves.
@@ -397,7 +404,7 @@ Please answer this question based on the relevant excerpts provided above. The e
       ],
       {
         temperature: 0.1,
-        maxTokens: 1000,
+        maxTokens: 2000, // Increased for detailed responses with equations and diagrams
       }
     )
 
