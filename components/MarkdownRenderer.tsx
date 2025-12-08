@@ -3,7 +3,10 @@
 import React, { useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import mermaid from 'mermaid'
+import 'katex/dist/katex.min.css'
 
 interface MarkdownRendererProps {
   content: string
@@ -231,7 +234,8 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
   return (
     <div className={`${className} overflow-wrap-anywhere w-full`}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
         components={{
           // Custom code block renderer to detect mermaid diagrams
           code({ node, inline, className, children, ...props }) {

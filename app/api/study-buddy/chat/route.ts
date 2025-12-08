@@ -372,7 +372,7 @@ Use this content to answer the user's question. Cite the document names when ref
       // Fallback to non-streaming if provider doesn't support it
       const completion = await provider.complete(conversationMessages, {
         temperature: personalityMode === 'buddy' ? 0.8 : 0.6,
-        maxTokens: 1500
+        maxTokens: 2500
       })
 
       // Append citations if web search was used
@@ -404,7 +404,7 @@ Use this content to answer the user's question. Cite the document names when ref
         try {
           const generator = provider.streamComplete!(conversationMessages, {
             temperature: personalityMode === 'buddy' ? 0.8 : 0.6,
-            maxTokens: 1500
+            maxTokens: 2500
           })
 
           for await (const chunk of generator) {
