@@ -73,6 +73,54 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     processDiagrams()
   }, [pendingDiagrams])
 
+  /**
+   * Sanitize Mermaid code to fix common AI-generated syntax issues
+   */
+  const sanitizeMermaidCode = (code: string): string => {
+    let sanitized = code
+
+    // Remove emojis - they cause syntax errors in node labels
+    // eslint-disable-next-line no-misleading-character-class
+    sanitized = sanitized.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}]/gu, '')
+
+    // Replace ampersands with "and" - & breaks Mermaid syntax
+    sanitized = sanitized.replace(/&/g, 'and')
+
+    // Replace forward slashes in node labels with "or" - / can break syntax
+    // Only replace within brackets [text/with/slashes] -> [text or with or slashes]
+    sanitized = sanitized.replace(/\[([^\]]*)\]/g, (match, content) => {
+      return '[' + content.replace(/\//g, ' or ') + ']'
+    })
+
+    // Remove or escape problematic special characters in labels
+    sanitized = sanitized.replace(/\[([^\]]*)\]/g, (match, content) => {
+      // Remove characters that break Mermaid: # { } < >
+      let cleaned = content.replace(/[#{}]/g, '')
+      // Replace < > with text equivalents
+      cleaned = cleaned.replace(/</g, 'less than ')
+      cleaned = cleaned.replace(/>/g, 'greater than ')
+      return '[' + cleaned + ']'
+    })
+
+    // Fix double quotes inside labels - replace with single quotes
+    sanitized = sanitized.replace(/\[([^\]]*)\]/g, (match, content) => {
+      return '[' + content.replace(/"/g, "'") + ']'
+    })
+
+    // Remove stray backticks that might have leaked from markdown
+    sanitized = sanitized.replace(/`/g, '')
+
+    // Fix common AI mistake: using --> with text instead of -->|text|
+    // Pattern: A --> text B  should be A -->|text| B
+    // But only if "text" is not a node identifier (doesn't have brackets)
+    sanitized = sanitized.replace(/-->\s+([^[\s|]+)\s+(\w)/g, '-->|$1| $2')
+
+    // Normalize whitespace - multiple spaces to single
+    sanitized = sanitized.replace(/  +/g, ' ')
+
+    return sanitized
+  }
+
   const isValidMermaidCode = (code: string): boolean => {
     if (!code || !code.trim()) return false
 
@@ -113,15 +161,18 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
 
   const renderMermaidDiagram = async (code: string, key: string): Promise<void> => {
     try {
+      // Sanitize the code first to fix common AI-generated issues
+      const sanitizedCode = sanitizeMermaidCode(code)
+
       // Validate before attempting to render
-      if (!isValidMermaidCode(code)) {
+      if (!isValidMermaidCode(sanitizedCode)) {
         setRenderedDiagrams(prev => new Map(prev).set(key, 'FAILED'))
         return
       }
 
       // Clean up the code: fix multiline node labels that got split
       // Replace line breaks within brackets to keep labels on one line
-      let cleanedCode = code.trim()
+      let cleanedCode = sanitizedCode.trim()
 
       // Fix incomplete node labels ONLY if line ends with unclosed bracket
       // Do NOT fix lines with multiple complete node labels like: A[X] --> B[Y]
