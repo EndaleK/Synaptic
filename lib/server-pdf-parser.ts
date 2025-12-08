@@ -114,8 +114,36 @@ async function parsePDFWithPdfParse(buffer: Buffer): Promise<PDFParseResult> {
   }
 }
 
+/**
+ * Check if PyMuPDF extraction is available
+ * Only available locally, not on Vercel/serverless
+ */
+function isPyMuPDFAvailable(): boolean {
+  // On Vercel, Python/PyMuPDF are not available
+  if (process.env.VERCEL) {
+    return false
+  }
+
+  try {
+    const projectRoot = process.cwd()
+    const venvPython = path.join(projectRoot, 'venv', 'bin', 'python3')
+    return fs.existsSync(venvPython)
+  } catch {
+    return false
+  }
+}
+
 // Fallback: PyMuPDF extraction (more robust for complex PDFs)
 export async function parsePDFWithPyMuPDF(buffer: Buffer): Promise<PDFParseResult> {
+  // Check if PyMuPDF is available before attempting
+  if (!isPyMuPDFAvailable()) {
+    console.log('⚠️ PyMuPDF not available (running on Vercel or venv missing)')
+    return {
+      text: "",
+      error: "PyMuPDF extraction is not available in production. This PDF requires advanced extraction that only works locally."
+    }
+  }
+
   try {
     console.log('🐍 Attempting PyMuPDF extraction (fallback)...')
 
@@ -258,31 +286,63 @@ export async function parseServerPDF(file: File): Promise<PDFParseResult> {
       }
     }
 
-    // For large files (>60MB), skip pdf-parse, go directly to PyMuPDF
+    // For large files (>80MB), skip pdf-parse, go directly to PyMuPDF
     if (isLargeFile) {
-      console.log(`📦 Large file detected (${fileSizeMB.toFixed(2)}MB), using PyMuPDF directly (most reliable for large files)...`)
-      const pymupdfResult = await parsePDFWithPyMuPDF(buffer)
+      // On Vercel, PyMuPDF is not available - check if Gemini can handle it
+      const isVercel = !!process.env.VERCEL
 
-      if (!pymupdfResult.error && pymupdfResult.text && pymupdfResult.text.length > 100) {
-        console.log('✅ PyMuPDF extraction successful for large file')
-        return pymupdfResult
+      if (isVercel && !process.env.GEMINI_API_KEY) {
+        // On Vercel without Gemini, large files cannot be processed
+        return {
+          text: "",
+          error: `This PDF is too large (${fileSizeMB.toFixed(1)}MB) for cloud processing. Large PDFs (>80MB) require either:\n• Gemini API key configured in Vercel (GEMINI_API_KEY)\n• Local development environment with PyMuPDF\n\nPlease try splitting the PDF into smaller files (<80MB each) or configure Gemini API.`
+        }
       }
 
-      // PyMuPDF failed - try Gemini as fallback if file isn't too large (Gemini tested up to ~60MB)
-      if (process.env.GEMINI_API_KEY && file.size < 70 * 1024 * 1024) {
-        console.warn(`⚠️ PyMuPDF failed for large file (${fileSizeMB.toFixed(2)}MB), trying Gemini Vision as fallback...`)
-        const geminiResult = await extractPDFWithGemini(buffer, file.name)
+      // Try PyMuPDF first (only works locally)
+      if (!isVercel) {
+        console.log(`📦 Large file detected (${fileSizeMB.toFixed(2)}MB), using PyMuPDF directly (most reliable for large files)...`)
+        const pymupdfResult = await parsePDFWithPyMuPDF(buffer)
 
-        if (!geminiResult.error && geminiResult.text && geminiResult.text.length > 100) {
-          console.log('✅ Gemini extraction successful (fallback for large file)')
-          return geminiResult
+        if (!pymupdfResult.error && pymupdfResult.text && pymupdfResult.text.length > 100) {
+          console.log('✅ PyMuPDF extraction successful for large file')
+          return pymupdfResult
+        }
+        console.warn(`⚠️ PyMuPDF failed: ${pymupdfResult.error}`)
+      }
+
+      // Try Gemini (works on both local and Vercel if configured)
+      if (process.env.GEMINI_API_KEY) {
+        console.log(`🤖 Trying Gemini for large file (${fileSizeMB.toFixed(2)}MB)...`)
+
+        // For files >25MB, use chunked processing
+        if (file.size > 25 * 1024 * 1024) {
+          const chunkedResult = await processLargePDFInChunks(buffer, file.name)
+
+          if (!chunkedResult.error && chunkedResult.text && chunkedResult.text.length > 1000) {
+            console.log(`✅ Chunked Gemini extraction successful: ${chunkedResult.text.length} chars from ${chunkedResult.chunks} chunks`)
+            return {
+              text: chunkedResult.text,
+              pageCount: chunkedResult.pageCount,
+              method: 'chunked-gemini' as any
+            }
+          }
+          console.warn(`⚠️ Chunked Gemini extraction failed: ${chunkedResult.error}`)
+        } else {
+          const geminiResult = await extractPDFWithGemini(buffer, file.name)
+
+          if (!geminiResult.error && geminiResult.text && geminiResult.text.length > 100) {
+            console.log('✅ Gemini extraction successful for large file')
+            return geminiResult
+          }
+          console.warn(`⚠️ Gemini extraction failed: ${geminiResult.error}`)
         }
       }
 
       // All methods failed - return error (don't try pdf-parse for large files, it will timeout)
       return {
         text: "",
-        error: `Failed to extract text from large PDF (${fileSizeMB.toFixed(2)}MB). ${pymupdfResult.error || 'Unknown error'}. The file may be scanned or contain only images. Consider using OCR software.`
+        error: `Failed to extract text from large PDF (${fileSizeMB.toFixed(1)}MB). This file may be scanned or contain only images. Please try:\n• Splitting the file into smaller sections (<80MB each)\n• Using OCR software to convert scanned pages to text\n• Configuring Gemini API for better large file support`
       }
     }
 
