@@ -6,6 +6,7 @@ import { Network, Loader2, AlertCircle, Sparkles, RefreshCw, History, GitBranch,
 import type { MindMapNode, MindMapEdge } from '@/lib/mindmap-generator'
 import type { MindMapType } from '@/lib/supabase/types'
 import DocumentSwitcherModal from './DocumentSwitcherModal'
+import InfoTipBanner from './InfoTipBanner'
 
 // Dynamically import MindMapViewer to avoid SSR issues with React Flow
 const MindMapViewer = dynamic(() => import('./MindMapViewer'), {
@@ -772,6 +773,17 @@ export default function MindMapView({ documentId, documentName }: MindMapViewPro
               {selectedMapType === 'concept' && 'Network structure with cross-links'}
             </p>
           </div>
+
+          {/* First-time generation tip */}
+          {existingMindMaps.length === 0 && !isGenerating && (
+            <InfoTipBanner
+              tipId="first_mindmap_generation"
+              title="Building Your Mind Map"
+              message="Creating a mind map takes 1-2 minutes. We'll analyze your document structure and extract key concepts to visualize."
+              icon="clock"
+              variant="info"
+            />
+          )}
 
           {/* Generate Button */}
           <button

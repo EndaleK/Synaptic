@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Mic, Loader2, AlertCircle, Sparkles, History, Play } from "lucide-react"
 import PodcastPlayer, { type TranscriptEntry } from "./PodcastPlayer"
 import { useToast } from "./ToastContainer"
+import InfoTipBanner from "./InfoTipBanner"
 import type { PodcastFormat } from "@/lib/podcast-generator"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
 
@@ -522,6 +523,17 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
                 <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
               </div>
             </div>
+          )}
+
+          {/* First-time generation tip */}
+          {existingPodcasts.length === 0 && !isGenerating && (
+            <InfoTipBanner
+              tipId="first_podcast_generation"
+              title="Generating Your Podcast"
+              message="Creating a podcast takes 2-5 minutes depending on document length. We'll extract key content, write a script, and convert to audio."
+              icon="clock"
+              variant="info"
+            />
           )}
 
           {/* Generate Button */}

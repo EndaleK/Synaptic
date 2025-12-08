@@ -9,6 +9,7 @@ import { useChatStore } from "@/lib/store/useChatStore"
 import { useToast } from "./ToastContainer"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
 import SectionNavigator from "./SectionNavigator"
+import InfoTipBanner from "./InfoTipBanner"
 import type { DocumentSection } from "@/lib/document-parser/section-detector"
 
 // Dynamic imports for voice and image features
@@ -1099,6 +1100,21 @@ export default function ChatInterface() {
                       <p className="text-gray-600 dark:text-gray-400">
                         Ask me anything about your document below.
                       </p>
+
+                      {/* First-time chat tip for large documents that need RAG indexing */}
+                      {currentDocument &&
+                       currentDocument.fileSize &&
+                       currentDocument.fileSize > 10 * 1024 * 1024 &&
+                       !currentDocument.rag_indexed_at && (
+                        <InfoTipBanner
+                          tipId="first_chat_indexing"
+                          title="First Time Chat"
+                          message="Your document is being prepared for intelligent Q&A. This one-time process takes 1-2 minutes. You can start chatting once complete!"
+                          icon="clock"
+                          variant="info"
+                          className="mt-4 text-left"
+                        />
+                      )}
                     </div>
                   </div>
                 ) : (

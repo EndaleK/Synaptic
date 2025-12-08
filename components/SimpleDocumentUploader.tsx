@@ -19,6 +19,7 @@
 import { useState, useRef, ChangeEvent } from "react"
 import { X, Upload, FileText, Loader2, CheckCircle, AlertCircle } from "lucide-react"
 import UploadDisclaimer from "./UploadDisclaimer"
+import InfoTipBanner from "./InfoTipBanner"
 
 interface SimpleDocumentUploaderProps {
   isOpen: boolean
@@ -305,6 +306,18 @@ export default function SimpleDocumentUploader({
                   <CheckCircle className="w-5 h-5" />
                   <span className="text-sm font-medium">Upload successful!</span>
                 </div>
+              )}
+
+              {/* Large file tip - show after successful upload of >10MB files */}
+              {status === 'completed' && file && file.size > 10 * 1024 * 1024 && (
+                <InfoTipBanner
+                  tipId="large_doc_indexing"
+                  title="Large Document Detected"
+                  message="This document will need to be indexed before you can chat with it. Indexing happens automatically on first use and takes 1-3 minutes."
+                  icon="clock"
+                  variant="info"
+                  className="mt-2"
+                />
               )}
 
               {error && (
