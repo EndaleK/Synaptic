@@ -242,7 +242,8 @@ export async function POST(request: NextRequest) {
     })
 
     // 6. Retrieve relevant chunks using semantic search
-    const relevantChunks = await searchDocument(documentId, message, 5)
+    // Increased from 5 to 8 for better coverage, searchDocument will increase further for structural queries
+    const relevantChunks = await searchDocument(documentId, message, 8)
 
     if (relevantChunks.length === 0) {
       return NextResponse.json({
@@ -324,18 +325,28 @@ export async function POST(request: NextRequest) {
     // 11. Create teaching-mode-specific system prompt
     let baseSystemPrompt: string
 
+    const commonInstructions = `
+IMPORTANT: The excerpts provided are retrieved using semantic search and may not contain all relevant information.
+- If the excerpts don't contain the answer, clearly state that the information wasn't found in the retrieved sections
+- For structural questions (chapters, sections, table of contents), look carefully in the excerpts for numbered lists, headings, or content outlines
+- Be honest when information is incomplete or unavailable in the provided excerpts
+- Never make up information that isn't in the excerpts`
+
     if (effectiveTeachingMode === 'socratic') {
       baseSystemPrompt = `You are a Socratic tutor using the classical Socratic method. NEVER give direct answers. ALWAYS respond with guiding questions that lead students to discover answers themselves.
 
-Based on relevant excerpts from the document, ask thoughtful questions that help students explore and understand the content.`
+Based on relevant excerpts from the document, ask thoughtful questions that help students explore and understand the content.
+${commonInstructions}`
     } else if (effectiveTeachingMode === 'direct') {
       baseSystemPrompt = `You are a helpful AI assistant that provides clear, direct answers based on the document content.
 
-Provide comprehensive answers using the relevant excerpts provided. Be specific and cite the information when appropriate.`
+Provide comprehensive answers using the relevant excerpts provided. Be specific and cite the information when appropriate.
+${commonInstructions}`
     } else {
       baseSystemPrompt = `You are an adaptive AI tutor that balances providing information with encouraging exploration.
 
-Start with a brief, direct answer based on the document excerpts, then ask follow-up questions to encourage deeper thinking.`
+Start with a brief, direct answer based on the document excerpts, then ask follow-up questions to encourage deeper thinking.
+${commonInstructions}`
     }
 
     // Apply personalization if profile exists
@@ -443,7 +454,7 @@ Please answer this question based on the relevant excerpts provided above. The e
 
     logger.api('POST', '/api/chat-rag', 500, duration, {
       userId: errorUserId,
-      error: error.message || 'Unknown error',
+      error: error instanceof Error ? error.message : 'Unknown error',
     })
 
     return NextResponse.json(
