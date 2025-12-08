@@ -43,7 +43,7 @@ export default function VoiceChat({
   // Voice output state
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
-  const [voiceEnabled, setVoiceEnabled] = useState(true)
+  const [voiceEnabled, setVoiceEnabled] = useState(false)
 
   // Refs for recording
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
