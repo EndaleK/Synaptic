@@ -29,7 +29,7 @@ interface ChatRAGRequest {
 }
 
 export const runtime = 'nodejs'
-export const maxDuration = 60 // 1 minute for chat responses
+export const maxDuration = 300 // 5 minutes - needed for on-demand document indexing
 
 /**
  * POST /api/chat-rag

@@ -5,7 +5,7 @@ export interface ContentMetadata {
   author?: string | string[]
   publishedDate?: string
   url: string
-  sourceType: 'arxiv' | 'youtube' | 'web' | 'medium' | 'pdf-url' | 'unknown'
+  sourceType: 'arxiv' | 'youtube' | 'web' | 'medium' | 'pdf-url' | 'google-docs' | 'unknown'
   description?: string
   tags?: string[]
   wordCount?: number

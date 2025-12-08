@@ -205,6 +205,18 @@ export async function POST(
       const extractionResult = await extractPDFImages(tempPath)
 
       if (!extractionResult.success) {
+        // Handle case where PyMuPDF is not available (production/Vercel)
+        if (extractionResult.method === 'pymupdf-unavailable') {
+          return NextResponse.json({
+            success: false,
+            imagesExtracted: false,
+            imageCount: 0,
+            images: [],
+            message: 'Image extraction is not available in production. This feature requires PyMuPDF which only runs locally.',
+            error: extractionResult.error
+          }, { status: 200 }) // Return 200 so UI doesn't show error toast
+        }
+
         return NextResponse.json({
           success: false,
           error: extractionResult.error || 'Image extraction failed'

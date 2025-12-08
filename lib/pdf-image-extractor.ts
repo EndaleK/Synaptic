@@ -36,12 +36,39 @@ export interface ImageExtractionResult {
 }
 
 /**
+ * Check if PyMuPDF is available (only works locally, not on Vercel)
+ */
+function isPyMuPDFAvailable(): boolean {
+  // On Vercel, venv won't exist
+  if (process.env.VERCEL) {
+    return false
+  }
+
+  try {
+    const fs = require('fs')
+    const pythonPath = path.join(process.cwd(), 'venv', 'bin', 'python3')
+    return fs.existsSync(pythonPath)
+  } catch {
+    return false
+  }
+}
+
+/**
  * Extract images from a PDF file using PyMuPDF
  *
  * @param pdfPath - Path to the PDF file
  * @returns Promise with extraction result including base64 encoded images
  */
 export async function extractPDFImages(pdfPath: string): Promise<ImageExtractionResult> {
+  // Check if PyMuPDF is available before attempting extraction
+  if (!isPyMuPDFAvailable()) {
+    return {
+      success: false,
+      error: 'Image extraction is not available in production. PyMuPDF requires a local Python environment.',
+      method: 'pymupdf-unavailable'
+    }
+  }
+
   return new Promise((resolve) => {
     const scriptPath = path.join(process.cwd(), 'scripts', 'extract-pdf-images.py')
 

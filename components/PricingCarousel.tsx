@@ -212,11 +212,11 @@ export function PricingCarousel() {
           {slides.map((slideTiers, slideIndex) => (
             <div key={slideIndex} className="w-full flex-shrink-0">
               {/* Desktop: 2 cards side by side, Mobile: 1 card stacked */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4 pt-6">
                 {slideTiers.map((tier) => (
                   <div
                     key={tier.id}
-                    className={`relative rounded-3xl p-6 ${tier.bgClass} ${tier.borderClass}`}
+                    className={`relative rounded-3xl p-8 min-h-[520px] flex flex-col ${tier.bgClass} ${tier.borderClass}`}
                   >
                     {/* Badge (Most Popular or 20% OFF) */}
                     {tier.badge && (
@@ -253,11 +253,11 @@ export function PricingCarousel() {
                     </div>
 
                     {/* Features */}
-                    <ul className="space-y-2.5 mb-6">
+                    <ul className="space-y-3 mb-8 flex-grow">
                       {tier.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <Check className={`w-4 h-4 ${tier.checkClass} flex-shrink-0 mt-0.5`} />
-                          <span className={`text-xs ${tier.subtextClass}`}>{feature}</span>
+                        <li key={idx} className="flex items-start gap-3">
+                          <Check className={`w-5 h-5 ${tier.checkClass} flex-shrink-0 mt-0.5`} />
+                          <span className={`text-sm ${tier.subtextClass}`}>{feature}</span>
                         </li>
                       ))}
                     </ul>
@@ -265,7 +265,7 @@ export function PricingCarousel() {
                     {/* CTA Button */}
                     <Link
                       href={tier.href}
-                      className={`block w-full py-3 rounded-xl font-semibold text-center transition-all ${tier.buttonClass}`}
+                      className={`block w-full py-3.5 rounded-xl font-semibold text-center transition-all mt-auto ${tier.buttonClass}`}
                     >
                       {tier.cta}
                     </Link>

@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/server'
 import { detectContentType } from '@/lib/importers/detector'
 import { arxivImporter } from '@/lib/importers/arxiv'
 import { webPageImporter } from '@/lib/importers/web-page'
+import { googleDocsImporter } from '@/lib/importers/google-docs'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
 
@@ -58,21 +59,61 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
     }
 
-    // 5. Select appropriate importer
-    let importer
+    // 5. Select appropriate importer and extract content
     let extractedContent
 
     try {
       if (detected.type === 'arxiv') {
-        importer = arxivImporter
+        logger.info('Extracting arXiv content', { userId, url })
+        extractedContent = await arxivImporter.extract(url)
+      } else if (detected.type === 'google-docs') {
+        // Google Docs: Try public export first, fall back to OAuth if needed
+        logger.info('Extracting Google Docs content', { userId, url })
+        extractedContent = await googleDocsImporter.extract(url)
+
+        // Check if document requires authentication
+        if (extractedContent.metadata.additionalData?.requiresAuth) {
+          logger.info('Google Doc requires auth, checking for OAuth token', { userId, url })
+
+          // Check if user has Google OAuth token
+          const { data: userProfile } = await supabase
+            .from('user_profiles')
+            .select('google_access_token, google_refresh_token')
+            .eq('id', profile.id)
+            .single()
+
+          if (userProfile?.google_access_token) {
+            // Retry with OAuth
+            logger.info('Retrying Google Doc extraction with OAuth', { userId, url })
+            try {
+              extractedContent = await googleDocsImporter.extractWithAuth(url, userProfile.google_access_token)
+            } catch (authError) {
+              logger.error('OAuth extraction failed', authError, { userId, url })
+              // Return helpful error about re-connecting Google account
+              return NextResponse.json({
+                error: 'Failed to import private Google Doc',
+                details: 'Your Google connection may have expired. Please reconnect your Google account.',
+                requiresGoogleAuth: true
+              }, { status: 403 })
+            }
+          } else {
+            // No OAuth token - prompt user to either share doc or connect Google
+            return NextResponse.json({
+              error: 'This document is private',
+              details: extractedContent.metadata.additionalData?.error || 'Cannot access this Google Doc',
+              suggestions: [
+                'Share the document publicly (Anyone with link can view)',
+                'Connect your Google account to import private docs'
+              ],
+              requiresGoogleAuth: true
+            }, { status: 403 })
+          }
+        }
       } else {
         // Default to web page importer for all other types
-        importer = webPageImporter
+        logger.info('Extracting web page content', { userId, url })
+        extractedContent = await webPageImporter.extract(url)
       }
-
-      // 6. Extract content
-      logger.info('Extracting content', { userId, url, importer: importer.name })
-      extractedContent = await importer.extract(url)
 
     } catch (extractError) {
       logger.error('Content extraction failed', extractError, { userId, url })
@@ -127,7 +168,7 @@ export async function POST(req: NextRequest) {
             ...extractedContent.metadata,
             imported_from: 'url',
             original_url: url,
-            importer: importer.name,
+            importer: detected.type === 'arxiv' ? 'ArxivImporter' : detected.type === 'google-docs' ? 'GoogleDocsImporter' : 'WebPageImporter',
             detected_type: detected.type,
             file_url: urlData?.publicUrl || null // Store public URL in metadata
           }
@@ -186,7 +227,7 @@ export async function POST(req: NextRequest) {
           ...extractedContent.metadata,
           imported_from: 'url',
           original_url: url,
-          importer: importer.name,
+          importer: detected.type === 'arxiv' ? 'ArxivImporter' : detected.type === 'google-docs' ? 'GoogleDocsImporter' : 'WebPageImporter',
           detected_type: detected.type
         }
       })

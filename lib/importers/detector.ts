@@ -3,7 +3,7 @@
 import type { ContentMetadata } from './types'
 
 export interface DetectedSource {
-  type: 'arxiv' | 'youtube' | 'medium' | 'pdf-url' | 'web' | 'unsupported'
+  type: 'arxiv' | 'youtube' | 'medium' | 'pdf-url' | 'google-docs' | 'web' | 'unsupported'
   confidence: 'high' | 'medium' | 'low'
   preview?: Partial<ContentMetadata>
 }
@@ -57,6 +57,21 @@ export function detectContentType(url: string): DetectedSource {
           sourceType: 'medium',
           title: 'Medium Article',
           url
+        }
+      }
+    }
+
+    // Google Docs
+    if (hostname === 'docs.google.com' && pathname.includes('/document/d/')) {
+      const docId = pathname.match(/\/document\/d\/([a-zA-Z0-9-_]+)/)?.[1]
+      return {
+        type: 'google-docs',
+        confidence: 'high',
+        preview: {
+          sourceType: 'google-docs',
+          title: 'Google Doc',
+          url,
+          additionalData: { docId }
         }
       }
     }
@@ -117,6 +132,7 @@ export function getSourceName(type: DetectedSource['type']): string {
     'youtube': 'YouTube Video',
     'medium': 'Medium Article',
     'pdf-url': 'PDF Document',
+    'google-docs': 'Google Doc',
     'web': 'Web Page',
     'unsupported': 'Unsupported'
   }
