@@ -18,21 +18,49 @@ interface MarkdownRendererProps {
   disableDiagrams?: boolean
 }
 
-// Initialize Mermaid
-mermaid.initialize({
-  startOnLoad: false,
-  theme: 'default',
-  securityLevel: 'loose',
-  fontFamily: 'Patrick Hand, cursive',
-  suppressErrors: true,
-})
+// Track if mermaid is initialized (avoid re-initialization issues in production)
+let mermaidInitialized = false
+
+// Initialize Mermaid only once
+const initializeMermaid = () => {
+  if (mermaidInitialized) return
+
+  try {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose',
+      fontFamily: 'inherit',
+      suppressErrors: true,
+      // Fix for production: ensure proper rendering
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: 'basis',
+      },
+      // Increase timeout for complex diagrams
+      maxTextSize: 50000,
+    })
+    mermaidInitialized = true
+    console.log('[Mermaid] Initialized successfully')
+  } catch (error) {
+    console.error('[Mermaid] Initialization error:', error)
+  }
+}
 
 export default function MarkdownRenderer({ content, className = '', disableDiagrams = false }: MarkdownRendererProps) {
   const [renderedDiagrams, setRenderedDiagrams] = useState<Map<string, string>>(new Map())
   const [pendingDiagrams, setPendingDiagrams] = useState<Set<string>>(new Set())
+  const [isClient, setIsClient] = useState(false)
   const diagramCodeMap = useRef<Map<string, number>>(new Map())
   const diagramCounter = useRef(0)
   const diagramsToQueue = useRef<Set<string>>(new Set())
+
+  // Initialize mermaid on client side only (fixes SSR issues)
+  useEffect(() => {
+    setIsClient(true)
+    initializeMermaid()
+  }, [])
 
   // Reset state when content changes
   useEffect(() => {
@@ -121,6 +149,20 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     // Normalize whitespace - multiple spaces to single
     sanitized = sanitized.replace(/  +/g, ' ')
 
+    // Fix subgraph labels with quotes - convert to plain text
+    // subgraph D["Encoder Layer (x6)"] -> subgraph D[Encoder Layer x6]
+    sanitized = sanitized.replace(/subgraph\s+(\w+)\["([^"]+)"\]/g, (match, id, label) => {
+      // Remove parentheses content or replace with simpler text
+      const cleanLabel = label.replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim()
+      return `subgraph ${id}[${cleanLabel}]`
+    })
+
+    // Also handle subgraph with just quotes (no ID)
+    sanitized = sanitized.replace(/subgraph\s+"([^"]+)"/g, (match, label) => {
+      const cleanLabel = label.replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim()
+      return `subgraph ${cleanLabel}`
+    })
+
     return sanitized
   }
 
@@ -164,11 +206,15 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
 
   const renderMermaidDiagram = async (code: string, key: string): Promise<void> => {
     try {
+      // Ensure mermaid is initialized
+      initializeMermaid()
+
       // Sanitize the code first to fix common AI-generated issues
       const sanitizedCode = sanitizeMermaidCode(code)
 
       // Validate before attempting to render
       if (!isValidMermaidCode(sanitizedCode)) {
+        console.warn('[Mermaid] Invalid code, skipping render:', sanitizedCode.substring(0, 100))
         setRenderedDiagrams(prev => new Map(prev).set(key, 'FAILED'))
         return
       }
@@ -217,12 +263,28 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
 
       cleanedCode = fixedLines.join('\n')
 
-      const id = `mermaid-${Date.now()}-${key}`
+      // Use unique ID with random suffix to avoid collisions
+      const id = `mermaid-${Date.now()}-${Math.random().toString(36).substring(7)}`
+
+      console.log('[Mermaid] Attempting render:', { key, id, codeLength: cleanedCode.length })
+
+      // Mermaid.render can throw - wrap in try-catch
       const { svg } = await mermaid.render(id, cleanedCode)
 
-      setRenderedDiagrams(prev => new Map(prev).set(key, svg || 'FAILED'))
+      if (svg) {
+        console.log('[Mermaid] Render successful:', { key, svgLength: svg.length })
+        setRenderedDiagrams(prev => new Map(prev).set(key, svg))
+      } else {
+        console.warn('[Mermaid] Render returned empty SVG:', { key })
+        setRenderedDiagrams(prev => new Map(prev).set(key, 'FAILED'))
+      }
     } catch (error: unknown) {
-      console.error('Mermaid rendering error:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('[Mermaid] Rendering error:', { key, error: errorMessage })
+
+      // Log the problematic code for debugging (first 200 chars)
+      console.error('[Mermaid] Failed code snippet:', code.substring(0, 200))
+
       setRenderedDiagrams(prev => new Map(prev).set(key, 'FAILED'))
     }
   }
@@ -255,8 +317,8 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
 
             // Check if it's a mermaid diagram
             if (!inline && language === 'mermaid') {
-              // If diagrams are disabled (streaming), show as code block
-              if (disableDiagrams) {
+              // If diagrams are disabled (streaming) or not yet on client, show as code block
+              if (disableDiagrams || !isClient) {
                 return (
                   <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto my-4">
                     <code className={className} {...props}>
@@ -276,29 +338,43 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
                   diagramsToQueue.current.add(diagramKey)
                 }
 
-                // Show loading state
+                // Show loading state with spinner
                 return (
-                  <div className="my-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-center text-gray-500 dark:text-gray-400">
-                    Rendering diagram...
+                  <div className="my-4 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg text-center">
+                    <div className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400">
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Rendering diagram...</span>
+                    </div>
                   </div>
                 )
               }
 
-              // Rendering failed - show as code block
+              // Rendering failed - show as code block with error message
               if (svg === 'FAILED') {
                 return (
-                  <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto my-4">
-                    <code className={className} {...props}>
-                      {children}
-                    </code>
-                  </pre>
+                  <div className="my-4">
+                    <div className="text-sm text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <span>Diagram could not be rendered</span>
+                    </div>
+                    <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto text-sm">
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
+                    </pre>
+                  </div>
                 )
               }
 
-              // Render the diagram
+              // Render the diagram with proper styling
               return (
                 <div
-                  className="mermaid-container my-4 w-full overflow-x-auto"
+                  className="mermaid-container my-4 w-full overflow-x-auto bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
                   dangerouslySetInnerHTML={{ __html: svg }}
                 />
               )
