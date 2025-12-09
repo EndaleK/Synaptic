@@ -122,50 +122,68 @@ export async function generateFlashcardsWithClaude(
   text: string,
   targetCards: number = 30
 ): Promise<any[]> {
-  const systemPrompt = `You are an expert educator who creates concise, clear flashcards from educational content.`
+  const systemPrompt = `You are an expert medical educator who creates comprehensive, accurate flashcards from educational content. You excel at extracting ALL important concepts and ensuring flashcards stay focused on the provided content's topic.`
 
-  const userPrompt = `You are tasked with extracting flashcard content from a given text chunk. Your goal is to identify key terms and their corresponding definitions or explanations that would be suitable for creating flashcards.
+  // Detect if this appears to be medical/pharmacology content
+  const isMedical = /pharmacolog|toxicolog|drug|dosage|mechanism|receptor|adverse|therapeutic|antidote|overdose|medication/i.test(text)
+  const topicFocus = isMedical
+    ? `This appears to be medical/pharmacology content. Focus exclusively on:\n- Drug names, classes, and mechanisms of action\n- Therapeutic uses and indications\n- Dosages and administration\n- Adverse effects and contraindications\n- Drug interactions\n- Toxicology concepts (overdose symptoms, antidotes, management)\n- Pharmacokinetics (absorption, distribution, metabolism, excretion)\n`
+    : ``
 
-Here's the text chunk you need to analyze:
-<text_chunk>
+  const userPrompt = `You are tasked with creating flashcards from educational content. Your goal is to generate EXACTLY ${targetCards} flashcards covering ALL key concepts.
+
+${topicFocus}
+<text_content>
 ${text}
-</text_chunk>
+</text_content>
 
-Guidelines for extracting flashcard content:
-1. Identify important terms, concepts, or phrases that are central to the text's topic.
-2. For each term, find a corresponding definition, explanation, or key information from the text.
-3. Ensure that the term and definition pairs are concise and clear.
-4. Extract only the most relevant and significant information.
-5. Aim for a balance between comprehensiveness and brevity.
-6. Generate different flashcards each time by focusing on varied aspects of the content.
+REQUIREMENTS:
+1. Generate EXACTLY ${targetCards} flashcards - this count is mandatory, not a suggestion
+2. Cover ALL major concepts, terms, and facts from the text
+3. Each flashcard must be DIRECTLY derived from the provided text
+4. For medical content: include drug names, mechanisms, side effects, dosages, interactions
+5. Vary flashcard types: definitions, mechanisms, comparisons, clinical applications
+6. Keep front side concise (1-8 words), back side comprehensive but under 60 words
 
-CRITICAL - Source Fidelity Rules (MUST FOLLOW):
-- Use ONLY information explicitly stated in the provided text above
-- Do NOT add definitions, explanations, or context from your general knowledge
-- Do NOT elaborate on concepts beyond what the text actually provides
-- If a concept is mentioned but not explained in the text, do NOT create a flashcard for it
-- Every word in the "back" field must be directly traceable to the source text
-- When in doubt, quote directly from the text rather than paraphrasing with external knowledge
-- If the text doesn't provide enough information for ${targetCards} quality flashcards, create fewer flashcards rather than adding external information
+CRITICAL - Topic & Source Rules:
+- ONLY create flashcards about topics explicitly covered in the text above
+- Do NOT add information from your general knowledge base
+- Do NOT create flashcards about topics not mentioned in this specific text
+- Every answer must be verifiable against the provided text
+- If unsure whether something is in the text, don't include it
 
-Create exactly ${targetCards} flashcards based on the content available (or fewer if insufficient information).
-
-Respond ONLY with a valid JSON array in this exact format:
+MANDATORY OUTPUT: Generate exactly ${targetCards} flashcards as a JSON array:
 [
   {
-    "front": "Term or concept (keep concise, 1-5 words ideal)",
-    "back": "Definition or explanation from the text (clear and educational, under 50 words)"
+    "front": "Term, concept, or question",
+    "back": "Definition, explanation, or answer from the text"
   }
 ]
 
+Remember: You MUST generate ${targetCards} flashcards. Cover the material comprehensively.
 DO NOT include any text outside the JSON array.`
+
+  // Calculate required tokens: ~150 chars per card, 4 chars per token
+  // For 50 cards: 50 * 150 / 4 = 1875 tokens, add buffer
+  const estimatedTokens = Math.ceil(targetCards * 150 / 4) + 500
+  const maxTokens = Math.max(2000, Math.min(estimatedTokens, 8000))
+
+  logger.info('Generating flashcards with Claude', {
+    targetCards,
+    textLength: text.length,
+    maxTokens,
+    isMedical,
+  })
 
   const result = await generateClaudeCompletion(systemPrompt, [
     {
       role: 'user',
       content: userPrompt,
     },
-  ])
+  ], {
+    maxTokens,
+    temperature: 0.3,
+  })
 
   try {
     // Remove markdown code blocks if present
@@ -177,10 +195,17 @@ DO NOT include any text outside the JSON array.`
       throw new Error('Response is not an array')
     }
 
+    logger.info('Claude flashcards generated', {
+      requested: targetCards,
+      generated: parsedFlashcards.length,
+      percentMatch: Math.round((parsedFlashcards.length / targetCards) * 100),
+    })
+
     return parsedFlashcards
   } catch (parseError) {
     logger.error('Failed to parse Claude flashcard response', parseError, {
       responseLength: result.content.length,
+      responsePreview: result.content.substring(0, 200),
     })
     throw new Error('Failed to parse flashcard data from Claude response')
   }

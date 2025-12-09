@@ -85,13 +85,20 @@ async function extractChaptersWithAI(
     pageCount?: number
   }
 ): Promise<ChapterExtractionResult> {
-  // Truncate text to first 50K characters for extraction (enough for table of contents + first few chapters)
-  const sampleText = pdfText.substring(0, 50000)
+  // Truncate text to first 100K characters for extraction
+  // Medical textbooks like Toronto Notes have extensive TOCs that need more context
+  const sampleText = pdfText.substring(0, 100000)
+
+  // Detect if this might be a medical textbook based on filename or content
+  const isMedicalTextbook =
+    /toronto\s*notes|medical|clinical|medicine|surgery|pediatrics|cardiology|nephrology|neurology|psychiatry|pathology|pharmacology|anatomy/i.test(metadata?.fileName || '') ||
+    /diagnosis|treatment|pathophysiology|etiology|clinical\s*presentation/i.test(sampleText.substring(0, 10000))
 
   const prompt = `Analyze this document excerpt and extract its chapter/section structure.
 
 Document: ${metadata?.fileName || 'Unknown'}
 Total Pages: ${metadata?.pageCount || 'Unknown'}
+${isMedicalTextbook ? 'Document Type: Medical Textbook (extract ALL medical specialty chapters)' : ''}
 
 Text Sample:
 ${sampleText}
@@ -99,9 +106,9 @@ ${sampleText}
 ---
 
 Extract the chapter structure as a JSON array. For each chapter/section:
-1. Extract the title (clean, without numbers)
-2. Identify the starting page number (if mentioned)
-3. Determine the hierarchy level (1=chapter, 2=section, 3=subsection)
+1. Extract the title (clean, without chapter numbers)
+2. Identify the starting page number (if mentioned in text, TOC, or headers)
+3. Determine the hierarchy level (1=chapter/specialty, 2=section, 3=subsection)
 
 Return ONLY a JSON array in this format:
 [
@@ -111,10 +118,13 @@ Return ONLY a JSON array in this format:
 ]
 
 Rules:
-- If page numbers aren't clear, estimate based on content order
+- Look for Table of Contents, Index, or chapter headings with page numbers
+- For medical textbooks: Include ALL specialties (Cardiology, Nephrology, Surgery, Psychiatry, etc.)
+- Page numbers may appear as "page 5", "p. 5", "5", or after a title like "Cardiology...45"
+- If page numbers aren't clear, estimate based on content order and document length
 - Focus on main chapters (level 1) and major sections (level 2)
 - Skip minor subsections unless the document has few main chapters
-- Maximum 20 chapters/sections
+- Maximum 50 chapters/sections (medical textbooks often have 20-30+ specialties)
 - Return empty array [] if no clear structure found`
 
   const response = await openai.chat.completions.create({
@@ -122,7 +132,7 @@ Rules:
     messages: [
       {
         role: 'system',
-        content: 'You are a document structure analyzer. Extract chapter/section hierarchies accurately. Return only valid JSON.'
+        content: 'You are a document structure analyzer specializing in textbooks and academic materials. Extract chapter/section hierarchies accurately from Tables of Contents, Index pages, and chapter headings. Return only valid JSON arrays.'
       },
       {
         role: 'user',
@@ -130,7 +140,7 @@ Rules:
       }
     ],
     temperature: 0.1,
-    max_tokens: 2000,
+    max_tokens: 4000, // Increased for medical textbooks with many chapters
   })
 
   const content = response.choices[0].message.content?.trim() || '[]'
@@ -148,18 +158,22 @@ Rules:
 
     const chaptersData = JSON.parse(jsonMatch[1])
 
-    // Validate and format chapters
-    const chapters: Chapter[] = chaptersData
+    // Sort chapters by page number to ensure correct page end calculations
+    const sortedData = [...chaptersData]
       .filter((ch: any) => ch.title && ch.pageStart)
+      .sort((a: any, b: any) => (parseInt(a.pageStart) || 0) - (parseInt(b.pageStart) || 0))
+
+    // Validate and format chapters
+    const chapters: Chapter[] = sortedData
       .map((ch: any, index: number) => ({
         id: `chapter-${index}`,
         title: ch.title.trim(),
         pageStart: parseInt(ch.pageStart) || 1,
-        pageEnd: chaptersData[index + 1]?.pageStart ? parseInt(chaptersData[index + 1].pageStart) - 1 : metadata?.pageCount,
+        pageEnd: sortedData[index + 1]?.pageStart ? parseInt(sortedData[index + 1].pageStart) - 1 : metadata?.pageCount,
         level: parseInt(ch.level) || 1,
         selected: false
       }))
-      .slice(0, 20) // Limit to 20 chapters
+      .slice(0, 50) // Limit to 50 chapters (increased for medical textbooks)
 
     console.log(`✅ AI extracted ${chapters.length} chapters`)
 
@@ -251,7 +265,7 @@ function extractChaptersHeuristic(
   console.log(`✅ Heuristic extraction found ${chapters.length} chapters`)
 
   return {
-    chapters: chapters.slice(0, 20), // Limit to 20
+    chapters: chapters.slice(0, 50), // Limit to 50 (increased for medical textbooks)
     totalPages: metadata?.pageCount || Math.max(...chapters.map(ch => ch.pageEnd || 0)),
     extractionMethod: 'heuristic'
   }

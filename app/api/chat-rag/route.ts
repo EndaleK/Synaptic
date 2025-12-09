@@ -242,8 +242,9 @@ export async function POST(request: NextRequest) {
     })
 
     // 6. Retrieve relevant chunks using semantic search
-    // Increased from 5 to 8 for better coverage, searchDocument will increase further for structural queries
-    const relevantChunks = await searchDocument(documentId, message, 8)
+    // Increased to 15 for better coverage of large textbooks like Toronto Notes
+    // searchDocument will increase further to 25 for structural/broad queries
+    const relevantChunks = await searchDocument(documentId, message, 15)
 
     if (relevantChunks.length === 0) {
       return NextResponse.json({
@@ -326,11 +327,20 @@ export async function POST(request: NextRequest) {
     let baseSystemPrompt: string
 
     const commonInstructions = `
-IMPORTANT: The excerpts provided are retrieved using semantic search and may not contain all relevant information.
-- If the excerpts don't contain the answer, clearly state that the information wasn't found in the retrieved sections
+🔍 HOW TO HELP THE USER:
+- You have access to relevant excerpts retrieved from the document using semantic search
+- Each question retrieves the most relevant sections (up to 25 chunks for broad questions)
+- For large documents like textbooks, encourage users to ask about specific topics for best results
+- NEVER say "I don't have full access" - instead, focus on what information IS available in the excerpts
+- If the excerpts don't fully answer the question, say "Based on the excerpts I have, [answer what you can]... For more details on [specific topic], please ask a follow-up question about that topic."
 - For structural questions (chapters, sections, table of contents), look carefully in the excerpts for numbered lists, headings, or content outlines
-- Be honest when information is incomplete or unavailable in the provided excerpts
 - Never make up information that isn't in the excerpts
+
+💡 WHEN ASKED ABOUT DOCUMENT COVERAGE:
+Instead of listing limitations, be helpful:
+- "I can help you explore this document! What specific topic would you like to learn about?"
+- "This document covers [topics visible in excerpts]. What area interests you most?"
+- "For the best answers, ask me about a specific concept, condition, or chapter."
 
 📊 RESPONSE FORMAT:
 - Use **LaTeX equations** when discussing math: $inline$ or $$block$$

@@ -294,6 +294,7 @@ export async function POST(request: NextRequest) {
         userId,
         documentId,
         chapterCount: chapterIds.length,
+        requestedCount: count,
       })
 
       // Extract text from selected chapters
@@ -308,24 +309,195 @@ export async function POST(request: NextRequest) {
           )
         }
 
-        combinedText = extractChapterText(fullText, chapters, chapterIds)
+        const fullChapterText = extractChapterText(fullText, chapters, chapterIds)
 
-        if (!combinedText || combinedText.trim().length === 0) {
+        if (!fullChapterText || fullChapterText.trim().length === 0) {
           return NextResponse.json(
             { error: 'No content found in selected chapters' },
             { status: 400 }
           )
         }
 
-        // Truncate to token limit
-        combinedText = combinedText.substring(0, 48000)
-
         logger.info('Chapter-based extraction successful', {
           userId,
           documentId,
           chapterIds,
-          extractedLength: combinedText.length,
+          extractedLength: fullChapterText.length,
         })
+
+        // For large chapters with high flashcard counts (>40), use batched generation
+        // Each batch can handle ~40 flashcards worth of content (~48K chars)
+        const CHARS_PER_BATCH = 48000
+        const MAX_CARDS_PER_BATCH = 40
+
+        if (fullChapterText.length > CHARS_PER_BATCH && count > MAX_CARDS_PER_BATCH) {
+          // Calculate number of batches needed
+          const numBatches = Math.min(
+            Math.ceil(fullChapterText.length / CHARS_PER_BATCH),
+            Math.ceil(count / MAX_CARDS_PER_BATCH)
+          )
+          const cardsPerBatch = Math.ceil(count / numBatches)
+
+          logger.info('Using batched chapter processing for large flashcard count', {
+            userId,
+            documentId,
+            totalChars: fullChapterText.length,
+            numBatches,
+            cardsPerBatch,
+            totalRequestedCards: count,
+          })
+
+          // Generate flashcards from each batch
+          const allFlashcards: any[] = []
+          const existingTerms = new Set<string>()
+
+          for (let i = 0; i < numBatches; i++) {
+            const startChar = i * CHARS_PER_BATCH
+            const endChar = Math.min((i + 1) * CHARS_PER_BATCH, fullChapterText.length)
+            const batchText = fullChapterText.substring(startChar, endChar)
+
+            // Skip if batch is too small
+            if (batchText.trim().length < 500) continue
+
+            const batchNum = i + 1
+            const cardsThisBatch = Math.min(cardsPerBatch, count - allFlashcards.length)
+
+            if (cardsThisBatch <= 0) break
+
+            logger.debug(`Processing batch ${batchNum}/${numBatches}`, {
+              userId,
+              documentId,
+              batchChars: batchText.length,
+              cardsRequested: cardsThisBatch,
+            })
+
+            // Build prompt with existing terms to avoid duplicates
+            const existingTermsList = existingTerms.size > 0
+              ? `\n\n⚠️ AVOID creating flashcards for these already-covered terms: ${Array.from(existingTerms).slice(0, 50).join(', ')}`
+              : ''
+
+            const batchPrompt = `Generate ${cardsThisBatch} flashcards from this content (batch ${batchNum}/${numBatches}).
+
+🚨 CRITICAL - Source Fidelity:
+Use ONLY information from the content below. Do NOT add external knowledge.${existingTermsList}
+
+Content (Section ${batchNum}/${numBatches}):
+
+${batchText}`
+
+            try {
+              const batchResult = await generateFlashcardsAuto(batchText, {
+                variation: 0,
+                count: cardsThisBatch,
+                customPrompt: batchPrompt,
+              } as any)
+
+              // Add to collection and track terms to avoid duplicates
+              for (const card of batchResult.flashcards) {
+                allFlashcards.push(card)
+                // Extract key terms from front of card for deduplication
+                const terms = card.front.toLowerCase().split(/\s+/).filter((t: string) => t.length > 4)
+                terms.forEach((t: string) => existingTerms.add(t))
+              }
+
+              logger.debug(`Batch ${batchNum} completed`, {
+                userId,
+                documentId,
+                cardsGenerated: batchResult.flashcards.length,
+                totalSoFar: allFlashcards.length,
+              })
+            } catch (batchError) {
+              logger.warn(`Batch ${batchNum} failed, continuing with other batches`, {
+                userId,
+                documentId,
+                error: batchError instanceof Error ? batchError.message : 'Unknown',
+              })
+            }
+          }
+
+          if (allFlashcards.length === 0) {
+            return NextResponse.json(
+              { error: 'Failed to generate flashcards from chapter content' },
+              { status: 500 }
+            )
+          }
+
+          logger.info('Batched chapter flashcard generation complete', {
+            userId,
+            documentId,
+            totalFlashcards: allFlashcards.length,
+            requestedCount: count,
+          })
+
+          // Save all flashcards to database
+          try {
+            const flashcardsToInsert = allFlashcards.map((card) => ({
+              user_id: profile.id,
+              document_id: documentId,
+              front: card.front,
+              back: card.back,
+              mastery_level: 'learning' as const,
+              confidence_score: 0,
+              times_reviewed: 0,
+              times_correct: 0,
+            }))
+
+            const { data: insertedCards, error: insertError } = await supabase
+              .from('flashcards')
+              .insert(flashcardsToInsert)
+              .select()
+
+            if (insertError) {
+              logger.error('Failed to save batched flashcards', insertError, { userId, documentId })
+            }
+
+            const savedFlashcards = insertedCards?.map((dbCard) => ({
+              id: dbCard.id,
+              front: dbCard.front,
+              back: dbCard.back,
+              createdAt: new Date(dbCard.created_at),
+              masteryLevel: dbCard.mastery_level as 'learning' | 'reviewing' | 'mastered',
+              confidenceScore: dbCard.confidence_score,
+              timesReviewed: dbCard.times_reviewed,
+              timesCorrect: dbCard.times_correct,
+            })) || allFlashcards
+
+            await incrementUsage(userId, 'flashcards')
+
+            const duration = Date.now() - startTime
+            logger.api('POST', '/api/generate-flashcards-rag', 200, duration, {
+              userId,
+              documentId,
+              flashcardCount: savedFlashcards.length,
+              selectionType: 'chapters-batched',
+            })
+
+            return NextResponse.json({
+              flashcards: savedFlashcards,
+              documentId,
+              documentName: document.file_name,
+              selection: selectionDescription,
+              strategy: 'chapters-batched',
+              batchCount: numBatches,
+              aiProvider: 'auto',
+            })
+          } catch (dbError) {
+            logger.error('Database save failed for batched flashcards', dbError, { userId, documentId })
+            // Return unsaved flashcards
+            return NextResponse.json({
+              flashcards: allFlashcards,
+              documentId,
+              documentName: document.file_name,
+              selection: selectionDescription,
+              strategy: 'chapters-batched',
+              warning: 'Flashcards generated but not saved to database',
+            })
+          }
+        }
+
+        // For smaller chapters or lower counts, use single batch (existing behavior)
+        combinedText = fullChapterText.substring(0, CHARS_PER_BATCH)
+
       } catch (error) {
         logger.error('Chapter extraction failed', error, {
           userId,
@@ -441,6 +613,7 @@ export async function POST(request: NextRequest) {
     const sourceFidelityInstruction = `\n\n🚨 CRITICAL - Source Fidelity:\nUse ONLY information from the content below. Do NOT add external knowledge, definitions, or context from your training. Every flashcard must be verifiable against the provided text.`
 
     const customOptions = {
+      count: count, // IMPORTANT: Pass count to generateFlashcardsAuto
       variation: 0,
       customPrompt: selection
         ? `Generate ${count} flashcards from ${selectionDescription}.${sourceFidelityInstruction}\n\nContent:\n\n${combinedText}`
@@ -448,6 +621,14 @@ export async function POST(request: NextRequest) {
         ? `Generate ${count} flashcards focused specifically on: ${legacyTopic}${sourceFidelityInstruction}\n\nContext from document:\n\n${combinedText}`
         : `Generate ${count} comprehensive flashcards covering the most important concepts from this document.${sourceFidelityInstruction}\n\nContent:\n\n${combinedText}`,
     }
+
+    logger.info('Calling generateFlashcardsAuto', {
+      userId,
+      documentId,
+      requestedCount: count,
+      contentLength: combinedText.length,
+      selectionDescription,
+    })
 
     const result = await generateFlashcardsAuto(combinedText, customOptions as any)
     const flashcards = result.flashcards

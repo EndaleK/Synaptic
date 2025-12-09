@@ -53,7 +53,8 @@ export async function generateFlashcards(
   // Calculate number of flashcards based on content length or use user-specified count
   const wordCount = processedText.split(/\s+/).length
   const minCards = 5
-  const maxCards = 50
+  const maxCards = 200  // Increased from 50 to support user requests up to 200
+  const maxCardsPerBatch = 40  // Safe limit per API call to avoid token limits
 
   let targetCards: number
 
@@ -68,8 +69,22 @@ export async function generateFlashcards(
     console.log(`Auto-calculated: ${wordCount} words → ${targetCards} flashcards`)
   }
 
-  // Build base prompt
-  let basePrompt = `You are tasked with extracting flashcard content from a given text chunk. Your goal is to identify key terms and their corresponding definitions or explanations that would be suitable for creating flashcards.
+  // For large counts, we'll use batched generation
+  const needsBatching = targetCards > maxCardsPerBatch
+  const batchCount = needsBatching ? Math.ceil(targetCards / maxCardsPerBatch) : 1
+  const cardsPerBatch = needsBatching ? Math.ceil(targetCards / batchCount) : targetCards
+
+  if (needsBatching) {
+    console.log(`Batched generation: ${targetCards} cards in ${batchCount} batches of ~${cardsPerBatch} each`)
+  }
+
+  // Helper function to build the prompt for a given batch
+  const buildPrompt = (batchNum: number, batchSize: number, existingTerms: string[] = []) => {
+    const avoidTermsInstr = existingTerms.length > 0
+      ? `\n\nIMPORTANT: Do NOT create flashcards for these terms (already covered in previous batches): ${existingTerms.slice(-30).join(', ')}`
+      : ''
+
+    return `You are tasked with extracting flashcard content from a given text chunk. Your goal is to identify key terms and their corresponding definitions or explanations that would be suitable for creating flashcards.
 
 Here's the text chunk you need to analyze:
 <text_chunk>
@@ -83,6 +98,7 @@ Guidelines for extracting flashcard content:
 4. Extract only the most relevant and significant information.
 5. Aim for a balance between comprehensiveness and brevity.
 6. Generate different flashcards each time by focusing on varied aspects of the content.
+${batchNum > 0 ? `7. This is batch ${batchNum + 1} - focus on DIFFERENT concepts than typical/obvious ones.` : ''}
 
 CRITICAL - Source Fidelity Rules (MUST FOLLOW):
 - Use ONLY information explicitly stated in the provided text above
@@ -91,9 +107,10 @@ CRITICAL - Source Fidelity Rules (MUST FOLLOW):
 - If a concept is mentioned but not explained in the text, do NOT create a flashcard for it
 - Every word in the "back" field must be directly traceable to the source text
 - When in doubt, quote directly from the text rather than paraphrasing with external knowledge
-- If the text doesn't provide enough information for ${targetCards} quality flashcards, create fewer flashcards rather than adding external information
+- If the text doesn't provide enough information for ${batchSize} quality flashcards, create fewer flashcards rather than adding external information
+${avoidTermsInstr}
 
-Create exactly ${targetCards} flashcards based on the content available (or fewer if insufficient information).
+Create exactly ${batchSize} flashcards based on the content available (or fewer if insufficient information).
 
 Respond ONLY with a valid JSON array in this exact format:
 [
@@ -104,6 +121,10 @@ Respond ONLY with a valid JSON array in this exact format:
 ]
 
 DO NOT include any text outside the JSON array.`
+  }
+
+  // Build base prompt (for non-batched or first batch)
+  const basePrompt = buildPrompt(0, cardsPerBatch)
 
   // Apply personalization if learning profile provided
   let prompt = basePrompt
@@ -119,11 +140,8 @@ DO NOT include any text outside the JSON array.`
     console.log(`Applied personalization: ${options.learningStyle} learner, ${options.teachingStylePreference} teaching`)
   }
 
-  try {
-    // Add variation to temperature for different results each time
-    // Base temperature: 0.3, variation adds 0-0.4 based on variation parameter
-    const temperature = Math.min(0.9, 0.3 + (variation * 0.15))
-
+  // Helper function to make a single API call
+  const generateBatch = async (batchPrompt: string, batchTemperature: number): Promise<Flashcard[]> => {
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -133,44 +151,107 @@ DO NOT include any text outside the JSON array.`
         },
         {
           role: "user",
-          content: prompt
+          content: batchPrompt
         }
       ],
-      temperature: temperature,
-      max_tokens: 2000,
+      temperature: batchTemperature,
+      max_tokens: 4000,  // Increased from 2000 to handle up to 40 flashcards per batch
     })
 
     let responseText = completion.choices[0]?.message?.content || "[]"
-    
+
     // Remove markdown code blocks if present
     responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
-    
-    try {
-      const parsedFlashcards = JSON.parse(responseText)
-      
-      if (!Array.isArray(parsedFlashcards)) {
-        throw new Error("Response is not an array")
+
+    const parsedFlashcards = JSON.parse(responseText)
+
+    if (!Array.isArray(parsedFlashcards)) {
+      throw new Error("Response is not an array")
+    }
+
+    return parsedFlashcards.map((card, index) => ({
+      id: `card-${Date.now()}-${index}`,
+      front: card.front || "",
+      back: card.back || "",
+      createdAt: new Date()
+    }))
+  }
+
+  try {
+    // Add variation to temperature for different results each time
+    // Base temperature: 0.3, variation adds 0-0.4 based on variation parameter
+    const temperature = Math.min(0.9, 0.3 + (variation * 0.15))
+
+    // If not batching, do a single call
+    if (!needsBatching) {
+      return await generateBatch(prompt, temperature)
+    }
+
+    // Batched generation for large counts
+    const allFlashcards: Flashcard[] = []
+    const existingTerms: string[] = []
+
+    for (let batch = 0; batch < batchCount; batch++) {
+      // Calculate remaining cards needed
+      const remaining = targetCards - allFlashcards.length
+      const batchSize = Math.min(cardsPerBatch, remaining)
+
+      if (batchSize <= 0) break
+
+      console.log(`Generating batch ${batch + 1}/${batchCount} (${batchSize} cards)...`)
+
+      // Build prompt for this batch (with existing terms to avoid duplicates)
+      let batchPrompt = buildPrompt(batch, batchSize, existingTerms)
+
+      // Apply personalization if profile exists
+      if (options.learningStyle && options.teachingStylePreference) {
+        const profile: LearningProfile = createLearningProfile(
+          options.learningStyle,
+          options.teachingStylePreference,
+          options.varkScores,
+          options.socraticPercentage
+        )
+        batchPrompt = personalizePrompt({ profile, mode: 'flashcards' }, batchPrompt)
       }
 
-      return parsedFlashcards.map((card, index) => ({
-        id: `card-${Date.now()}-${index}`,
-        front: card.front || "",
-        back: card.back || "",
-        createdAt: new Date()
-      }))
-    } catch {
-      console.error("Failed to parse AI response:", responseText)
-      throw new Error("Failed to parse flashcard data")
+      // Vary temperature slightly for each batch to get diverse results
+      const batchTemp = Math.min(0.9, temperature + (batch * 0.1))
+
+      try {
+        const batchCards = await generateBatch(batchPrompt, batchTemp)
+
+        // Add to results and track terms
+        for (const card of batchCards) {
+          allFlashcards.push({
+            ...card,
+            id: `card-${Date.now()}-${allFlashcards.length}`
+          })
+          existingTerms.push(card.front)
+        }
+
+        console.log(`Batch ${batch + 1} complete: ${batchCards.length} cards (total: ${allFlashcards.length})`)
+      } catch (batchError) {
+        console.error(`Batch ${batch + 1} failed:`, batchError)
+        // Continue with other batches even if one fails
+        if (allFlashcards.length === 0) {
+          throw batchError  // Only throw if no cards generated at all
+        }
+      }
     }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+    console.log(`Batched generation complete: ${allFlashcards.length} total flashcards`)
+    return allFlashcards
+
   } catch (error: unknown) {
     console.error("OpenAI API error:", error)
-    if (error.response) {
-      console.error("Response data:", error.response.data)
-      console.error("Response status:", error.response.status)
-      throw new Error(`OpenAI API error: ${error.response.data?.error?.message || error.message}`)
-    } else if (error.message) {
-      throw new Error(`OpenAI error: ${error.message}`)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const err = error as any
+    if (err.response) {
+      console.error("Response data:", err.response.data)
+      console.error("Response status:", err.response.status)
+      throw new Error(`OpenAI API error: ${err.response.data?.error?.message || err.message}`)
+    } else if (err.message) {
+      throw new Error(`OpenAI error: ${err.message}`)
     } else {
       throw new Error("Failed to generate flashcards")
     }

@@ -7,6 +7,8 @@ import { useToast } from "./ToastContainer"
 import InfoTipBanner from "./InfoTipBanner"
 import type { PodcastFormat } from "@/lib/podcast-generator"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
+import ChapterSelector from "./ChapterSelector"
+import type { Chapter } from "@/lib/chapter-extractor"
 
 interface PodcastViewProps {
   documentId: string
@@ -84,6 +86,10 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
   const [pageRange, setPageRange] = useState({ start: '', end: '' })
   const [selectedChapters, setSelectedChapters] = useState<string[]>([])
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
+
+  // Chapter selector modal state
+  const [showChapterSelector, setShowChapterSelector] = useState(false)
+  const [chaptersData, setChaptersData] = useState<Chapter[]>([])
 
   // 📊 Study session tracking
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -194,12 +200,32 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
     setProgressMessage('Starting podcast generation...')
 
     try {
+      // Build selection object based on contentType
+      let selection: any = undefined
+
+      if (contentType === 'chapters' && selectedChapters.length > 0 && chaptersData.length > 0) {
+        selection = {
+          type: 'chapters',
+          chapterIds: selectedChapters,
+          chapters: chaptersData
+        }
+      } else if (contentType === 'pageRange' && pageRange.start && pageRange.end) {
+        selection = {
+          type: 'pages',
+          pageRange: {
+            start: parseInt(pageRange.start),
+            end: parseInt(pageRange.end)
+          }
+        }
+      }
+
       const response = await fetch('/api/generate-podcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           documentId,
           format,
+          selection,
           customPrompt: customPrompt.trim() || undefined,
           targetDuration: 10
         })
@@ -211,8 +237,8 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
       }
 
       // Check if response is SSE stream
-      const contentType = response.headers.get('content-type')
-      if (contentType?.includes('text/event-stream')) {
+      const responseContentType = response.headers.get('content-type')
+      if (responseContentType?.includes('text/event-stream')) {
         // Handle SSE stream
         const reader = response.body?.getReader()
         const decoder = new TextDecoder()
@@ -395,7 +421,10 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
                 </div>
               </button>
               <button
-                onClick={() => setContentType('chapters')}
+                onClick={() => {
+                  setContentType('chapters')
+                  setShowChapterSelector(true)
+                }}
                 className={`p-3 rounded-lg border-2 transition-all active:scale-95 ${
                   contentType === 'chapters'
                     ? 'border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20'
@@ -405,6 +434,11 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
                 <div className="text-sm font-semibold text-black dark:text-white">
                   Chapters
                 </div>
+                {selectedChapters.length > 0 && (
+                  <div className="text-xs text-accent-primary mt-1">
+                    {selectedChapters.length} selected
+                  </div>
+                )}
               </button>
               <button
                 onClick={() => setContentType('pageRange')}
@@ -454,7 +488,9 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
             {/* Info message */}
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
               {contentType === 'full' && `Podcast will be generated from the entire document`}
-              {contentType === 'chapters' && 'Select specific chapters (feature coming soon)'}
+              {contentType === 'chapters' && (selectedChapters.length > 0
+                ? `Podcast will cover ${selectedChapters.length} selected chapter${selectedChapters.length > 1 ? 's' : ''}`
+                : 'Click to select specific chapters')}
               {contentType === 'pageRange' && 'Specify page range to generate from'}
               {contentType === 'smartTopics' && 'AI will extract and focus on key topics (feature coming soon)'}
             </p>
@@ -583,6 +619,25 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
           // Clear podcast data when switching documents
           setPodcast(null)
           setIsGenerating(false)
+        }}
+      />
+
+      {/* Chapter Selector Modal */}
+      <ChapterSelector
+        documentId={documentId}
+        documentName={documentName}
+        isOpen={showChapterSelector}
+        onCancel={() => {
+          setShowChapterSelector(false)
+          // Reset to full document if no chapters selected
+          if (selectedChapters.length === 0) {
+            setContentType('full')
+          }
+        }}
+        onConfirm={(chapterIds, chapters) => {
+          setSelectedChapters(chapterIds)
+          setChaptersData(chapters)
+          setShowChapterSelector(false)
         }}
       />
     </div>

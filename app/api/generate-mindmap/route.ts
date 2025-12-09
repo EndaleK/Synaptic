@@ -263,6 +263,43 @@ export async function POST(req: NextRequest) {
               { maxLength: 48000 }
             )
           }
+        } else if (selection.type === 'chapters' && selection.chapterIds && selection.chapters) {
+          // CHAPTER MODE: Extract text from selected chapters
+          const chapterCount = selection.chapterIds.length
+          const chapterNames = selection.chapters
+            .filter((ch: any) => selection.chapterIds.includes(ch.id))
+            .map((ch: any) => ch.title)
+            .slice(0, 3) // Show first 3 chapter names
+
+          selectionDescription = chapterCount === 1
+            ? `chapter: ${chapterNames[0]}`
+            : `${chapterCount} chapters: ${chapterNames.join(', ')}${chapterCount > 3 ? '...' : ''}`
+
+          logger.info('Mind map generation with chapters', {
+            userId,
+            documentId,
+            chapterCount,
+            chapterIds: selection.chapterIds,
+          })
+
+          try {
+            const { extractChapterText } = await import('@/lib/chapter-extractor')
+            documentText = extractChapterText(
+              document.extracted_text,
+              selection.chapters,
+              selection.chapterIds
+            )
+            // Apply token limit
+            documentText = documentText.substring(0, 48000)
+          } catch (chapterError) {
+            logger.error('Chapter text extraction failed for mind map', chapterError, {
+              userId,
+              documentId,
+              chapterIds: selection.chapterIds,
+            })
+            // Fallback to full document
+            documentText = document.extracted_text
+          }
         }
 
         // Validate extracted text

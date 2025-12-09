@@ -181,6 +181,21 @@ async function handleGenerateFlashcards(request: NextRequest) {
         // TODO: Implement page-based text filtering
         textContent = doc.extracted_text
         logger.debug('Using selected pages', { userId, documentId, pageCount: selection.selectedPages.length })
+      } else if (selection?.type === 'chapters' && selection.chapterIds && selection.chapters && doc.extracted_text) {
+        // Filter by selected chapters
+        try {
+          const { extractChapterText } = await import('@/lib/chapter-extractor')
+          textContent = extractChapterText(doc.extracted_text, selection.chapters, selection.chapterIds)
+          logger.debug('Using selected chapters', {
+            userId,
+            documentId,
+            chapterCount: selection.chapterIds.length,
+            extractedLength: textContent.length
+          })
+        } catch (chapterError) {
+          logger.warn('Chapter extraction failed, using full document', { userId, documentId, error: chapterError })
+          textContent = doc.extracted_text
+        }
       } else {
         // Use full document text
         textContent = doc.extracted_text || ''

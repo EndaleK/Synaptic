@@ -139,8 +139,8 @@ export async function indexDocument(
 }
 
 /**
- * Detect if a query is asking about document structure
- * (chapters, sections, table of contents, outline, etc.)
+ * Detect if a query is asking about document structure or broad content
+ * (chapters, sections, table of contents, outline, full access, etc.)
  */
 function isStructuralQuery(query: string): boolean {
   const structuralKeywords = [
@@ -149,7 +149,11 @@ function isStructuralQuery(query: string): boolean {
     'topics', 'parts', 'part', 'contents', 'index',
     'what is covered', 'what does it cover', 'overview',
     'how many', 'list of', 'list all', 'main topics', 'headings',
-    'what are the', 'show me the', 'tell me the'
+    'what are the', 'show me the', 'tell me the',
+    // Additional keywords for broad access questions
+    'full access', 'all access', 'complete access', 'everything',
+    'all specialties', 'all topics', 'entire document', 'whole document',
+    'what can you', 'what do you have', 'have access to'
   ]
   const lowerQuery = query.toLowerCase()
   return structuralKeywords.some(keyword => lowerQuery.includes(keyword))
@@ -314,9 +318,9 @@ export async function searchDocument(
     const isStructural = isStructuralQuery(query)
     const enhancedQuery = enhanceQuery(query)
 
-    // For structural queries, retrieve more chunks (20) to capture table of contents
-    // Structural queries need more context to find all chapters
-    const effectiveTopK = isStructural ? Math.max(topK, 20) : topK
+    // For structural queries, retrieve more chunks (25) to capture table of contents
+    // Structural queries need more context to find all chapters and specialties
+    const effectiveTopK = isStructural ? Math.max(topK, 25) : topK
 
     console.log('[Vector Store] Search query:', {
       original: query,
