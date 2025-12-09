@@ -1,10 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Loader2, Sparkles, Save, Check } from "lucide-react"
+import { X, Loader2, Sparkles, Save, Check, BookOpen, Square, CheckSquare } from "lucide-react"
 import { useRouter } from "next/navigation"
+import dynamic from "next/dynamic"
 import PageTopicSelector, { SelectionData } from "./PageTopicSelector"
 import { Document } from "@/lib/supabase/types"
+
+// Dynamic import ChapterSelector to avoid SSR issues
+const ChapterSelector = dynamic(() => import("./ChapterSelector"), { ssr: false })
 
 interface ContentSelectionModalProps {
   isOpen: boolean
@@ -43,6 +47,19 @@ export default function ContentSelectionModal({
   const [presetName, setPresetName] = useState('')
   const [isSavingPreset, setIsSavingPreset] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
+
+  // Chapter selection state for documents without page_count
+  const [showChapterSelector, setShowChapterSelector] = useState(false)
+  const [selectedChapterIds, setSelectedChapterIds] = useState<string[]>([])
+  const [chapterData, setChapterData] = useState<any[]>([])
+
+  // Check if document has content but no page count (legacy or large docs)
+  // For RAG-indexed docs, extracted_text may be empty but content exists in vector store
+  const hasContentButNoPageCount = (
+    document.extracted_text ||
+    document.rag_indexed === true ||
+    (document.file_size && document.file_size > 10 * 1024 * 1024) // Large docs have content even if not explicitly set
+  ) && !document.metadata?.page_count
 
   const config = generationConfig[generationType]
   const Icon = config.icon
@@ -333,6 +350,90 @@ export default function ContentSelectionModal({
                 totalPages={document.metadata.page_count}
                 onSelectionChange={setSelection}
               />
+            </div>
+          ) : hasContentButNoPageCount ? (
+            /* Document has text but no page count - show chapter selection option */
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+                <BookOpen className="w-4 h-4" />
+                Select Content
+              </h3>
+
+              {/* Toggle between Full Document and Chapter Selection */}
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setSelection({ type: 'full' })
+                    setShowChapterSelector(false)
+                    setSelectedChapterIds([])
+                  }}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
+                    !showChapterSelector && selection.type === 'full'
+                      ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
+                >
+                  {!showChapterSelector && selection.type === 'full' ? (
+                    <CheckSquare className="w-5 h-5 text-teal-600" />
+                  ) : (
+                    <Square className="w-5 h-5 text-gray-400" />
+                  )}
+                  <div className="text-left">
+                    <span className="font-medium text-gray-900 dark:text-gray-100">Full Document</span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Generate from the entire document</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setShowChapterSelector(true)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
+                    showChapterSelector
+                      ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
+                >
+                  {showChapterSelector ? (
+                    <CheckSquare className="w-5 h-5 text-teal-600" />
+                  ) : (
+                    <Square className="w-5 h-5 text-gray-400" />
+                  )}
+                  <div className="text-left">
+                    <span className="font-medium text-gray-900 dark:text-gray-100">Select Chapters</span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Choose specific chapters or sections</p>
+                  </div>
+                </button>
+              </div>
+
+              {/* Chapter Selector (shows when selected) */}
+              {showChapterSelector && (
+                <ChapterSelector
+                  documentId={document.id}
+                  documentName={document.file_name}
+                  isOpen={showChapterSelector}
+                  onConfirm={(ids, chapters) => {
+                    setSelectedChapterIds(ids)
+                    setChapterData(chapters)
+                    setSelection({
+                      type: 'chapters',
+                      chapterIds: ids,
+                      chapters: chapters
+                    })
+                  }}
+                  onCancel={() => {
+                    setShowChapterSelector(false)
+                    setSelection({ type: 'full' })
+                  }}
+                />
+              )}
+
+              {/* Show selected chapters summary */}
+              {selectedChapterIds.length > 0 && (
+                <div className="mt-3 p-3 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg">
+                  <p className="text-sm text-teal-800 dark:text-teal-200">
+                    {selectedChapterIds.length} chapter{selectedChapterIds.length > 1 ? 's' : ''} selected
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
