@@ -13,9 +13,8 @@ import InfoTipBanner from "./InfoTipBanner"
 import MarkdownRenderer from "./MarkdownRenderer"
 import type { DocumentSection } from "@/lib/document-parser/section-detector"
 
-// Dynamic imports for voice and image features
+// Dynamic imports for voice features
 const VoiceChat = dynamic(() => import("./chat/VoiceChat"), { ssr: false })
-const DocumentImageGallery = dynamic(() => import("./chat/DocumentImageGallery"), { ssr: false })
 
 const PDFViewer = dynamic(() => import("./PDFViewer"), {
   ssr: false,
@@ -920,23 +919,7 @@ export default function ChatInterface() {
               </div>
 
               {isPDFFile ? (
-                <div className="h-full flex flex-col">
-                  {/* PDF Image Gallery - Collapsible panel above PDF viewer */}
-                  {currentDocument?.id && (
-                    <DocumentImageGallery
-                      documentId={currentDocument.id}
-                      className="flex-shrink-0"
-                      onImageSelect={(image) => {
-                        // Reference image in chat input
-                        setInputMessage(prev =>
-                          prev + (prev ? ' ' : '') + `[Referring to image on page ${image.pageNumber}] `
-                        )
-                        setMobileView('chat')
-                      }}
-                    />
-                  )}
-                  <PDFViewer file={chatDocument.file} className="flex-1 min-h-0" />
-                </div>
+                <PDFViewer file={chatDocument.file} className="h-full" />
               ) : (
                 <div className="h-full overflow-auto p-4 lg:p-6">
                   <div className="max-w-3xl mx-auto">
