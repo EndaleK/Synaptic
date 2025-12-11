@@ -80,10 +80,19 @@ export async function POST(req: NextRequest) {
 
     const body: CreateOrganizationRequest = await req.json()
 
-    // Validate required fields
-    if (!body.name || !body.type || !body.adminEmail) {
+    // Validate required fields (adminEmail is optional - will use user's email if not provided)
+    if (!body.name || !body.type) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, type, adminEmail' },
+        { error: 'Missing required fields: name, type' },
+        { status: 400 }
+      )
+    }
+
+    // Get admin email from body or fall back to user's email from context
+    const adminEmail = body.adminEmail || context.email
+    if (!adminEmail) {
+      return NextResponse.json(
+        { error: 'Admin email required - please provide or update your profile email' },
         { status: 400 }
       )
     }
@@ -130,8 +139,8 @@ export async function POST(req: NextRequest) {
         name: body.name,
         slug: slug,
         type: body.type,
-        admin_email: body.adminEmail,
-        billing_email: body.billingEmail || body.adminEmail,
+        admin_email: adminEmail,
+        billing_email: body.billingEmail || adminEmail,
         subscription_tier: 'pilot',
         max_seats: 100,
         current_seats: 0,
