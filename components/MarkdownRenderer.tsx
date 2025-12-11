@@ -114,8 +114,23 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     // eslint-disable-next-line no-misleading-character-class
     sanitized = sanitized.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}]/gu, '')
 
+    // ============================================================
+    // FIX: Handle <br> and <br/> tags - replace with space or hyphen
+    // AI often uses <br> for line breaks in labels, but Mermaid doesn't support this
+    // ============================================================
+    sanitized = sanitized.replace(/<br\s*\/?>/gi, ' - ')
+
     // Replace ampersands with "and" - & breaks Mermaid syntax
     sanitized = sanitized.replace(/&/g, 'and')
+
+    // ============================================================
+    // FIX: Handle "A & B --> C" syntax (multiple sources)
+    // Mermaid doesn't support "A & B" as combined source in flowcharts
+    // Split into separate lines: A --> C and B --> C
+    // ============================================================
+    // This is tricky - we need to handle lines like "E and F --> G"
+    // After & replacement, these become "E and F --> G"
+    // We'll split these into multiple arrows
 
     // Replace forward slashes in node labels with "or" - / can break syntax
     // Only replace within brackets [text/with/slashes] -> [text or with or slashes]
@@ -231,6 +246,23 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     sanitized = sanitized.replace(/subgraph\s+"([^"]+)"/g, (match, label) => {
       const cleanLabel = label.replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim()
       return `subgraph ${cleanLabel}`
+    })
+
+    // ============================================================
+    // FIX: Handle "A and B --> C" multi-source syntax
+    // Mermaid supports this with & but AI wrote "and" (we converted & to "and")
+    // Convert back: "E and F --> G" becomes "E & F --> G"
+    // ============================================================
+    sanitized = sanitized.replace(/(\b[A-Z]\b)\s+and\s+(\b[A-Z]\b)\s*(-->|---)/gi, '$1 & $2 $3')
+
+    // ============================================================
+    // FIX: Handle parentheses in node labels - they can cause issues
+    // Replace (text) with - text - inside labels
+    // ============================================================
+    sanitized = sanitized.replace(/\[([^\]]*)\]/g, (match, content) => {
+      // Replace parentheses with dashes for readability
+      let cleaned = content.replace(/\(([^)]+)\)/g, '- $1')
+      return '[' + cleaned + ']'
     })
 
     return sanitized

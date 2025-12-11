@@ -13,6 +13,7 @@ import {
   FileText,
   Calendar,
   AlertCircle,
+  Library,
 } from 'lucide-react'
 
 interface Class {
@@ -297,6 +298,11 @@ export default function TeacherDashboardPage() {
                 label="Create Assignment"
                 icon={FileText}
                 onClick={() => router.push('/dashboard/teacher/assignments/new')}
+              />
+              <QuickActionButton
+                label="Shared Library"
+                icon={Library}
+                onClick={() => router.push('/dashboard/teacher/library')}
               />
               <QuickActionButton
                 label="View Analytics"

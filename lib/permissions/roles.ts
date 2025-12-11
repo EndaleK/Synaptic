@@ -163,6 +163,21 @@ export const ROLE_PERMISSIONS: Record<OrganizationRole, Partial<Permissions>> = 
     'analytics:view_class': true,
   },
 
+  parent: {
+    // Organization view only (for homeschool co-ops/umbrella schools)
+    'org:view': true,
+    // School view only
+    'school:view': true,
+    // View linked students' class information (read-only)
+    'class:view_students': true,
+    'class:view_analytics': true,
+    // View assignments and submissions for linked students (no editing/grading)
+    'assignment:view_submissions': true,
+    // View analytics for linked students
+    'analytics:view_class': true,
+    'analytics:export': true, // Allow exporting progress reports
+  },
+
   student: {
     // Minimal organization awareness
     'org:view': true,
@@ -264,6 +279,7 @@ const ROLE_HIERARCHY: Record<OrganizationRole, number> = {
   org_admin: 100,
   school_admin: 80,
   teacher: 60,
+  parent: 50,             // Between teacher and TA - can view but not modify
   teaching_assistant: 40,
   student: 20,
 }
@@ -302,6 +318,7 @@ export const ROLE_DISPLAY_NAMES: Record<OrganizationRole, string> = {
   org_admin: 'Organization Admin',
   school_admin: 'School Admin',
   teacher: 'Teacher',
+  parent: 'Parent/Guardian',
   teaching_assistant: 'Teaching Assistant',
   student: 'Student',
 }
@@ -310,6 +327,7 @@ export const ROLE_DESCRIPTIONS: Record<OrganizationRole, string> = {
   org_admin: 'Full access to all organization settings, schools, and users',
   school_admin: 'Manage school settings, teachers, and view all classes',
   teacher: 'Create and manage classes, assignments, and grade students',
+  parent: 'View linked students\' progress, assignments, and analytics (read-only)',
   teaching_assistant: 'View classes and submissions, create content',
   student: 'Access enrolled classes and complete assignments',
 }

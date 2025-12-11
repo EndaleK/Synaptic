@@ -20,13 +20,19 @@ interface DashboardHomeProps {
 }
 
 export default function DashboardHome({ onModeSelect, onOpenAssessment }: DashboardHomeProps) {
-  const { user } = useUser()
+  const { user, isLoaded: isUserLoaded } = useUser()
   const [recentDocuments, setRecentDocuments] = useState<Document[]>([])
   const [isLoadingDocs, setIsLoadingDocs] = useState(true)
   const [currentStreak, setCurrentStreak] = useState<number>(0)
   const [isLoadingStreak, setIsLoadingStreak] = useState(true)
   const [isLearningProfileExpanded, setIsLearningProfileExpanded] = useState(false)
   const { learningStyle, assessmentScores, userProfile } = useUserStore()
+
+  // Prevent hydration mismatch by only showing user name after client-side load
+  const [isClient, setIsClient] = useState(false)
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
   const { startTimer, status, timerType, sessionsCompleted } = usePomodoroStore()
 
   // Fetch recent documents
@@ -232,7 +238,7 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
             <div className="flex-1 w-full">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3 flex-wrap">
                 <h1 className="text-xl sm:text-display">
-                  Welcome back, {user?.firstName || user?.username || 'Student'}! 👋
+                  Welcome back, {isClient && isUserLoaded ? (user?.firstName || user?.username || 'Student') : 'Student'}! 👋
                 </h1>
                 {/* Login Streak Indicator */}
                 {!isLoadingStreak && currentStreak > 0 && (
@@ -407,16 +413,22 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
         </div>
 
         {/* Learning Modes Grid */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6" data-tour="learning-modes">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Choose Your Learning Mode</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             {learningModes.map((mode) => {
               const Icon = mode.icon
+              // Add data-tour attribute for specific modes
+              const dataTourAttr = mode.id === 'flashcards' ? 'flashcards'
+                : mode.id === 'podcast' ? 'podcast'
+                : mode.id === 'mindmap' ? 'mindmap'
+                : undefined
               return (
                 <button
                   key={mode.id}
                   onClick={() => mode.available && onModeSelect(mode.id)}
                   disabled={!mode.available}
+                  data-tour={dataTourAttr}
                   className={`relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-4 sm:p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 active:scale-95 min-h-[140px] sm:min-h-auto ${
                     mode.available ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
                   }`}

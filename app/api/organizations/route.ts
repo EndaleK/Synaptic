@@ -80,6 +80,9 @@ export async function POST(req: NextRequest) {
 
     const body: CreateOrganizationRequest = await req.json()
 
+    console.log('[ORG CREATE] Request body:', JSON.stringify(body))
+    console.log('[ORG CREATE] User context:', JSON.stringify({ userId: context.userId, email: context.email }))
+
     // Validate required fields (adminEmail is optional - will use user's email if not provided)
     if (!body.name || !body.type) {
       return NextResponse.json(
@@ -87,6 +90,23 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Map frontend types to database enum values
+    // Frontend uses: 'school', 'co-op', 'tutoring', 'other'
+    // Database expects: 'k12_district', 'university', 'corporate', 'other'
+    const typeMapping: Record<string, string> = {
+      'school': 'k12_district',
+      'co-op': 'k12_district', // Co-ops are similar to school structures
+      'tutoring': 'corporate', // Tutoring businesses are corporate entities
+      'other': 'other',
+      // Also accept DB values directly for backwards compatibility
+      'k12_district': 'k12_district',
+      'university': 'university',
+      'corporate': 'corporate',
+    }
+
+    const dbType = typeMapping[body.type] || 'other'
+    console.log('[ORG CREATE] Type mapping:', body.type, '->', dbType)
 
     // Get admin email from body or fall back to user's email from context
     const adminEmail = body.adminEmail || context.email
@@ -133,12 +153,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Create the organization
+    console.log('[ORG CREATE] Attempting insert with:', {
+      name: body.name,
+      slug,
+      type: dbType,
+      admin_email: adminEmail,
+    })
+
     const { data: organization, error: orgError } = await supabase
       .from('organizations')
       .insert({
         name: body.name,
         slug: slug,
-        type: body.type,
+        type: dbType,
         admin_email: adminEmail,
         billing_email: body.billingEmail || adminEmail,
         subscription_tier: 'pilot',
@@ -149,9 +176,14 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (orgError) {
-      console.error('Error creating organization:', orgError)
-      return NextResponse.json({ error: 'Failed to create organization' }, { status: 500 })
+      console.error('[ORG CREATE] Error creating organization:', JSON.stringify(orgError, null, 2))
+      console.error('[ORG CREATE] Error code:', orgError.code)
+      console.error('[ORG CREATE] Error message:', orgError.message)
+      console.error('[ORG CREATE] Error details:', orgError.details)
+      return NextResponse.json({ error: 'Failed to create organization', details: orgError.message }, { status: 500 })
     }
+
+    console.log('[ORG CREATE] Organization created:', organization.id)
 
     // Add the creating user as org_admin
     const { error: memberError } = await supabase

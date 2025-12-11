@@ -143,7 +143,9 @@ export async function PATCH(request: NextRequest) {
     const updates = {
       learning_style: body.learning_style as LearningStyle | undefined,
       preferred_mode: body.preferred_mode as PreferredMode | undefined,
-      full_name: body.full_name as string | undefined
+      full_name: body.full_name as string | undefined,
+      jurisdiction_code: body.jurisdiction_code as string | undefined,
+      jurisdiction_country: body.jurisdiction_country as string | undefined
     }
 
     // Remove undefined fields

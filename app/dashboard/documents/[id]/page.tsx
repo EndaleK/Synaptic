@@ -1,18 +1,20 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft, FileText, Calendar, HardDrive, Download, Loader2, Sparkles, Brain } from "lucide-react"
+import { useState, useEffect, Suspense, useCallback } from "react"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
+import { ArrowLeft, FileText, Calendar, HardDrive, Download, Loader2, Sparkles, Brain, Map, CheckCircle } from "lucide-react"
 import { Document as PDFDocument } from "@/lib/supabase/types"
 import Breadcrumb from "@/components/Breadcrumb"
 import PageTopicSelector, { SelectionData } from "@/components/PageTopicSelector"
 import { useToast } from '@/components/ToastContainer'
 
-export default function DocumentDetailPage() {
+function DocumentDetailContent() {
   const toast = useToast()
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const documentId = params.id as string
+  const generateType = searchParams.get('generate') as 'flashcards' | 'podcast' | 'mindmap' | null
 
   const [document, setDocument] = useState<PDFDocument | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -21,7 +23,11 @@ export default function DocumentDetailPage() {
   const [selection, setSelection] = useState<SelectionData>({ type: 'full' })
   const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false)
   const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false)
+  const [isGeneratingMindmap, setIsGeneratingMindmap] = useState(false)
+  const [autoGenerateTriggered, setAutoGenerateTriggered] = useState(false)
+  const [generationProgress, setGenerationProgress] = useState<{ step: string; progress: number } | null>(null)
 
+  // Fetch document data
   useEffect(() => {
     const fetchDocument = async () => {
       try {
@@ -38,18 +44,11 @@ export default function DocumentDetailPage() {
         setDocument(data.document)
 
         // Get the PDF URL from storage
-        // Priority 1: Use R2 URL from metadata if available
-        // Priority 2: Construct Supabase Storage public URL
         if (data.document.metadata?.r2_url) {
-          console.log('📄 Using R2 URL:', data.document.metadata.r2_url)
           setPdfUrl(data.document.metadata.r2_url)
         } else if (data.document.storage_path) {
-          // For Supabase Storage, construct the public URL
           const storageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/documents/${data.document.storage_path}`
-          console.log('📄 Using Supabase Storage URL:', storageUrl)
           setPdfUrl(storageUrl)
-        } else {
-          console.error('❌ No storage path or R2 URL found for document')
         }
       } catch (err) {
         console.error('Error fetching document:', err)
@@ -86,10 +85,12 @@ export default function DocumentDetailPage() {
     })
   }
 
-  const handleGenerateFlashcards = async () => {
+  // Define generation handlers with useCallback
+  const handleGenerateFlashcards = useCallback(async () => {
     if (!document) return
 
     setIsGeneratingFlashcards(true)
+    setGenerationProgress({ step: 'Generating flashcards...', progress: 0 })
     try {
       const response = await fetch('/api/generate-flashcards-rag', {
         method: 'POST',
@@ -102,26 +103,26 @@ export default function DocumentDetailPage() {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to generate flashcards')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate flashcards')
       }
 
-      const data = await response.json()
-
-      // Redirect to flashcards page/mode
+      toast.success('Flashcards generated successfully!')
       router.push(`/dashboard?mode=flashcards&documentId=${document.id}`)
-    } catch (error) {
-      console.error('Error generating flashcards:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to generate flashcards')
+    } catch (err) {
+      console.error('Error generating flashcards:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to generate flashcards')
     } finally {
       setIsGeneratingFlashcards(false)
+      setGenerationProgress(null)
     }
-  }
+  }, [document, selection, router, toast])
 
-  const handleGeneratePodcast = async () => {
+  const handleGeneratePodcast = useCallback(async () => {
     if (!document) return
 
     setIsGeneratingPodcast(true)
+    setGenerationProgress({ step: 'Generating podcast...', progress: 0 })
     try {
       const response = await fetch('/api/generate-podcast', {
         method: 'POST',
@@ -135,21 +136,75 @@ export default function DocumentDetailPage() {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to generate podcast')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate podcast')
       }
 
-      const data = await response.json()
-
-      // Redirect to podcast page/mode
+      toast.success('Podcast generated successfully!')
       router.push(`/dashboard?mode=podcast&documentId=${document.id}`)
-    } catch (error) {
-      console.error('Error generating podcast:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to generate podcast')
+    } catch (err) {
+      console.error('Error generating podcast:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to generate podcast')
     } finally {
       setIsGeneratingPodcast(false)
+      setGenerationProgress(null)
     }
-  }
+  }, [document, selection, router, toast])
+
+  const handleGenerateMindmap = useCallback(async () => {
+    if (!document) return
+
+    setIsGeneratingMindmap(true)
+    setGenerationProgress({ step: 'Generating mind map...', progress: 0 })
+    try {
+      const response = await fetch('/api/generate-mindmap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentId: document.id,
+          selection,
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate mind map')
+      }
+
+      toast.success('Mind map generated successfully!')
+      router.push(`/dashboard?mode=mindmap&documentId=${document.id}`)
+    } catch (err) {
+      console.error('Error generating mind map:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to generate mind map')
+    } finally {
+      setIsGeneratingMindmap(false)
+      setGenerationProgress(null)
+    }
+  }, [document, selection, router, toast])
+
+  // Auto-trigger generation when page loads with ?generate= query param
+  useEffect(() => {
+    if (!document || autoGenerateTriggered || !generateType) return
+    if (document.processing_status !== 'completed') return
+
+    // Prevent re-triggering
+    setAutoGenerateTriggered(true)
+
+    // Trigger the appropriate generation type
+    switch (generateType) {
+      case 'flashcards':
+        handleGenerateFlashcards()
+        break
+      case 'podcast':
+        handleGeneratePodcast()
+        break
+      case 'mindmap':
+        handleGenerateMindmap()
+        break
+    }
+  }, [document, generateType, autoGenerateTriggered, handleGenerateFlashcards, handleGeneratePodcast, handleGenerateMindmap])
+
+  const isGenerating = isGeneratingFlashcards || isGeneratingPodcast || isGeneratingMindmap
 
   if (isLoading) {
     return (
@@ -187,6 +242,23 @@ export default function DocumentDetailPage() {
       <div className="max-w-7xl mx-auto">
         {/* Breadcrumb */}
         <Breadcrumb items={breadcrumbItems} className="mb-6" />
+
+        {/* Auto-generation banner */}
+        {generateType && generationProgress && (
+          <div className="mb-6 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400 animate-spin" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-indigo-900 dark:text-indigo-100">
+                  {generationProgress.step}
+                </p>
+                <p className="text-xs text-indigo-700 dark:text-indigo-300">
+                  This may take a minute. You'll be redirected when complete.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Header */}
         <div className="mb-6">
@@ -279,46 +351,64 @@ export default function DocumentDetailPage() {
               className="mb-6"
             />
 
-            <div className="flex gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <button
                 onClick={handleGenerateFlashcards}
-                disabled={isGeneratingFlashcards || isGeneratingPodcast}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isGenerating}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isGeneratingFlashcards ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Generating Flashcards...
+                    Generating...
                   </>
                 ) : (
                   <>
                     <Brain className="w-5 h-5" />
-                    Generate Flashcards
+                    Flashcards
                   </>
                 )}
               </button>
 
               <button
                 onClick={handleGeneratePodcast}
-                disabled={isGeneratingFlashcards || isGeneratingPodcast}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isGenerating}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isGeneratingPodcast ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Generating Podcast...
+                    Generating...
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-5 h-5" />
-                    Generate Podcast
+                    Podcast
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleGenerateMindmap}
+                disabled={isGenerating}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isGeneratingMindmap ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Map className="w-5 h-5" />
+                    Mind Map
                   </>
                 )}
               </button>
             </div>
 
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-              Select content above to generate flashcards or a podcast from specific pages, topics, or the full document.
+              Select content above to generate flashcards, a podcast, or a mind map from specific pages, topics, or the full document.
             </p>
           </div>
         )}
@@ -398,5 +488,22 @@ export default function DocumentDetailPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Export with Suspense wrapper for useSearchParams
+export default function DocumentDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="w-8 h-8 animate-spin text-accent-primary" />
+          </div>
+        </div>
+      </div>
+    }>
+      <DocumentDetailContent />
+    </Suspense>
   )
 }

@@ -538,6 +538,7 @@ function DocumentsPageContent() {
                 onSelectMode={handleSelectMode}
                 onDelete={handleDelete}
                 onRefresh={fetchDocuments}
+                onUpload={() => setIsUploadModalOpen(true)}
                 onStar={handleStar}
                 selectedDocuments={selectedDocuments}
                 onToggleSelect={handleToggleSelect}

@@ -22,6 +22,14 @@ const isPublicRoute = createRouteMatcher([
   '/share(.*)', // Shareable landing pages
 ])
 
+// Routes that require auth but should skip onboarding check
+const isOnboardingRoute = createRouteMatcher([
+  '/onboarding(.*)',
+  '/api/user/role(.*)', // Role selection API
+  '/api/children(.*)', // Child account creation API
+  '/api/organizations(.*)', // Organization creation API
+])
+
 export default clerkMiddleware(async (auth, req: NextRequest) => {
   // Protect all routes except public ones
   if (!isPublicRoute(req)) {
@@ -44,15 +52,15 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
 
     // Auto-create user profile if it doesn't exist
     // Only do this for dashboard routes to avoid performance impact on API routes
-    if (req.nextUrl.pathname.startsWith('/dashboard')) {
+    if (req.nextUrl.pathname.startsWith('/dashboard') || isOnboardingRoute(req)) {
       try {
         const { createClient } = await import('@/lib/supabase/server')
         const supabase = await createClient()
 
-        // Check if profile exists
+        // Check if profile exists and get onboarding status
         const { data: profile } = await supabase
           .from('user_profiles')
-          .select('id')
+          .select('id, onboarding_completed')
           .eq('clerk_user_id', userId)
           .single()
 
@@ -79,6 +87,7 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
               clerk_user_id: userId,
               email: email,
               full_name: fullName,
+              onboarding_completed: false, // New users need onboarding
               created_at: new Date().toISOString()
             })
 
@@ -93,6 +102,14 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
               console.error('Failed to send welcome email:', err)
             })
           }
+
+          // New user - redirect to onboarding (unless already on onboarding route)
+          if (!isOnboardingRoute(req) && req.nextUrl.pathname.startsWith('/dashboard')) {
+            return NextResponse.redirect(new URL('/onboarding', req.url))
+          }
+        } else if (profile.onboarding_completed === false && req.nextUrl.pathname.startsWith('/dashboard')) {
+          // Existing user who hasn't completed onboarding - redirect
+          return NextResponse.redirect(new URL('/onboarding', req.url))
         }
       } catch (error) {
         // Log error for debugging

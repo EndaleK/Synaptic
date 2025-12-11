@@ -122,7 +122,148 @@ export type OrganizationRole =
   | 'school_admin'        // School-level admin (principal)
   | 'teacher'             // Can create classes, view own students
   | 'teaching_assistant'  // Limited teacher access
+  | 'parent'              // Read-only access to linked students' progress (homeschool monitoring)
   | 'student'             // Basic access
+
+// ============================================================================
+// PARENT/GUARDIAN TYPES (Homeschool Support)
+// ============================================================================
+
+export type GuardianRelationship = 'mother' | 'father' | 'guardian' | 'grandparent' | 'other'
+export type GuardianPermissionLevel = 'view_only' | 'view_grades' | 'full_access'
+
+export interface StudentGuardian {
+  id: string
+  studentId: string
+  parentId: string
+  relationship: GuardianRelationship
+  permissionLevel: GuardianPermissionLevel
+  verifiedAt?: Date
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface CreateStudentGuardianRequest {
+  studentId: string
+  relationship: GuardianRelationship
+  permissionLevel?: GuardianPermissionLevel
+}
+
+// ============================================================================
+// CURRICULUM UNIT TYPES (Year-long Progress Tracking)
+// ============================================================================
+
+export type UnitStatus = 'not_started' | 'in_progress' | 'completed' | 'reviewed'
+
+export interface CurriculumUnit {
+  id: string
+  classId: string
+  title: string
+  description?: string
+  standards?: StandardAlignment[]
+  startDate?: Date
+  endDate?: Date
+  orderIndex: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface StudentUnitProgress {
+  id: string
+  studentId: string
+  unitId: string
+  masteryPercent: number
+  status: UnitStatus
+  lastUpdated: Date
+  createdAt: Date
+}
+
+export interface CreateCurriculumUnitRequest {
+  classId: string
+  title: string
+  description?: string
+  standards?: StandardAlignment[]
+  startDate?: string
+  endDate?: string
+  orderIndex?: number
+}
+
+// ============================================================================
+// PROGRESS REPORT TYPES
+// ============================================================================
+
+export type ReportType = 'monthly' | 'quarterly' | 'semester' | 'annual'
+export type ReportFormat = 'pdf' | 'json'
+
+export interface ProgressReport {
+  id: string
+  studentId: string
+  classId?: string
+  reportType: ReportType
+  reportData: ProgressReportData
+  generatedAt: Date
+  expiresAt?: Date
+  createdAt: Date
+}
+
+export interface ProgressReportData {
+  student: {
+    name: string
+    id: string
+  }
+  period: {
+    start: Date
+    end: Date
+    type: ReportType
+  }
+  attendance: {
+    totalDays: number
+    activeDays: number
+    attendanceRate: number
+  }
+  subjects: SubjectProgress[]
+  flashcards: {
+    totalReviewed: number
+    accuracy: number
+    mastered: number
+    learning: number
+  }
+  studyTime: {
+    totalMinutes: number
+    averageDailyMinutes: number
+    byMode: Record<string, number>
+  }
+  assignments: {
+    completed: number
+    total: number
+    averageScore: number
+    onTimeRate: number
+  }
+  streaks: {
+    current: number
+    longest: number
+  }
+  generatedAt: Date
+}
+
+export interface SubjectProgress {
+  subject: string
+  unitsCompleted: number
+  totalUnits: number
+  masteryPercent: number
+  flashcardsReviewed: number
+  flashcardAccuracy: number
+  timeSpentMinutes: number
+}
+
+export interface GenerateReportRequest {
+  studentId: string
+  classId?: string
+  reportType: ReportType
+  startDate?: string
+  endDate?: string
+  format?: ReportFormat
+}
 
 export interface OrganizationMember {
   id: string

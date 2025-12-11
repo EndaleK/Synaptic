@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { X, Loader2, Sparkles, Save, Check, BookOpen, Square, CheckSquare } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+import { X, Loader2, Sparkles, Save, Check, BookOpen, Square, CheckSquare, Headphones, Share2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 import PageTopicSelector, { SelectionData } from "./PageTopicSelector"
@@ -14,7 +14,7 @@ interface ContentSelectionModalProps {
   isOpen: boolean
   onClose: () => void
   document: Document
-  generationType: 'flashcards'
+  generationType: 'flashcards' | 'podcast' | 'mindmap'
 }
 
 const generationConfig = {
@@ -23,7 +23,24 @@ const generationConfig = {
     color: 'from-accent-primary to-accent-secondary',
     title: 'Generate Flashcards',
     description: 'Create study flashcards from your selected content',
-    emoji: '🎯'
+    emoji: '🎯',
+    buttonText: 'Generate Flashcards'
+  },
+  podcast: {
+    icon: Headphones,
+    color: 'from-purple-500 to-pink-500',
+    title: 'Generate Podcast',
+    description: 'Create an audio podcast episode from your selected content',
+    emoji: '🎙️',
+    buttonText: 'Generate Podcast'
+  },
+  mindmap: {
+    icon: Share2,
+    color: 'from-emerald-500 to-teal-500',
+    title: 'Generate Mind Map',
+    description: 'Create a visual mind map to understand concepts and relationships',
+    emoji: '🧠',
+    buttonText: 'Generate Mind Map'
   }
 }
 
@@ -37,6 +54,10 @@ export default function ContentSelectionModal({
   const [selection, setSelection] = useState<SelectionData>({ type: 'full' })
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Progress bar state for flashcard generation
+  const [generationProgress, setGenerationProgress] = useState(0)
+  const [generationStep, setGenerationStep] = useState('')
 
   // Flashcard count selection
   const [flashcardCount, setFlashcardCount] = useState<number>(20) // Default 20 cards
@@ -53,13 +74,32 @@ export default function ContentSelectionModal({
   const [selectedChapterIds, setSelectedChapterIds] = useState<string[]>([])
   const [chapterData, setChapterData] = useState<any[]>([])
 
-  // Check if document has content but no page count (legacy or large docs)
-  // For RAG-indexed docs, extracted_text may be empty but content exists in vector store
-  const hasContentButNoPageCount = (
+  // Estimate page count from text length if not available
+  // Average: ~3000 characters per page for typical documents
+  const estimatedPageCount = useMemo(() => {
+    if (document.metadata?.page_count) {
+      return document.metadata.page_count
+    }
+    if (document.extracted_text) {
+      return Math.max(1, Math.ceil(document.extracted_text.length / 3000))
+    }
+    // For RAG-indexed docs or large files, estimate based on file size
+    // Average PDF: ~3KB per page
+    if (document.file_size) {
+      return Math.max(1, Math.ceil(document.file_size / 3000))
+    }
+    return 1
+  }, [document.metadata?.page_count, document.extracted_text, document.file_size])
+
+  // Check if this is a small document (< 25 pages) - use full document by default
+  const isSmallDocument = estimatedPageCount < 25
+
+  // Check if document has content
+  const hasContent = (
     document.extracted_text ||
     document.rag_indexed === true ||
-    (document.file_size && document.file_size > 10 * 1024 * 1024) // Large docs have content even if not explicitly set
-  ) && !document.metadata?.page_count
+    (document.file_size && document.file_size > 0)
+  )
 
   const config = generationConfig[generationType]
   const Icon = config.icon
@@ -86,9 +126,34 @@ export default function ContentSelectionModal({
     }
   }, [generationType, document.extracted_text])
 
+  // Simulated progress steps for flashcard generation
+  const flashcardProgressSteps = [
+    { progress: 10, step: 'Analyzing document structure...', duration: 800 },
+    { progress: 25, step: 'Extracting key concepts...', duration: 1200 },
+    { progress: 45, step: 'Generating questions and answers...', duration: 2000 },
+    { progress: 70, step: 'Optimizing for learning...', duration: 1500 },
+    { progress: 85, step: 'Saving flashcards...', duration: 800 },
+  ]
+
+  const simulateProgress = async () => {
+    for (const step of flashcardProgressSteps) {
+      await new Promise(resolve => setTimeout(resolve, step.duration))
+      setGenerationProgress(step.progress)
+      setGenerationStep(step.step)
+    }
+  }
+
   const handleGenerate = async () => {
     setIsGenerating(true)
     setError(null)
+    setGenerationProgress(0)
+    setGenerationStep('Starting generation...')
+
+    // Start simulated progress for flashcards (runs in parallel with API call)
+    let progressPromise: Promise<void> | null = null
+    if (generationType === 'flashcards') {
+      progressPromise = simulateProgress()
+    }
 
     try {
       let response
@@ -102,10 +167,21 @@ export default function ContentSelectionModal({
       const isRAGIndexed = document.rag_indexed === true
       const isLargeDocument = document.file_size > 10 * 1024 * 1024
 
-      // Use RAG endpoint for large/indexed documents, regular endpoint for small documents
-      apiEndpoint = (isRAGIndexed || isLargeDocument) ? '/api/generate-flashcards-rag' : '/api/generate-flashcards'
-      // Pass user-selected count, or undefined for auto-calculation
-      requestBody.count = useAutoCount ? undefined : flashcardCount
+      // Set appropriate endpoint based on generation type
+      switch (generationType) {
+        case 'flashcards':
+          // Use RAG endpoint for large/indexed documents, regular endpoint for small documents
+          apiEndpoint = (isRAGIndexed || isLargeDocument) ? '/api/generate-flashcards-rag' : '/api/generate-flashcards'
+          // Pass user-selected count, or undefined for auto-calculation
+          requestBody.count = useAutoCount ? undefined : flashcardCount
+          break
+        case 'podcast':
+          apiEndpoint = '/api/generate-podcast'
+          break
+        case 'mindmap':
+          apiEndpoint = '/api/generate-mindmap'
+          break
+      }
 
       console.log(`🚀 Generating ${generationType} from ${selection.type}...`)
       console.log('[ContentSelectionModal] ⚠️ Request body:', JSON.stringify(requestBody, null, 2))
@@ -208,6 +284,13 @@ export default function ContentSelectionModal({
         response: data
       })
 
+      // Complete progress to 100%
+      if (generationType === 'flashcards') {
+        setGenerationProgress(100)
+        setGenerationStep('Complete!')
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+
       // Close modal
       onClose()
 
@@ -242,6 +325,8 @@ export default function ContentSelectionModal({
 
       setError(errorMessage)
       setIsGenerating(false)
+      setGenerationProgress(0)
+      setGenerationStep('')
     }
   }
 
@@ -252,6 +337,8 @@ export default function ContentSelectionModal({
       setShowSavePreset(false)
       setPresetName('')
       setSaveSuccess(false)
+      setGenerationProgress(0)
+      setGenerationStep('')
       onClose()
     }
   }
@@ -338,107 +425,54 @@ export default function ContentSelectionModal({
           </p>
 
           {/* Content Selection */}
-          {document.metadata?.page_count ? (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                Select Content
-              </h3>
-
-              <PageTopicSelector
-                key={document.id} // Force new component instance when document changes
-                documentId={document.id}
-                totalPages={document.metadata.page_count}
-                onSelectionChange={setSelection}
-              />
-            </div>
-          ) : hasContentButNoPageCount ? (
-            /* Document has text but no page count - show chapter selection option */
+          {hasContent ? (
             <div>
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
                 <BookOpen className="w-4 h-4" />
                 Select Content
+                {isSmallDocument && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">
+                    (~{estimatedPageCount} pages - Full Document recommended)
+                  </span>
+                )}
+                {!isSmallDocument && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">
+                    (~{estimatedPageCount} pages)
+                  </span>
+                )}
               </h3>
 
-              {/* Toggle between Full Document and Chapter Selection */}
-              <div className="space-y-3">
-                <button
-                  onClick={() => {
-                    setSelection({ type: 'full' })
-                    setShowChapterSelector(false)
-                    setSelectedChapterIds([])
-                  }}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
-                    !showChapterSelector && selection.type === 'full'
-                      ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                >
-                  {!showChapterSelector && selection.type === 'full' ? (
-                    <CheckSquare className="w-5 h-5 text-teal-600" />
-                  ) : (
-                    <Square className="w-5 h-5 text-gray-400" />
-                  )}
-                  <div className="text-left">
-                    <span className="font-medium text-gray-900 dark:text-gray-100">Full Document</span>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Generate from the entire document</p>
-                  </div>
-                </button>
+              {/* Show PageTopicSelector for ALL documents */}
+              <PageTopicSelector
+                key={document.id} // Force new component instance when document changes
+                documentId={document.id}
+                totalPages={estimatedPageCount}
+                onSelectionChange={setSelection}
+                defaultToFull={isSmallDocument} // Auto-select full for small docs
+              />
 
-                <button
-                  onClick={() => setShowChapterSelector(true)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
-                    showChapterSelector
-                      ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                >
-                  {showChapterSelector ? (
-                    <CheckSquare className="w-5 h-5 text-teal-600" />
-                  ) : (
-                    <Square className="w-5 h-5 text-gray-400" />
-                  )}
-                  <div className="text-left">
-                    <span className="font-medium text-gray-900 dark:text-gray-100">Select Chapters</span>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Choose specific chapters or sections</p>
-                  </div>
-                </button>
-              </div>
-
-              {/* Chapter Selector (shows when selected) */}
-              {showChapterSelector && (
-                <ChapterSelector
-                  documentId={document.id}
-                  documentName={document.file_name}
-                  isOpen={showChapterSelector}
-                  onConfirm={(ids, chapters) => {
-                    setSelectedChapterIds(ids)
-                    setChapterData(chapters)
-                    setSelection({
-                      type: 'chapters',
-                      chapterIds: ids,
-                      chapters: chapters
-                    })
-                  }}
-                  onCancel={() => {
-                    setShowChapterSelector(false)
-                    setSelection({ type: 'full' })
-                  }}
-                />
+              {/* Info banner for small documents */}
+              {isSmallDocument && (
+                <div className="mt-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                  <p className="text-sm text-green-800 dark:text-green-200">
+                    ✨ This document is short enough for comprehensive {generationType === 'flashcards' ? 'flashcard' : generationType} generation. Full document is recommended.
+                  </p>
+                </div>
               )}
 
-              {/* Show selected chapters summary */}
-              {selectedChapterIds.length > 0 && (
-                <div className="mt-3 p-3 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg">
-                  <p className="text-sm text-teal-800 dark:text-teal-200">
-                    {selectedChapterIds.length} chapter{selectedChapterIds.length > 1 ? 's' : ''} selected
+              {/* Info for estimated pages */}
+              {!document.metadata?.page_count && (
+                <div className="mt-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    ℹ️ Page count is estimated based on document length. Use Smart Topics or Chapters for more precise selection.
                   </p>
                 </div>
               )}
             </div>
           ) : (
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                ℹ️ Full document will be used (page information not available)
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                ⚠️ No content available. Please ensure the document has been processed.
               </p>
             </div>
           )}
@@ -485,7 +519,7 @@ export default function ContentSelectionModal({
                   <input
                     type="range"
                     min="5"
-                    max="50"
+                    max="200"
                     step="5"
                     value={flashcardCount}
                     onChange={(e) => setFlashcardCount(parseInt(e.target.value))}
@@ -493,7 +527,7 @@ export default function ContentSelectionModal({
                   />
                   <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span>5 cards</span>
-                    <span>50 cards</span>
+                    <span>200 cards</span>
                   </div>
                 </div>
               )}
@@ -515,6 +549,32 @@ export default function ContentSelectionModal({
               <p className="text-sm text-red-800 dark:text-red-200">
                 ⚠️ {error}
               </p>
+            </div>
+          )}
+
+          {/* Progress Bar for Flashcard Generation */}
+          {isGenerating && generationType === 'flashcards' && (
+            <div className="bg-gradient-to-br from-accent-primary/5 to-accent-secondary/5 dark:from-accent-primary/10 dark:to-accent-secondary/10 rounded-lg p-4 border border-accent-primary/20 dark:border-accent-primary/30">
+              <div className="flex items-center gap-3 mb-3">
+                <Sparkles className="w-5 h-5 text-accent-primary animate-pulse" />
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {generationStep || 'Starting generation...'}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-accent-primary to-accent-secondary h-2.5 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${generationProgress}%` }}
+                />
+              </div>
+              <div className="flex justify-between mt-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {generationProgress}% complete
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  This usually takes 10-30 seconds
+                </span>
+              </div>
             </div>
           )}
 
@@ -632,7 +692,7 @@ export default function ContentSelectionModal({
               ) : (
                 <>
                   <span className="text-xl">{config.emoji}</span>
-                  Generate Flashcards
+                  {config.buttonText}
                 </>
               )}
             </button>

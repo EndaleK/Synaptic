@@ -36,6 +36,7 @@ interface PageTopicSelectorProps {
   totalPages: number
   onSelectionChange: (selection: SelectionData) => void
   className?: string
+  defaultToFull?: boolean // Auto-select full document mode for small documents
 }
 
 interface Preset {
@@ -49,9 +50,11 @@ export default function PageTopicSelector({
   documentId,
   totalPages,
   onSelectionChange,
-  className
+  className,
+  defaultToFull = false
 }: PageTopicSelectorProps) {
   const toast = useToast()
+  // Default to 'full' mode for small documents when defaultToFull is true
   const [selectionMode, setSelectionMode] = useState<'full' | 'pages' | 'topics' | 'chapters'>('full')
   const [pageStart, setPageStart] = useState<string>('1')
   const [pageEnd, setPageEnd] = useState<string>(totalPages.toString())

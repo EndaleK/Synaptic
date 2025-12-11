@@ -520,7 +520,7 @@ export default function FloatingStudyBuddy() {
   // Desktop minimized state - Circular icon (replaces QuickActionButton position)
   if (isMinimized) {
     return (
-      <div className="fixed bottom-20 right-4 z-50">
+      <div className="fixed bottom-20 right-4 z-50" data-tour="study-buddy">
         <div className="relative group">
           {/* Personality mode selectors - appear on hover */}
           <div className="absolute bottom-16 right-0 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">

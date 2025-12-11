@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
-import { User, Bell, Palette, Database, Shield, Download, Trash2, Moon, Sun, Save, Loader2 } from "lucide-react"
+import { User, Bell, Palette, Database, Shield, Download, Trash2, Moon, Sun, Save, Loader2, MapPin, RotateCcw } from "lucide-react"
+import JurisdictionSelector from "@/components/JurisdictionSelector"
 import Breadcrumb, { settingsBreadcrumb } from "@/components/Breadcrumb"
 import { useToast } from "@/components/ToastContainer"
 import { cn } from "@/lib/utils"
 import { type AccentColor, applyAccentColor, saveAccentColor, getSavedAccentColor } from "@/lib/accent-color-utils"
+import { useTour } from "@/components/Tour/TourProvider"
+import { useRouter } from "next/navigation"
 
 type FontSize = 'small' | 'medium' | 'large'
 
@@ -20,6 +23,8 @@ interface NotificationPreferences {
 export default function SettingsPage() {
   const { user } = useUser()
   const toast = useToast()
+  const { startTour } = useTour()
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'notifications' | 'data'>('profile')
   const [isSaving, setIsSaving] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
@@ -31,6 +36,11 @@ export default function SettingsPage() {
     learningProgress: false,
     achievementBadges: true
   })
+  const [jurisdiction, setJurisdiction] = useState<{ code: string; country: string }>({
+    code: "AB",
+    country: "CA"
+  })
+  const [jurisdictionLoading, setJurisdictionLoading] = useState(true)
 
   // Initialize all settings from localStorage
   useEffect(() => {
@@ -58,6 +68,27 @@ export default function SettingsPage() {
     if (savedNotifications) {
       setNotifications(JSON.parse(savedNotifications))
     }
+
+    // Fetch user profile to get jurisdiction
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('/api/user/profile', { credentials: 'include' })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.profile?.jurisdiction_code && data.profile?.jurisdiction_country) {
+            setJurisdiction({
+              code: data.profile.jurisdiction_code,
+              country: data.profile.jurisdiction_country
+            })
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch profile:', err)
+      } finally {
+        setJurisdictionLoading(false)
+      }
+    }
+    fetchProfile()
   }, [])
 
 
@@ -102,6 +133,28 @@ export default function SettingsPage() {
     setNotifications(newNotifications)
     localStorage.setItem('notificationPreferences', JSON.stringify(newNotifications))
     toast.success(`${key} ${newNotifications[key] ? 'enabled' : 'disabled'}`)
+  }
+
+  const handleJurisdictionChange = async (code: string, country: string) => {
+    setJurisdiction({ code, country })
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          jurisdiction_code: code,
+          jurisdiction_country: country
+        })
+      })
+      if (res.ok) {
+        toast.success('Location updated successfully')
+      } else {
+        toast.error('Failed to update location')
+      }
+    } catch (err) {
+      toast.error('Failed to update location')
+    }
   }
 
   const handleSaveProfile = async () => {
@@ -242,6 +295,32 @@ export default function SettingsPage() {
                         rows={4}
                         className="w-full px-4 py-2 border border-accent-primary/30 dark:border-accent-primary/50 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary focus:border-transparent"
                       />
+                    </div>
+
+                    {/* Jurisdiction / Location for Homeschool Compliance */}
+                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                      <div className="mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                          <MapPin className="w-5 h-5 text-accent-primary" />
+                          Homeschool Location
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          Select your province/state to see relevant homeschool requirements and compliance tracking
+                        </p>
+                      </div>
+                      {!jurisdictionLoading && (
+                        <JurisdictionSelector
+                          value={jurisdiction}
+                          onChange={handleJurisdictionChange}
+                          showRequirements={true}
+                        />
+                      )}
+                      {jurisdictionLoading && (
+                        <div className="animate-pulse">
+                          <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg mb-4" />
+                          <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -555,6 +634,37 @@ export default function SettingsPage() {
                           </button>
                         ))}
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Restart Feature Tour */}
+                  <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <RotateCcw className="w-5 h-5 text-accent-primary" />
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">
+                            Feature Tour
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Restart the guided tour of Synaptic&apos;s features
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem('synaptic-tour-completed')
+                          localStorage.removeItem('synaptic-tour-skipped')
+                          toast.success('Tour restarted! Redirecting to dashboard...')
+                          setTimeout(() => {
+                            router.push('/dashboard')
+                            startTour()
+                          }, 500)
+                        }}
+                        className="px-4 py-2 bg-accent-primary/10 dark:bg-accent-primary/20 text-accent-primary rounded-lg text-sm font-medium hover:bg-accent-primary/20 dark:hover:bg-accent-primary/30 transition-colors"
+                      >
+                        Restart Tour
+                      </button>
                     </div>
                   </div>
                 </div>

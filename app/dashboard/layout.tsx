@@ -12,6 +12,9 @@ import { SignOutButton } from "@clerk/nextjs"
 import FloatingPomodoroTimer from "@/components/FloatingPomodoroTimer"
 import FloatingStudyBuddy from "@/components/FloatingStudyBuddy"
 import BottomNavigationBar from "@/components/BottomNavigationBar"
+import RoleSwitcher from "@/components/RoleSwitcher"
+import { TourProvider } from "@/components/Tour/TourProvider"
+import TourOverlay from "@/components/Tour/TourOverlay"
 import { useStudySessionTracking } from "@/lib/hooks/useStudySessionTracking"
 import { usePomodoroStore } from "@/lib/store/usePomodoroStore"
 
@@ -180,6 +183,7 @@ export default function DashboardLayout({
   }
 
   return (
+    <TourProvider>
     <div className="min-h-screen bg-[#FAFBFC] dark:bg-[#0F172A]">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
@@ -268,6 +272,7 @@ export default function DashboardLayout({
                         setActiveMode("home")
                       }
                     }}
+                    data-tour={item.name === "Documents" ? "documents" : undefined}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
                       isActive
                         ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/30"
@@ -371,7 +376,7 @@ export default function DashboardLayout({
             </div>
 
             {/* Study Tools & Scheduler Section */}
-            <div>
+            <div data-tour="sidebar-tools">
               {!sidebarCollapsed ? (
                 // Full sidebar - collapsible section
                 <>
@@ -497,6 +502,9 @@ export default function DashboardLayout({
 
           {/* User Section */}
           <div className="p-2 border-t border-gray-200 dark:border-gray-800 space-y-1">
+            {/* Role Switcher - Only shows if user has multiple roles */}
+            <RoleSwitcher collapsed={sidebarCollapsed} />
+
             {/* Theme Toggle & Sign Out Buttons */}
             <div className={`flex gap-1 ${sidebarCollapsed ? "flex-col" : ""}`}>
               {/* Theme Toggle Button */}
@@ -619,6 +627,10 @@ export default function DashboardLayout({
           isMenuOpen={sidebarOpen}
         />
       </div>
+
+      {/* Feature Tour Overlay */}
+      <TourOverlay />
     </div>
+    </TourProvider>
   )
 }

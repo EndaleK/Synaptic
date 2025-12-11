@@ -1,4 +1,4 @@
-✅ # Alberta Digital Traction Program - Complete Application Guide for Synaptic.study
+ # Alberta Digital Traction Program - Complete Application Guide for Synaptic.study
 
 > **Last Updated:** December 2025
 > **Program Status:** Active (Rolling Intake)

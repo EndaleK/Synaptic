@@ -4,6 +4,9 @@ import type { SectionStructure } from '@/lib/document-parser/section-detector'
 export type LearningStyle = 'visual' | 'auditory' | 'kinesthetic' | 'reading_writing' | 'mixed'
 export type PreferredMode = 'home' | 'flashcards' | 'chat' | 'podcast' | 'mindmap' | 'writer' | 'video' | 'studyguide'
 export type TeachingStylePreference = 'socratic' | 'direct' | 'mixed'
+
+// Role-based onboarding types
+export type UserRole = 'learner' | 'parent' | 'educator' | 'institution'
 export type SubscriptionTier = 'free' | 'premium' | 'enterprise'
 export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'past_due'
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'needs_ocr'
@@ -36,6 +39,13 @@ export interface UserProfile {
   stripe_customer_id?: string
   subscription_status: SubscriptionStatus
   documents_used_this_month: number
+  // Role-based onboarding fields
+  primary_role?: UserRole
+  roles?: UserRole[]
+  onboarding_completed?: boolean
+  onboarding_step?: string
+  managed_by?: number        // ID of parent who created this account
+  is_managed_account?: boolean
   created_at: string
   updated_at: string
 }
