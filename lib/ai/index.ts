@@ -121,6 +121,7 @@ function getDefaultProvider(feature: string): ProviderType {
     'podcast_script': 'deepseek',    // Cost-effective for script generation
     'podcast_tts': 'openai',         // OpenAI has best TTS
     'study_guide': 'deepseek',       // Cost-effective for long-form content
+    'chapter_extraction': 'deepseek', // Cost-effective for chapter/section detection
   };
 
   return defaults[feature] || 'openai';

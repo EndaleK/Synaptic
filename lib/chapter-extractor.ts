@@ -6,11 +6,7 @@
  * specific chapters to index rather than entire textbook.
  */
 
-import OpenAI from 'openai'
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+import { providerFactory } from '@/lib/ai'
 
 export interface Chapter {
   id: string
@@ -75,7 +71,7 @@ export async function extractChapters(
 }
 
 /**
- * AI-based chapter extraction using GPT-4o-mini
+ * AI-based chapter extraction using Claude
  * Analyzes text structure and identifies chapter boundaries
  */
 async function extractChaptersWithAI(
@@ -127,9 +123,12 @@ Rules:
 - Maximum 50 chapters/sections (medical textbooks often have 20-30+ specialties)
 - Return empty array [] if no clear structure found`
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
+  // Use DeepSeek for chapter extraction (90% cost savings vs Anthropic)
+  // Falls back to OpenAI if DeepSeek unavailable
+  const provider = providerFactory.getProviderWithFallback('deepseek', 'openai')
+
+  const response = await provider.complete(
+    [
       {
         role: 'system',
         content: 'You are a document structure analyzer specializing in textbooks and academic materials. Extract chapter/section hierarchies accurately from Tables of Contents, Index pages, and chapter headings. Return only valid JSON arrays.'
@@ -139,11 +138,10 @@ Rules:
         content: prompt
       }
     ],
-    temperature: 0.1,
-    max_tokens: 4000, // Increased for medical textbooks with many chapters
-  })
+    { maxTokens: 4000, temperature: 0.3 }
+  )
 
-  const content = response.choices[0].message.content?.trim() || '[]'
+  const content = response.content.trim()
 
   // Parse AI response
   try {
