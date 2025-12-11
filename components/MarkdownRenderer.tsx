@@ -123,14 +123,34 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
       return '[' + content.replace(/\//g, ' or ') + ']'
     })
 
-    // Remove or escape problematic special characters in labels
+    // Remove or escape problematic special characters in square bracket labels [text]
     sanitized = sanitized.replace(/\[([^\]]*)\]/g, (match, content) => {
-      // Remove characters that break Mermaid: # { } < >
-      let cleaned = content.replace(/[#{}]/g, '')
+      // Remove characters that break Mermaid inside labels: # < >
+      // Note: { } are valid Mermaid node shapes, so don't remove them from content
+      let cleaned = content.replace(/[#]/g, '')
       // Replace < > with text equivalents
       cleaned = cleaned.replace(/</g, 'less than ')
       cleaned = cleaned.replace(/>/g, 'greater than ')
+      // Replace % with "percent" - % is used for comments in Mermaid (%%)
+      cleaned = cleaned.replace(/(\d+)%/g, '$1 percent')
+      cleaned = cleaned.replace(/%/g, ' percent ')
       return '[' + cleaned + ']'
+    })
+
+    // Also sanitize diamond/rhombus nodes {text} - handle % in diamond nodes too
+    sanitized = sanitized.replace(/\{([^}]*)\}/g, (match, content) => {
+      // Check if this looks like a node label (not CSS or other syntax)
+      // Diamond nodes are typically A{label} format
+      if (content.includes(':') || content.includes(';')) {
+        // Likely CSS or other syntax, don't modify
+        return match
+      }
+      let cleaned = content.replace(/[#]/g, '')
+      cleaned = cleaned.replace(/</g, 'less than ')
+      cleaned = cleaned.replace(/>/g, 'greater than ')
+      cleaned = cleaned.replace(/(\d+)%/g, '$1 percent')
+      cleaned = cleaned.replace(/%/g, ' percent ')
+      return '{' + cleaned + '}'
     })
 
     // Fix double quotes inside labels - replace with single quotes
@@ -148,6 +168,56 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
 
     // Normalize whitespace - multiple spaces to single
     sanitized = sanitized.replace(/  +/g, ' ')
+
+    // ============================================================
+    // FIX: AI-generated malformed edge labels with node syntax
+    // ============================================================
+    // Pattern: -->|B{Traffic| Light Color?} should become --> B{Traffic Light Color?}
+    // The AI incorrectly puts node definitions inside edge labels
+    // This regex detects edge labels that contain { or } which indicates node syntax leaked in
+    sanitized = sanitized.replace(/-->\|([^|]*[{}][^|]*)\|/g, (match, content) => {
+      // The content looks like "B{Traffic" or similar - it's a malformed node definition
+      // Extract and fix: turn -->|B{Traffic| into --> B{Traffic}
+      // Remove the pipes and treat it as a direct connection to a node
+      return '--> ' + content.replace(/\|/g, '').trim()
+    })
+
+    // Fix pattern: -->|text| followed by incomplete node like "Light Color?}"
+    // This catches the second part of split malformed syntax
+    sanitized = sanitized.replace(/\|\s*([^|{}\[\]]+)\s*\}\s*/g, (match, content) => {
+      // This is orphaned text with a closing brace - likely part of a diamond node
+      // Return as part of a node label
+      return content.trim() + '} '
+    })
+
+    // Fix malformed arrows like "-->|B{" by converting to "--> B{"
+    sanitized = sanitized.replace(/-->\|(\w+)\{/g, '--> $1{')
+
+    // Fix pattern where edge label and node got merged: A -->|B{Label}| C
+    // Should be: A --> B{Label} --> C  OR  A -->|Label| B --> C
+    sanitized = sanitized.replace(/-->\|(\w+)\{([^}]+)\}\|/g, '--> $1{$2}')
+
+    // Clean up any double arrows that might result from fixes
+    sanitized = sanitized.replace(/-->\s*-->/g, '-->')
+
+    // Clean up any pipes that ended up isolated
+    sanitized = sanitized.replace(/\|\s*\|/g, '')
+    sanitized = sanitized.replace(/-->\s*\|(\s*)\|/g, '-->')
+
+    // ============================================================
+    // END malformed edge label fixes
+    // ============================================================
+
+    // Sanitize edge labels (|text|) - handle % in edge labels too
+    sanitized = sanitized.replace(/\|([^|]+)\|/g, (match, content) => {
+      let cleaned = content
+      // Replace % with "percent" in edge labels
+      cleaned = cleaned.replace(/(\d+)%/g, '$1 percent')
+      cleaned = cleaned.replace(/%/g, ' percent ')
+      // Remove any { } from edge labels - these belong in nodes, not edge labels
+      cleaned = cleaned.replace(/[{}]/g, '')
+      return '|' + cleaned.trim() + '|'
+    })
 
     // Fix subgraph labels with quotes - convert to plain text
     // subgraph D["Encoder Layer (x6)"] -> subgraph D[Encoder Layer x6]
@@ -205,12 +275,16 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
   }
 
   const renderMermaidDiagram = async (code: string, key: string): Promise<void> => {
+    // Declare outside try block so it's accessible in catch
+    let sanitizedCode = ''
+    let cleanedCode = ''
+
     try {
       // Ensure mermaid is initialized
       initializeMermaid()
 
       // Sanitize the code first to fix common AI-generated issues
-      const sanitizedCode = sanitizeMermaidCode(code)
+      sanitizedCode = sanitizeMermaidCode(code)
 
       // Validate before attempting to render
       if (!isValidMermaidCode(sanitizedCode)) {
@@ -221,7 +295,7 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
 
       // Clean up the code: fix multiline node labels that got split
       // Replace line breaks within brackets to keep labels on one line
-      let cleanedCode = sanitizedCode.trim()
+      cleanedCode = sanitizedCode.trim()
 
       // Fix incomplete node labels ONLY if line ends with unclosed bracket
       // Do NOT fix lines with multiple complete node labels like: A[X] --> B[Y]
@@ -282,8 +356,9 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error('[Mermaid] Rendering error:', { key, error: errorMessage })
 
-      // Log the problematic code for debugging (first 200 chars)
-      console.error('[Mermaid] Failed code snippet:', code.substring(0, 200))
+      // Log the problematic code for debugging (first 200 chars) - show sanitized version
+      console.error('[Mermaid] Failed code snippet (sanitized):', cleanedCode.substring(0, 300))
+      console.error('[Mermaid] Original code snippet:', code.substring(0, 200))
 
       setRenderedDiagrams(prev => new Map(prev).set(key, 'FAILED'))
     }
