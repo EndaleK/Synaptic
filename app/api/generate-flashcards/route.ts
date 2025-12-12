@@ -10,6 +10,7 @@ import { applyRateLimit, RateLimits } from "@/lib/rate-limit"
 import { logger } from "@/lib/logger"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { FileUploadSchema, validateDocumentLength, validateContentSafety } from "@/lib/validation"
+import { filterEditorialContent, hasSignificantEditorialContent } from "@/lib/content-filter"
 import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
 import { createClient } from "@/lib/supabase/server"
 import { createSSEStream, createSSEHeaders, ProgressTracker } from "@/lib/sse-utils"
@@ -382,6 +383,49 @@ async function handleGenerateFlashcards(request: NextRequest) {
         )
       }
     }
+
+    // ===================================================================
+    // QUALITY IMPROVEMENT: Filter out non-educational editorial content
+    // This removes TOC, index, copyright, author bios, etc. to focus
+    // AI attention on actual learning content and prevent low-quality
+    // flashcards like "Who published this book?"
+    // ===================================================================
+    let filteredText = textContent
+    let contentFilterStats = null
+
+    if (hasSignificantEditorialContent(textContent)) {
+      const filterResult = filterEditorialContent(textContent, {
+        removeTOC: true,
+        removeIndex: true,
+        removeCopyright: true,
+        removeAuthorBio: true,
+        removeAcknowledgments: true,
+        removeBibliography: true,
+        removeHeaders: true,
+        removeGlossary: false, // Keep glossary as it may contain useful definitions
+      })
+
+      filteredText = filterResult.cleanText
+      contentFilterStats = filterResult.stats
+
+      logger.info('📚 Content filtered for better flashcard quality', {
+        userId,
+        documentId,
+        originalLength: contentFilterStats.originalLength,
+        filteredLength: contentFilterStats.filteredLength,
+        reductionPercent: contentFilterStats.reductionPercent,
+        sectionsRemoved: contentFilterStats.sectionsRemoved
+      })
+
+      // Track filtering metrics
+      trackApiMetric('flashcards.content_filter.reduction_percent', contentFilterStats.reductionPercent, 'none')
+      if (contentFilterStats.tocRemoved) trackApiMetric('flashcards.content_filter.toc_removed', 1, 'none')
+      if (contentFilterStats.indexRemoved) trackApiMetric('flashcards.content_filter.index_removed', 1, 'none')
+      if (contentFilterStats.copyrightRemoved) trackApiMetric('flashcards.content_filter.copyright_removed', 1, 'none')
+    }
+
+    // Use filtered text for flashcard generation
+    textContent = filteredText
 
     // Validate document length
     const lengthValidation = validateDocumentLength(textContent)

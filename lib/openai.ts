@@ -108,6 +108,15 @@ CRITICAL - Source Fidelity Rules (MUST FOLLOW):
 - Every word in the "back" field must be directly traceable to the source text
 - When in doubt, quote directly from the text rather than paraphrasing with external knowledge
 - If the text doesn't provide enough information for ${batchSize} quality flashcards, create fewer flashcards rather than adding external information
+
+SKIP these content types - do NOT create flashcards for:
+- Table of contents entries or page numbers
+- Copyright, publisher, or ISBN information
+- Author biographical information (education, career, affiliations)
+- Acknowledgments, dedications, or thank-you sections
+- Index entries or reference page listings
+- Bibliography or reference list entries (unless studying citation formats)
+- Generic headers, footers, or repeated navigation elements
 ${avoidTermsInstr}
 
 Create exactly ${batchSize} flashcards based on the content available (or fewer if insufficient information).

@@ -11,6 +11,9 @@ import {
   CheckCircle,
   Trash2,
   AlertCircle,
+  Heart,
+  BookOpen,
+  Shield,
 } from 'lucide-react'
 
 interface ChildAccount {
@@ -41,7 +44,7 @@ const GRADE_LEVELS = [
 
 export default function ParentOnboardingPage() {
   const router = useRouter()
-  const { user, isLoaded } = useUser()
+  const { isLoaded } = useUser()
   const [children, setChildren] = useState<ChildAccount[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -124,64 +127,96 @@ export default function ParentOnboardingPage() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 via-pink-50 to-white dark:from-gray-900 dark:via-purple-950 dark:to-black">
+        <div className="relative">
+          <div className="absolute inset-0 animate-ping rounded-full h-12 w-12 border-2 border-rose-500/30" />
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500" />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <div className="max-w-3xl mx-auto px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 via-pink-50 to-white dark:from-gray-900 dark:via-purple-950 dark:to-black relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 bg-grid-purple/[0.03] dark:bg-grid-white/[0.02]" />
+      <div className="absolute top-0 right-0 -z-10 transform-gpu overflow-hidden blur-3xl">
+        <div className="relative aspect-[1155/678] w-[36.125rem] bg-gradient-to-tr from-rose-400 to-pink-500 dark:from-rose-800 dark:to-pink-700 opacity-30" />
+      </div>
+      <div className="absolute bottom-0 left-0 -z-10 transform-gpu overflow-hidden blur-3xl">
+        <div className="relative aspect-[1155/678] w-[36.125rem] bg-gradient-to-tr from-pink-400 to-rose-500 dark:from-pink-800 dark:to-rose-700 opacity-30" />
+      </div>
+
+      <div className="relative max-w-3xl mx-auto px-4 py-12">
         {/* Back button */}
         <button
           onClick={() => router.push('/onboarding')}
-          className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-8"
+          className="group flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors mb-8 animate-fadeIn"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
           Back
         </button>
 
         {/* Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-900/30 mb-6">
-            <Users className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+        <div className="text-center mb-10 animate-fadeIn" style={{ animationDelay: '0.1s' }}>
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 mb-6 shadow-xl shadow-rose-500/30">
+            <Users className="h-10 w-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            Set Up Your Family
+          <h1 className="text-3xl md:text-4xl font-bold text-black dark:text-white mb-4">
+            Set Up Your <span className="bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">Family</span>
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto leading-relaxed">
             Add your children to track their learning progress. You can always
             add or remove children later in settings.
           </p>
         </div>
 
+        {/* Feature badges */}
+        <div className="flex flex-wrap justify-center gap-3 mb-8 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+          <div className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-full text-sm text-gray-700 dark:text-gray-300">
+            <Heart className="h-4 w-4 text-rose-500" />
+            Progress Tracking
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-full text-sm text-gray-700 dark:text-gray-300">
+            <BookOpen className="h-4 w-4 text-pink-500" />
+            Shared Resources
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-full text-sm text-gray-700 dark:text-gray-300">
+            <Shield className="h-4 w-4 text-rose-500" />
+            Compliance Reports
+          </div>
+        </div>
+
         {/* Children list */}
         {children.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 mb-6 overflow-hidden">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="font-semibold text-gray-900 dark:text-white">
+          <div
+            className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 mb-6 overflow-hidden shadow-lg animate-fadeIn"
+            style={{ animationDelay: '0.3s' }}
+          >
+            <div className="p-5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+              <h2 className="font-semibold text-black dark:text-white flex items-center gap-2">
+                <Users className="h-5 w-5 text-rose-500" />
                 Your Children ({children.length})
               </h2>
             </div>
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {children.map((child) => (
+            <div className="divide-y divide-gray-200 dark:divide-gray-800">
+              {children.map((child, index) => (
                 <div
                   key={child.id}
-                  className="p-4 flex items-center justify-between"
+                  className="p-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                      <span className="text-purple-600 dark:text-purple-400 font-medium">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
+                      <span className="text-white font-semibold">
                         {child.firstName[0]}
                         {child.lastName[0]}
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <p className="font-medium text-black dark:text-white">
                         {child.firstName} {child.lastName}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
                         {child.gradeLevel || 'No grade set'}
                         {child.email && ` • ${child.email}`}
                       </p>
@@ -189,7 +224,7 @@ export default function ParentOnboardingPage() {
                   </div>
                   <button
                     onClick={() => removeChild(child.id)}
-                    className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                    className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all"
                   >
                     <Trash2 className="h-5 w-5" />
                   </button>
@@ -200,27 +235,30 @@ export default function ParentOnboardingPage() {
         )}
 
         {/* Add child form */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <div
+          className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 mb-6 shadow-lg animate-fadeIn"
+          style={{ animationDelay: '0.4s' }}
+        >
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-              <UserPlus className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <div className="p-2.5 rounded-xl bg-rose-100 dark:bg-rose-500/20 border border-rose-200 dark:border-rose-500/30">
+              <UserPlus className="h-5 w-5 text-rose-500" />
             </div>
-            <h2 className="font-semibold text-gray-900 dark:text-white">
+            <h2 className="font-semibold text-black dark:text-white">
               Add a Child
             </h2>
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
+            <div className="flex items-center gap-2 p-4 mb-5 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-red-600 dark:text-red-400 text-sm">
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
               {error}
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                First Name *
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                First Name <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -228,13 +266,13 @@ export default function ParentOnboardingPage() {
                 onChange={(e) =>
                   setNewChild({ ...newChild, firstName: e.target.value })
                 }
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 dark:focus:border-rose-500 transition-all"
                 placeholder="Enter first name"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Last Name *
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Last Name <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -242,12 +280,12 @@ export default function ParentOnboardingPage() {
                 onChange={(e) =>
                   setNewChild({ ...newChild, lastName: e.target.value })
                 }
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 dark:focus:border-rose-500 transition-all"
                 placeholder="Enter last name"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Grade Level
               </label>
               <select
@@ -255,19 +293,19 @@ export default function ParentOnboardingPage() {
                 onChange={(e) =>
                   setNewChild({ ...newChild, gradeLevel: e.target.value })
                 }
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-black dark:text-white focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 dark:focus:border-rose-500 transition-all appearance-none cursor-pointer"
               >
-                <option value="">Select grade</option>
+                <option value="" className="bg-white dark:bg-gray-800">Select grade</option>
                 {GRADE_LEVELS.map((grade) => (
-                  <option key={grade} value={grade}>
+                  <option key={grade} value={grade} className="bg-white dark:bg-gray-800">
                     {grade}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Birth Year (optional)
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Birth Year <span className="text-gray-400 dark:text-gray-500">(optional)</span>
               </label>
               <input
                 type="text"
@@ -275,16 +313,16 @@ export default function ParentOnboardingPage() {
                 onChange={(e) =>
                   setNewChild({ ...newChild, birthYear: e.target.value })
                 }
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 dark:focus:border-rose-500 transition-all"
                 placeholder="e.g., 2015"
                 maxLength={4}
               />
             </div>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Email (optional - for their own login)
+          <div className="mb-5">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Email <span className="text-gray-400 dark:text-gray-500">(optional - for their own login)</span>
             </label>
             <input
               type="email"
@@ -292,10 +330,10 @@ export default function ParentOnboardingPage() {
               onChange={(e) =>
                 setNewChild({ ...newChild, email: e.target.value })
               }
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 dark:focus:border-rose-500 transition-all"
               placeholder="child@example.com"
             />
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-500">
               If provided, your child can log in with their own account. You'll
               still have access to their progress.
             </p>
@@ -303,26 +341,30 @@ export default function ParentOnboardingPage() {
 
           <button
             onClick={addChild}
-            className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
+            className="w-full py-3 px-4 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-black dark:text-white rounded-xl transition-all font-medium flex items-center justify-center gap-2 border border-gray-200 dark:border-gray-700"
           >
-            + Add Child
+            <UserPlus className="h-5 w-5" />
+            Add Child
           </button>
         </div>
 
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div
+          className="flex flex-col sm:flex-row gap-4 justify-center animate-fadeIn"
+          style={{ animationDelay: '0.5s' }}
+        >
           <button
             onClick={handleComplete}
             disabled={isSubmitting}
-            className={`flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-medium transition-all duration-200 ${
+            className={`group flex items-center justify-center gap-3 px-10 py-4 rounded-xl font-semibold text-lg transition-all duration-300 ${
               isSubmitting
-                ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                : 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-500/25'
+                ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed border border-gray-300 dark:border-gray-700'
+                : 'bg-gradient-to-r from-rose-600 to-pink-600 text-white hover:from-rose-500 hover:to-pink-500 shadow-xl shadow-rose-500/30 hover:shadow-rose-500/50 hover:scale-105'
             }`}
           >
             {isSubmitting ? (
               <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white" />
                 Setting up...
               </>
             ) : children.length > 0 ? (
@@ -333,18 +375,39 @@ export default function ParentOnboardingPage() {
             ) : (
               <>
                 Skip for Now
-                <ArrowRight className="h-5 w-5" />
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </>
             )}
           </button>
         </div>
 
-        <p className="text-center mt-4 text-sm text-gray-500 dark:text-gray-400">
+        <p
+          className="text-center mt-6 text-sm text-gray-500 dark:text-gray-500 animate-fadeIn"
+          style={{ animationDelay: '0.6s' }}
+        >
           {children.length === 0
             ? "You can add children later from your parent dashboard."
             : `${children.length} ${children.length === 1 ? 'child' : 'children'} will be added to your family.`}
         </p>
       </div>
+
+      {/* CSS for animations */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          opacity: 0;
+          animation: fadeIn 0.6s ease-out forwards;
+        }
+      `}</style>
     </div>
   )
 }

@@ -152,6 +152,15 @@ CRITICAL - Topic & Source Rules:
 - Every answer must be verifiable against the provided text
 - If unsure whether something is in the text, don't include it
 
+SKIP these content types - do NOT create flashcards for:
+- Table of contents entries or page numbers
+- Copyright, publisher, or ISBN information
+- Author biographical information (education, career, affiliations)
+- Acknowledgments, dedications, or thank-you sections
+- Index entries or reference page listings
+- Bibliography or reference list entries (unless studying citation formats)
+- Generic headers, footers, or repeated navigation elements
+
 MANDATORY OUTPUT: Generate exactly ${targetCards} flashcards as a JSON array:
 [
   {
