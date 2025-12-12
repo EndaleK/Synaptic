@@ -670,7 +670,7 @@ export default function PDFViewer({ file, className }: PDFViewerProps) {
             }
           >
             {/* Virtual scrolling: render only visible pages for memory efficiency */}
-            {containerHeight > 0 && containerWidth > 0 ? (
+            {containerHeight > 0 && containerWidth > 0 && numPages > 0 ? (
               <List
                 listRef={listRef}
                 defaultHeight={containerHeight}
