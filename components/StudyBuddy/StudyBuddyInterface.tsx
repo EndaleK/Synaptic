@@ -12,6 +12,7 @@ import { shouldSearchWeb } from "@/lib/web-search"
 
 export default function StudyBuddyInterface() {
   const toast = useToast()
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -39,7 +40,12 @@ export default function StudyBuddyInterface() {
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: "smooth"
+      })
+    }
   }, [messages, streamingMessage])
 
   // Initialize conversation if empty
@@ -152,7 +158,7 @@ export default function StudyBuddyInterface() {
     } finally {
       setIsLoading(false)
       setIsSearching(false)
-      inputRef.current?.focus()
+      inputRef.current?.focus({ preventScroll: true })
     }
   }
 
@@ -167,7 +173,7 @@ export default function StudyBuddyInterface() {
   // Handle suggested topic click
   const handleTopicClick = (example: string) => {
     setInput(example)
-    inputRef.current?.focus()
+    inputRef.current?.focus({ preventScroll: true })
   }
 
   // Start new conversation
@@ -332,7 +338,7 @@ export default function StudyBuddyInterface() {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 w-full">
           {/* Welcome Message */}
           {messages.length === 0 && !streamingMessage && (
