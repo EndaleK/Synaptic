@@ -261,9 +261,38 @@ function extractPagesFromFullText(
  * Load full text from R2 storage
  */
 async function loadTextFromR2(r2Key: string): Promise<string | null> {
-  // TODO: Implement R2 text loading
-  // For now, this is a placeholder
-  // In production, you'd use AWS S3 SDK or Cloudflare R2 SDK
-  console.warn('R2 text loading not yet implemented')
-  return null
+  // Skip if R2 is not configured
+  if (!process.env.R2_ENDPOINT || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
+    console.warn('R2 storage not configured, skipping R2 text loading')
+    return null
+  }
+
+  try {
+    const { downloadFromR2AsBuffer, fileExistsInR2 } = await import('@/lib/r2-storage')
+
+    // Handle both URL format and key format
+    let key = r2Key
+    if (r2Key.startsWith('http')) {
+      // Extract key from URL (e.g., https://bucket.r2.cloudflarestorage.com/path/to/file.txt -> path/to/file.txt)
+      const url = new URL(r2Key)
+      key = url.pathname.startsWith('/') ? url.pathname.slice(1) : url.pathname
+    }
+
+    // Check if file exists first
+    const exists = await fileExistsInR2(key)
+    if (!exists) {
+      console.warn(`R2 text file not found: ${key}`)
+      return null
+    }
+
+    // Download the text file
+    const buffer = await downloadFromR2AsBuffer(key)
+    const text = buffer.toString('utf-8')
+
+    console.log(`✅ Loaded ${text.length} characters from R2: ${key}`)
+    return text
+  } catch (error) {
+    console.error('Failed to load text from R2:', error)
+    return null
+  }
 }

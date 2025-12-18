@@ -35,6 +35,55 @@ interface AnalyticsData {
   }>
 }
 
+/**
+ * Calculate consecutive days with writing activity
+ */
+function calculateStreakDays(
+  essays: Array<{ created_at?: string; updated_at?: string }>,
+  sessions: Array<{ started_at?: string }> | null
+): number {
+  // Collect all activity dates
+  const activityDates = new Set<string>()
+
+  essays.forEach(e => {
+    if (e.created_at) activityDates.add(e.created_at.split('T')[0])
+    if (e.updated_at) activityDates.add(e.updated_at.split('T')[0])
+  })
+
+  sessions?.forEach(s => {
+    if (s.started_at) activityDates.add(s.started_at.split('T')[0])
+  })
+
+  if (activityDates.size === 0) return 0
+
+  // Sort dates descending (most recent first)
+  const sortedDates = Array.from(activityDates).sort().reverse()
+
+  // Check if there's activity today or yesterday (streak is still active)
+  const today = new Date().toISOString().split('T')[0]
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+
+  if (sortedDates[0] !== today && sortedDates[0] !== yesterday) {
+    return 0 // Streak is broken
+  }
+
+  // Count consecutive days
+  let streak = 1
+  for (let i = 1; i < sortedDates.length; i++) {
+    const currentDate = new Date(sortedDates[i - 1])
+    const prevDate = new Date(sortedDates[i])
+    const diffDays = Math.round((currentDate.getTime() - prevDate.getTime()) / 86400000)
+
+    if (diffDays === 1) {
+      streak++
+    } else {
+      break
+    }
+  }
+
+  return streak
+}
+
 export default function WritingAnalyticsDashboard({ userId, className }: WritingAnalyticsProps) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -49,11 +98,14 @@ export default function WritingAnalyticsDashboard({ userId, className }: Writing
     try {
       const supabase = createClient()
 
-      // Get user's essays
-      const { data: essays } = await supabase
-        .from('essays')
-        .select('*')
-        .eq('user_id', userId)
+      // Get user's essays and writing sessions in parallel
+      const [essaysResult, sessionsResult] = await Promise.all([
+        supabase.from('essays').select('*').eq('user_id', userId),
+        supabase.from('writing_sessions').select('duration_seconds, started_at').eq('user_id', userId)
+      ])
+
+      const essays = essaysResult.data
+      const sessions = sessionsResult.data
 
       if (!essays) {
         setAnalytics(null)
@@ -109,12 +161,20 @@ export default function WritingAnalyticsDashboard({ userId, className }: Writing
         })
         .reduce((sum, e) => sum + (e.word_count || 0), 0)
 
+      // Calculate total writing time from sessions (in minutes)
+      const totalWritingTime = sessions
+        ? Math.round(sessions.reduce((sum, s) => sum + (s.duration_seconds || 0), 0) / 60)
+        : 0
+
+      // Calculate streak days (consecutive days with essay activity)
+      const streakDays = calculateStreakDays(essays, sessions)
+
       setAnalytics({
         totalWords,
         totalEssays,
         averageWordCount,
-        totalWritingTime: 0, // TODO: Track actual writing time
-        streakDays: 5, // TODO: Calculate from writing_sessions
+        totalWritingTime,
+        streakDays,
         thisWeekWords,
         lastWeekWords,
         aiUsageAverage,

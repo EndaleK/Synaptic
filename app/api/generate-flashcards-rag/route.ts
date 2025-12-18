@@ -136,12 +136,19 @@ export async function POST(request: NextRequest) {
           selectedTopics
         )
 
+        // Determine source section info
+        const sourceSectionTitle = selection?.topic?.title ||
+          (selection?.pageRange ? `Pages ${selection.pageRange.start}-${selection.pageRange.end}` : undefined)
+        const sourcePageNumber = selection?.pageRange?.start || selection?.topic?.pageRange?.start || undefined
+
         // Save flashcards to database
         const insertData = flashcards.map((card: any) => ({
           user_id: profile.id,
           document_id: documentId,
           front: card.front,
           back: card.back,
+          source_section: sourceSectionTitle,
+          source_page: sourcePageNumber,
         }))
 
         const { data: savedFlashcards, error: saveError } = await supabase
@@ -677,29 +684,21 @@ ${batchText}`
       }
 
       if (profile) {
-        // Determine source section metadata
-        let sourceSection = null
+        // Determine source section info for display
+        let sourceSectionTitle: string | undefined = undefined
+        let sourcePageNumber: number | undefined = undefined
+
         if (selection?.type === 'structure' && selection.sectionIds) {
-          sourceSection = {
-            type: 'structure',
-            sectionIds: selection.sectionIds,
-          }
+          // For structure selections, we'd need to look up titles - use generic label for now
+          sourceSectionTitle = `Selected sections (${selection.sectionIds.length})`
         } else if (selection?.type === 'suggestion' && selection.suggestionId) {
-          sourceSection = {
-            type: 'suggestion',
-            suggestionId: selection.suggestionId,
-          }
+          sourceSectionTitle = 'AI Suggested Section'
         } else if (selection?.type === 'topic' && selection.topic) {
-          sourceSection = {
-            type: 'topic',
-            topicId: selection.topic.id,
-            topicTitle: selection.topic.title,
-          }
+          sourceSectionTitle = selection.topic.title
+          sourcePageNumber = selection.topic.pageRange?.start
         } else if (selection?.type === 'pages' && selection.pageRange) {
-          sourceSection = {
-            type: 'pages',
-            pageRange: selection.pageRange,
-          }
+          sourceSectionTitle = `Pages ${selection.pageRange.start}-${selection.pageRange.end}`
+          sourcePageNumber = selection.pageRange.start
         }
 
         const flashcardsToInsert = flashcards.map((card) => ({
@@ -711,7 +710,8 @@ ${batchText}`
           confidence_score: 0,
           times_reviewed: 0,
           times_correct: 0,
-          // source_section: sourceSection, // TODO: Add this column to database schema
+          source_section: sourceSectionTitle,
+          source_page: sourcePageNumber,
         }))
 
         const { data: insertedCards, error: insertError } = await supabase

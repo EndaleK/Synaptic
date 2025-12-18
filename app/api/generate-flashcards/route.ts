@@ -72,12 +72,13 @@ async function handleGenerateFlashcards(request: NextRequest) {
     let mode: string | null = null
     let uploadedFile: File | null = null
     let requestedCount: number | undefined = undefined
+    let selection: any = null // Selection info for source references
 
     if (contentType.includes('application/json')) {
       // NEW FORMAT: JSON request from ContentSelectionModal (document-based)
       const body = await request.json()
       documentId = body.documentId
-      const selection = body.selection
+      selection = body.selection
       requestedCount = body.count // User-specified flashcard count
 
       logger.info('Processing JSON flashcard request', {
@@ -598,6 +599,22 @@ async function handleGenerateFlashcards(request: NextRequest) {
       if (profile) {
         const userProfileId = profile.id
 
+        // Determine source section info for display
+        let sourceSectionTitle: string | undefined = undefined
+        let sourcePageNumber: number | undefined = undefined
+
+        if (selection?.type === 'topic' && selection.topic) {
+          sourceSectionTitle = selection.topic.title
+          sourcePageNumber = selection.topic.pageRange?.start
+        } else if (selection?.type === 'pages' && selection.pageRange) {
+          sourceSectionTitle = `Pages ${selection.pageRange.start}-${selection.pageRange.end}`
+          sourcePageNumber = selection.pageRange.start
+        } else if (selection?.type === 'chapters' && selection.chapters && selection.chapterIds) {
+          const selectedChapters = selection.chapters.filter((c: any) => selection.chapterIds.includes(c.id))
+          sourceSectionTitle = selectedChapters.map((c: any) => c.title).join(', ').slice(0, 100)
+          sourcePageNumber = selectedChapters[0]?.pageRange?.start
+        }
+
         // Save each flashcard to database
         const flashcardsToInsert = flashcards.map(card => ({
           user_id: userProfileId,
@@ -607,7 +624,9 @@ async function handleGenerateFlashcards(request: NextRequest) {
           mastery_level: 'learning' as const,
           confidence_score: 0,
           times_reviewed: 0,
-          times_correct: 0
+          times_correct: 0,
+          source_section: sourceSectionTitle,
+          source_page: sourcePageNumber,
         }))
 
         const { data: insertedCards, error: insertError } = await trackBatchQuery(
