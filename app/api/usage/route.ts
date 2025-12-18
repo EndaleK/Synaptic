@@ -52,8 +52,6 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('🎯 Usage API called:', { userId, timestamp: new Date().toISOString() })
-
     const supabase = await createClient()
 
     // Get user profile with subscription info
@@ -84,15 +82,6 @@ export async function GET() {
       .select('action_type')
       .eq('user_id', profile.id)
       .gte('created_at', startOfMonth.toISOString())
-
-    console.log('📊 Usage data fetched from database:', {
-      userId,
-      profileId: profile.id,
-      recordCount: usageData?.length || 0,
-      startOfMonth: startOfMonth.toISOString(),
-      actionTypes: usageData?.map(r => r.action_type) || [],
-      error: usageError ? usageError.message : null
-    })
 
     if (usageError) {
       logger.error('Failed to fetch usage data', usageError, { userId })
@@ -132,8 +121,6 @@ export async function GET() {
         usage.study_buddy++
       }
     })
-
-    console.log('📊 Final usage counts calculated:', { userId, tier, usage })
 
     const duration = Date.now() - startTime
     logger.api('GET', '/api/usage', 200, duration, {

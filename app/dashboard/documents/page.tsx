@@ -59,6 +59,9 @@ function DocumentsPageContent() {
   const [showFilters, setShowFilters] = useState(false)
   const [sortField, setSortField] = useState<string>('date')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  const [showMoveModal, setShowMoveModal] = useState(false)
+  const [availableFolders, setAvailableFolders] = useState<Array<{ id: string; name: string }>>([])
+  const [isMoving, setIsMoving] = useState(false)
 
   const { setCurrentDocument } = useDocumentStore()
   const { setActiveMode } = useUIStore()
@@ -137,8 +140,11 @@ function DocumentsPageContent() {
       }
 
       // Update last accessed (fire and forget - don't block navigation)
-      // Note: PATCH endpoint not implemented, this is a no-op for now
-      // TODO: Implement PATCH /api/documents/[id] if last_accessed tracking is needed
+      fetch(`/api/documents/${document.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updateLastAccessed: true })
+      }).catch(() => {}) // Silently ignore errors
 
       setCurrentDocument({
         id: document.id,
@@ -243,12 +249,87 @@ function DocumentsPageContent() {
     }
   }
 
-  const handleBulkMove = () => {
-    toast.info('Move feature coming soon!')
+  const handleBulkMove = async () => {
+    // Fetch folders for the modal
+    try {
+      const response = await fetch('/api/folders')
+      if (response.ok) {
+        const data = await response.json()
+        const flatFolders = flattenFolders(data.folders || [])
+        setAvailableFolders(flatFolders)
+        setShowMoveModal(true)
+      }
+    } catch (err) {
+      toast.error('Failed to load folders')
+    }
   }
 
-  const handleBulkExport = () => {
-    toast.info('Export feature coming soon!')
+  // Helper to flatten nested folder tree
+  const flattenFolders = (folders: any[], prefix = ''): Array<{ id: string; name: string }> => {
+    const result: Array<{ id: string; name: string }> = []
+    for (const folder of folders) {
+      result.push({ id: folder.id, name: prefix + folder.name })
+      if (folder.children?.length > 0) {
+        result.push(...flattenFolders(folder.children, prefix + folder.name + ' / '))
+      }
+    }
+    return result
+  }
+
+  const handleMoveToFolder = async (folderId: string | null) => {
+    setIsMoving(true)
+    try {
+      await Promise.all(
+        Array.from(selectedDocuments).map(docId =>
+          fetch(`/api/documents/${docId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ folder_id: folderId })
+          })
+        )
+      )
+      toast.success(`Moved ${selectedDocuments.size} documents`)
+      setSelectedDocuments(new Set())
+      setShowMoveModal(false)
+      fetchDocuments()
+    } catch (err) {
+      toast.error('Failed to move some documents')
+    } finally {
+      setIsMoving(false)
+    }
+  }
+
+  const handleBulkExport = async () => {
+    if (selectedDocuments.size === 0) return
+
+    toast.info(`Preparing ${selectedDocuments.size} document(s) for download...`)
+
+    // For each document, download from storage
+    const selectedDocs = documents.filter(doc => selectedDocuments.has(doc.id))
+
+    for (const doc of selectedDocs) {
+      if (doc.storage_path) {
+        try {
+          // Create download link for the document
+          const response = await fetch(`/api/documents/${doc.id}/download`)
+          if (response.ok) {
+            const blob = await response.blob()
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = doc.file_name
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+          }
+        } catch (err) {
+          console.error(`Failed to download ${doc.file_name}:`, err)
+        }
+      }
+    }
+
+    toast.success(`Downloaded ${selectedDocs.length} document(s)`)
   }
 
   // Filter documents
@@ -642,6 +723,59 @@ function DocumentsPageContent() {
               className="mt-4 w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
             >
               Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Move to Folder Modal */}
+      {showMoveModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fadeIn"
+          onClick={() => setShowMoveModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 animate-slideUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Move {selectedDocuments.size} document{selectedDocuments.size > 1 ? 's' : ''} to folder
+            </h3>
+
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {/* Option to remove from folder */}
+              <button
+                onClick={() => handleMoveToFolder(null)}
+                disabled={isMoving}
+                className="w-full text-left px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+              >
+                <span className="text-gray-600 dark:text-gray-400">📁 No folder (root)</span>
+              </button>
+
+              {availableFolders.map((folder) => (
+                <button
+                  key={folder.id}
+                  onClick={() => handleMoveToFolder(folder.id)}
+                  disabled={isMoving}
+                  className="w-full text-left px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                >
+                  <span className="text-gray-900 dark:text-gray-100">📂 {folder.name}</span>
+                </button>
+              ))}
+
+              {availableFolders.length === 0 && (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-4">
+                  No folders available. Create a folder first.
+                </p>
+              )}
+            </div>
+
+            <button
+              onClick={() => setShowMoveModal(false)}
+              disabled={isMoving}
+              className="mt-4 w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+            >
+              {isMoving ? 'Moving...' : 'Cancel'}
             </button>
           </div>
         </div>

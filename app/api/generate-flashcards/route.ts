@@ -34,7 +34,7 @@ async function handleGenerateFlashcards(request: NextRequest) {
       )
     }
 
-    console.log('🎯 Flashcard generation API called:', { userId, timestamp: new Date().toISOString() })
+    logger.info('Flashcard generation API called', { userId })
 
     // Apply rate limiting (10 requests per minute for AI endpoints)
     const rateLimitResponse = await applyRateLimit(request, RateLimits.ai, userId)
@@ -154,14 +154,6 @@ async function handleGenerateFlashcards(request: NextRequest) {
           errorDetails
         })
 
-        // Log to console for debugging
-        console.error('🔴 Document fetch failed:', {
-          documentId,
-          userId,
-          userProfileId: profile.id,
-          error: errorDetails
-        })
-
         return NextResponse.json(
           {
             error: "Document not found or you don't have permission to access it",
@@ -172,16 +164,39 @@ async function handleGenerateFlashcards(request: NextRequest) {
       }
 
       // Use selected text or full document
-      if (selection?.type === 'topics' && selection.selectedTopics && doc.extracted_text) {
-        // Filter text by selected topics (simple approach: use full text for now)
-        // TODO: Implement topic-based text filtering
-        textContent = doc.extracted_text
-        logger.debug('Using selected topics', { userId, documentId, topicCount: selection.selectedTopics.length })
-      } else if (selection?.type === 'pages' && selection.selectedPages && doc.extracted_text) {
-        // Filter by pages (for now, use full text)
-        // TODO: Implement page-based text filtering
-        textContent = doc.extracted_text
-        logger.debug('Using selected pages', { userId, documentId, pageCount: selection.selectedPages.length })
+      if (selection?.type === 'topic' && selection.topic?.pageRange && doc.extracted_text) {
+        // Filter text by selected topic's page range
+        const { extractTextByPageRange } = await import('@/lib/page-text-extractor')
+        const pageCount = doc.metadata?.page_count || Math.ceil(doc.extracted_text.length / 3000)
+        textContent = extractTextByPageRange(
+          doc.extracted_text,
+          selection.topic.pageRange.start,
+          selection.topic.pageRange.end,
+          pageCount
+        )
+        logger.debug('Using selected topic', {
+          userId,
+          documentId,
+          topic: selection.topic.title,
+          pageRange: selection.topic.pageRange,
+          extractedLength: textContent.length
+        })
+      } else if (selection?.type === 'pages' && selection.pageRange && doc.extracted_text) {
+        // Filter by page range
+        const { extractTextByPageRange } = await import('@/lib/page-text-extractor')
+        const pageCount = doc.metadata?.page_count || Math.ceil(doc.extracted_text.length / 3000)
+        textContent = extractTextByPageRange(
+          doc.extracted_text,
+          selection.pageRange.start,
+          selection.pageRange.end,
+          pageCount
+        )
+        logger.debug('Using selected pages', {
+          userId,
+          documentId,
+          pageRange: selection.pageRange,
+          extractedLength: textContent.length
+        })
       } else if (selection?.type === 'chapters' && selection.chapterIds && selection.chapters && doc.extracted_text) {
         // Filter by selected chapters
         try {
@@ -463,7 +478,7 @@ async function handleGenerateFlashcards(request: NextRequest) {
         uploadedFile.type,
         uploadedFile.size
       )
-      console.log(`Created JSON structure with ${documentJSON.sections.length} sections`)
+      logger.debug(`Created JSON structure with ${documentJSON.sections.length} sections`, { userId, documentId })
     }
 
     // OPTIMIZED: Fetch user learning profile for personalization
@@ -562,9 +577,7 @@ async function handleGenerateFlashcards(request: NextRequest) {
     trackUsage(userId, modelForCost as any, costEstimate.inputTokens, costEstimate.outputTokens)
 
     // Increment usage count for subscription tier limits
-    console.log('📊 About to track flashcard generation:', { userId, feature: 'flashcards' })
     await incrementUsage(userId, 'flashcards')
-    console.log('📊 Flashcard generation tracking completed for:', { userId })
 
     // Save flashcards to database for persistence and mastery tracking
     let savedFlashcards = flashcards
@@ -635,7 +648,6 @@ async function handleGenerateFlashcards(request: NextRequest) {
             hint: 'Database migration may not be applied. See MIGRATION_INSTRUCTIONS.md',
             fallbackToMemory: true
           })
-          console.error('Flashcard DB save error:', insertError)
           // Continue with non-persisted flashcards
         }
       } else {
@@ -649,7 +661,6 @@ async function handleGenerateFlashcards(request: NextRequest) {
         error: dbError,
         hint: 'Check database connection and ensure migration is applied'
       })
-      console.error('Critical flashcard DB error:', dbError)
       // Continue with non-persisted flashcards
     }
 

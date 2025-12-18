@@ -666,8 +666,6 @@ ${batchText}`
     // 11. Save flashcards to database
     let savedFlashcards = flashcards
     try {
-      console.log(`🔍 Looking up user profile for userId: ${userId}`)
-
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('id')
@@ -675,11 +673,10 @@ ${batchText}`
         .single()
 
       if (profileError) {
-        console.error('❌ Failed to fetch user profile:', profileError)
+        logger.error('Failed to fetch user profile', profileError, { userId })
       }
 
       if (profile) {
-        console.log(`✅ Found user profile, ID: ${profile.id}`)
         // Determine source section metadata
         let sourceSection = null
         if (selection?.type === 'structure' && selection.sectionIds) {
@@ -717,19 +714,16 @@ ${batchText}`
           // source_section: sourceSection, // TODO: Add this column to database schema
         }))
 
-        console.log(`💾 Attempting to save ${flashcardsToInsert.length} flashcards to database...`)
-
         const { data: insertedCards, error: insertError } = await supabase
           .from('flashcards')
           .insert(flashcardsToInsert)
           .select()
 
         if (insertError) {
-          console.error('❌ Failed to insert flashcards:', insertError)
+          logger.error('Failed to insert flashcards', insertError, { userId, documentId })
         }
 
         if (!insertError && insertedCards) {
-          console.log(`✅ Successfully inserted ${insertedCards.length} flashcards`)
           savedFlashcards = insertedCards.map((dbCard) => ({
             id: dbCard.id,
             front: dbCard.front,
@@ -753,10 +747,9 @@ ${batchText}`
           })
         }
       } else {
-        console.warn(`⚠️ No user profile found for userId: ${userId}, flashcards won't be saved`)
+        logger.warn('No user profile found, flashcards will not be saved', { userId })
       }
     } catch (dbError) {
-      console.error('❌ Database save failed for RAG flashcards:', dbError)
       logger.error('Database save failed for RAG flashcards', dbError, {
         userId,
         documentId,

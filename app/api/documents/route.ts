@@ -127,8 +127,18 @@ async function handlePostDocument(request: NextRequest) {
       return rateLimitResponse
     }
 
-    // Check usage limits (free tier: 10 documents/month)
-    const usageCheck = canUploadDocument(userId, 'free') // TODO: Get actual tier from user profile
+    // Get user's subscription tier from profile
+    const tierClient = await createClient()
+    const { data: tierProfile } = await tierClient
+      .from('user_profiles')
+      .select('subscription_tier')
+      .eq('clerk_user_id', userId)
+      .single()
+
+    const userTier = tierProfile?.subscription_tier || 'free'
+
+    // Check usage limits based on actual subscription tier
+    const usageCheck = canUploadDocument(userId, userTier as 'free' | 'pro' | 'premium' | 'enterprise')
     if (!usageCheck.allowed) {
       logger.warn('Document upload blocked - usage limit reached', {
         userId,
@@ -454,8 +464,8 @@ async function handlePostDocument(request: NextRequest) {
       )
     }
 
-    // Track successful document upload
-    trackDocumentUpload(userId, 'free') // TODO: Get actual tier from user profile
+    // Track successful document upload with actual user tier
+    trackDocumentUpload(userId, userTier as 'free' | 'pro' | 'premium' | 'enterprise')
 
     const duration = Date.now() - startTime
     trackApiMetric('document.total_processing.duration', duration, 'millisecond')
