@@ -10,6 +10,13 @@ import { ChatMessageSchema, validateDocumentLength, validateContentSafety } from
 import { getProviderForFeature } from "@/lib/ai"
 import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
 import { withMonitoring, trackApiMetric, addApiContext, flagSlowOperation } from '@/lib/monitoring/api-monitor'
+import {
+  performAISafetyCheck,
+  createSafeSystemPrompt,
+  sanitizeAIOutput,
+  checkResponseForLeakage,
+  trackSuspiciousActivity
+} from '@/lib/security/ai-safety'
 
 interface ChatRequest {
   message: string
@@ -164,6 +171,27 @@ For now, I can see you asked: "${message}" about "${fileName || 'your document'}
           { status: 400 }
         )
       }
+    }
+
+    // AI Safety Check - Prompt injection and malicious content detection
+    const aiSafetyCheck = await performAISafetyCheck(message, documentContent, userId)
+    if (!aiSafetyCheck.allowed) {
+      logger.warn("AI safety check failed", {
+        userId,
+        reason: aiSafetyCheck.blockedReason
+      })
+      // Track suspicious activity
+      const shouldBlock = trackSuspiciousActivity(userId, 'high')
+      if (shouldBlock) {
+        return NextResponse.json(
+          { error: "Too many flagged requests. Please try again later." },
+          { status: 429 }
+        )
+      }
+      return NextResponse.json(
+        { error: aiSafetyCheck.blockedReason },
+        { status: 400 }
+      )
     }
 
     // If no document content, provide guidance
@@ -371,8 +399,22 @@ Please answer this question based only on the information provided in the docume
       flagSlowOperation('Chat AI completion', aiDuration, 10000)
     }
 
-    const aiResponse = completion.content ||
+    let aiResponse = completion.content ||
       "I apologize, but I'm having trouble processing your question at the moment. Please try rephrasing your question or try again."
+
+    // Sanitize AI output to prevent data leakage
+    aiResponse = sanitizeAIOutput(aiResponse)
+
+    // Check for potential data leakage in response
+    const leakageCheck = checkResponseForLeakage(aiResponse, userId)
+    if (!leakageCheck.safe) {
+      logger.error("Potential data leakage detected in AI response", {
+        userId,
+        severity: leakageCheck.severity
+      })
+      // Return generic response instead
+      aiResponse = "I encountered an issue generating a response. Please try rephrasing your question."
+    }
 
     // Track response length
     trackApiMetric('chat.response.length', aiResponse.length, 'none')
