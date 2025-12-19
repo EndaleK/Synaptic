@@ -34,12 +34,19 @@ const initializeMermaid = () => {
       suppressErrors: true,
       // Fix for production: ensure proper rendering
       flowchart: {
-        useMaxWidth: true,
+        useMaxWidth: false, // Allow diagram to expand to fit text
         htmlLabels: true,
         curve: 'basis',
+        nodeSpacing: 50, // More space between nodes
+        rankSpacing: 50, // More space between ranks
+        padding: 15, // More padding inside nodes
       },
       // Increase timeout for complex diagrams
       maxTextSize: 50000,
+      // Ensure text doesn't get truncated
+      themeVariables: {
+        fontSize: '14px',
+      },
     })
     mermaidInitialized = true
     console.log('[Mermaid] Initialized successfully')
@@ -402,6 +409,30 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
 
   return (
     <div className={`${className} overflow-wrap-anywhere w-full`}>
+      {/* Mermaid diagram styling to prevent text truncation */}
+      <style jsx global>{`
+        .mermaid-container svg {
+          max-width: none !important;
+          overflow: visible !important;
+        }
+        .mermaid-container .node rect,
+        .mermaid-container .node polygon,
+        .mermaid-container .node circle,
+        .mermaid-container .node ellipse {
+          stroke-width: 1px;
+        }
+        .mermaid-container .nodeLabel,
+        .mermaid-container .label,
+        .mermaid-container .node text,
+        .mermaid-container text {
+          overflow: visible !important;
+          text-overflow: clip !important;
+          white-space: normal !important;
+        }
+        .mermaid-container .flowchart-link {
+          stroke-width: 1px;
+        }
+      `}</style>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
@@ -482,6 +513,10 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
               return (
                 <div
                   className="mermaid-container my-4 w-full overflow-x-auto bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
+                  style={{
+                    // Ensure SVG text is fully visible
+                    minWidth: 'fit-content',
+                  }}
                   dangerouslySetInnerHTML={{ __html: svg }}
                 />
               )
