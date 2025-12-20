@@ -6,12 +6,15 @@ import { createClient } from '@/lib/supabase/server'
 
 /**
  * GET /api/documents/[id]
- * Get a single document by ID
+ * Get a single document by ID with retry logic for transient errors
  */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const MAX_RETRIES = 2
+  let lastError: Error | null = null
+
   try {
     const { userId } = await auth()
 
@@ -34,20 +37,52 @@ export async function GET(
       )
     }
 
-    const { document, error } = await getDocumentById(id, userId)
+    // Retry logic for transient database errors
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const { document, error } = await getDocumentById(id, userId)
 
-    if (error) {
-      return NextResponse.json(
-        { error: `Failed to fetch document: ${error}` },
-        { status: 404 }
-      )
+        if (error) {
+          // Check if error is transient (connection issues)
+          const isTransient = error.toLowerCase().includes('timeout') ||
+                             error.toLowerCase().includes('connection') ||
+                             error.toLowerCase().includes('network')
+
+          if (isTransient && attempt < MAX_RETRIES) {
+            console.warn(`GET /api/documents/[id] transient error (attempt ${attempt}):`, error)
+            await new Promise(resolve => setTimeout(resolve, 500 * attempt)) // Backoff
+            continue
+          }
+
+          return NextResponse.json(
+            { error: `Failed to fetch document: ${error}` },
+            { status: 404 }
+          )
+        }
+
+        return NextResponse.json({ document })
+      } catch (retryError) {
+        lastError = retryError instanceof Error ? retryError : new Error(String(retryError))
+        console.warn(`GET /api/documents/[id] exception (attempt ${attempt}):`, lastError.message)
+
+        if (attempt < MAX_RETRIES) {
+          await new Promise(resolve => setTimeout(resolve, 500 * attempt))
+          continue
+        }
+      }
     }
 
-    return NextResponse.json({ document })
-  } catch (error) {
-    console.error('GET /api/documents/[id] error:', error)
+    // All retries failed
+    console.error('GET /api/documents/[id] failed after retries:', lastError?.message)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: lastError?.message },
+      { status: 500 }
+    )
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('GET /api/documents/[id] error:', errorMessage, error)
+    return NextResponse.json(
+      { error: 'Internal server error', details: errorMessage },
       { status: 500 }
     )
   }

@@ -241,24 +241,25 @@ export async function POST(
         } else {
           console.log(`✅ Downloaded ${fileBlob.size} bytes`)
           const arrayBuffer = await fileBlob.arrayBuffer()
-          const file = new File([arrayBuffer], document.file_name, { type: document.file_type })
 
-          // Extract text using mammoth
+          // Extract text using mammoth directly (avoid File constructor issues on server)
           console.log(`🔍 Parsing DOCX with mammoth...`)
-          const { parseDocument } = await import('@/lib/document-parser')
-          const result = await parseDocument(file)
+          try {
+            const mammoth = await import('mammoth')
+            const result = await mammoth.extractRawText({ arrayBuffer })
 
-          if (result.error) {
-            console.error(`❌ DOCX parsing error: ${result.error}`)
+            if (!result.value || result.value.trim().length === 0) {
+              console.error(`❌ DOCX extracted empty text`)
+              extractionMethod = 'failed_empty'
+            } else {
+              extractedText = result.value
+              hasExtractedText = true
+              extractionMethod = 'mammoth'
+              console.log(`✅ DOCX text extracted: ${result.value.length} characters`)
+            }
+          } catch (mammothError) {
+            console.error('❌ Mammoth parsing error:', mammothError)
             extractionMethod = 'failed_parse'
-          } else if (!result.text || result.text.length === 0) {
-            console.error(`❌ DOCX extracted empty text`)
-            extractionMethod = 'failed_empty'
-          } else {
-            extractedText = result.text
-            hasExtractedText = true
-            extractionMethod = 'mammoth'
-            console.log(`✅ DOCX text extracted: ${result.text.length} characters`)
           }
         }
       } catch (docxError) {
