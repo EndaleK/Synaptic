@@ -49,11 +49,36 @@ const initializeMermaid = () => {
         useMaxWidth: false,
         padding: 20,
       },
-      // Theme variables for text sizing
+      // Theme variables for text sizing and colors
       themeVariables: {
         fontSize: '14px',
         // Ensure node labels have enough space
         nodePadding: '15px',
+        // Attractive pie chart colors - modern vibrant palette
+        pie1: '#6366f1', // Indigo
+        pie2: '#22c55e', // Green
+        pie3: '#f59e0b', // Amber
+        pie4: '#ec4899', // Pink
+        pie5: '#06b6d4', // Cyan
+        pie6: '#8b5cf6', // Violet
+        pie7: '#f97316', // Orange
+        pie8: '#14b8a6', // Teal
+        pie9: '#e11d48', // Rose
+        pie10: '#3b82f6', // Blue
+        pie11: '#84cc16', // Lime
+        pie12: '#a855f7', // Purple
+        // Pie chart styling
+        pieTitleTextSize: '16px',
+        pieTitleTextColor: '#374151',
+        pieSectionTextSize: '14px',
+        pieSectionTextColor: '#ffffff',
+        pieLegendTextSize: '13px',
+        pieLegendTextColor: '#374151',
+        pieStrokeColor: '#ffffff',
+        pieStrokeWidth: '2px',
+        pieOuterStrokeWidth: '2px',
+        pieOuterStrokeColor: '#e5e7eb',
+        pieOpacity: '1',
       },
     })
     mermaidInitialized = true
