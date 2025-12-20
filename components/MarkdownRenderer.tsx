@@ -32,20 +32,28 @@ const initializeMermaid = () => {
       securityLevel: 'loose',
       fontFamily: 'inherit',
       suppressErrors: true,
-      // Fix for production: ensure proper rendering
+      // Increase timeout for complex diagrams
+      maxTextSize: 50000,
+      // Global settings to prevent text truncation
       flowchart: {
         useMaxWidth: false, // Allow diagram to expand to fit text
         htmlLabels: true,
         curve: 'basis',
-        nodeSpacing: 50, // More space between nodes
-        rankSpacing: 50, // More space between ranks
-        padding: 15, // More padding inside nodes
+        nodeSpacing: 80, // More space between nodes
+        rankSpacing: 60, // More space between ranks
+        padding: 20, // More padding inside nodes
+        wrappingWidth: 300, // Wider wrapping before truncation
       },
-      // Increase timeout for complex diagrams
-      maxTextSize: 50000,
-      // Ensure text doesn't get truncated
+      // Mindmap settings
+      mindmap: {
+        useMaxWidth: false,
+        padding: 20,
+      },
+      // Theme variables for text sizing
       themeVariables: {
         fontSize: '14px',
+        // Ensure node labels have enough space
+        nodePadding: '15px',
       },
     })
     mermaidInitialized = true
@@ -313,6 +321,65 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     return `diagram-${diagramCodeMap.current.get(code)}`
   }
 
+  /**
+   * Post-process SVG to ensure text is not truncated
+   * Mermaid often sets fixed widths that clip text - we need to fix this
+   */
+  const postProcessSvg = (svg: string): string => {
+    // Parse the SVG to modify attributes
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(svg, 'image/svg+xml')
+    const svgElement = doc.querySelector('svg')
+
+    if (!svgElement) return svg
+
+    // Get current dimensions
+    const currentWidth = svgElement.getAttribute('width')
+    const currentHeight = svgElement.getAttribute('height')
+    const viewBox = svgElement.getAttribute('viewBox')
+
+    // If viewBox exists, parse it to potentially expand
+    if (viewBox) {
+      const [x, y, vbWidth, vbHeight] = viewBox.split(' ').map(Number)
+      // Add 20% padding to viewBox to ensure text fits
+      const expandedWidth = vbWidth * 1.2
+      const expandedHeight = vbHeight * 1.1
+      svgElement.setAttribute('viewBox', `${x - (expandedWidth - vbWidth) / 2} ${y - 10} ${expandedWidth} ${expandedHeight}`)
+    }
+
+    // Remove fixed width/height to allow SVG to scale
+    svgElement.removeAttribute('width')
+    svgElement.removeAttribute('height')
+
+    // Set style for proper scaling
+    svgElement.setAttribute('style', 'width: 100%; height: auto; max-width: none; min-width: fit-content;')
+
+    // Find all text elements and ensure they're visible
+    const textElements = doc.querySelectorAll('text, .nodeLabel, .label')
+    textElements.forEach((el) => {
+      const element = el as SVGElement
+      element.style.overflow = 'visible'
+      element.style.textOverflow = 'clip'
+    })
+
+    // Find all foreignObject elements (used for HTML labels) and expand them
+    const foreignObjects = doc.querySelectorAll('foreignObject')
+    foreignObjects.forEach((fo) => {
+      const width = fo.getAttribute('width')
+      if (width) {
+        // Increase width by 50% to prevent truncation
+        const numWidth = parseFloat(width)
+        if (!isNaN(numWidth)) {
+          fo.setAttribute('width', String(numWidth * 1.5))
+        }
+      }
+    })
+
+    // Serialize back to string
+    const serializer = new XMLSerializer()
+    return serializer.serializeToString(doc)
+  }
+
   const renderMermaidDiagram = async (code: string, key: string): Promise<void> => {
     // Declare outside try block so it's accessible in catch
     let sanitizedCode = ''
@@ -385,8 +452,10 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
       const { svg } = await mermaid.render(id, cleanedCode)
 
       if (svg) {
-        console.log('[Mermaid] Render successful:', { key, svgLength: svg.length })
-        setRenderedDiagrams(prev => new Map(prev).set(key, svg))
+        // Post-process SVG to fix text truncation issues
+        const processedSvg = postProcessSvg(svg)
+        console.log('[Mermaid] Render successful:', { key, svgLength: processedSvg.length })
+        setRenderedDiagrams(prev => new Map(prev).set(key, processedSvg))
       } else {
         console.warn('[Mermaid] Render returned empty SVG:', { key })
         setRenderedDiagrams(prev => new Map(prev).set(key, 'FAILED'))
@@ -411,9 +480,14 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     <div className={`${className} overflow-wrap-anywhere w-full`}>
       {/* Mermaid diagram styling to prevent text truncation */}
       <style jsx global>{`
+        .mermaid-container {
+          overflow-x: auto !important;
+          overflow-y: visible !important;
+        }
         .mermaid-container svg {
           max-width: none !important;
           overflow: visible !important;
+          min-width: fit-content !important;
         }
         .mermaid-container .node rect,
         .mermaid-container .node polygon,
@@ -421,16 +495,36 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
         .mermaid-container .node ellipse {
           stroke-width: 1px;
         }
+        /* Prevent text truncation in all label types */
         .mermaid-container .nodeLabel,
         .mermaid-container .label,
         .mermaid-container .node text,
+        .mermaid-container .edgeLabel,
+        .mermaid-container .cluster-label,
         .mermaid-container text {
           overflow: visible !important;
           text-overflow: clip !important;
-          white-space: normal !important;
+          white-space: nowrap !important;
+        }
+        /* Expand foreignObject containers that hold HTML labels */
+        .mermaid-container foreignObject {
+          overflow: visible !important;
+        }
+        .mermaid-container foreignObject div {
+          overflow: visible !important;
+          text-overflow: clip !important;
+          white-space: nowrap !important;
+        }
+        /* Ensure node labels don't get clipped */
+        .mermaid-container .node .label {
+          overflow: visible !important;
         }
         .mermaid-container .flowchart-link {
           stroke-width: 1px;
+        }
+        /* Edge labels (text on arrows) */
+        .mermaid-container .edgeLabel rect {
+          fill: transparent !important;
         }
       `}</style>
       <ReactMarkdown
@@ -512,10 +606,12 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
               // Render the diagram with proper styling
               return (
                 <div
-                  className="mermaid-container my-4 w-full overflow-x-auto bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
+                  className="mermaid-container my-4 w-full bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
                   style={{
-                    // Ensure SVG text is fully visible
+                    // Ensure SVG text is fully visible - allow horizontal scroll if needed
                     minWidth: 'fit-content',
+                    overflowX: 'auto',
+                    overflowY: 'visible',
                   }}
                   dangerouslySetInnerHTML={{ __html: svg }}
                 />
