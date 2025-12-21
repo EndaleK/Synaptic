@@ -176,12 +176,17 @@ export async function getUserDocuments(
 
 /**
  * Get a single document by ID (Server-Side)
+ * Includes retry logic for read-after-write consistency issues
  */
 export async function getDocumentById(
   documentId: string,
   clerkUserId: string
 ): Promise<{ document: Document | null; error: string | null }> {
+  const MAX_RETRIES = 3
+  const RETRY_DELAY_MS = 200
+
   try {
+    console.log(`[getDocumentById] Fetching document: ${documentId} for user: ${clerkUserId}`)
     const supabase = await createClient()
 
     // Get user profile ID first (documents.user_id references user_profiles.id, not clerk_user_id)
@@ -192,25 +197,41 @@ export async function getDocumentById(
       .single()
 
     if (profileError || !profile) {
-      console.error('User profile not found:', profileError)
+      console.error('[getDocumentById] User profile not found:', profileError)
       return { document: null, error: 'User profile not found' }
     }
 
-    const { data, error } = await supabase
-      .from('documents')
-      .select('*')
-      .eq('id', documentId)
-      .eq('user_id', profile.id)
-      .single()
+    // Retry loop to handle read-after-write consistency
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('id', documentId)
+        .eq('user_id', profile.id)
+        .single()
 
-    if (error) {
-      console.error('Fetch document error:', error)
-      return { document: null, error: error.message }
+      if (error) {
+        // PGRST116 = "No rows returned" - document might not be replicated yet
+        const isNotFound = error.code === 'PGRST116' || error.message.includes('no rows')
+
+        if (isNotFound && attempt < MAX_RETRIES) {
+          console.warn(`[getDocumentById] Document not found (attempt ${attempt}/${MAX_RETRIES}), retrying after ${RETRY_DELAY_MS}ms...`)
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt))
+          continue
+        }
+
+        console.error(`[getDocumentById] Fetch error (attempt ${attempt}):`, error)
+        return { document: null, error: error.message }
+      }
+
+      console.log(`[getDocumentById] Document fetched successfully: ${data?.file_name}`)
+      return { document: data as Document, error: null }
     }
 
-    return { document: data as Document, error: null }
+    // Should not reach here
+    return { document: null, error: 'Max retries exceeded' }
   } catch (error) {
-    console.error('Get document by ID failed:', error)
+    console.error('[getDocumentById] Exception:', error)
     return {
       document: null,
       error: error instanceof Error ? error.message : 'Fetch failed'
