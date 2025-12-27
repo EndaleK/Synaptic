@@ -74,9 +74,15 @@ async function handleGetReviewQueue(req: NextRequest) {
     )
 
     if (reviewError) {
-      logger.error('Failed to fetch review queue', reviewError, { userId })
+      logger.error('Failed to fetch review queue', undefined, {
+        userId,
+        errorCode: reviewError.code,
+        errorMessage: reviewError.message,
+        errorDetails: reviewError.details,
+        errorHint: reviewError.hint
+      })
       // If it's just an empty result, return empty array instead of error
-      if (reviewError.code === 'PGRST116' || reviewError.message.includes('no rows')) {
+      if (reviewError.code === 'PGRST116' || reviewError.message?.includes('no rows')) {
         return NextResponse.json({
           success: true,
           queue: [],
@@ -116,7 +122,12 @@ async function handleGetReviewQueue(req: NextRequest) {
     )
 
     if (newFlashcardsError) {
-      logger.error('Failed to fetch new flashcards', newFlashcardsError, { userId })
+      logger.error('Failed to fetch new flashcards', undefined, {
+        userId,
+        errorCode: newFlashcardsError.code,
+        errorMessage: newFlashcardsError.message,
+        errorDetails: newFlashcardsError.details
+      })
       // Continue without new flashcards
     }
 
@@ -243,11 +254,12 @@ async function handleGetReviewQueue(req: NextRequest) {
 
   } catch (error: unknown) {
     const duration = Date.now() - startTime
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     logger.error('Review queue error', error, { userId: userId || 'unknown' })
-    logger.api('GET', '/api/flashcards/review-queue', 500, duration, { error: error.message })
+    logger.api('GET', '/api/flashcards/review-queue', 500, duration, { error: errorMessage })
 
     return NextResponse.json(
-      { error: error.message || "Failed to fetch review queue" },
+      { error: errorMessage || "Failed to fetch review queue" },
       { status: 500 }
     )
   }

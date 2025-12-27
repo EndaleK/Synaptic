@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { UserButton, useUser } from "@clerk/nextjs"
-import { BookOpen, Home, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool, Youtube, Library, GraduationCap, Sparkles, BookOpenCheck } from "lucide-react"
+import { BookOpen, Settings, FileText, Menu, X, MessageSquare, Mic, Network, ChevronLeft, ChevronRight, Moon, Sun, LogOut, Calendar, Clock, BarChart3, Bell, ChevronDown, ChevronUp, PenTool, Youtube, Library, GraduationCap, Sparkles, BookOpenCheck } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useUIStore } from "@/lib/store/useStore"
 import { useToast } from "@/components/ToastContainer"
@@ -109,7 +109,6 @@ export default function DashboardLayout({
   }
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Documents", href: "/dashboard/documents", icon: FileText },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ]
@@ -205,7 +204,14 @@ export default function DashboardLayout({
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center gap-2 group">
+            <Link
+              href="/dashboard"
+              onClick={() => {
+                setSidebarOpen(false)
+                setActiveMode("home")
+              }}
+              className="flex items-center gap-2 group"
+            >
               {!sidebarCollapsed ? (
                 <>
                   <div className="w-[46px] h-[46px] flex items-center justify-center flex-shrink-0">
@@ -259,19 +265,12 @@ export default function DashboardLayout({
             {/* Main Navigation */}
             <div className="space-y-0.5">
               {navigation.map((item) => {
-                const isActive = item.href === "/dashboard"
-                  ? pathname === item.href && activeMode === "home"
-                  : pathname === item.href
+                const isActive = pathname === item.href
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
-                    onClick={() => {
-                      setSidebarOpen(false)
-                      if (item.href === "/dashboard") {
-                        setActiveMode("home")
-                      }
-                    }}
+                    onClick={() => setSidebarOpen(false)}
                     data-tour={item.name === "Documents" ? "documents" : undefined}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-all ${
                       isActive
