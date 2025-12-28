@@ -754,41 +754,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
           </section>
         )}
 
-        {/* Footer spacer for sticky CTA */}
-        {userProfile?.subscription_tier !== 'premium' && <div className="h-24 sm:h-20" />}
       </div>
-
-      {/* Sticky Subscription CTA - Fixed at bottom */}
-      {userProfile?.subscription_tier !== 'premium' && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 p-3 sm:p-4 bg-gradient-to-t from-black/90 via-black/80 to-transparent backdrop-blur-xl">
-          <div className="max-w-6xl mx-auto">
-            <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white/[0.1] dark:via-white/[0.05] dark:to-white/[0.1] border border-white/10">
-              {/* Subtle animated gradient */}
-              <div className="absolute inset-0 bg-gradient-to-r from-violet-600/20 via-transparent to-pink-600/20 animate-gradient-border bg-[length:200%_200%]" />
-
-              <div className="relative z-10 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="hidden sm:flex w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 items-center justify-center shadow-xl shadow-violet-500/40">
-                    <Sparkles className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm sm:text-base font-display font-bold text-white">Upgrade to Premium</h3>
-                    <p className="text-xs sm:text-sm text-gray-400 font-medium hidden sm:block">Unlock unlimited access to all features</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => router.push('/pricing')}
-                  className="group px-5 sm:px-8 py-3 sm:py-3.5 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 hover:from-violet-600 hover:via-purple-600 hover:to-pink-600 text-white rounded-xl text-sm font-bold shadow-xl shadow-violet-500/30 hover:shadow-2xl hover:shadow-violet-500/40 transition-all duration-300 hover:scale-[1.03] flex items-center gap-2"
-                >
-                  <span className="hidden sm:inline">Get Premium</span>
-                  <span className="sm:hidden">Upgrade</span>
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Milestone Celebration Modal */}
       <MilestoneCelebrationModal
