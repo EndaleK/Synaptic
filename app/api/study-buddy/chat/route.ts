@@ -2,9 +2,9 @@
  * Study Buddy Chat API Route
  *
  * Handles conversational AI requests for the Study Buddy feature.
- * - Works independently of documents (general knowledge)
- * - Supports Tutor/Buddy personality modes
- * - Adapts to user's learning style
+ * - Brief, concise responses with contextual understanding
+ * - Friendly personality with light humor
+ * - Clean, well-formatted presentation
  * - Uses DeepSeek for cost-effective conversations
  *
  * POST /api/study-buddy/chat
@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 import { getProviderForFeature } from '@/lib/ai'
-import { generateStudyBuddyPrompt, type PersonalityMode, type ExplainLevel, type TeachingStyle } from '@/lib/study-buddy/personalities'
+import { generateStudyBuddyPrompt } from '@/lib/study-buddy/personalities'
 import { logger } from '@/lib/logger'
 import { checkUsageLimit, incrementUsage } from '@/lib/usage-limits'
 import { searchDocument } from '@/lib/vector-store'
@@ -22,6 +22,7 @@ import { getUserDocuments } from '@/lib/supabase/documents-server'
 import { detectPromptInjection, validateMessageLength } from '@/lib/security/prompt-injection-detector'
 import { moderateContent } from '@/lib/security/content-moderator'
 import { searchWeb, formatSearchResultsForAI, shouldSearchWeb, extractCitations } from '@/lib/web-search'
+import { getStudyBuddyPlanContext } from '@/lib/adaptive-scheduler'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,10 +33,9 @@ interface ChatMessage {
 
 interface ChatRequest {
   messages: ChatMessage[]
-  personalityMode: PersonalityMode
-  explainLevel?: ExplainLevel
   topic?: string
-  teachingStyle?: TeachingStyle // 'socratic' = true Socratic, 'mixed' = explain + questions
+  documentId?: string
+  activeMode?: string
 }
 
 /**
@@ -55,18 +55,11 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body: ChatRequest = await req.json()
-    const { messages, personalityMode, explainLevel, topic, teachingStyle } = body
+    const { messages, topic, documentId, activeMode } = body
 
     if (!messages || messages.length === 0) {
       return NextResponse.json(
         { error: 'Messages array is required' },
-        { status: 400 }
-      )
-    }
-
-    if (!personalityMode || !['tutor', 'buddy', 'comedy'].includes(personalityMode)) {
-      return NextResponse.json(
-        { error: 'Valid personality mode is required (tutor, buddy, or comedy)' },
         { status: 400 }
       )
     }
@@ -165,14 +158,20 @@ export async function POST(req: NextRequest) {
       .eq('user_id', profile.id)
       .single()
 
-    // Generate personality-aware system prompt
-    // Teaching style only applies to tutor mode
+    // Extract document name from topic context if present
+    let documentContext: string | undefined
+    if (topic) {
+      const contextMatch = topic.match(/\[Context: User is studying "([^"]+)"/)
+      if (contextMatch) {
+        documentContext = contextMatch[1]
+      }
+    }
+
+    // Generate unified system prompt
     let systemPrompt = generateStudyBuddyPrompt({
-      mode: personalityMode,
-      explainLevel,
-      learningStyle: learningProfile?.dominant_style,
-      topic,
-      teachingStyle: personalityMode === 'tutor' ? (teachingStyle || 'mixed') : undefined
+      documentContext,
+      learningMode: activeMode,
+      learningStyle: learningProfile?.dominant_style
     })
 
     // FEATURE FLAG: Date/Time Awareness
@@ -302,6 +301,24 @@ Use this content to answer the user's question. Cite the document names when ref
       }
     }
 
+    // STUDY PLAN CONTEXT: Add awareness of active study plans
+    // This gives Study Buddy context about exam dates, weak topics, and progress
+    try {
+      const planContext = await getStudyBuddyPlanContext(userId, profile.id)
+      if (planContext) {
+        systemPrompt += `\n\n📋 Study Plan Context:\n${planContext}\n\nUse this information to:
+- Encourage the student if they're making good progress
+- Remind them of upcoming exams when relevant
+- Suggest focusing on weak topics when they ask what to study
+- Celebrate mastered topics and build confidence`
+
+        logger.info('Study Buddy plan context added', { userId, hasContext: true })
+      }
+    } catch (error) {
+      // Graceful degradation - if plan context fails, continue without it
+      logger.warn('Failed to fetch study plan context', { error, userId })
+    }
+
     // WEB SEARCH: Check if user message needs web search
     // Enabled when TAVILY_API_KEY is set in environment
     let searchCitations: string[] | null = null
@@ -360,9 +377,8 @@ Use this content to answer the user's question. Cite the document names when ref
 
     logger.info('Study Buddy chat request', {
       userId,
-      personalityMode,
-      explainLevel,
-      teachingStyle: personalityMode === 'tutor' ? (teachingStyle || 'mixed') : undefined,
+      activeMode,
+      documentContext,
       messageCount: messages.length,
       provider: provider.constructor.name
     })
@@ -371,7 +387,7 @@ Use this content to answer the user's question. Cite the document names when ref
     if (!provider.streamComplete) {
       // Fallback to non-streaming if provider doesn't support it
       const completion = await provider.complete(conversationMessages, {
-        temperature: personalityMode === 'buddy' ? 0.8 : 0.6,
+        temperature: 0.7, // Balanced temperature for friendly but accurate responses
         maxTokens: 2500
       })
 
@@ -387,7 +403,7 @@ Use this content to answer the user's question. Cite the document names when ref
       const duration = Date.now() - startTime
       logger.api('POST', '/api/study-buddy/chat', 200, duration, {
         userId,
-        personalityMode,
+        activeMode,
         messageCount: messages.length
       })
 
@@ -403,7 +419,7 @@ Use this content to answer the user's question. Cite the document names when ref
       async start(controller) {
         try {
           const generator = provider.streamComplete!(conversationMessages, {
-            temperature: personalityMode === 'buddy' ? 0.8 : 0.6,
+            temperature: 0.7, // Balanced temperature for friendly but accurate responses
             maxTokens: 2500
           })
 
@@ -431,7 +447,7 @@ Use this content to answer the user's question. Cite the document names when ref
           const duration = Date.now() - startTime
           logger.api('POST', '/api/study-buddy/chat', 200, duration, {
             userId,
-            personalityMode,
+            activeMode,
             messageCount: messages.length
           })
         } catch (error) {

@@ -12,6 +12,7 @@ import {
   Trash2,
   X
 } from 'lucide-react'
+import ExamPlanPrompt from '@/components/ExamPlanPrompt'
 
 type ViewMode = 'month' | 'week' | 'day'
 type EventType = 'study_session' | 'exam' | 'assignment' | 'review' | 'break' | 'other'
@@ -59,6 +60,14 @@ export default function StudyCalendar({ onEventClick }: StudyCalendarProps) {
   const [showEventModal, setShowEventModal] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<StudyEvent | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+
+  // Exam plan prompt state
+  const [showExamPlanPrompt, setShowExamPlanPrompt] = useState(false)
+  const [examPlanPromptData, setExamPlanPromptData] = useState<{
+    examDate: string
+    examTitle: string
+    examEventId: string
+  } | null>(null)
 
   // Fetch events for current view
   useEffect(() => {
@@ -513,11 +522,38 @@ export default function StudyCalendar({ onEventClick }: StudyCalendarProps) {
             setSelectedEvent(null)
             setSelectedDate(null)
           }}
-          onSave={() => {
+          onSave={(savedEvent, promptStudyPlan) => {
             fetchEvents()
             setShowEventModal(false)
             setSelectedEvent(null)
             setSelectedDate(null)
+
+            // If this is a new exam event, prompt user to create study plan
+            if (promptStudyPlan && savedEvent) {
+              setExamPlanPromptData({
+                examDate: savedEvent.examDate || savedEvent.startTime.split('T')[0],
+                examTitle: savedEvent.title,
+                examEventId: savedEvent.id,
+              })
+              setShowExamPlanPrompt(true)
+            }
+          }}
+        />
+      )}
+
+      {/* Exam Plan Prompt Modal */}
+      {showExamPlanPrompt && examPlanPromptData && (
+        <ExamPlanPrompt
+          examDate={examPlanPromptData.examDate}
+          examTitle={examPlanPromptData.examTitle}
+          examEventId={examPlanPromptData.examEventId}
+          onClose={() => {
+            setShowExamPlanPrompt(false)
+            setExamPlanPromptData(null)
+          }}
+          onPlanCreated={() => {
+            setShowExamPlanPrompt(false)
+            setExamPlanPromptData(null)
           }}
         />
       )}
@@ -526,11 +562,18 @@ export default function StudyCalendar({ onEventClick }: StudyCalendarProps) {
 }
 
 // Event Modal Component
+interface SavedEventData {
+  id: string
+  title: string
+  startTime: string
+  examDate?: string
+}
+
 interface EventModalProps {
   event: StudyEvent | null
   initialDate: Date
   onClose: () => void
-  onSave: () => void
+  onSave: (savedEvent?: SavedEventData, promptStudyPlan?: boolean) => void
 }
 
 function EventModal({ event, initialDate, onClose, onSave }: EventModalProps) {
@@ -562,10 +605,21 @@ function EventModal({ event, initialDate, onClose, onSave }: EventModalProps) {
       })
 
       if (response.ok) {
+        const data = await response.json()
+        const savedEvent: SavedEventData = {
+          id: data.event.id,
+          title: data.event.title,
+          startTime: data.event.startTime,
+          examDate: data.event.examDate,
+        }
+        // Pass the saved event and whether to prompt for study plan
+        onSave(savedEvent, data.promptStudyPlan === true)
+      } else {
         onSave()
       }
     } catch (error) {
       console.error('Failed to save event:', error)
+      onSave()
     } finally {
       setIsSaving(false)
     }

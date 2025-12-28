@@ -147,6 +147,12 @@ export async function POST(req: NextRequest) {
 
     const userProfileId = profile.id
 
+    // Determine if this is an exam event
+    const isExamEvent = eventType === 'exam'
+    const examDateValue = isExamEvent
+      ? new Date(eventStartTime).toISOString().split('T')[0]
+      : null
+
     // Create event
     const { data: event, error: eventError } = await supabase
       .from('study_schedule')
@@ -162,7 +168,8 @@ export async function POST(req: NextRequest) {
         location: location || null,
         color: color || '#3b82f6',
         recurrence: 'none',
-        completed: false
+        completed: false,
+        exam_date: examDateValue, // Set exam_date for exam events
       })
       .select()
       .single()
@@ -178,7 +185,24 @@ export async function POST(req: NextRequest) {
       eventId: event.id
     })
 
-    return NextResponse.json({
+    // Build response
+    const response: {
+      success: boolean
+      event: {
+        id: string
+        title: string
+        description: string | null
+        eventType: string
+        startTime: string
+        endTime: string
+        allDay: boolean
+        location: string | null
+        color: string
+        documentId: string | null
+        examDate?: string
+      }
+      promptStudyPlan?: boolean
+    } = {
       success: true,
       event: {
         id: event.id,
@@ -190,9 +214,17 @@ export async function POST(req: NextRequest) {
         allDay: event.all_day,
         location: event.location,
         color: event.color,
-        documentId: event.document_id
-      }
-    })
+        documentId: event.document_id,
+        examDate: event.exam_date,
+      },
+    }
+
+    // If this is an exam event, include flag to prompt study plan creation
+    if (isExamEvent) {
+      response.promptStudyPlan = true
+    }
+
+    return NextResponse.json(response)
 
   } catch (error: unknown) {
     const duration = Date.now() - startTime

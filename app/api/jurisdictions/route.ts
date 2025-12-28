@@ -53,12 +53,12 @@ export async function GET(req: NextRequest) {
     // Transform to a cleaner format
     const formatted = (jurisdictions || []).map(j => ({
       code: j.state_code,
-      name: j.jurisdiction_name,
+      name: j.state_name,  // Column is state_name, not jurisdiction_name
       country: j.country || 'US',
       type: j.jurisdiction_type || 'state',
-      regulationLevel: j.regulation_level,
+      regulationLevel: j.requirement_level,  // Column is requirement_level, not regulation_level
       requirements: j.requirements,
-      links: j.useful_links,
+      links: j.resource_links,  // Column is resource_links, not useful_links
       notes: j.notes
     }))
 

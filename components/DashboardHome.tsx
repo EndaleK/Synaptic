@@ -2,65 +2,78 @@
 
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
-import { BookOpen, MessageSquare, Mic, Network, Upload, FileText, Eye, Headphones, Hand, BookText, TrendingUp, Calendar, Link2, Globe, CheckCircle2, ArrowRight, Brain, Clock, Bell, BarChart3, Target, PenTool, Youtube, GraduationCap, Library, Flame, Sparkles, ChevronDown, ChevronUp } from "lucide-react"
-import { useUIStore, useUserStore } from "@/lib/store/useStore"
-import { usePomodoroStore } from "@/lib/store/usePomodoroStore"
-import LearningProfileBanner from "@/components/LearningProfileBanner"
-import SubscriptionStatus from "@/components/SubscriptionStatus"
-import RecentContentWidget from "@/components/RecentContentWidget"
-import UsageWidget from "@/components/UsageWidget"
+import { useRouter } from "next/navigation"
+import { BookOpen, MessageSquare, Mic, Network, Clock, PenTool, Youtube, GraduationCap, FileText, Flame, Zap, ChevronRight, BookMarked, Upload, TrendingUp, Eye, Headphones, Hand, BookText, Sparkles, ChevronDown, ChevronUp, ArrowRight } from "lucide-react"
+import { useUIStore, useUserStore, useDocumentStore } from "@/lib/store/useStore"
 import UsageWarningNotification from "@/components/UsageWarningNotification"
-import StudyProgressWidget from "@/components/StudyProgressWidget"
 import NotificationBanner from "@/components/NotificationBanner"
-import type { Document } from "@/lib/supabase/types"
+import { notificationManager } from "@/lib/notifications"
+import { analytics } from "@/lib/analytics"
+import MilestoneCelebrationModal, { useMilestoneCelebration } from "@/components/MilestoneCelebrationModal"
+import SmartRecommendations from "@/components/SmartRecommendations"
 
 interface DashboardHomeProps {
   onModeSelect: (mode: string) => void
   onOpenAssessment?: () => void
 }
 
-export default function DashboardHome({ onModeSelect, onOpenAssessment }: DashboardHomeProps) {
+// Learning modes with mode-specific colors
+const learningModes = [
+  { id: "documents", name: "Documents", icon: FileText, description: "Manage files", href: "/dashboard/documents", color: "from-slate-500 to-slate-600", bgColor: "bg-slate-500/10", textColor: "text-slate-600 dark:text-slate-400" },
+  { id: "chat", name: "Chat", icon: MessageSquare, description: "Ask & learn", color: "from-blue-500 to-blue-600", bgColor: "bg-blue-500/10", textColor: "text-blue-600 dark:text-blue-400" },
+  { id: "flashcards", name: "Flashcards", icon: BookOpen, description: "Review cards", color: "from-indigo-500 to-indigo-600", bgColor: "bg-indigo-500/10", textColor: "text-indigo-600 dark:text-indigo-400" },
+  { id: "podcast", name: "Podcast", icon: Mic, description: "Listen & learn", color: "from-violet-500 to-violet-600", bgColor: "bg-violet-500/10", textColor: "text-violet-600 dark:text-violet-400" },
+  { id: "mindmap", name: "Mind Map", icon: Network, description: "Visualize", color: "from-emerald-500 to-emerald-600", bgColor: "bg-emerald-500/10", textColor: "text-emerald-600 dark:text-emerald-400" },
+  { id: "exam", name: "Mock Exam", icon: GraduationCap, description: "Test yourself", color: "from-amber-500 to-amber-600", bgColor: "bg-amber-500/10", textColor: "text-amber-600 dark:text-amber-400" },
+  { id: "writer", name: "Writer", icon: PenTool, description: "Write essays", color: "from-rose-500 to-rose-600", bgColor: "bg-rose-500/10", textColor: "text-rose-600 dark:text-rose-400" },
+  { id: "video", name: "Video", icon: Youtube, description: "YouTube", color: "from-red-500 to-red-600", bgColor: "bg-red-500/10", textColor: "text-red-600 dark:text-red-400" },
+  { id: "quick-summary", name: "Summary", icon: Clock, description: "Quick 5min", color: "from-cyan-500 to-cyan-600", bgColor: "bg-cyan-500/10", textColor: "text-cyan-600 dark:text-cyan-400" },
+]
+
+// Types for primary action state
+type ActionState =
+  | { type: 'loading' }
+  | { type: 'flashcards_due'; count: number }
+  | { type: 'continue_document'; documentName: string; documentId: string }
+  | { type: 'upload_first' }
+
+export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
   const { user, isLoaded: isUserLoaded } = useUser()
-  const [recentDocuments, setRecentDocuments] = useState<Document[]>([])
-  const [isLoadingDocs, setIsLoadingDocs] = useState(true)
+  const router = useRouter()
+  const { setActiveMode } = useUIStore()
+  const { setCurrentDocument } = useDocumentStore()
   const [currentStreak, setCurrentStreak] = useState<number>(0)
   const [isLoadingStreak, setIsLoadingStreak] = useState(true)
-  const [isLearningProfileExpanded, setIsLearningProfileExpanded] = useState(false)
-  const { learningStyle, assessmentScores, userProfile } = useUserStore()
+  const [todayGoalCurrent, setTodayGoalCurrent] = useState(0)
+  const [weeklyStats, setWeeklyStats] = useState({ cardsReviewed: 0, minutesStudied: 0, daysActive: 0 })
+  const [recentActivity, setRecentActivity] = useState<Array<{ id: string; type: string; name: string; timestamp: string; duration?: string; source?: string }>>([])
+  const [actionState, setActionState] = useState<ActionState>({ type: 'loading' })
+  const { userProfile, learningProfile } = useUserStore()
+  const [showAllRecent, setShowAllRecent] = useState(false)
+  const [showAllUsage, setShowAllUsage] = useState(false)
+  const [monthlyUsage, setMonthlyUsage] = useState({
+    documents: { used: 0, limit: 10 },
+    flashcards: { used: 0, limit: 100 },
+    podcasts: { used: 0, limit: 5 },
+    mindmaps: { used: 0, limit: 10 },
+    exams: { used: 0, limit: 5 },
+    videos: { used: 0, limit: 10 }
+  })
+  const [learningStyleExpanded, setLearningStyleExpanded] = useState(true)
 
-  // Prevent hydration mismatch by only showing user name after client-side load
+  // Prevent hydration mismatch
   const [isClient, setIsClient] = useState(false)
   useEffect(() => {
     setIsClient(true)
   }, [])
-  const { startTimer, status, timerType, sessionsCompleted } = usePomodoroStore()
 
-  // Fetch recent documents
-  useEffect(() => {
-    const fetchRecentDocs = async () => {
-      try {
-        // Temporarily disabled to debug
-        // const response = await fetch('/api/documents?limit=4')
-        // if (response.ok) {
-        //   const data = await response.json()
-        //   setRecentDocuments(data.documents || [])
-        // }
-        setRecentDocuments([]) // Empty for now
-      } catch (error) {
-        console.error('Error fetching documents:', error)
-      } finally {
-        setIsLoadingDocs(false)
-      }
-    }
-
-    fetchRecentDocs()
-  }, [])
+  // Check for milestone celebration
+  const { showCelebration, closeCelebration } = useMilestoneCelebration(currentStreak)
 
   // Update and fetch streak on mount
   useEffect(() => {
     const updateStreak = async () => {
       try {
-        // Update streak (increments if applicable)
         const updateResponse = await fetch('/api/streak/update', {
           method: 'POST',
           credentials: 'include'
@@ -80,642 +93,667 @@ export default function DashboardHome({ onModeSelect, onOpenAssessment }: Dashbo
     updateStreak()
   }, [])
 
-  const learningModes = [
-    {
-      id: "studyBuddy",
-      name: "Study Buddy",
-      icon: Sparkles,
-      description: "Ask me anything - from science to philosophy",
-      color: "blue", // Maps to --mode-chat (conversational)
-      bgClass: "bg-gradient-to-br from-blue-500 to-purple-600",
-      shadowClass: "shadow-blue-500/30",
-      available: true,
-      premium: false,
-      new: true // NEW badge indicator
-    },
-    {
-      id: "flashcards",
-      name: "Flashcards",
-      icon: BookOpen,
-      description: "Transform documents into interactive flashcards",
-      color: "indigo", // Maps to --mode-flashcards
-      bgClass: "bg-indigo-500",
-      shadowClass: "shadow-indigo-500/30",
-      available: true,
-      premium: false
-    },
-    {
-      id: "chat",
-      name: "Chat",
-      icon: MessageSquare,
-      description: "Ask questions and explore your documents interactively",
-      color: "blue", // Maps to --mode-chat
-      bgClass: "bg-blue-500",
-      shadowClass: "shadow-blue-500/30",
-      available: true,
-      premium: false
-    },
-    {
-      id: "podcast",
-      name: "Podcast",
-      icon: Mic,
-      description: "Generate dynamic podcast discussions from your content",
-      color: "violet", // Maps to --mode-podcast
-      bgClass: "bg-violet-500",
-      shadowClass: "shadow-violet-500/30",
-      available: true,
-      premium: false
-    },
-    {
-      id: "mindmap",
-      name: "Mind Map",
-      icon: Network,
-      description: "Visualize concepts and relationships interactively",
-      color: "emerald", // Maps to --mode-mindmap
-      bgClass: "bg-emerald-500",
-      shadowClass: "shadow-emerald-500/30",
-      available: true,
-      premium: false
-    },
-    {
-      id: "studyguide",
-      name: "Study Guide",
-      icon: BookOpen,
-      description: "Generate comprehensive study guides with practice questions",
-      color: "teal", // Maps to --mode-studyguide
-      bgClass: "bg-teal-500",
-      shadowClass: "shadow-teal-500/30",
-      available: true,
-      premium: false
-    },
-    {
-      id: "writer",
-      name: "Writer",
-      icon: PenTool,
-      description: "Intelligent writing assistant with citations and grammar",
-      color: "rose", // Maps to --mode-writer
-      bgClass: "bg-rose-500",
-      shadowClass: "shadow-rose-500/30",
-      available: true,
-      premium: false
-    },
-    {
-      id: "video",
-      name: "Video",
-      icon: Youtube,
-      description: "Learn from YouTube videos with deep content analysis",
-      color: "orange", // Maps to --mode-video (changed from amber since quick-summary uses amber)
-      bgClass: "bg-orange-500",
-      shadowClass: "shadow-orange-500/30",
-      available: true,
-      premium: false
-    },
-    {
-      id: "quick-summary",
-      name: "Quick Summary",
-      icon: Clock,
-      description: "Get the gist in 5 minutes - articles, docs, or videos",
-      color: "amber", // Maps to --mode-quick-summary
-      bgClass: "bg-amber-500",
-      shadowClass: "shadow-amber-500/30",
-      available: true,
-      premium: false,
-      new: true // NEW badge indicator
-    },
-    {
-      id: "exam",
-      name: "Mock Exam",
-      icon: GraduationCap,
-      description: "Generate practice exams from your documents and test yourself",
-      color: "purple", // Maps to --mode-exam
-      bgClass: "bg-purple-500",
-      shadowClass: "shadow-purple-500/30",
-      available: true,
-      premium: false
+  // Fetch today's goal progress and primary action state
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch flashcard review queue
+        const reviewResponse = await fetch('/api/flashcards/review-queue', {
+          credentials: 'include'
+        })
+
+        if (reviewResponse.ok) {
+          const data = await reviewResponse.json()
+          const reviewed = data.stats?.reviewedToday || 0
+          const dueCount = data.stats?.totalDue || 0
+          setTodayGoalCurrent(reviewed)
+
+          if (dueCount > 0) {
+            setActionState({ type: 'flashcards_due', count: dueCount })
+            return
+          }
+        }
+
+        // Check for recent documents
+        const docsResponse = await fetch('/api/documents?limit=1', {
+          credentials: 'include'
+        })
+
+        if (docsResponse.ok) {
+          const docsData = await docsResponse.json()
+          if (docsData.documents && docsData.documents.length > 0) {
+            setActionState({
+              type: 'continue_document',
+              documentName: docsData.documents[0].file_name,
+              documentId: docsData.documents[0].id
+            })
+            return
+          }
+        }
+
+        setActionState({ type: 'upload_first' })
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+        setActionState({ type: 'upload_first' })
+      }
     }
+
+    fetchData()
+  }, [])
+
+  // Fetch weekly stats
+  useEffect(() => {
+    const fetchWeeklyStats = async () => {
+      try {
+        const response = await fetch('/api/study-statistics', {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setWeeklyStats({
+            cardsReviewed: data.weeklyCards || 0,
+            minutesStudied: data.weeklyMinutes || 0,
+            daysActive: data.daysActive || 0
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching weekly stats:', error)
+      }
+    }
+
+    fetchWeeklyStats()
+  }, [])
+
+  // Fetch recent activity
+  useEffect(() => {
+    const fetchRecentActivity = async () => {
+      try {
+        const response = await fetch('/api/recent-content?limit=5', {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setRecentActivity(data.items || [])
+        }
+      } catch (error) {
+        console.error('Error fetching recent activity:', error)
+      }
+    }
+
+    fetchRecentActivity()
+  }, [])
+
+  // Fetch monthly usage
+  useEffect(() => {
+    const fetchMonthlyUsage = async () => {
+      try {
+        const response = await fetch('/api/usage', {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.limits) {
+            setMonthlyUsage({
+              documents: { used: data.limits.documents?.used || 0, limit: data.limits.documents?.limit || 10 },
+              flashcards: { used: data.limits.flashcards?.used || 0, limit: data.limits.flashcards?.limit || 100 },
+              podcasts: { used: data.limits.podcasts?.used || 0, limit: data.limits.podcasts?.limit || 5 },
+              mindmaps: { used: data.limits.mindmaps?.used || 0, limit: data.limits.mindmaps?.limit || 10 },
+              exams: { used: data.limits.exams?.used || 0, limit: data.limits.exams?.limit || 5 },
+              videos: { used: data.limits.videos?.used || 0, limit: data.limits.videos?.limit || 10 }
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching monthly usage:', error)
+      }
+    }
+
+    fetchMonthlyUsage()
+  }, [userProfile?.subscription_tier])
+
+  // Trigger browser notifications (once per session)
+  useEffect(() => {
+    const NOTIFICATION_SESSION_KEY = 'dashboard-notification-shown'
+
+    if (sessionStorage.getItem(NOTIFICATION_SESSION_KEY)) {
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        if (!notificationManager.isEnabled()) return
+
+        const response = await fetch('/api/flashcards/review-queue', {
+          credentials: 'include'
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const dueCount = data.stats?.totalDue || 0
+
+          if (dueCount > 0) {
+            await notificationManager.showDueFlashcards(dueCount)
+            analytics.notificationClicked('due_flashcards')
+          } else if (currentStreak > 0) {
+            await notificationManager.showStreakReminder(currentStreak)
+            analytics.notificationClicked('streak_reminder')
+          }
+        }
+
+        sessionStorage.setItem(NOTIFICATION_SESSION_KEY, 'true')
+      } catch (error) {
+        console.error('[DashboardHome] Error checking notifications:', error)
+      }
+    }, 3000)
+
+    return () => clearTimeout(timer)
+  }, [currentStreak])
+
+  const handleModeClick = (mode: typeof learningModes[0]) => {
+    if (mode.href) {
+      router.push(mode.href)
+    } else {
+      onModeSelect(mode.id)
+    }
+  }
+
+  const handlePrimaryAction = async () => {
+    switch (actionState.type) {
+      case 'flashcards_due':
+        setActiveMode('flashcards')
+        break
+      case 'continue_document':
+        try {
+          const response = await fetch(`/api/documents/${actionState.documentId}`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.document) {
+              setCurrentDocument({
+                id: data.document.id,
+                name: data.document.file_name,
+                content: data.document.extracted_text || '',
+                fileType: data.document.file_type,
+                storagePath: data.document.storage_path,
+                fileSize: data.document.file_size,
+              })
+              setActiveMode('chat')
+            }
+          }
+        } catch (error) {
+          console.error('Error loading document:', error)
+        }
+        break
+      case 'upload_first':
+        setActiveMode('flashcards')
+        break
+    }
+  }
+
+  const formatRelativeTime = (timestamp: string) => {
+    const now = new Date()
+    const date = new Date(timestamp)
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffDays === 1) return 'yesterday'
+    return `${diffDays}d ago`
+  }
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'flashcard': return BookOpen
+      case 'podcast': return Mic
+      case 'mindmap': return Network
+      case 'quick-summary': return Clock
+      default: return FileText
+    }
+  }
+
+  const formatDate = (timestamp: string) => {
+    const date = new Date(timestamp)
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  const getUsageColor = (used: number, limit: number) => {
+    const percentage = (used / limit) * 100
+    if (percentage >= 100) return 'bg-red-500'
+    if (percentage >= 80) return 'bg-amber-500'
+    if (percentage >= 50) return 'bg-yellow-500'
+    return 'bg-gradient-to-r from-violet-500 to-pink-500'
+  }
+
+  const usageItems = [
+    { key: 'documents', label: 'Documents', icon: FileText, ...monthlyUsage.documents },
+    { key: 'flashcards', label: 'Flashcards', icon: Zap, ...monthlyUsage.flashcards },
+    { key: 'podcasts', label: 'Podcasts', icon: Mic, ...monthlyUsage.podcasts },
+    { key: 'mindmaps', label: 'Mind Maps', icon: Network, ...monthlyUsage.mindmaps },
+    { key: 'exams', label: 'Mock Exams', icon: GraduationCap, ...monthlyUsage.exams },
+    { key: 'videos', label: 'Videos', icon: Youtube, ...monthlyUsage.videos },
   ]
 
-  const getStyleIcon = (style: string) => {
-    switch (style) {
-      case 'visual': return Eye
-      case 'auditory': return Headphones
-      case 'kinesthetic': return Hand
-      case 'reading_writing': return BookText
-      default: return BookOpen
-    }
-  }
+  const visibleUsageItems = showAllUsage ? usageItems : usageItems.slice(0, 3)
 
-  const getStyleDescription = (style: string) => {
-    switch (style) {
-      case 'visual': return "You learn best with images, diagrams, and visual aids"
-      case 'auditory': return "You learn best through listening and discussion"
-      case 'kinesthetic': return "You learn best through hands-on activities"
-      case 'reading_writing': return "You learn best through reading and writing"
-      case 'mixed': return "You have a balanced mix of learning preferences"
-      default: return "Complete the assessment to discover your style"
-    }
-  }
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B'
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-  }
-
-  const getFileTypeColor = (type: string) => {
-    if (type.includes('pdf')) return 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-    if (type.includes('word') || type.includes('doc')) return 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-    if (type.includes('text')) return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-    return 'bg-accent-primary/20 dark:bg-accent-primary/30 text-accent-primary'
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return "Good morning"
+    if (hour < 17) return "Good afternoon"
+    return "Good evening"
   }
 
   return (
-    <div className="h-screen overflow-y-auto bg-[#FAFBFC] dark:bg-[#0F172A]">
-      <div className="max-w-7xl mx-auto px-6 py-6 lg:px-10 lg:py-8 space-y-6">
-        {/* Welcome Section - Mobile Optimized */}
-        <div className="bg-gradient-to-r from-accent-primary to-accent-secondary rounded-2xl p-4 sm:p-8 text-white">
-          <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-            <div className="flex-1 w-full">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3 flex-wrap">
-                <h1 className="text-xl sm:text-display">
-                  Welcome back, {isClient && isUserLoaded ? (user?.firstName || user?.username || 'Student') : 'Student'}! 👋
-                </h1>
-                {/* Login Streak Indicator */}
-                {!isLoadingStreak && currentStreak > 0 && (
-                  <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/20 backdrop-blur-sm rounded-full border border-white/30 w-fit">
-                    <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-orange-300" />
-                    <span className="font-bold text-base sm:text-lg">{currentStreak}</span>
-                    <span className="text-xs sm:text-sm font-medium">day login streak!</span>
-                  </div>
-                )}
-              </div>
-              <p className="text-white/90 text-sm sm:text-lg font-medium mb-3 sm:mb-0">
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-violet-50/30 dark:from-[#0a0a0f] dark:via-[#0f0f18] dark:to-[#0a0a0f]">
+      {/* Ambient background effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[40%] -right-[20%] w-[80%] h-[80%] rounded-full bg-gradient-to-br from-violet-200/20 via-pink-200/10 to-transparent dark:from-violet-900/10 dark:via-pink-900/5 blur-3xl" />
+        <div className="absolute -bottom-[40%] -left-[20%] w-[80%] h-[80%] rounded-full bg-gradient-to-tr from-blue-200/20 via-cyan-200/10 to-transparent dark:from-blue-900/10 dark:via-cyan-900/5 blur-3xl" />
+      </div>
+
+      {/* Main container */}
+      <div className="relative w-full max-w-6xl mx-auto px-3 sm:px-5 lg:px-6 py-4 lg:py-8">
+
+        {/* Alerts */}
+        <div className="space-y-2 mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
+          <UsageWarningNotification />
+          <NotificationBanner />
+        </div>
+
+        {/* Hero Section */}
+        <section className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            {/* Greeting */}
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium tracking-wide text-violet-600 dark:text-violet-400 uppercase">
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </p>
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                <span className="text-gray-900 dark:text-white">{getGreeting()}, </span>
+                <span className="bg-gradient-to-r from-violet-600 via-pink-600 to-orange-500 bg-clip-text text-transparent">
+                  {isClient && isUserLoaded ? (user?.firstName || user?.username || 'there') : 'there'}
+                </span>
+              </h1>
+              <p className="text-base text-gray-500 dark:text-gray-400 mt-1">
                 Ready to continue your learning journey?
               </p>
-              <div className="flex items-center gap-2 mt-2 sm:mt-4 text-white text-sm sm:text-base">
-                <Calendar className="w-4 h-4" />
-                <span className="hidden md:inline">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                <span className="md:hidden">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-              </div>
             </div>
 
-            {/* Upgrade/Manage Plan Button - Mobile Optimized */}
-            <div className="w-full sm:w-auto sm:ml-4">
-              {userProfile?.subscription_tier && userProfile.subscription_tier !== 'free' ? (
-                // Subscribed users - Show plan badge + manage button
+            {/* Stats Card */}
+            <div className="flex items-center gap-5 p-4 bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-white/10 shadow-xl shadow-gray-200/20 dark:shadow-none">
+              {/* Streak */}
+              <div className="flex items-center gap-2.5">
+                <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center ${
+                  currentStreak > 0
+                    ? 'bg-gradient-to-br from-orange-400 to-red-500 shadow-lg shadow-orange-500/30'
+                    : 'bg-gray-100 dark:bg-gray-800'
+                }`}>
+                  <Flame className={`w-6 h-6 ${currentStreak > 0 ? 'text-white' : 'text-gray-400'}`} />
+                  {currentStreak > 0 && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center text-[9px] font-bold text-yellow-900 shadow-lg">
+                      {currentStreak > 99 ? '99+' : currentStreak}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xl font-black text-gray-900 dark:text-white tabular-nums">
+                    {isLoadingStreak ? '—' : currentStreak}
+                  </p>
+                  <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">day streak</p>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="w-px h-10 bg-gradient-to-b from-transparent via-gray-300 dark:via-gray-600 to-transparent" />
+
+              {/* Today's Progress */}
+              <div className="flex items-center gap-2.5">
+                <div className="relative w-12 h-12">
+                  <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
+                    <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" strokeWidth="4" className="text-gray-200 dark:text-gray-700" />
+                    <circle
+                      cx="24" cy="24" r="20" fill="none" stroke="url(#progressGradient)" strokeWidth="4" strokeLinecap="round"
+                      strokeDasharray={`${Math.min((todayGoalCurrent / 10) * 125.6, 125.6)} 125.6`}
+                      className="transition-all duration-1000 ease-out"
+                    />
+                    <defs>
+                      <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#7B3FF2" />
+                        <stop offset="100%" stopColor="#E91E8C" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">{todayGoalCurrent}</span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">Today</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400">{10 - todayGoalCurrent} cards left</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Smart Recommendations & Weekly Progress - Side by Side */}
+        <section className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+            {/* Smart Recommendations - AI-powered "What to study next" */}
+            <SmartRecommendations maxItems={3} showStats={true} />
+
+            {/* Weekly Progress */}
+            <div className="p-4 sm:p-5 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-gray-200/50 dark:border-white/10">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">This Week</h3>
+                <div className="flex items-center gap-1.5">
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                    <div
+                      key={index}
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
+                        index < weeklyStats.daysActive
+                          ? 'bg-gradient-to-br from-violet-500 to-pink-500 text-white shadow-lg shadow-violet-500/30'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                      }`}
+                    >
+                      {day}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3 rounded-lg bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-500/10 dark:to-violet-500/10">
+                  <div className="flex items-center gap-2.5">
+                    <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <div>
+                      <p className="text-xl font-black text-gray-900 dark:text-white tabular-nums">{weeklyStats.cardsReviewed}</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">cards reviewed</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3 rounded-lg bg-gradient-to-br from-violet-50 to-pink-50 dark:from-violet-500/10 dark:to-pink-500/10">
+                  <div className="flex items-center gap-2.5">
+                    <Clock className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                    <div>
+                      <p className="text-xl font-black text-gray-900 dark:text-white tabular-nums">{Math.round(weeklyStats.minutesStudied / 60 * 10) / 10}</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">hours studied</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3 rounded-lg bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/10">
+                  <div className="flex items-center gap-2.5">
+                    <Flame className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <div>
+                      <p className="text-xl font-black text-gray-900 dark:text-white tabular-nums">{weeklyStats.daysActive}</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">days active</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Stats Grid */}
+        <section className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-400">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+            {/* Recent Content */}
+            <div className="p-4 sm:p-5 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-gray-200/50 dark:border-white/10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-lg bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center">
+                    <Clock className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Recent Content</h3>
+                </div>
                 <button
-                  onClick={() => window.location.href = '/dashboard/settings?tab=subscription'}
-                  className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 bg-white text-accent-primary rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-105 active:scale-95 w-full sm:w-auto min-h-[48px]"
+                  onClick={() => router.push('/dashboard/documents')}
+                  className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-1 group"
                 >
-                  <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-full font-bold uppercase">
-                    {userProfile.subscription_tier}
-                  </span>
-                  <span className="text-sm sm:text-base">Manage Plan</span>
+                  View All <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </button>
+              </div>
+
+              {recentActivity.length > 0 ? (
+                <div className="space-y-2">
+                  {(showAllRecent ? recentActivity : recentActivity.slice(0, 3)).map((activity) => {
+                    const Icon = getActivityIcon(activity.type)
+                    return (
+                      <div key={activity.id} className="flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                        <div className="w-8 h-8 rounded-md bg-gradient-to-br from-violet-100 to-pink-100 dark:from-violet-500/20 dark:to-pink-500/20 flex items-center justify-center flex-shrink-0">
+                          <Icon className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-900 dark:text-white truncate">{activity.name}</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400">{activity.source || activity.type}</p>
+                        </div>
+                        <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500">{formatDate(activity.timestamp)}</p>
+                      </div>
+                    )
+                  })}
+                  {recentActivity.length > 3 && (
+                    <button
+                      onClick={() => setShowAllRecent(!showAllRecent)}
+                      className="w-full text-center text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 py-1.5 flex items-center justify-center gap-1 transition-colors"
+                    >
+                      {showAllRecent ? 'Show Less' : `Show ${recentActivity.length - 3} More`}
+                      <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${showAllRecent ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
+                </div>
               ) : (
-                // Free users - Show upgrade button
+                <div className="py-6 text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">No recent content yet</p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">Start learning to see your activity here</p>
+                </div>
+              )}
+            </div>
+
+            {/* Monthly Usage */}
+            <div className="p-4 sm:p-5 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-gray-200/50 dark:border-white/10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                    <TrendingUp className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-white">Monthly Usage</h3>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Resets on the 1st</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {visibleUsageItems.map((item) => {
+                  const Icon = item.icon
+                  const percentage = Math.min((item.used / item.limit) * 100, 100)
+                  const isOverLimit = item.used >= item.limit
+                  return (
+                    <div key={item.key}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <Icon className="w-3.5 h-3.5 text-gray-400" />
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{item.label}</span>
+                        </div>
+                        <span className={`text-xs font-bold tabular-nums ${isOverLimit ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
+                          {item.used}<span className="text-gray-400 font-normal">/{item.limit}</span>
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ease-out ${getUsageColor(item.used, item.limit)}`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {usageItems.length > 3 && (
+                  <button
+                    onClick={() => setShowAllUsage(!showAllUsage)}
+                    className="w-full text-center text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 py-1.5 flex items-center justify-center gap-1 transition-colors"
+                  >
+                    {showAllUsage ? 'Show Less' : `Show all (${usageItems.length - 3} more)`}
+                    <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${showAllUsage ? 'rotate-180' : ''}`} />
+                  </button>
+                )}
+              </div>
+
+              {userProfile?.subscription_tier !== 'premium' && (
                 <button
-                  onClick={() => window.location.href = '/pricing'}
-                  className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 bg-white text-accent-primary rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-105 active:scale-95 w-full sm:w-auto min-h-[48px]"
+                  onClick={() => router.push('/pricing')}
+                  className="w-full mt-4 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-bold shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 transition-all duration-300 hover:scale-[1.02]"
                 >
-                  <Sparkles className="w-5 h-5" />
-                  <span className="text-sm sm:text-base">Upgrade</span>
+                  Upgrade to Premium
                 </button>
               )}
             </div>
           </div>
-        </div>
-
-        {/* Usage Warning Notification */}
-        <UsageWarningNotification />
-
-        {/* Notification Permission Banner */}
-        <NotificationBanner />
-
-        {/* Study Progress Widget - Full Width */}
-        <StudyProgressWidget />
-
-        {/* Dashboard Widgets - Side by Side */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Content Widget */}
-          <RecentContentWidget />
-
-          {/* Usage Widget */}
-          <UsageWidget />
-        </div>
-
-        {/* Study Scheduler Tools */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Study Tools & Scheduler</h2>
-            <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
-              Intelligent
-            </span>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <button
-              onClick={() => window.location.href = '/dashboard/library'}
-              className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
-            >
-              <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
-                Smart
-              </span>
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4">
-                <Library className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                Library
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Access all your documents and content
-              </p>
-            </button>
-
-            <button
-              onClick={() => window.location.href = '/dashboard/study/calendar'}
-              className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
-            >
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4">
-                <Calendar className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                Study Calendar
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Schedule and plan study sessions
-              </p>
-            </button>
-
-            <button
-              onClick={() => window.location.href = '/dashboard/study/statistics'}
-              className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
-            >
-              <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
-                Insights
-              </span>
-              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-4">
-                <BarChart3 className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                Statistics
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Deep insights & progress tracking
-              </p>
-            </button>
-
-            <button
-              onClick={() => window.location.href = '/dashboard/study/settings'}
-              className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer"
-            >
-              <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-xl flex items-center justify-center mb-4">
-                <Bell className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                Notifications
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Configure reminders and alerts
-              </p>
-            </button>
-
-            <button
-              onClick={() => {
-                if (status === 'idle') {
-                  startTimer()
-                }
-              }}
-              className="relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer group"
-            >
-              {status !== 'idle' && (
-                <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-semibold rounded-full animate-pulse">
-                  Active
-                </span>
-              )}
-              {status === 'idle' && (
-                <span className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
-                  Start
-                </span>
-              )}
-              <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center mb-4">
-                <Clock className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                Pomodoro Timer
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {status !== 'idle'
-                  ? `${timerType === 'focus' ? '🍅 Focus' : timerType === 'shortBreak' ? '☕ Break' : '🌴 Long Break'} - ${sessionsCompleted} sessions`
-                  : 'Start 25-minute focus session'}
-              </p>
-            </button>
-          </div>
-        </div>
+        </section>
 
         {/* Learning Modes Grid */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6" data-tour="learning-modes">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Choose Your Learning Mode</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-            {learningModes.map((mode) => {
+        <section className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+              Choose how to learn
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">9 learning modes</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2.5 sm:gap-3">
+            {learningModes.map((mode, index) => {
               const Icon = mode.icon
-              // Add data-tour attribute for specific modes
-              const dataTourAttr = mode.id === 'flashcards' ? 'flashcards'
-                : mode.id === 'podcast' ? 'podcast'
-                : mode.id === 'mindmap' ? 'mindmap'
-                : undefined
               return (
                 <button
                   key={mode.id}
-                  onClick={() => mode.available && onModeSelect(mode.id)}
-                  disabled={!mode.available}
-                  data-tour={dataTourAttr}
-                  className={`relative bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-4 sm:p-6 text-left transition-all hover:shadow-xl hover:-translate-y-1 active:scale-95 min-h-[140px] sm:min-h-auto ${
-                    mode.available ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
-                  }`}
+                  onClick={() => handleModeClick(mode)}
+                  className="group relative p-4 sm:p-5 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-gray-200/50 dark:border-white/10 hover:border-transparent hover:shadow-xl hover:shadow-gray-200/50 dark:hover:shadow-none transition-all duration-300 text-left overflow-hidden"
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className={`w-12 h-12 sm:w-14 sm:h-14 ${mode.bgClass} rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-lg ${mode.shadowClass}`}>
-                    <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  {/* Hover gradient overlay */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${mode.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl`} />
+
+                  <div className="relative z-10">
+                    <div className={`w-10 h-10 rounded-lg ${mode.bgColor} flex items-center justify-center mb-3 group-hover:bg-white/20 group-hover:scale-110 transition-all duration-300`}>
+                      <Icon className={`w-5 h-5 ${mode.textColor} group-hover:text-white transition-colors duration-300`} />
+                    </div>
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-white transition-colors duration-300">{mode.name}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 group-hover:text-white/70 transition-colors duration-300 mt-0.5">{mode.description}</p>
                   </div>
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
-                    {mode.name}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                    {mode.description}
-                  </p>
-                  {!mode.available && (
-                    <span className="absolute top-3 right-3 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-semibold rounded-full">
-                      Soon
-                    </span>
-                  )}
-                  {mode.premium && (
-                    <span className="absolute top-3 right-3 px-2 py-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-semibold rounded-full shadow-md">
-                      Premium
-                    </span>
-                  )}
-                  {mode.new && mode.available && !mode.premium && (
-                    <span className="absolute top-3 right-3 px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-semibold rounded-full shadow-md">
-                      NEW
-                    </span>
-                  )}
                 </button>
               )
             })}
           </div>
-        </div>
+        </section>
 
-        {/* Learning Profile Banner - Shows Below Welcome */}
-        <LearningProfileBanner
-          onTakeAssessment={() => onOpenAssessment?.()}
-        />
-
-        {/* Learning Profile Card - Collapsible */}
-        {learningStyle && (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden transition-all">
-            {/* Header - Always Visible */}
-            <button
-              onClick={() => setIsLearningProfileExpanded(!isLearningProfileExpanded)}
-              className="w-full p-6 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center text-white">
-                  {(() => {
-                    const Icon = getStyleIcon(learningStyle)
-                    return <Icon className="w-6 h-6" />
-                  })()}
-                </div>
-                <div className="text-left">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Learning Profile</h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">
-                    {learningStyle.replace('_', ' ')} Learner
-                  </p>
-                </div>
+        {/* Learning Style Discovery Card */}
+        {!learningProfile && (
+          <section className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+            <div className="relative overflow-hidden p-5 sm:p-6 rounded-xl bg-violet-600">
+              {/* Pattern overlay */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
               </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    window.location.href = '/dashboard/settings'
-                  }}
-                  className="text-sm text-accent-primary hover:underline"
-                >
-                  View Full Profile
-                </button>
-                {isLearningProfileExpanded ? (
-                  <ChevronUp className="w-5 h-5 text-gray-400" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                )}
-              </div>
-            </button>
 
-            {/* Expanded Content */}
-            {isLearningProfileExpanded && (
-              <div className="px-6 pb-6 pt-0 border-t border-gray-200 dark:border-gray-800">
-                <div className="grid md:grid-cols-2 gap-6 mt-6">
-                  {/* Dominant Style Details */}
-                  <div className="bg-gradient-to-br from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-xl p-6 border border-accent-primary/30 dark:border-accent-primary/50">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center text-white">
-                        {(() => {
-                          const Icon = getStyleIcon(learningStyle)
-                          return <Icon className="w-6 h-6" />
-                        })()}
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Your Learning Style</p>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white capitalize">
-                          {learningStyle.replace('_', ' ')}
-                        </h3>
-                      </div>
+              <div className="relative z-10">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <Sparkles className="w-6 h-6 text-white" />
                     </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      {getStyleDescription(learningStyle)}
-                    </p>
-                  </div>
-
-                  {/* Score Breakdown */}
-                  {assessmentScores && (
-                    <div className="space-y-3">
-                      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your Scores</p>
-                      {Object.entries(assessmentScores).map(([style, score]) => {
-                        const percentage = (score / 30) * 100 // Assuming max score of 30
-                        return (
-                          <div key={style}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-medium text-gray-600 dark:text-gray-400 capitalize">
-                                {style.replace('_', ' ')}
-                              </span>
-                              <span className="text-xs font-semibold text-gray-900 dark:text-white">
-                                {Math.round(percentage)}%
-                              </span>
-                            </div>
-                            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full transition-all duration-500"
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Subscription Status */}
-        <SubscriptionStatus />
-
-        {/* Recent Documents */}
-        <div>
-          {isLoadingDocs ? (
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-12 text-center">
-              <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Loading documents...</p>
-            </div>
-          ) : recentDocuments.length === 0 ? (
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 p-8">
-              {/* Header */}
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Upload className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-headline-responsive text-gray-900 dark:text-white mb-2">Get Started with Your Documents</h3>
-                <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                  Upload documents or import from URLs to start generating flashcards, mind maps, podcasts, and interactive learning experiences
-                </p>
-              </div>
-
-              {/* Upload Methods Grid */}
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                {/* Upload Files Card */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-white" />
-                    </div>
-                    <h4 className="text-lg font-bold text-gray-900 dark:text-white">Upload Files</h4>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Drag and drop or browse to upload your documents
-                  </p>
-                  <ul className="space-y-2 mb-6">
-                    <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                      <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span><strong>Formats:</strong> PDF, DOCX, DOC, TXT, JSON</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                      <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span><strong>Size:</strong> Up to 500MB per file</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                      <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span><strong>Content:</strong> Textbooks, notes, research papers</span>
-                    </li>
-                  </ul>
-                  <button
-                    onClick={() => window.location.href = '/dashboard/documents'}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Go to Documents
-                  </button>
-                </div>
-
-                {/* Import from URL Card */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                      <Globe className="w-6 h-6 text-white" />
-                    </div>
-                    <h4 className="text-lg font-bold text-gray-900 dark:text-white">Import from URL</h4>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Import content directly from the internet
-                  </p>
-                  <ul className="space-y-2 mb-6">
-                    <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                      <CheckCircle2 className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                      <span><strong>arXiv:</strong> Scientific papers & research</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                      <CheckCircle2 className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                      <span><strong>Web:</strong> Medium, blogs, articles</span>
-                    </li>
-                    <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                      <CheckCircle2 className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                      <span><strong>YouTube:</strong> Transcripts (coming soon)</span>
-                    </li>
-                  </ul>
-                  <button
-                    onClick={() => window.location.href = '/dashboard/documents'}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
-                  >
-                    <Link2 className="w-4 h-4" />
-                    Go to Documents
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Start Info */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-center">
-                <p className="text-sm text-blue-700 dark:text-blue-400">
-                  <strong>Quick Start:</strong> Click "Go to Documents" above to access the upload page, then choose your preferred method to get started
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {recentDocuments.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:shadow-lg transition-all"
-                >
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${getFileTypeColor(doc.file_type)}`}>
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate" title={doc.file_name}>
-                        {doc.file_name}
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                        Discover Your Learning Style
                       </h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatFileSize(doc.file_size)}
+                      <p className="text-sm text-white/70">
+                        Take our 2-minute assessment for personalized experiences
                       </p>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                    {new Date(doc.created_at).toLocaleDateString()}
-                  </p>
-                  <div className="flex gap-2">
+                  <button
+                    onClick={() => setLearningStyleExpanded(!learningStyleExpanded)}
+                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                  >
+                    {learningStyleExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {learningStyleExpanded && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { icon: Eye, label: "Visual" },
+                        { icon: Headphones, label: "Auditory" },
+                        { icon: Hand, label: "Kinesthetic" },
+                        { icon: BookText, label: "Reading" },
+                      ].map((style) => (
+                        <div key={style.label} className="flex items-center gap-2 p-2.5 rounded-lg bg-white/10 backdrop-blur-sm">
+                          <style.icon className="w-4 h-4 text-white" />
+                          <span className="text-xs font-medium text-white">{style.label}</span>
+                        </div>
+                      ))}
+                    </div>
+
                     <button
-                      onClick={() => {
-                        // Set document and switch to flashcards mode
-                        onModeSelect('flashcards')
-                      }}
-                      className="flex-1 px-3 py-1.5 bg-accent-primary/20 dark:bg-accent-primary/30 text-accent-primary rounded-lg text-xs font-semibold hover:bg-accent-primary/30 dark:hover:bg-accent-primary/40 transition-colors"
+                      onClick={() => onModeSelect('quiz')}
+                      className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 bg-white hover:bg-gray-50 text-violet-600 rounded-lg font-bold text-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
                     >
-                      Flashcards
-                    </button>
-                    <button
-                      onClick={() => {
-                        // Set document and switch to chat mode
-                        onModeSelect('chat')
-                      }}
-                      className="flex-1 px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-semibold hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-                    >
-                      Chat
+                      <Sparkles className="w-4 h-4" />
+                      Take Assessment
+                      <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
-                </div>
-              ))}
+                )}
+              </div>
             </div>
-          )}
-        </div>
+          </section>
+        )}
+
+        {/* Subscription Footer */}
+        {userProfile?.subscription_tier !== 'premium' && (
+          <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-600">
+            <div className="relative overflow-hidden p-4 sm:p-6 rounded-xl bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white/10 dark:via-white/5 dark:to-white/10">
+              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djZoLTJ2LTZoMnptMC0xMHY2aC0ydi02aDJ6bTAtMTB2NmgtMlY0aDJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-50" />
+
+              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                    <Sparkles className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white">Free Plan</h3>
+                    <p className="text-xs text-gray-400">Unlock unlimited access with Premium</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => router.push('/pricing')}
+                  className="px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 rounded-lg text-sm font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4 text-violet-600" />
+                  Upgrade to Premium
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Footer spacer */}
+        <div className="h-16 lg:h-6" />
       </div>
+
+      {/* Milestone Celebration Modal */}
+      <MilestoneCelebrationModal
+        days={currentStreak}
+        isOpen={showCelebration}
+        onClose={closeCelebration}
+      />
     </div>
   )
 }

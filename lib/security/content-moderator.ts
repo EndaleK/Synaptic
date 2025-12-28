@@ -39,7 +39,7 @@ export async function moderateContent(content: string): Promise<ModerationResult
   try {
     const moderation = await openai.moderations.create({
       input: content,
-      model: 'text-moderation-latest' // Free model, no cost
+      model: 'omni-moderation-latest' // Updated model (text-moderation-latest deprecated)
     })
 
     const result = moderation.results[0]
@@ -125,7 +125,7 @@ export async function moderateMessages(messages: string[]): Promise<ModerationRe
   try {
     const moderation = await openai.moderations.create({
       input: messages,
-      model: 'text-moderation-latest'
+      model: 'omni-moderation-latest'
     })
 
     const flaggedResults = moderation.results.filter(r => r.flagged)

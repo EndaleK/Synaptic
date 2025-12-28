@@ -102,10 +102,10 @@ export async function POST(req: NextRequest) {
         const supabase = await createClient()
 
         // SIMPLIFIED: Fetch document and profile separately for better reliability
-        // First get user profile
+        // First get user profile with learning style
         const { data: profile, error: profileError } = await supabase
           .from('user_profiles')
-          .select('id')
+          .select('id, learning_style')
           .eq('clerk_user_id', userId)
           .single()
 
@@ -114,6 +114,22 @@ export async function POST(req: NextRequest) {
           const duration = Date.now() - startTime
           logger.api('POST', '/api/generate-mindmap', 404, duration, { userId, error: 'User profile not found' })
           throw new Error('User profile not found')
+        }
+
+        // Fetch learning profile for personalization (optional - graceful degradation)
+        let teachingStylePreference: 'socratic' | 'direct' | 'mixed' = 'mixed'
+        try {
+          const { data: learningProfile } = await supabase
+            .from('learning_profiles')
+            .select('teaching_style_preference')
+            .eq('user_id', profile.id)
+            .single()
+
+          if (learningProfile?.teaching_style_preference) {
+            teachingStylePreference = learningProfile.teaching_style_preference as 'socratic' | 'direct' | 'mixed'
+          }
+        } catch {
+          // Ignore - use default
         }
 
         // Then fetch the document (RLS will ensure user owns it)
@@ -430,7 +446,10 @@ export async function POST(req: NextRequest) {
       maxNodes: effectiveMaxNodes,
       maxDepth: effectiveMaxDepth,
       provider: selectedProvider,
-      mapType: mapType // Pass map type to generator for type-specific prompts
+      mapType: mapType, // Pass map type to generator for type-specific prompts
+      // Personalization options
+      learningStyle: profile.learning_style || undefined,
+      teachingStylePreference
     })
 
     // Mind map generation complete

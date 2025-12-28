@@ -1,7 +1,8 @@
 import { chunkDocument, getChunkingSummary, type ChunkOptions } from "./document-chunker"
 import { getProviderForFeature, type AIProvider } from "./ai"
 import { type TemplateType, getRecommendedTemplate, TEMPLATES } from "./mindmap-templates"
-import { type MindMapType } from "./supabase/types"
+import { type MindMapType, type LearningStyle } from "./supabase/types"
+import { personalizePrompt, createLearningProfile, type LearningProfile } from "./personalization/personalization-engine"
 
 export interface MindMapNode {
   id: string
@@ -39,6 +40,9 @@ interface GenerateMindMapOptions {
   provider?: AIProvider // Optional provider (defaults to configured provider for 'mindmap' feature)
   template?: TemplateType // Optional template override (AI auto-selects if not provided)
   mapType?: MindMapType // Type of mind map: hierarchical, radial, or concept (default: hierarchical)
+  // Personalization options
+  learningStyle?: LearningStyle
+  teachingStylePreference?: 'socratic' | 'direct' | 'mixed'
 }
 
 /**
@@ -474,7 +478,9 @@ export async function generateMindMap(
     maxDepth = 4,
     provider: customProvider,
     template: userTemplate,
-    mapType = 'hierarchical' // Default to hierarchical for backward compatibility
+    mapType = 'hierarchical', // Default to hierarchical for backward compatibility
+    learningStyle,
+    teachingStylePreference
   } = options
 
   // Get provider (use custom if provided, otherwise get configured provider)
@@ -518,7 +524,17 @@ export async function generateMindMap(
   }
 
   // Generate type-specific system prompt (use smart-selected layout)
-  const systemPrompt = getSystemPromptForMapType(finalMapType, maxNodes, maxDepth)
+  let systemPrompt = getSystemPromptForMapType(finalMapType, maxNodes, maxDepth)
+
+  // Apply personalization if learning style is provided
+  if (learningStyle) {
+    const learningProfile = createLearningProfile(
+      learningStyle,
+      teachingStylePreference || 'mixed'
+    )
+    systemPrompt = personalizePrompt({ profile: learningProfile, mode: 'mindmap' }, systemPrompt)
+    console.log(`[MindMap] Applied personalization for ${learningStyle} learner`)
+  }
 
   // Generate type-aware user prompt
   const mapTypeDescriptions = {
