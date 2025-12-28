@@ -10,6 +10,7 @@ import PaymentReceiptEmail from './templates/payment-receipt-email'
 import PaymentFailedEmail from './templates/payment-failed-email'
 import SubscriptionConfirmedEmail from './templates/subscription-confirmed-email'
 import UsageWarningEmail from './templates/usage-warning-email'
+import DailyDigestEmail from './templates/daily-digest-email'
 
 /**
  * Send welcome email to new users
@@ -172,5 +173,37 @@ export async function sendUsageWarningEmail({
     }),
     from: EMAIL_CONFIG.from.hello,
     emailType: EmailType.USAGE_WARNING,
+  })
+}
+
+/**
+ * Send daily digest email with flashcard reminders
+ */
+export async function sendDailyDigestEmail({
+  userEmail,
+  userName,
+  dueFlashcards,
+  currentStreak,
+}: {
+  userEmail: string
+  userName?: string
+  dueFlashcards: number
+  currentStreak: number
+}) {
+  const subject = dueFlashcards > 0
+    ? `You have ${dueFlashcards} flashcard${dueFlashcards !== 1 ? 's' : ''} ready for review`
+    : `Keep your ${currentStreak}-day streak going!`
+
+  return sendEmail({
+    to: userEmail,
+    subject,
+    react: DailyDigestEmail({
+      userName,
+      dueFlashcards,
+      currentStreak,
+      dashboardUrl: `${EMAIL_CONFIG.baseUrl}/dashboard`,
+    }),
+    from: EMAIL_CONFIG.from.hello,
+    emailType: EmailType.DAILY_DIGEST,
   })
 }

@@ -1,25 +1,20 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Send, Loader2, Sparkles, GraduationCap, Users, Laugh, X, Minimize2, ChevronDown, History, Copy, Check, MessageSquare } from "lucide-react"
+import { Send, Loader2, MessageCircle, X, History, Copy, Check } from "lucide-react"
 import { useStudyBuddyStore } from "@/lib/store/useStudyBuddyStore"
 import { useDocumentStore, useUIStore } from "@/lib/store/useStore"
 import { useToast } from "./ToastContainer"
 import { cn } from "@/lib/utils"
 import MarkdownRenderer from "./MarkdownRenderer"
-import type { PersonalityMode, TeachingStyle } from "@/lib/study-buddy/personalities"
 
 export default function FloatingStudyBuddy() {
   const toast = useToast()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  // Store state
+  // Keep existing Study Buddy store for conversation management
   const {
-    personalityMode,
-    setPersonalityMode,
-    teachingStyle,
-    setTeachingStyle,
     getCurrentMessages,
     addMessage,
     startNewConversation,
@@ -71,6 +66,11 @@ export default function FloatingStudyBuddy() {
       startNewConversation()
     }
   }, [isMinimized])
+
+  // Don't show when user is in Chat mode (Chat has its own interface)
+  if (activeMode === 'chat') {
+    return null
+  }
 
   // Parse quick commands
   const parseQuickCommand = (text: string): { command: string | null; actualMessage: string } => {
@@ -125,8 +125,7 @@ export default function FloatingStudyBuddy() {
       // Add user message to conversation
       addMessage({
         role: 'user',
-        content: actualMessage,
-        personality: personalityMode
+        content: actualMessage
       })
 
       // Prepare messages for API
@@ -155,8 +154,6 @@ export default function FloatingStudyBuddy() {
         },
         body: JSON.stringify({
           messages: conversationHistory,
-          personalityMode,
-          teachingStyle: personalityMode === 'tutor' ? teachingStyle : undefined,
           topic: actualMessage + contextInfo,
           documentId: currentDocument?.id,
           activeMode
@@ -203,8 +200,7 @@ export default function FloatingStudyBuddy() {
       if (accumulatedResponse) {
         addMessage({
           role: 'assistant',
-          content: accumulatedResponse,
-          personality: personalityMode
+          content: accumulatedResponse
         })
       }
 
@@ -244,18 +240,6 @@ export default function FloatingStudyBuddy() {
     }
   }
 
-  // Get personality icon
-  const getPersonalityIcon = () => {
-    switch (personalityMode) {
-      case 'tutor':
-        return <GraduationCap className="w-5 h-5" />
-      case 'buddy':
-        return <Users className="w-5 h-5" />
-      case 'comedy':
-        return <Laugh className="w-5 h-5" />
-    }
-  }
-
   // Get mode-specific quick actions
   const getQuickActions = () => {
     const actions = []
@@ -268,9 +252,6 @@ export default function FloatingStudyBuddy() {
     switch (activeMode) {
       case 'flashcards':
         actions.push({ label: "Quiz me", command: "/quiz" })
-        break
-      case 'chat':
-        actions.push({ label: "Key takeaways", command: "/summarize" })
         break
       case 'podcast':
         actions.push({ label: "Explain this section", command: "/explain this section" })
@@ -300,10 +281,10 @@ export default function FloatingStudyBuddy() {
           {/* Header */}
           <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <div className="px-4 py-3">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white">
-                    {getPersonalityIcon()}
+                    <MessageCircle className="w-5 h-5" />
                   </div>
                   <div>
                     <h2 className="text-base font-bold text-gray-900 dark:text-white">
@@ -323,76 +304,6 @@ export default function FloatingStudyBuddy() {
                   <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 </button>
               </div>
-
-              {/* Personality Toggle */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setPersonalityMode('tutor')}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg transition-all text-sm font-medium",
-                    personalityMode === 'tutor'
-                      ? "bg-purple-500 text-white"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-                  )}
-                >
-                  <GraduationCap className="w-4 h-4" />
-                  Tutor
-                </button>
-                <button
-                  onClick={() => setPersonalityMode('buddy')}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg transition-all text-sm font-medium",
-                    personalityMode === 'buddy'
-                      ? "bg-purple-500 text-white"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-                  )}
-                >
-                  <Users className="w-4 h-4" />
-                  Buddy
-                </button>
-                <button
-                  onClick={() => setPersonalityMode('comedy')}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg transition-all text-sm font-medium",
-                    personalityMode === 'comedy'
-                      ? "bg-purple-500 text-white"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-                  )}
-                >
-                  <Laugh className="w-4 h-4" />
-                  Fun
-                </button>
-              </div>
-
-              {/* Teaching Style Toggle (Tutor mode only) */}
-              {personalityMode === 'tutor' && (
-                <div className="mt-2 flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-                  <button
-                    onClick={() => setTeachingStyle('mixed')}
-                    className={cn(
-                      "flex-1 py-1.5 px-2 rounded text-xs font-medium transition-all",
-                      teachingStyle === 'mixed'
-                        ? "bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm"
-                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                    )}
-                    title="Explains concepts directly with some guiding questions"
-                  >
-                    📚 Mixed
-                  </button>
-                  <button
-                    onClick={() => setTeachingStyle('socratic')}
-                    className={cn(
-                      "flex-1 py-1.5 px-2 rounded text-xs font-medium transition-all",
-                      teachingStyle === 'socratic'
-                        ? "bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm"
-                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                    )}
-                    title="Guides you to discover answers through questions (never gives direct answers)"
-                  >
-                    🤔 Socratic
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 
@@ -400,7 +311,7 @@ export default function FloatingStudyBuddy() {
           <div className="flex-1 overflow-y-auto px-4 py-4">
             {messages.length === 0 && !streamingMessage && (
               <div className="text-center py-8">
-                <Sparkles className="w-12 h-12 text-purple-500 mx-auto mb-3" />
+                <MessageCircle className="w-12 h-12 text-purple-500 mx-auto mb-3" />
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
                   Hi! I'm your Study Buddy. Ask me anything!
                 </p>
@@ -517,60 +428,11 @@ export default function FloatingStudyBuddy() {
     )
   }
 
-  // Desktop minimized state - Circular icon (replaces QuickActionButton position)
+  // Desktop minimized state - Circular icon
   if (isMinimized) {
     return (
       <div className="fixed bottom-20 right-4 z-50" data-tour="study-buddy">
         <div className="relative group">
-          {/* Personality mode selectors - appear on hover */}
-          <div className="absolute bottom-16 right-0 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setPersonalityMode('tutor')
-              }}
-              className={cn(
-                "w-10 h-10 rounded-full shadow-md flex items-center justify-center transition-all hover:scale-110",
-                personalityMode === 'tutor'
-                  ? "bg-purple-500 text-white"
-                  : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-purple-900"
-              )}
-              title="Tutor Mode"
-            >
-              <GraduationCap className="w-5 h-5" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setPersonalityMode('buddy')
-              }}
-              className={cn(
-                "w-10 h-10 rounded-full shadow-md flex items-center justify-center transition-all hover:scale-110",
-                personalityMode === 'buddy'
-                  ? "bg-purple-500 text-white"
-                  : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-purple-900"
-              )}
-              title="Buddy Mode"
-            >
-              <Users className="w-5 h-5" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setPersonalityMode('comedy')
-              }}
-              className={cn(
-                "w-10 h-10 rounded-full shadow-md flex items-center justify-center transition-all hover:scale-110",
-                personalityMode === 'comedy'
-                  ? "bg-purple-500 text-white"
-                  : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-purple-900"
-              )}
-              title="Comedy Mode"
-            >
-              <Laugh className="w-5 h-5" />
-            </button>
-          </div>
-
           {/* Main button */}
           <button
             onClick={() => setIsMinimized(false)}
@@ -578,7 +440,7 @@ export default function FloatingStudyBuddy() {
             title="Open Study Buddy"
           >
             <div className="relative">
-              {getPersonalityIcon()}
+              <MessageCircle className="w-6 h-6" />
               {mounted && messages.length > 0 && (
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white animate-pulse" />
               )}
@@ -594,9 +456,9 @@ export default function FloatingStudyBuddy() {
     <div className="fixed bottom-28 right-4 z-50 w-[400px] max-h-[600px] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5" />
+            <MessageCircle className="w-5 h-5" />
             <div>
               <h3 className="font-bold text-sm">Study Buddy</h3>
               {currentDocument && (
@@ -625,76 +487,6 @@ export default function FloatingStudyBuddy() {
             </button>
           </div>
         </div>
-
-        {/* Personality Toggle */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setPersonalityMode('tutor')}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium transition-all",
-              personalityMode === 'tutor'
-                ? "bg-white text-purple-600"
-                : "bg-white/20 hover:bg-white/30"
-            )}
-          >
-            <GraduationCap className="w-3.5 h-3.5" />
-            Tutor
-          </button>
-          <button
-            onClick={() => setPersonalityMode('buddy')}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium transition-all",
-              personalityMode === 'buddy'
-                ? "bg-white text-purple-600"
-                : "bg-white/20 hover:bg-white/30"
-            )}
-          >
-            <Users className="w-3.5 h-3.5" />
-            Buddy
-          </button>
-          <button
-            onClick={() => setPersonalityMode('comedy')}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium transition-all",
-              personalityMode === 'comedy'
-                ? "bg-white text-purple-600"
-                : "bg-white/20 hover:bg-white/30"
-            )}
-          >
-            <Laugh className="w-3.5 h-3.5" />
-            Fun
-          </button>
-        </div>
-
-        {/* Teaching Style Toggle (Tutor mode only) */}
-        {personalityMode === 'tutor' && (
-          <div className="mt-2 flex items-center gap-1 bg-white/10 rounded p-0.5">
-            <button
-              onClick={() => setTeachingStyle('mixed')}
-              className={cn(
-                "flex-1 py-1 px-2 rounded text-[10px] font-medium transition-all",
-                teachingStyle === 'mixed'
-                  ? "bg-white text-purple-600"
-                  : "text-white/80 hover:text-white hover:bg-white/10"
-              )}
-              title="Explains concepts directly with some guiding questions"
-            >
-              📚 Mixed
-            </button>
-            <button
-              onClick={() => setTeachingStyle('socratic')}
-              className={cn(
-                "flex-1 py-1 px-2 rounded text-[10px] font-medium transition-all",
-                teachingStyle === 'socratic'
-                  ? "bg-white text-purple-600"
-                  : "text-white/80 hover:text-white hover:bg-white/10"
-              )}
-              title="Guides you to discover answers through questions (never gives direct answers)"
-            >
-              🤔 Socratic
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Conversation History Dropdown */}
@@ -742,7 +534,7 @@ export default function FloatingStudyBuddy() {
       <div className="flex-1 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-900">
         {messages.length === 0 && !streamingMessage && (
           <div className="text-center py-6">
-            <Sparkles className="w-10 h-10 text-purple-500 mx-auto mb-2" />
+            <MessageCircle className="w-10 h-10 text-purple-500 mx-auto mb-2" />
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
               Hi! Ask me anything about your studies.
             </p>

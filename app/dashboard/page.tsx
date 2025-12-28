@@ -1,9 +1,69 @@
 "use client"
 
-import { Suspense, useState, useEffect, useRef } from "react"
+import { Suspense, useState, useEffect, useRef, Component, ReactNode } from "react"
 import dynamic from "next/dynamic"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useUser } from "@clerk/nextjs"
+
+// Error Boundary for dynamic imports - prevents stuck loading states
+interface ErrorBoundaryProps {
+  children: ReactNode
+  fallback?: ReactNode
+  componentName?: string
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean
+  error: Error | null
+}
+
+class DynamicComponentErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error(`[ErrorBoundary] ${this.props.componentName || 'Component'} failed to load:`, error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback
+      }
+      return (
+        <div className="h-full flex items-center justify-center bg-white dark:bg-black rounded-2xl border border-gray-300 dark:border-gray-700">
+          <div className="text-center p-6 max-w-md">
+            <div className="w-12 h-12 mx-auto mb-4 text-red-500">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              {this.props.componentName || 'Component'} failed to load
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              There was an error loading this feature. Please try refreshing the page.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
 import DocumentUpload from "@/components/DocumentUpload"
 import FlashcardDisplay from "@/components/FlashcardDisplay"
 import LearningStyleAssessment from "@/components/LearningStyleAssessment"
@@ -15,13 +75,14 @@ import StudyGuideView from "@/components/StudyGuideView"
 import QuizPromptModal from "@/components/QuizPromptModal"
 import InlineDocumentPicker from "@/components/InlineDocumentPicker"
 import ContentSelectionModal from "@/components/ContentSelectionModal"
-import Breadcrumb from "@/components/Breadcrumb"
 import { Flashcard } from "@/lib/types"
 import { useUIStore, useUserStore } from "@/lib/store/useStore"
 import { useDocumentStore } from "@/lib/store/useStore"
 import { useTimeBasedTheme } from "@/lib/hooks/useTimeBasedTheme"
 import type { LearningStyle, PreferredMode, Document } from "@/lib/supabase/types"
 import { useToast } from '@/components/ToastContainer'
+import { initStorageMonitor } from "@/lib/storage-monitor"
+import { analytics } from "@/lib/analytics"
 
 // Dynamic imports to prevent SSR hydration issues
 const ChatInterface = dynamic(() => import("@/components/ChatInterface"), {
@@ -72,17 +133,7 @@ const ExamView = dynamic(() => import("@/components/ExamView"), {
   )
 })
 
-const StudyBuddyInterface = dynamic(() => import("@/components/StudyBuddy/StudyBuddyInterface"), {
-  ssr: false,
-  loading: () => (
-    <div className="h-full flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-        <p className="text-sm text-gray-600 dark:text-gray-400">Loading Study Buddy...</p>
-      </div>
-    </div>
-  )
-})
+// StudyBuddyInterface is now merged into ChatInterface - removed separate import
 
 function DashboardContent() {
   const toast = useToast()
@@ -109,6 +160,16 @@ function DashboardContent() {
 
   // Time-based theme warmth (0-20%)
   const warmthLevel = useTimeBasedTheme()
+
+  // Initialize storage monitoring on mount (checks quota, auto-cleans stale data)
+  useEffect(() => {
+    initStorageMonitor()
+  }, [])
+
+  // Track page view on mount
+  useEffect(() => {
+    analytics.pageView('/dashboard')
+  }, [])
 
   // Modal state for inline document picker flow
   const [selectedDocForModal, setSelectedDocForModal] = useState<Document | null>(null)
@@ -520,40 +581,29 @@ function DashboardContent() {
     switch (activeMode) {
       case "home":
         return (
-          <DashboardHome
-            onModeSelect={(mode) => {
-              // Redirect to dedicated Writer page
-              if (mode === 'writer') {
-                router.push('/dashboard/writer')
-              } else {
-                setActiveMode(mode as any)
-              }
-            }}
-            onOpenAssessment={() => setShowAssessment(true)}
-          />
-        )
-
-      case "studyBuddy":
-        return (
-          <div className="h-full">
-            <StudyBuddyInterface />
+          <div className="h-full overflow-y-auto scroll-smooth dashboard-scrollbar">
+            <DashboardHome
+              onModeSelect={(mode) => {
+                // Redirect to dedicated Writer page
+                if (mode === 'writer') {
+                  router.push('/dashboard/writer')
+                } else {
+                  setActiveMode(mode as any)
+                }
+              }}
+              onOpenAssessment={() => setShowAssessment(true)}
+            />
           </div>
         )
 
       case "chat":
-        // Only show ChatInterface if document was explicitly selected through picker
-        if (!activeModeDocuments.chat) {
-          return (
-            <InlineDocumentPicker
-              onDocumentSelect={(doc) => handleDocumentSelect(doc, 'chat')}
-              mode="chat"
-            />
-          )
-        }
+        // Chat now works with or without a document (unified with Study Buddy)
         return (
-          <div className="h-full">
-            <ChatInterface />
-          </div>
+          <DynamicComponentErrorBoundary componentName="Chat">
+            <div className="h-full">
+              <ChatInterface />
+            </div>
+          </DynamicComponentErrorBoundary>
         )
 
       case "podcast":
@@ -567,23 +617,27 @@ function DashboardContent() {
           )
         }
         return (
-          <div className="h-full overflow-y-auto container-padding">
-            <PodcastView
-              documentId={currentDocument.id}
-              documentName={currentDocument.name}
-            />
-          </div>
+          <DynamicComponentErrorBoundary componentName="Podcast">
+            <div className="h-full overflow-y-auto container-padding">
+              <PodcastView
+                documentId={currentDocument.id}
+                documentName={currentDocument.name}
+              />
+            </div>
+          </DynamicComponentErrorBoundary>
         )
 
       case "quick-summary":
         // Quick Summary doesn't require pre-selection - handles docs, URLs, and YouTube in-component
         return (
-          <div className="h-full">
-            <QuickSummaryView
-              documentId={currentDocument?.id}
-              documentName={currentDocument?.name}
-            />
-          </div>
+          <DynamicComponentErrorBoundary componentName="Quick Summary">
+            <div className="h-full">
+              <QuickSummaryView
+                documentId={currentDocument?.id}
+                documentName={currentDocument?.name}
+              />
+            </div>
+          </DynamicComponentErrorBoundary>
         )
 
       case "mindmap":
@@ -597,12 +651,14 @@ function DashboardContent() {
           )
         }
         return (
-          <div className="h-full overflow-y-auto container-padding">
-            <MindMapView
-              documentId={currentDocument.id}
-              documentName={currentDocument.name}
-            />
-          </div>
+          <DynamicComponentErrorBoundary componentName="Mind Map">
+            <div className="h-full overflow-y-auto container-padding">
+              <MindMapView
+                documentId={currentDocument.id}
+                documentName={currentDocument.name}
+              />
+            </div>
+          </DynamicComponentErrorBoundary>
         )
 
       case "studyguide":
@@ -616,33 +672,41 @@ function DashboardContent() {
           )
         }
         return (
-          <div className="h-full overflow-y-auto container-padding">
-            <StudyGuideView
-              documentId={currentDocument.id}
-              documentName={currentDocument.name}
-            />
-          </div>
+          <DynamicComponentErrorBoundary componentName="Study Guide">
+            <div className="h-full overflow-y-auto container-padding">
+              <StudyGuideView
+                documentId={currentDocument.id}
+                documentName={currentDocument.name}
+              />
+            </div>
+          </DynamicComponentErrorBoundary>
         )
 
       case "writer":
         return (
-          <div className="h-full">
-            <WritingView documentId={currentDocument?.id} />
-          </div>
+          <DynamicComponentErrorBoundary componentName="Writing Assistant">
+            <div className="h-full">
+              <WritingView documentId={currentDocument?.id} />
+            </div>
+          </DynamicComponentErrorBoundary>
         )
 
       case "video":
         return (
-          <div className="h-full">
-            <VideoView />
-          </div>
+          <DynamicComponentErrorBoundary componentName="Video Learning">
+            <div className="h-full">
+              <VideoView />
+            </div>
+          </DynamicComponentErrorBoundary>
         )
 
       case "exam":
         return (
-          <div className="h-full">
-            <ExamView />
-          </div>
+          <DynamicComponentErrorBoundary componentName="Exam Simulator">
+            <div className="h-full">
+              <ExamView />
+            </div>
+          </DynamicComponentErrorBoundary>
         )
 
       case "flashcards":
@@ -660,17 +724,19 @@ function DashboardContent() {
 
         // Show flashcards if we have them
         return (
-          <div className="h-full overflow-y-auto container-padding">
-            <FlashcardDisplay
-              flashcards={flashcards}
-              onReset={() => {
-                setFlashcards([])
-                setRegenerationCount(0)
-              }}
-              onRegenerate={handleRegenerate}
-              isRegenerating={isRegenerating}
-            />
-          </div>
+          <DynamicComponentErrorBoundary componentName="Flashcards">
+            <div className="h-full overflow-y-auto container-padding">
+              <FlashcardDisplay
+                flashcards={flashcards}
+                onReset={() => {
+                  setFlashcards([])
+                  setRegenerationCount(0)
+                }}
+                onRegenerate={handleRegenerate}
+                isRegenerating={isRegenerating}
+              />
+            </div>
+          </DynamicComponentErrorBoundary>
         )
     }
   }
@@ -678,15 +744,12 @@ function DashboardContent() {
   return (
     <>
       <div
-        className={`h-screen overflow-hidden flex flex-col transition-colors duration-500 ${getBackgroundTint()}`}
+        className={`h-[calc(100vh-56px)] overflow-hidden flex flex-col transition-colors duration-500 ${getBackgroundTint()}`}
         style={{
           filter: `sepia(${warmthLevel}%) saturate(${100 - warmthLevel * 0.5}%)`,
           transition: 'filter 2s ease-in-out'
         }}
       >
-        <div className="flex-shrink-0 container-padding-x pt-4">
-          <Breadcrumb onSwitchDocument={handleSwitchDocument} />
-        </div>
         <div className="flex-1 overflow-hidden">
           {renderModeContent()}
         </div>

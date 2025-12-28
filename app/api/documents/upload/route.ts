@@ -24,7 +24,15 @@ export const runtime = 'nodejs'
 export const maxDuration = 30 // Only need time to generate URL, not upload file
 
 const MAX_FILE_SIZE = 500 * 1024 * 1024 // 500MB
-const ALLOWED_TYPES = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'text/markdown']
+const ALLOWED_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/msword', // .doc (older format)
+  'application/vnd.ms-word', // .doc (alternative MIME)
+  'application/x-msword', // .doc (alternative MIME)
+  'text/plain',
+  'text/markdown',
+]
 const UPLOAD_URL_EXPIRY = 7200 // 2 hours in seconds
 
 export async function POST(request: NextRequest) {
@@ -74,11 +82,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file type (also allow .md files reported as text/plain by some browsers)
-    const isMdFile = fileName?.toLowerCase().endsWith('.md')
-    if (!ALLOWED_TYPES.includes(fileType) && !isMdFile) {
+    // Validate file type by MIME type or extension (browsers can be inconsistent)
+    const lowerFileName = fileName?.toLowerCase() || ''
+    const allowedExtensions = ['.pdf', '.docx', '.doc', '.txt', '.md']
+    const hasAllowedExtension = allowedExtensions.some(ext => lowerFileName.endsWith(ext))
+    const hasAllowedMimeType = ALLOWED_TYPES.includes(fileType)
+
+    if (!hasAllowedMimeType && !hasAllowedExtension) {
+      console.log(`❌ File type rejected: ${fileType} / ${fileName}`)
       return NextResponse.json(
-        { error: `File type not allowed. Supported types: PDF, DOCX, TXT, MD` },
+        { error: `File type not allowed. Supported types: PDF, DOCX, DOC, TXT, MD` },
         { status: 400 }
       )
     }

@@ -75,8 +75,9 @@ const categoryColors: Record<string, { bg: string; border: string; text: string 
 
 // Custom node component to ensure labels display correctly with proper styling
 // PHASE 1.4: Enhanced with category icons for visual memory
-function CustomNode({ data, style }: NodeProps) {
-  console.log('[CustomNode] Rendering:', { label: data.label, categoryIcon: data.categoryIcon, style });
+// OPTIMIZATION: Wrapped in React.memo() for performance (prevents unnecessary re-renders)
+const CustomNode = React.memo(function CustomNode({ data, style }: NodeProps) {
+  // Removed console.log for production performance
 
   return (
     <div style={{
@@ -85,8 +86,11 @@ function CustomNode({ data, style }: NodeProps) {
       alignItems: 'center',
       justifyContent: 'center',
       textAlign: 'center',
-      minWidth: '100px',  // EMERGENCY: Force minimum dimensions
-      minHeight: '40px',  // EMERGENCY: Force minimum dimensions
+      // RESPONSIVE: Use clamp() for responsive sizing that works on mobile
+      minWidth: 'clamp(80px, 15vw, 120px)',
+      minHeight: 'clamp(32px, 5vh, 48px)',
+      // Add padding for touch targets on mobile
+      padding: 'clamp(4px, 1vw, 8px)',
     }}>
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
       <div style={{
@@ -96,7 +100,9 @@ function CustomNode({ data, style }: NodeProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '8px'
+        gap: 'clamp(4px, 1vw, 8px)',
+        // RESPONSIVE: Scale font size for readability on mobile
+        fontSize: 'clamp(10px, 2.5vw, 14px)',
       }}>
         {/* PHASE 1.4: Category icon for visual memory (Buzan principle) */}
         {data.categoryIcon && (
@@ -109,7 +115,7 @@ function CustomNode({ data, style }: NodeProps) {
       <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
     </div>
   )
-}
+})
 
 const nodeTypes = {
   default: CustomNode,
@@ -1152,8 +1158,9 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
                       toggleNodeCollapse(node.id)
                     }}
                     style={{
-                      width: '28px',
-                      height: '28px',
+                      // RESPONSIVE: Larger touch target on mobile (44px minimum for accessibility)
+                      width: 'clamp(28px, 8vw, 36px)',
+                      height: 'clamp(28px, 8vw, 36px)',
                       borderRadius: '50%',
                       background: '#2196F3', // Exact blue from screenshot
                       color: 'white',
@@ -1165,9 +1172,10 @@ ${!documentId || !onReloadDocumentText ? '**Note**: Open the browser console (F1
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontWeight: 'bold',
-                      fontSize: '16px',
+                      // RESPONSIVE: Scale font size with button
+                      fontSize: 'clamp(14px, 4vw, 18px)',
                     }}
-                    className="hover:bg-[#1976D2] hover:scale-110"
+                    className="hover:bg-[#1976D2] hover:scale-110 active:scale-95"
                     title={isCollapsed
                       ? `Expand to show ${descendantCount} hidden node${descendantCount !== 1 ? 's' : ''}`
                       : `Collapse to hide ${descendantCount} child node${descendantCount !== 1 ? 's' : ''}`

@@ -59,7 +59,6 @@ async function handleGetReviewQueue(req: NextRequest) {
             id,
             front,
             back,
-            difficulty,
             times_reviewed,
             times_correct,
             documents (
@@ -109,7 +108,6 @@ async function handleGetReviewQueue(req: NextRequest) {
           id,
           front,
           back,
-          difficulty,
           times_reviewed,
           times_correct,
           documents (
@@ -149,7 +147,6 @@ async function handleGetReviewQueue(req: NextRequest) {
         flashcardId: flashcard.id,
         front: flashcard.front,
         back: flashcard.back,
-        difficulty: flashcard.difficulty,
         documentName: flashcard.documents?.file_name || 'Unknown',
         documentId: flashcard.documents?.id,
 
@@ -180,7 +177,6 @@ async function handleGetReviewQueue(req: NextRequest) {
       flashcardId: flashcard.id,
       front: flashcard.front,
       back: flashcard.back,
-      difficulty: flashcard.difficulty,
       documentName: flashcard.documents?.file_name || 'Unknown',
       documentId: flashcard.documents?.id,
 

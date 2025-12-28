@@ -173,7 +173,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
               <Link
                 href={isSignedIn ? "/dashboard" : "/sign-up"}
-                className="group relative px-10 py-5 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 text-white rounded-2xl font-bold text-xl hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-3 min-w-[260px] justify-center ring-4 ring-purple-500/30 hover:ring-purple-500/50"
+                className="group relative px-10 py-5 bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35] text-white rounded-2xl font-bold text-xl hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-3 min-w-[260px] justify-center ring-4 ring-purple-500/30 hover:ring-purple-500/50"
               >
                 <span className="relative z-10">{isSignedIn ? "Go to Dashboard" : "Get Started Free →"}</span>
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-400 to-pink-400 opacity-0 group-hover:opacity-20 transition-opacity" />
@@ -548,7 +548,7 @@ export default function LandingPage() {
             <div className="mt-12 text-center">
               <Link
                 href={isSignedIn ? "/dashboard" : "/sign-up"}
-                className="inline-flex items-center gap-3 px-10 py-5 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl"
+                className="inline-flex items-center gap-3 px-10 py-5 bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl"
               >
                 <Bot className="w-6 h-6" />
                 Try Study Buddy Now
@@ -884,7 +884,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-10">
                 <Link
                   href={isSignedIn ? "/dashboard" : "/sign-in"}
-                  className="group relative inline-flex items-center gap-3 px-10 py-5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl font-bold text-lg hover:scale-105 transition-all shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 overflow-hidden"
+                  className="group relative inline-flex items-center gap-3 px-10 py-5 bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35] text-white rounded-2xl font-bold text-lg hover:scale-105 transition-all shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 overflow-hidden"
                 >
                   {/* Shimmer effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />

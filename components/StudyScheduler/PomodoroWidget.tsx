@@ -3,89 +3,48 @@
 import { useState, useEffect, useRef } from 'react'
 import { Play, Pause, RotateCcw, X, Maximize2, Clock, Sparkles } from 'lucide-react'
 import { useUIStore } from '@/lib/store/useStore'
+import { usePomodoroStore } from '@/lib/store/usePomodoroStore'
 
 interface PomodoroWidgetProps {
   onMaximize?: () => void
 }
 
-type TimerMode = 'work' | 'shortBreak' | 'longBreak'
-
 export default function PomodoroWidget({ onMaximize }: PomodoroWidgetProps) {
   const { activeMode } = useUIStore()
-  const [isActive, setIsActive] = useState(false)
+
+  // Use centralized Pomodoro store instead of local state
+  const {
+    focusDuration,
+    shortBreakDuration,
+    longBreakDuration,
+    timerType,
+    timeRemaining,
+    status,
+    sessionsCompleted,
+    startTimer,
+    pauseTimer,
+    stopTimer,
+    tick,
+    resetTimer,
+    syncTimer,
+  } = usePomodoroStore()
+
+  // Local UI state for minimized view (not persisted - resets on page load)
   const [isMinimized, setIsMinimized] = useState(true)
-  const [mode, setMode] = useState<TimerMode>('work')
-  const [timeLeft, setTimeLeft] = useState(25 * 60)
-  const [workMinutes] = useState(25)
-  const [shortBreakMinutes] = useState(5)
-  const [longBreakMinutes] = useState(15)
-  const [sessionsCompleted, setSessionsCompleted] = useState(0)
-  const [lastUpdate, setLastUpdate] = useState<number>(Date.now())
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
 
-  // Load state from localStorage on mount
+  // Sync timer on mount (handles page reload with running timer)
   useEffect(() => {
-    const savedState = localStorage.getItem('pomodoroWidget')
-    if (savedState) {
-      try {
-        const state = JSON.parse(savedState)
-        // Calculate time elapsed since last update
-        const elapsed = Math.floor((Date.now() - state.lastUpdate) / 1000)
+    syncTimer()
+  }, [syncTimer])
 
-        if (state.isActive && elapsed < state.timeLeft) {
-          // Timer was running and hasn't completed - resume with adjusted time
-          setTimeLeft(state.timeLeft - elapsed)
-          setIsActive(true) // Auto-resume timer
-        } else {
-          setTimeLeft(state.timeLeft)
-          setIsActive(false) // Timer completed or was paused
-        }
-
-        setMode(state.mode)
-        setSessionsCompleted(state.sessionsCompleted)
-        setIsMinimized(state.isMinimized ?? true)
-      } catch (error) {
-        console.error('Failed to load timer state:', error)
-      }
-    }
-  }, [])
-
-  // Save state to localStorage whenever it changes
+  // Timer countdown using store's tick method
   useEffect(() => {
-    const state = {
-      isActive,
-      mode,
-      timeLeft,
-      sessionsCompleted,
-      isMinimized,
-      lastUpdate: Date.now()
-    }
-    localStorage.setItem('pomodoroWidget', JSON.stringify(state))
-    setLastUpdate(Date.now())
-  }, [isActive, mode, timeLeft, sessionsCompleted, isMinimized])
-
-  // Get initial time based on mode
-  const getInitialTime = (currentMode: TimerMode): number => {
-    switch (currentMode) {
-      case 'work': return workMinutes * 60
-      case 'shortBreak': return shortBreakMinutes * 60
-      case 'longBreak': return longBreakMinutes * 60
-    }
-  }
-
-  // Timer countdown
-  useEffect(() => {
-    if (isActive && timeLeft > 0) {
+    if (status === 'running' && timeRemaining > 0) {
       intervalRef.current = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            handleTimerComplete()
-            return 0
-          }
-          return prev - 1
-        })
+        tick()
       }, 1000)
     } else {
       if (intervalRef.current) {
@@ -99,7 +58,14 @@ export default function PomodoroWidget({ onMaximize }: PomodoroWidgetProps) {
         clearInterval(intervalRef.current)
       }
     }
-  }, [isActive, timeLeft])
+  }, [status, timeRemaining, tick])
+
+  // Play sound when timer completes
+  useEffect(() => {
+    if (status === 'idle' && timeRemaining === 0) {
+      playSound()
+    }
+  }, [status, timeRemaining])
 
   // Play sound
   const playSound = () => {
@@ -128,37 +94,20 @@ export default function PomodoroWidget({ onMaximize }: PomodoroWidgetProps) {
     }
   }
 
-  const handleTimerComplete = () => {
-    setIsActive(false)
-    playSound()
-
-    if (mode === 'work') {
-      const newSessions = sessionsCompleted + 1
-      setSessionsCompleted(newSessions)
-
-      const nextMode: TimerMode = newSessions % 4 === 0 ? 'longBreak' : 'shortBreak'
-      setMode(nextMode)
-      setTimeLeft(getInitialTime(nextMode))
+  const handleStartPause = () => {
+    if (status === 'running') {
+      pauseTimer()
     } else {
-      setMode('work')
-      setTimeLeft(getInitialTime('work'))
+      startTimer()
     }
   }
 
-  const handleStartPause = () => {
-    setIsActive(!isActive)
-  }
-
   const handleReset = () => {
-    setIsActive(false)
-    setTimeLeft(getInitialTime(mode))
+    resetTimer()
   }
 
   const handleStop = () => {
-    setIsActive(false)
-    setMode('work')
-    setTimeLeft(getInitialTime('work'))
-    setSessionsCompleted(0)
+    stopTimer()
     setIsMinimized(true)
   }
 
@@ -168,9 +117,10 @@ export default function PomodoroWidget({ onMaximize }: PomodoroWidgetProps) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
+  // Map store timerType to widget mode names
   const getModeConfig = () => {
-    switch (mode) {
-      case 'work':
+    switch (timerType) {
+      case 'focus':
         return { label: 'Focus', color: 'from-red-500 to-orange-500', bgColor: 'bg-red-500' }
       case 'shortBreak':
         return { label: 'Short Break', color: 'from-green-500 to-emerald-500', bgColor: 'bg-green-500' }
@@ -196,14 +146,24 @@ export default function PomodoroWidget({ onMaximize }: PomodoroWidgetProps) {
     }
   }
 
+  // Get initial time based on timer type
+  const getInitialTime = (): number => {
+    switch (timerType) {
+      case 'focus': return focusDuration * 60
+      case 'shortBreak': return shortBreakDuration * 60
+      case 'longBreak': return longBreakDuration * 60
+    }
+  }
+
   const modeConfig = getModeConfig()
   const activeModeDisplay = getActiveModeDisplay()
+  const isActive = status === 'running'
 
   // Determine color based on time remaining
   const getTimerColorState = () => {
-    if (timeLeft === 0) {
+    if (timeRemaining === 0) {
       return 'alert' // Time's up - flashing red
-    } else if (timeLeft <= 300) { // 5 minutes = 300 seconds
+    } else if (timeRemaining <= 300) { // 5 minutes = 300 seconds
       return 'warning' // Less than 5 minutes - orange
     }
     return 'normal' // Default color
@@ -232,7 +192,7 @@ export default function PomodoroWidget({ onMaximize }: PomodoroWidgetProps) {
   const displayConfig = getDisplayConfig()
 
   // Don't show if timer is idle and minimized
-  if (!isActive && isMinimized && timeLeft === getInitialTime(mode)) {
+  if (status === 'idle' && isMinimized && timeRemaining === getInitialTime()) {
     return null
   }
 
@@ -248,7 +208,7 @@ export default function PomodoroWidget({ onMaximize }: PomodoroWidgetProps) {
                   <div className="text-sm text-white/90 font-semibold uppercase tracking-wide">
                     {displayConfig.label}
                   </div>
-                  {mode === 'work' && activeMode !== 'home' && (
+                  {timerType === 'focus' && activeMode !== 'home' && (
                     <div className="flex items-center gap-1.5 text-xs text-white/80 bg-white/20 px-2 py-1 rounded">
                       <Sparkles className="w-3 h-3" />
                       <span>{activeModeDisplay.icon} {activeModeDisplay.name}</span>
@@ -256,7 +216,7 @@ export default function PomodoroWidget({ onMaximize }: PomodoroWidgetProps) {
                   )}
                 </div>
                 <div className="text-4xl font-bold text-white tabular-nums">
-                  {formatTime(timeLeft)}
+                  {formatTime(timeRemaining)}
                 </div>
                 {sessionsCompleted > 0 && (
                   <div className="text-sm text-white/80 mt-1">
@@ -300,7 +260,7 @@ export default function PomodoroWidget({ onMaximize }: PomodoroWidgetProps) {
                 <span className="text-base font-bold text-white uppercase tracking-wide">
                   {displayConfig.label}
                 </span>
-                {mode === 'work' && activeMode !== 'home' && (
+                {timerType === 'focus' && activeMode !== 'home' && (
                   <div className="flex items-center gap-1.5 text-sm text-white/90 bg-white/20 px-2.5 py-1.5 rounded-lg">
                     <Sparkles className="w-4 h-4" />
                     <span>{activeModeDisplay.icon} {activeModeDisplay.name}</span>
@@ -342,7 +302,7 @@ export default function PomodoroWidget({ onMaximize }: PomodoroWidgetProps) {
             {/* Timer Display */}
             <div className="text-center">
               <div className="text-7xl font-bold text-white mb-2.5 tabular-nums">
-                {formatTime(timeLeft)}
+                {formatTime(timeRemaining)}
               </div>
               <div className="text-base text-white/90 font-medium">
                 Session {Math.floor(sessionsCompleted % 4) + 1}/4
@@ -355,7 +315,7 @@ export default function PomodoroWidget({ onMaximize }: PomodoroWidgetProps) {
             <div className="flex items-center justify-center gap-5 mb-5">
               <button
                 onClick={handleReset}
-                disabled={!isActive && timeLeft === getInitialTime(mode)}
+                disabled={status === 'idle' && timeRemaining === getInitialTime()}
                 className="p-4 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 shadow-md border border-gray-200 dark:border-gray-600"
                 title="Reset"
               >

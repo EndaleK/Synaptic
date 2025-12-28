@@ -6,7 +6,11 @@ import { useStudyGoalsStore } from "@/lib/store/useStudyGoalsStore"
 import { Play, Pause, Square, Settings, X, Minimize2, Maximize2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export default function FloatingPomodoroTimer() {
+interface FloatingPomodoroTimerProps {
+  onClose?: () => void
+}
+
+export default function FloatingPomodoroTimer({ onClose }: FloatingPomodoroTimerProps) {
   const {
     timerType,
     timeRemaining,
@@ -279,6 +283,7 @@ export default function FloatingPomodoroTimer() {
               onClick={(e) => {
                 e.stopPropagation()
                 setIsHidden(true)
+                onClose?.()
               }}
               className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-md min-h-[48px] min-w-[48px]"
               title="Hide timer"
@@ -328,6 +333,7 @@ export default function FloatingPomodoroTimer() {
                     e.stopPropagation()
                     setIsHidden(true)
                     setIsMinimized(true)
+                    onClose?.()
                   }}
                   className="p-2 hover:bg-white/20 rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95"
                   title="Hide timer"

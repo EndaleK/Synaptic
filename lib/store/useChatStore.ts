@@ -1,37 +1,51 @@
 /**
- * Chat Store - Session-Based Persistence
+ * Chat Store - Unified Chat State Management
  *
- * Persists chat conversations during active session (using sessionStorage)
- * Allows seamless mode switching without losing conversation context
+ * Manages chat state for the unified chat interface:
+ * - Works with or without attached documents
+ * - Personality modes (tutor/buddy/comedy)
+ * - Teaching styles (socratic/mixed)
+ * - Explain level presets
+ * - Conversation history
  *
- * Key Features:
- * - Messages persist across mode switches (Chat → Flashcards → Chat)
- * - Separate conversations per document
- * - Cleared on browser tab close (sessionStorage)
- * - Optional: Can be promoted to localStorage for permanent history
+ * Uses localStorage for preferences, sessionStorage for conversations
  */
 
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import type { PersonalityMode, ExplainLevel, TeachingStyle } from '@/lib/study-buddy/personalities'
 
 export interface ChatMessage {
   id: string
   content: string
   type: 'user' | 'assistant'
   timestamp: Date
+  personality?: PersonalityMode
+  explainLevel?: ExplainLevel
 }
 
 export interface ChatSession {
-  documentId: string
+  documentId: string  // 'general' for non-document chats
   messages: ChatMessage[]
   lastActive: Date
+  title?: string  // Auto-generated from first message
 }
 
 interface ChatStore {
   // Current session
   currentSession: ChatSession | null
 
-  // Actions
+  // User preferences (persisted)
+  personalityMode: PersonalityMode
+  teachingStyle: TeachingStyle
+  explainLevel: ExplainLevel | null
+
+  // Actions for preferences
+  setPersonalityMode: (mode: PersonalityMode) => void
+  setTeachingStyle: (style: TeachingStyle) => void
+  setExplainLevel: (level: ExplainLevel | null) => void
+
+  // Actions for messages
   setMessages: (documentId: string, messages: ChatMessage[]) => void
   addMessage: (documentId: string, message: ChatMessage) => void
   clearMessages: (documentId: string) => void
@@ -40,12 +54,34 @@ interface ChatStore {
   // Session management
   loadSession: (documentId: string) => ChatMessage[]
   hasSession: (documentId: string) => boolean
+  startNewSession: (documentId?: string) => void
 }
 
 export const useChatStore = create<ChatStore>()(
   persist(
     (set, get) => ({
       currentSession: null,
+
+      // User preferences with defaults
+      personalityMode: 'tutor' as PersonalityMode,
+      teachingStyle: 'mixed' as TeachingStyle,
+      explainLevel: null,
+
+      // Preference setters
+      setPersonalityMode: (mode) => set({ personalityMode: mode }),
+      setTeachingStyle: (style) => set({ teachingStyle: style }),
+      setExplainLevel: (level) => set({ explainLevel: level }),
+
+      // Start a new session (clears current messages)
+      startNewSession: (documentId = 'general') => {
+        set({
+          currentSession: {
+            documentId,
+            messages: [],
+            lastActive: new Date()
+          }
+        })
+      },
 
       setMessages: (documentId, messages) => {
         set({
@@ -110,7 +146,11 @@ export const useChatStore = create<ChatStore>()(
       name: 'chat-storage',
       storage: createJSONStorage(() => sessionStorage), // Use sessionStorage for ephemeral persistence
       partialize: (state) => ({
-        currentSession: state.currentSession
+        currentSession: state.currentSession,
+        // Persist user preferences
+        personalityMode: state.personalityMode,
+        teachingStyle: state.teachingStyle,
+        explainLevel: state.explainLevel
       })
     }
   )

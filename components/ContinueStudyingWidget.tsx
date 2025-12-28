@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { BookOpen, Upload, Sparkles, ChevronRight, Zap } from 'lucide-react'
+import { BookOpen, Upload, ChevronRight, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import { useUIStore, useDocumentStore } from '@/lib/store/useStore'
@@ -121,71 +121,59 @@ export default function ContinueStudyingWidget() {
     )
   }
 
-  // Determine styling based on state
-  const getStyles = () => {
+  const getConfig = () => {
     switch (state.type) {
       case 'flashcards_due':
         return {
-          gradient: 'from-violet-500 via-purple-500 to-fuchsia-500',
-          hoverGradient: 'hover:from-violet-600 hover:via-purple-600 hover:to-fuchsia-600',
           icon: Zap,
-          title: `Review ${state.count} Flashcard${state.count !== 1 ? 's' : ''}`,
-          subtitle: 'Keep your streak going!',
-          iconBg: 'bg-white/20'
+          title: `Review ${state.count} card${state.count !== 1 ? 's' : ''}`,
+          subtitle: 'Due for review'
         }
       case 'continue_document':
         return {
-          gradient: 'from-blue-500 via-cyan-500 to-teal-500',
-          hoverGradient: 'hover:from-blue-600 hover:via-cyan-600 hover:to-teal-600',
           icon: BookOpen,
-          title: 'Continue Studying',
-          subtitle: truncateFilename(state.document.file_name, 40),
-          iconBg: 'bg-white/20'
+          title: 'Continue studying',
+          subtitle: truncateFilename(state.document.file_name, 35)
         }
       case 'upload_first':
         return {
-          gradient: 'from-emerald-500 via-green-500 to-lime-500',
-          hoverGradient: 'hover:from-emerald-600 hover:via-green-600 hover:to-lime-600',
           icon: Upload,
-          title: 'Upload Your First Document',
-          subtitle: 'Start your learning journey',
-          iconBg: 'bg-white/20'
+          title: 'Get started',
+          subtitle: 'Upload your first document'
         }
     }
   }
 
-  const styles = getStyles()
-  const IconComponent = styles.icon
+  const config = getConfig()
+  const IconComponent = config.icon
+
+  const isPrimary = state.type === 'flashcards_due'
 
   return (
     <button
       onClick={handleClick}
-      className={`
-        w-full p-5 rounded-2xl
-        bg-gradient-to-r ${styles.gradient} ${styles.hoverGradient}
-        text-white shadow-lg
-        transform transition-all duration-300
-        hover:scale-[1.02] hover:shadow-xl
-        active:scale-[0.98]
-        flex items-center justify-between
-        group
-      `}
+      className={`w-full p-5 rounded-2xl transition-all duration-200 flex items-center justify-between group ${
+        isPrimary
+          ? 'bg-blue-500 hover:bg-blue-600 text-white'
+          : 'bg-neutral-900 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-100 text-white dark:text-neutral-900'
+      }`}
     >
       <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-xl ${styles.iconBg} backdrop-blur-sm`}>
-          <IconComponent className="w-6 h-6" />
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+          isPrimary ? 'bg-white/20' : 'bg-white/10 dark:bg-neutral-900/10'
+        }`}>
+          <IconComponent className="w-5 h-5" />
         </div>
         <div className="text-left">
-          <h3 className="font-semibold text-lg">{styles.title}</h3>
-          <p className="text-sm text-white/80">{styles.subtitle}</p>
+          <h3 className="font-semibold text-base">{config.title}</h3>
+          <p className={`text-sm ${isPrimary ? 'text-white/70' : 'text-white/60 dark:text-neutral-500'}`}>
+            {config.subtitle}
+          </p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        {state.type === 'flashcards_due' && (
-          <Sparkles className="w-5 h-5 opacity-80" />
-        )}
-        <ChevronRight className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
-      </div>
+      <ChevronRight className={`w-5 h-5 ${
+        isPrimary ? 'text-white/60' : 'text-white/40 dark:text-neutral-400'
+      } group-hover:translate-x-1 transition-transform duration-200`} />
     </button>
   )
 }

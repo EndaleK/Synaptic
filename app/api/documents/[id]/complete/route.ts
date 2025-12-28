@@ -26,6 +26,9 @@ import { createClient } from '@/lib/supabase/server'
 import { inngest } from '@/lib/inngest/client'
 import { incrementUsage } from '@/lib/usage-limits'
 import { validateUUIDParam } from '@/lib/validation/uuid'
+import { serverAnalytics } from '@/lib/analytics-server'
+import { analyzeDocument } from '@/lib/document-analyzer'
+import { orchestrateGeneration, getUserLearningStyle } from '@/lib/content-orchestrator'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 minutes (Vercel Pro max) for PDF extraction and ChromaDB indexing
@@ -220,52 +223,72 @@ export async function POST(
         }
       }
     } else if (document.file_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-               document.file_type === 'application/msword') {
-      // DOCX/DOC files: Extract text inline (fast enough for immediate processing)
-      console.log(`📝 Extracting text from DOCX: ${document.file_name} (type: ${document.file_type})`)
+               document.file_type === 'application/msword' ||
+               document.file_type === 'application/vnd.ms-word' ||
+               document.file_type === 'application/x-msword' ||
+               document.file_name?.toLowerCase().endsWith('.docx') ||
+               document.file_name?.toLowerCase().endsWith('.doc')) {
+      // Word document processing
+      const isDocx = document.file_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                     document.file_name?.toLowerCase().endsWith('.docx')
+      const isOldDoc = !isDocx && (
+        document.file_type === 'application/msword' ||
+        document.file_type === 'application/vnd.ms-word' ||
+        document.file_type === 'application/x-msword' ||
+        document.file_name?.toLowerCase().endsWith('.doc')
+      )
 
-      try {
-        // Download file from storage
-        console.log(`📥 Downloading from storage: ${document.storage_path}`)
-        const { data: fileBlob, error: downloadError } = await supabase
-          .storage
-          .from('documents')
-          .download(document.storage_path)
+      if (isOldDoc) {
+        // Mammoth doesn't support .doc files - warn user
+        console.warn(`⚠️ Old .doc format detected: ${document.file_name}. Mammoth only supports .docx`)
+        extractionMethod = 'unsupported_doc_format'
+        // Document is still marked as completed, but user will need to convert to .docx
+      } else {
+        // DOCX files: Extract text with mammoth
+        console.log(`📝 Extracting text from DOCX: ${document.file_name} (type: ${document.file_type})`)
 
-        if (downloadError) {
-          console.error('❌ Failed to download DOCX from storage:', downloadError)
-          extractionMethod = 'failed_download'
-        } else if (!fileBlob) {
-          console.error('❌ No file blob returned from storage')
-          extractionMethod = 'failed_no_blob'
-        } else {
-          console.log(`✅ Downloaded ${fileBlob.size} bytes`)
-          const arrayBuffer = await fileBlob.arrayBuffer()
+        try {
+          // Download file from storage
+          console.log(`📥 Downloading from storage: ${document.storage_path}`)
+          const { data: fileBlob, error: downloadError } = await supabase
+            .storage
+            .from('documents')
+            .download(document.storage_path)
 
-          // Extract text using mammoth directly (avoid File constructor issues on server)
-          console.log(`🔍 Parsing DOCX with mammoth...`)
-          try {
-            const mammoth = await import('mammoth')
-            const result = await mammoth.extractRawText({ arrayBuffer })
+          if (downloadError) {
+            console.error('❌ Failed to download DOCX from storage:', downloadError)
+            extractionMethod = 'failed_download'
+          } else if (!fileBlob) {
+            console.error('❌ No file blob returned from storage')
+            extractionMethod = 'failed_no_blob'
+          } else {
+            console.log(`✅ Downloaded ${fileBlob.size} bytes`)
+            const arrayBuffer = await fileBlob.arrayBuffer()
 
-            if (!result.value || result.value.trim().length === 0) {
-              console.error(`❌ DOCX extracted empty text`)
-              extractionMethod = 'failed_empty'
-            } else {
-              extractedText = result.value
-              hasExtractedText = true
-              extractionMethod = 'mammoth'
-              console.log(`✅ DOCX text extracted: ${result.value.length} characters`)
+            // Extract text using mammoth directly
+            console.log(`🔍 Parsing DOCX with mammoth...`)
+            try {
+              const mammoth = await import('mammoth')
+              const result = await mammoth.extractRawText({ arrayBuffer })
+
+              if (!result.value || result.value.trim().length === 0) {
+                console.error(`❌ DOCX extracted empty text`)
+                extractionMethod = 'failed_empty'
+              } else {
+                extractedText = result.value
+                hasExtractedText = true
+                extractionMethod = 'mammoth'
+                console.log(`✅ DOCX text extracted: ${result.value.length} characters`)
+              }
+            } catch (mammothError) {
+              console.error('❌ Mammoth parsing error:', mammothError)
+              extractionMethod = 'failed_parse'
             }
-          } catch (mammothError) {
-            console.error('❌ Mammoth parsing error:', mammothError)
-            extractionMethod = 'failed_parse'
           }
+        } catch (docxError) {
+          console.error('❌ DOCX extraction exception:', docxError)
+          extractionMethod = 'failed_exception'
         }
-      } catch (docxError) {
-        console.error('❌ DOCX extraction exception:', docxError)
-        extractionMethod = 'failed_exception'
-        // Not fatal - document still usable, text extraction will happen on first use (lazy loading)
       }
     } else {
       console.log(`✅ Non-PDF/DOCX file, marking as completed immediately`)
@@ -318,6 +341,10 @@ export async function POST(
     // Track document upload in usage tracking
     console.log('📊 About to track document upload:', { userId, feature: 'documents', fileName: document.file_name })
     await incrementUsage(userId, 'documents')
+
+    // Track analytics event (fire-and-forget)
+    serverAnalytics.documentUploaded(userId, document.file_type, actualFileSize)
+
     console.log(`✅ Upload completed for: ${document.file_name} (${(actualFileSize / (1024 * 1024)).toFixed(2)} MB)`)
 
     if (isPDF && hasExtractedText) {
@@ -326,7 +353,56 @@ export async function POST(
       console.log(`🔄 Large PDF - text extraction queued for background processing`)
     }
 
-    // 7. Return success response
+    // 7. Auto-analyze document and queue content generation (non-blocking)
+    // Only for documents with extracted text (skip large PDFs until background extraction completes)
+    let analysisQueued = false
+    let contentJobsQueued = 0
+
+    if (hasExtractedText && extractedText) {
+      try {
+        console.log(`🧠 Starting auto-analysis for: ${document.file_name}`)
+
+        // Run document analysis (complexity, topics, time estimates)
+        const analysis = await analyzeDocument(
+          documentId,
+          profile.id,
+          extractedText,
+          { skipAI: false } // Use AI for topic extraction
+        )
+
+        console.log(`✅ Document analyzed: complexity=${analysis.complexityScore}, topics=${analysis.topics.length}`)
+        analysisQueued = true
+
+        // Get user's learning style and orchestrate content generation
+        const learningStyle = await getUserLearningStyle(profile.id)
+        console.log(`📚 User learning style: ${learningStyle}`)
+
+        // Queue top 2 content types based on learning style
+        const orchestrationResult = await orchestrateGeneration(
+          documentId,
+          profile.id,
+          { learningStyle }
+        )
+
+        contentJobsQueued = orchestrationResult.queuedJobs.length
+        console.log(
+          `🚀 Content generation queued: ${contentJobsQueued} jobs`,
+          orchestrationResult.queuedJobs.map((j) => j.contentType)
+        )
+
+        if (orchestrationResult.skippedTypes.length > 0) {
+          console.log(
+            `⏭️ Skipped content types:`,
+            orchestrationResult.skippedTypes
+          )
+        }
+      } catch (analysisError) {
+        // Non-fatal: Document is still usable, just without auto-generated content
+        console.error('⚠️ Auto-analysis/orchestration error (non-fatal):', analysisError)
+      }
+    }
+
+    // 8. Return success response
     const successMessage = isPDF
       ? (hasExtractedText
           ? 'Document uploaded and ready to use!'
@@ -340,7 +416,17 @@ export async function POST(
       fileSize: actualFileSize,
       processingStatus,
       hasExtractedText,
-      message: successMessage
+      message: successMessage,
+      // Phase 2: Intelligent Study System
+      intelligence: {
+        analyzed: analysisQueued,
+        contentJobsQueued,
+        note: analysisQueued
+          ? `Document analyzed and ${contentJobsQueued} content generation jobs queued based on your learning style.`
+          : hasExtractedText
+            ? 'Analysis will run after text extraction completes.'
+            : 'Large file - analysis will run after background text extraction.',
+      },
     })
 
   } catch (error) {

@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/server"
 import { createSSEStream, createSSEHeaders, ProgressTracker } from "@/lib/sse-utils"
 import { withMonitoring, trackApiMetric, addApiContext, flagSlowOperation } from '@/lib/monitoring/api-monitor'
 import { trackSupabaseQuery, trackBatchQuery } from '@/lib/monitoring/supabase-monitor'
+import { serverAnalytics } from '@/lib/analytics-server'
 
 export const maxDuration = 300 // 5 minutes for complex documents
 
@@ -684,6 +685,9 @@ async function handleGenerateFlashcards(request: NextRequest) {
     }
 
     const duration = Date.now() - startTime
+
+    // Track analytics event (fire-and-forget, don't await)
+    serverAnalytics.flashcardGenerated(userId, savedFlashcards.length, documentId || undefined)
 
     logger.api('POST', '/api/generate-flashcards', 200, duration, {
       userId,

@@ -1,10 +1,9 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Clock, Sparkles, Mic, Map as MapIcon, Loader2, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react'
+import { Sparkles, Mic, Map as MapIcon, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
-import { cn } from '@/lib/utils'
 
 interface RecentItem {
   id: string
@@ -109,25 +108,22 @@ export default function RecentContentWidget() {
       case 'flashcard':
         return {
           icon: Sparkles,
-          color: 'from-accent-primary to-accent-secondary',
-          bgColor: 'bg-accent-primary/10 dark:bg-accent-primary/20',
-          textColor: 'text-accent-primary',
+          bgColor: 'bg-cyan-100 dark:bg-cyan-500/20',
+          textColor: 'text-cyan-600 dark:text-cyan-400',
           mode: 'flashcards'
         }
       case 'podcast':
         return {
           icon: Mic,
-          color: 'from-purple-500 to-pink-500',
-          bgColor: 'bg-purple-100 dark:bg-purple-900/30',
-          textColor: 'text-purple-600 dark:text-purple-400',
+          bgColor: 'bg-pink-100 dark:bg-pink-500/20',
+          textColor: 'text-pink-600 dark:text-pink-400',
           mode: 'podcast'
         }
       case 'mindmap':
         return {
           icon: MapIcon,
-          color: 'from-blue-500 to-cyan-500',
-          bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-          textColor: 'text-blue-600 dark:text-blue-400',
+          bgColor: 'bg-emerald-100 dark:bg-emerald-500/20',
+          textColor: 'text-emerald-600 dark:text-emerald-400',
           mode: 'mindmap'
         }
     }
@@ -159,13 +155,15 @@ export default function RecentContentWidget() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 h-full flex flex-col">
-        <div className="flex items-center gap-2 mb-4">
-          <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          <h3 className="text-title-responsive text-gray-900 dark:text-white">Recent Content</h3>
+      <div className="bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700/50 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="h-4 w-28 bg-gray-100 dark:bg-slate-700 rounded animate-pulse" />
+          <div className="h-4 w-16 bg-gray-100 dark:bg-slate-700 rounded animate-pulse" />
         </div>
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-accent-primary" />
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-14 bg-gray-100 dark:bg-slate-700 rounded-lg animate-pulse" />
+          ))}
         </div>
       </div>
     )
@@ -173,35 +171,29 @@ export default function RecentContentWidget() {
 
   if (recentItems.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 h-full flex flex-col">
-        <div className="flex items-center gap-2 mb-4">
-          <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          <h3 className="text-title-responsive text-gray-900 dark:text-white">Recent Content</h3>
-        </div>
-        <p className="text-sm text-gray-600 dark:text-gray-400 text-center py-8">
-          No content generated yet. Start by creating flashcards, podcasts, or mind maps!
+      <div className="bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700/50 p-5">
+        <h3 className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-4">Recent</h3>
+        <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-6">
+          No content yet
         </p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 h-full flex flex-col">
+    <div className="bg-neutral-50 dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          <h3 className="text-title-responsive text-gray-900 dark:text-white">Recent Content</h3>
-        </div>
+        <h3 className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Recent</h3>
         <button
           onClick={() => router.push('/dashboard/library')}
-          className="text-sm text-accent-primary hover:text-accent-secondary transition-colors flex items-center gap-1"
+          className="text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors flex items-center gap-1"
         >
-          View All
-          <ArrowRight className="w-4 h-4" />
+          View all
+          <ArrowRight className="w-3 h-3" />
         </button>
       </div>
 
-      <div className="space-y-3 flex-1">
+      <div className="space-y-1">
         {(isExpanded ? recentItems : recentItems.slice(0, 3)).map((item) => {
           const config = getItemConfig(item.type)
           const Icon = config.icon
@@ -210,47 +202,43 @@ export default function RecentContentWidget() {
             <button
               key={item.id}
               onClick={() => handleItemClick(item)}
-              className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left group"
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-neutral-800 transition-colors duration-200 text-left group"
             >
-              <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0", config.bgColor)}>
-                <Icon className={cn("w-5 h-5", config.textColor)} />
+              <div className={`w-9 h-9 ${config.bgColor} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                <Icon className={`w-4 h-4 ${config.textColor}`} />
               </div>
 
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate group-hover:text-accent-primary transition-colors">
+                <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
                   {item.title}
                 </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
                   {item.documentName}
                 </p>
               </div>
 
-              <div className="flex flex-col items-end gap-1 text-xs text-gray-500 dark:text-gray-400">
-                <span>{formatDate(item.createdAt)}</span>
-                {item.count && <span>{item.count} cards</span>}
-                {item.duration && <span>{formatDuration(item.duration)}</span>}
-                {item.nodeCount && <span>{item.nodeCount} nodes</span>}
-              </div>
+              <span className="text-xs text-neutral-400 dark:text-neutral-500">
+                {formatDate(item.createdAt)}
+              </span>
             </button>
           )
         })}
       </div>
 
-      {/* Show More / Show Less button */}
       {recentItems.length > 3 && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full mt-3 py-2 text-sm text-accent-primary hover:text-accent-secondary transition-colors flex items-center justify-center gap-1 font-medium"
+          className="w-full mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-800 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors flex items-center justify-center gap-1"
         >
           {isExpanded ? (
             <>
-              Show Less
-              <ChevronUp className="w-4 h-4" />
+              Show less
+              <ChevronUp className="w-3.5 h-3.5" />
             </>
           ) : (
             <>
-              Show {recentItems.length - 3} More
-              <ChevronDown className="w-4 h-4" />
+              Show more
+              <ChevronDown className="w-3.5 h-3.5" />
             </>
           )}
         </button>

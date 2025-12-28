@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
+import { useTheme } from "next-themes"
 import { User, Bell, Palette, Database, Shield, Download, Trash2, Moon, Sun, Save, Loader2, MapPin, RotateCcw } from "lucide-react"
 import JurisdictionSelector from "@/components/JurisdictionSelector"
 import Breadcrumb, { settingsBreadcrumb } from "@/components/Breadcrumb"
@@ -25,9 +26,10 @@ export default function SettingsPage() {
   const toast = useToast()
   const { startTour } = useTour()
   const router = useRouter()
+  const { theme, setTheme, resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'notifications' | 'data'>('profile')
   const [isSaving, setIsSaving] = useState(false)
-  const [isDarkMode, setIsDarkMode] = useState(false)
   const [fontSize, setFontSize] = useState<FontSize>('medium')
   const [accentColor, setAccentColor] = useState<AccentColor>('default')
   const [notifications, setNotifications] = useState<NotificationPreferences>({
@@ -44,10 +46,7 @@ export default function SettingsPage() {
 
   // Initialize all settings from localStorage
   useEffect(() => {
-    // Theme (defaults to light mode)
-    const savedTheme = localStorage.getItem('theme')
-    // Only use dark mode if explicitly set by user
-    setIsDarkMode(savedTheme === 'dark')
+    setMounted(true)
 
     // Font Size
     const savedFontSize = localStorage.getItem('fontSize') as FontSize
@@ -91,17 +90,12 @@ export default function SettingsPage() {
     fetchProfile()
   }, [])
 
+  const isDarkMode = resolvedTheme === 'dark'
+
 
   const handleThemeToggle = () => {
-    const newTheme = !isDarkMode
-    setIsDarkMode(newTheme)
-    if (newTheme) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('theme', 'dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('theme', 'light')
-    }
+    const newTheme = isDarkMode ? 'light' : 'dark'
+    setTheme(newTheme)
     toast.success('Theme updated successfully')
   }
 
@@ -361,7 +355,7 @@ export default function SettingsPage() {
                   {/* Theme Toggle */}
                   <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex items-center gap-3">
-                      {isDarkMode ? (
+                      {mounted && isDarkMode ? (
                         <Moon className="w-5 h-5 text-accent-primary" />
                       ) : (
                         <Sun className="w-5 h-5 text-accent-primary" />
@@ -371,7 +365,7 @@ export default function SettingsPage() {
                           Theme
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {isDarkMode ? 'Dark mode' : 'Light mode'}
+                          {mounted && isDarkMode ? 'Dark mode' : 'Light mode'}
                         </p>
                       </div>
                     </div>
@@ -379,13 +373,13 @@ export default function SettingsPage() {
                       onClick={handleThemeToggle}
                       className={cn(
                         "relative w-14 h-8 rounded-full transition-colors",
-                        isDarkMode ? "bg-accent-primary" : "bg-gray-300"
+                        mounted && isDarkMode ? "bg-accent-primary" : "bg-gray-300"
                       )}
                     >
                       <span
                         className={cn(
                           "absolute top-1 w-6 h-6 bg-white rounded-full transition-transform",
-                          isDarkMode ? "left-7" : "left-1"
+                          mounted && isDarkMode ? "left-7" : "left-1"
                         )}
                       />
                     </button>

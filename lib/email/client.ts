@@ -40,6 +40,7 @@ export enum EmailType {
   STREAK_MILESTONE = 'streak_milestone',
   DOCUMENT_PROCESSED = 'document_processed',
   SUPPORT_RESPONSE = 'support_response',
+  DAILY_DIGEST = 'daily_digest',
 }
 
 /**

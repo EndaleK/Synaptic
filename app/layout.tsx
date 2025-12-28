@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs';
 import { Analytics } from '@vercel/analytics/react';
+import { ThemeProvider } from "@/components/ThemeProvider";
 import ClientWrapper from "@/components/ClientWrapper";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
@@ -118,7 +119,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <head>
           {/* Google Site Verification */}
           <meta name="google-site-verification" content="3ExrBId0okoOWgiiWtlHSitp7sdQ0K5TQd-R3J0MhVQ" />
@@ -142,12 +143,14 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <ServiceWorkerRegistration />
-          <PWAInstallPrompt />
-          <ClientWrapper>
-            {children}
-          </ClientWrapper>
-          <Analytics />
+          <ThemeProvider>
+            <ServiceWorkerRegistration />
+            <PWAInstallPrompt />
+            <ClientWrapper>
+              {children}
+            </ClientWrapper>
+            <Analytics />
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

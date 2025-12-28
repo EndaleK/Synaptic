@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain, ChevronDown, Trash2, Home, ArrowLeft, File as FileIcon, Image as ImageIcon } from "lucide-react"
+import { Send, FileText, Bot, User, Loader2, Upload, X, Lightbulb, Info, MessageSquare, Sparkles, Brain, ChevronDown, Trash2, ArrowLeft, File as FileIcon, Image as ImageIcon, GraduationCap, Smile, Laugh } from "lucide-react"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
 import { useDocumentStore, useUIStore } from "@/lib/store/useStore"
 import { useChatStore } from "@/lib/store/useChatStore"
+import { explainLikePresets, type PersonalityMode, type ExplainLevel } from "@/lib/study-buddy/personalities"
 import { useToast } from "./ToastContainer"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
 import SectionNavigator from "./SectionNavigator"
@@ -67,6 +68,30 @@ const teachingModes = [
   }
 ]
 
+const personalityModes = [
+  {
+    value: 'tutor' as PersonalityMode,
+    label: 'Tutor',
+    icon: GraduationCap,
+    description: 'Professional, structured teaching',
+    color: 'text-blue-600 dark:text-blue-400'
+  },
+  {
+    value: 'buddy' as PersonalityMode,
+    label: 'Buddy',
+    icon: Smile,
+    description: 'Friendly, casual explanations',
+    color: 'text-green-600 dark:text-green-400'
+  },
+  {
+    value: 'comedy' as PersonalityMode,
+    label: 'Comedy',
+    icon: Laugh,
+    description: 'Fun breaks with jokes',
+    color: 'text-pink-600 dark:text-pink-400'
+  }
+]
+
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState("")
@@ -79,6 +104,8 @@ export default function ChatInterface() {
   const [isClient, setIsClient] = useState(false)
   const [teachingMode, setTeachingMode] = useState<TeachingMode>('mixed')
   const [showModeDropdown, setShowModeDropdown] = useState(false)
+  const [showPersonalityDropdown, setShowPersonalityDropdown] = useState(false)
+  const [showExplainDropdown, setShowExplainDropdown] = useState(false)
   const [mobileView, setMobileView] = useState<'document' | 'chat'>('chat') // Mobile view toggle - default to chat
   const [lastAssistantMessage, setLastAssistantMessage] = useState<string>('') // For TTS
   const [showImageGallery, setShowImageGallery] = useState(false) // For image gallery toggle
@@ -86,8 +113,19 @@ export default function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const modeDropdownRef = useRef<HTMLDivElement>(null)
+  const personalityDropdownRef = useRef<HTMLDivElement>(null)
+  const explainDropdownRef = useRef<HTMLDivElement>(null)
   const { currentDocument, setCurrentDocument} = useDocumentStore()
-  const { loadSession, setMessages: saveMessages, clearMessages: clearStoredMessages, hasSession } = useChatStore()
+  const {
+    loadSession,
+    setMessages: saveMessages,
+    clearMessages: clearStoredMessages,
+    hasSession,
+    personalityMode,
+    setPersonalityMode,
+    explainLevel,
+    setExplainLevel
+  } = useChatStore()
   const { activeMode } = useUIStore()
   const hasLoadedDocument = useRef(false)
   const toast = useToast()
@@ -112,19 +150,25 @@ export default function ChatInterface() {
     }
   }, [teachingMode, isClient])
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modeDropdownRef.current && !modeDropdownRef.current.contains(event.target as Node)) {
         setShowModeDropdown(false)
       }
+      if (personalityDropdownRef.current && !personalityDropdownRef.current.contains(event.target as Node)) {
+        setShowPersonalityDropdown(false)
+      }
+      if (explainDropdownRef.current && !explainDropdownRef.current.contains(event.target as Node)) {
+        setShowExplainDropdown(false)
+      }
     }
 
-    if (showModeDropdown) {
+    if (showModeDropdown || showPersonalityDropdown || showExplainDropdown) {
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showModeDropdown])
+  }, [showModeDropdown, showPersonalityDropdown, showExplainDropdown])
 
   // Keyboard shortcut: Cmd/Ctrl+K to clear chat
   useEffect(() => {
@@ -185,7 +229,8 @@ export default function ChatInterface() {
           const docResponse = await fetch(`/api/documents/${currentDocument.id}`)
 
           if (!docResponse.ok) {
-            throw new Error('Failed to fetch document details')
+            const errorData = await docResponse.json().catch(() => ({ error: 'Failed to fetch document' }))
+            throw new Error(errorData.error || 'Failed to fetch document details')
           }
 
           const { document: fullDocument } = await docResponse.json()
@@ -202,7 +247,8 @@ export default function ChatInterface() {
             content: fullDocument.extracted_text || ''
           }
         } catch (fetchError) {
-          console.error('Failed to fetch full document, using empty content:', fetchError)
+          // Use warn - not finding a document is expected when navigating to chat without selecting one
+          console.warn('⚠️ Could not fetch document details:', fetchError instanceof Error ? fetchError.message : 'Unknown error')
         }
 
         try {
@@ -240,7 +286,8 @@ export default function ChatInterface() {
 
             if (!urlResponse.ok) {
               const errorData = await urlResponse.json().catch(() => ({ error: 'Failed to get download URL' }))
-              console.error('❌ Failed to get download URL:', errorData)
+              // Use warn instead of error for expected failures (doc not found, no storage path)
+              console.warn('⚠️ Could not get download URL:', errorData.error || 'Unknown error')
               throw new Error(errorData.error || 'Failed to get download URL')
             }
 
@@ -284,7 +331,9 @@ export default function ChatInterface() {
             setMessages([welcomeMessage])
           }
         } catch (error) {
-          console.error('Error loading document:', error)
+          // Use warn for expected failures (PDF not in storage, doc deleted, etc.)
+          // The app gracefully falls back to text-only mode
+          console.warn('⚠️ PDF viewer unavailable, using text fallback:', error instanceof Error ? error.message : 'Unknown error')
 
           // Fallback to text-only display
           const textBlob = new Blob([documentWithContent.content], { type: 'text/plain' })
@@ -385,17 +434,16 @@ export default function ChatInterface() {
             startTime: data.startTime
           })
         } else {
-          const errorData = await response.json()
-          console.error('❌ [ChatInterface] Failed to start study session', {
+          // Silently fail - study session tracking is non-critical
+          const errorData = await response.json().catch(() => ({}))
+          console.warn('[ChatInterface] Study session tracking unavailable:', {
             status: response.status,
-            error: errorData.error,
-            details: errorData.details
+            error: errorData.error || 'Unknown error'
           })
-          toast.error('Unable to track study session. Your progress may not be recorded.')
         }
       } catch (error) {
-        console.error('❌ [ChatInterface] Exception starting study session:', error)
-        toast.error('Session tracking unavailable. Please check your connection.')
+        // Silently fail - study session tracking is non-critical
+        console.warn('[ChatInterface] Study session tracking unavailable:', error)
       }
     }
 
@@ -553,11 +601,6 @@ export default function ChatInterface() {
       return
     }
 
-    if (!chatDocument.file) {
-      toast.warning("Please upload a document first to start chatting.")
-      return
-    }
-
     const userMessage: Message = {
       id: generateId(),
       content: inputMessage,
@@ -570,77 +613,114 @@ export default function ChatInterface() {
     setIsLoading(true)
 
     try {
-      // Smart detection: Use RAG for large documents
-      // Threshold: 100K characters ≈ 25K tokens (well under 128K limit with room for response)
-      const CONTENT_SIZE_THRESHOLD = 100000
-      const contentLength = chatDocument.content?.trim().length || 0
+      // Determine if we have a document attached
+      const hasDocument = !!chatDocument.file
 
-      // Truncation detection: If file is large (>1MB) but content is small,
-      // the database text is likely truncated (50K limit)
-      const fileSizeBytes = currentDocument?.fileSize || 0
-      const estimatedCharsPerByte = 0.5 // Conservative: 1 byte ≈ 0.5 chars for PDFs
-      const estimatedFullTextLength = fileSizeBytes * estimatedCharsPerByte
-      const isLikelyTruncated = fileSizeBytes > 1 * 1024 * 1024 && // File > 1MB
-        contentLength > 0 &&
-        contentLength < estimatedFullTextLength * 0.3 // Content < 30% of expected
+      let endpoint: string
+      let requestBody: Record<string, unknown>
 
-      // Use RAG if:
-      // 1. No content extracted yet (document still processing or very large)
-      // 2. Content exceeds threshold (would exceed AI context window)
-      // 3. Document has RAG indexing (indicates large file)
-      // 4. Content appears truncated based on file size (NEW)
-      const isLargeFile =
-        !chatDocument.content ||
-        contentLength === 0 ||
-        contentLength > CONTENT_SIZE_THRESHOLD ||
-        isLikelyTruncated ||
-        (currentDocument?.rag_indexed_at && currentDocument?.rag_chunk_count && currentDocument.rag_chunk_count > 0)
+      // If we think we have a document but don't have valid document data, treat as no-document mode
+      const hasValidDocument = hasDocument && currentDocument?.id
 
-      // Validate we have the necessary data
-      if (isLargeFile && !currentDocument?.id) {
-        throw new Error("NO_DOCUMENT_ID")
+      if (!hasValidDocument) {
+        // No document mode: Use Study Buddy API with web search
+        endpoint = "/api/study-buddy/chat"
+
+        // Convert messages to Study Buddy format
+        const chatMessages = messages.concat(userMessage).map(msg => ({
+          role: msg.type === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        }))
+
+        requestBody = {
+          messages: chatMessages,
+          personalityMode: personalityMode,
+          explainLevel: explainLevel,
+          teachingStyle: personalityMode === 'tutor' ? teachingMode : undefined
+        }
+
+        console.log('[ChatInterface] Sending Study Buddy chat request:', {
+          messageCount: chatMessages.length,
+          personalityMode,
+          explainLevel,
+          teachingStyle: personalityMode === 'tutor' ? teachingMode : 'N/A',
+          endpoint
+        })
+      } else {
+        // Document mode: Use existing chat logic
+        // Smart detection: Use RAG for large documents
+        // Threshold: 100K characters ≈ 25K tokens (well under 128K limit with room for response)
+        const CONTENT_SIZE_THRESHOLD = 100000
+        const contentLength = chatDocument.content?.trim().length || 0
+
+        // Truncation detection: If file is large (>1MB) but content is small,
+        // the database text is likely truncated (50K limit)
+        const fileSizeBytes = currentDocument?.fileSize || 0
+        const estimatedCharsPerByte = 0.5 // Conservative: 1 byte ≈ 0.5 chars for PDFs
+        const estimatedFullTextLength = fileSizeBytes * estimatedCharsPerByte
+        const isLikelyTruncated = fileSizeBytes > 1 * 1024 * 1024 && // File > 1MB
+          contentLength > 0 &&
+          contentLength < estimatedFullTextLength * 0.3 // Content < 30% of expected
+
+        // Use RAG if:
+        // 1. No content extracted yet (document still processing or very large)
+        // 2. Content exceeds threshold (would exceed AI context window)
+        // 3. Document has RAG indexing (indicates large file)
+        // 4. Content appears truncated based on file size
+        const isLargeFile =
+          !chatDocument.content ||
+          contentLength === 0 ||
+          contentLength > CONTENT_SIZE_THRESHOLD ||
+          isLikelyTruncated ||
+          (currentDocument?.rag_indexed_at && currentDocument?.rag_chunk_count && currentDocument.rag_chunk_count > 0)
+
+        // Determine which endpoint to use based on content size
+        endpoint = isLargeFile ? "/api/chat-rag" : "/api/chat-with-document"
+
+        console.log('[ChatInterface] Sending document chat request:', {
+          messageLength: inputMessage.length,
+          contentLength: chatDocument.content?.length || 0,
+          contentLengthFormatted: `${(contentLength / 1000).toFixed(1)}K chars`,
+          fileSizeBytes,
+          fileSizeMB: (fileSizeBytes / (1024 * 1024)).toFixed(2),
+          estimatedFullTextLength: Math.round(estimatedFullTextLength),
+          isLikelyTruncated,
+          fileName: chatDocument.file?.name || currentDocument?.name,
+          teachingMode,
+          personalityMode,
+          explainLevel,
+          endpoint,
+          isLargeFile,
+          ragIndexed: currentDocument?.rag_indexed_at ? 'yes' : 'no',
+          ragChunks: currentDocument?.rag_chunk_count || 0,
+          documentId: currentDocument?.id,
+          reason: isLargeFile
+            ? isLikelyTruncated
+              ? `Content likely truncated (${(contentLength / 1000).toFixed(1)}K chars from ${(fileSizeBytes / (1024 * 1024)).toFixed(1)}MB file)`
+              : contentLength > CONTENT_SIZE_THRESHOLD
+                ? `Content too large (${(contentLength / 1000).toFixed(1)}K > 100K chars)`
+                : 'Using RAG for large document'
+            : `Content fits in context (${(contentLength / 1000).toFixed(1)}K chars)`
+        })
+
+        // Prepare request body based on endpoint
+        requestBody = isLargeFile
+          ? {
+              message: inputMessage,
+              documentId: currentDocument!.id,
+              teachingMode: teachingMode,
+              personalityMode: personalityMode,
+              explainLevel: explainLevel
+            }
+          : {
+              message: inputMessage,
+              fileName: chatDocument.file?.name,
+              documentContent: chatDocument.content,
+              teachingMode: teachingMode,
+              personalityMode: personalityMode,
+              explainLevel: explainLevel
+            }
       }
-
-      // Determine which endpoint to use based on content size
-      const endpoint = isLargeFile ? "/api/chat-rag" : "/api/chat-with-document"
-
-      console.log('[ChatInterface] Sending chat request:', {
-        messageLength: inputMessage.length,
-        contentLength: chatDocument.content?.length || 0,
-        contentLengthFormatted: `${(contentLength / 1000).toFixed(1)}K chars`,
-        fileSizeBytes,
-        fileSizeMB: (fileSizeBytes / (1024 * 1024)).toFixed(2),
-        estimatedFullTextLength: Math.round(estimatedFullTextLength),
-        isLikelyTruncated,
-        fileName: chatDocument.file?.name || currentDocument?.name,
-        teachingMode,
-        endpoint,
-        isLargeFile,
-        ragIndexed: currentDocument?.rag_indexed_at ? 'yes' : 'no',
-        ragChunks: currentDocument?.rag_chunk_count || 0,
-        documentId: currentDocument?.id,
-        reason: isLargeFile
-          ? isLikelyTruncated
-            ? `Content likely truncated (${(contentLength / 1000).toFixed(1)}K chars from ${(fileSizeBytes / (1024 * 1024)).toFixed(1)}MB file)`
-            : contentLength > CONTENT_SIZE_THRESHOLD
-              ? `Content too large (${(contentLength / 1000).toFixed(1)}K > 100K chars)`
-              : 'Using RAG for large document'
-          : `Content fits in context (${(contentLength / 1000).toFixed(1)}K chars)`
-      })
-
-      // Prepare request body based on endpoint
-      const requestBody = isLargeFile
-        ? {
-            message: inputMessage,
-            documentId: currentDocument.id,
-            teachingMode: teachingMode,
-          }
-        : {
-            message: inputMessage,
-            fileName: chatDocument.file?.name,
-            documentContent: chatDocument.content,
-            teachingMode: teachingMode,
-          }
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -650,7 +730,7 @@ export default function ChatInterface() {
         body: JSON.stringify(requestBody),
       })
 
-      console.log('[ChatInterface] Response status:', response.status)
+      console.log('[ChatInterface] Response status:', response.status, 'Content-Type:', response.headers.get('content-type'))
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -658,24 +738,86 @@ export default function ChatInterface() {
         throw new Error(`API returned ${response.status}: ${errorText}`)
       }
 
-      const data = await response.json()
-      console.log('[ChatInterface] Received response:', data)
+      const contentType = response.headers.get('content-type') || ''
 
-      // Check if document was just indexed
-      if (data.indexed) {
-        console.log('[ChatInterface] Document was indexed with', data.chunks, 'chunks')
+      // Handle SSE streaming response (from Study Buddy)
+      if (contentType.includes('text/event-stream')) {
+        console.log('[ChatInterface] Handling SSE streaming response')
+
+        const reader = response.body?.getReader()
+        const decoder = new TextDecoder()
+        let fullContent = ''
+
+        // Create placeholder message for streaming
+        const streamMessageId = generateId() + '-stream'
+        const streamMessage: Message = {
+          id: streamMessageId,
+          content: '',
+          type: 'assistant',
+          timestamp: generateTimestamp()
+        }
+        setMessages(prev => [...prev, streamMessage])
+
+        if (reader) {
+          try {
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+
+              const chunk = decoder.decode(value, { stream: true })
+              const lines = chunk.split('\n')
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const jsonData = JSON.parse(line.slice(6))
+                    if (jsonData.done) {
+                      // Stream complete
+                      break
+                    }
+                    if (jsonData.content) {
+                      fullContent += jsonData.content
+                      // Update message in real-time
+                      setMessages(prev => prev.map(msg =>
+                        msg.id === streamMessageId
+                          ? { ...msg, content: fullContent }
+                          : msg
+                      ))
+                    }
+                  } catch {
+                    // Skip malformed JSON lines
+                  }
+                }
+              }
+            }
+          } finally {
+            reader.releaseLock()
+          }
+        }
+
+        setLastAssistantMessage(fullContent)
+      } else {
+        // Handle regular JSON response (from document chat)
+        const data = await response.json()
+        console.log('[ChatInterface] Received JSON response:', data)
+
+        // Check if document was just indexed
+        if (data.indexed) {
+          console.log('[ChatInterface] Document was indexed with', data.chunks, 'chunks')
+        }
+
+        // Handle both response formats: 'response' from document chat, 'content' from Study Buddy
+        const responseContent = data.response || data.content || "I apologize, but I'm having trouble processing your request."
+        const assistantMessage: Message = {
+          id: generateId() + '-response',
+          content: responseContent,
+          type: "assistant",
+          timestamp: generateTimestamp()
+        }
+
+        setMessages(prev => [...prev, assistantMessage])
+        setLastAssistantMessage(responseContent) // For TTS
       }
-
-      const responseContent = data.response || "I apologize, but I'm having trouble processing your request."
-      const assistantMessage: Message = {
-        id: generateId() + '-response',
-        content: responseContent,
-        type: "assistant",
-        timestamp: generateTimestamp()
-      }
-
-      setMessages(prev => [...prev, assistantMessage])
-      setLastAssistantMessage(responseContent) // For TTS
     } catch (error) {
       console.error("[ChatInterface] Chat error:", error)
 
@@ -716,12 +858,6 @@ export default function ChatInterface() {
     }
   }
 
-  // Navigate to document selection (preserves chat in sessionStorage)
-  const handleHome = () => {
-    setCurrentDocument(null)
-    hasLoadedDocument.current = false
-  }
-
   // Clear chat and navigate to document selection
   const handleReset = () => {
     if (!currentDocument) {
@@ -750,121 +886,428 @@ export default function ChatInterface() {
 
   return (
     <div className="h-full flex bg-white dark:bg-black border-gray-300 dark:border-gray-700 overflow-hidden">
-      {/* Two Column Layout: PDF Viewer | Chat (50/50 split) */}
+      {/* Two Column Layout: PDF Viewer | Chat (50/50 split) OR Full-width Chat (no document) */}
       {!chatDocument.file ? (
-        <div className="flex-1 overflow-auto">
-          <div className="max-w-4xl mx-auto p-8">
-              {/* Header Section */}
-              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden mb-6">
-                <div className="p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20">
-                  <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                      <MessageSquare className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h2 className="text-3xl font-bold text-black dark:text-white mb-2">
-                        Chat with Your Document
-                      </h2>
-                      <p className="text-gray-600 dark:text-gray-400 mb-4">
-                        Upload any document and engage with an intelligent teaching assistant that guides you through Socratic dialogue
-                      </p>
-
-                      {/* Feature Badges */}
-                      <div className="flex flex-wrap gap-2">
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-                          <Brain className="w-3.5 h-3.5 text-accent-primary" />
-                          Socratic Teaching
-                        </div>
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-                          <Sparkles className="w-3.5 h-3.5 text-accent-primary" />
-                          Synaptic Learning
-                        </div>
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-                          <FileText className="w-3.5 h-3.5 text-accent-primary" />
-                          Multi-Format Support
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+        /* No Document Mode: Full-width chat interface */
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
+          {/* Header with Mode Controls */}
+          <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-3 flex-shrink-0">
+            <div className="flex items-center justify-between gap-3 max-w-4xl mx-auto">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-accent-primary" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Chat with AI
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  (No document attached)
+                </span>
               </div>
 
-              {/* Teaching Mode Selector */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-black dark:text-white mb-3">
-                  How would you like to learn?
-                </h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {teachingModes.map((mode) => {
-                    const Icon = mode.icon
-                    const isSelected = teachingMode === mode.value
-                    return (
-                      <button
-                        key={mode.value}
-                        onClick={() => setTeachingMode(mode.value)}
-                        className={cn(
-                          "p-4 rounded-xl border-2 transition-all text-left",
-                          isSelected
-                            ? "border-accent-primary bg-accent-primary/10 dark:bg-accent-primary/20"
-                            : "border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 dark:hover:border-accent-primary/50"
-                        )}
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <Icon className={cn("w-5 h-5", isSelected ? "text-accent-primary" : "text-gray-600 dark:text-gray-400")} />
-                          <span className="font-semibold text-sm text-black dark:text-white">
-                            {mode.label}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                          {mode.description}
-                        </p>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Upload Area */}
-              <div
-                onDrop={handleDrop}
-                onDragOver={(e) => e.preventDefault()}
-                onClick={triggerChatFileInput}
-                className="border-2 border-dashed border-accent-primary/30 dark:border-accent-primary/50 rounded-2xl hover:border-accent-primary dark:hover:border-accent-primary hover:bg-accent-primary/5 dark:hover:bg-accent-primary/10 transition-all duration-300 group cursor-pointer bg-accent-primary/5 dark:bg-accent-primary/10 p-12"
-              >
-                <div className="text-center max-w-md mx-auto">
-                  <div className="mx-auto w-20 h-20 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-lg mb-6">
-                    <Upload className="h-10 w-10 text-white" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-black dark:text-white mb-2">
-                    Upload a document to start chatting
-                  </h3>
-                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-                    Drag and drop your file here, or click to browse
-                  </p>
-
+              {/* Mode Controls */}
+              <div className="flex items-center gap-2">
+                {/* Personality Mode Dropdown */}
+                <div className="relative" ref={personalityDropdownRef}>
                   <button
-                    onClick={triggerChatFileInput}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary hover:opacity-90 text-white rounded-lg transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 mx-auto mb-4"
+                    onClick={() => setShowPersonalityDropdown(!showPersonalityDropdown)}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all border",
+                      personalityMode === 'tutor'
+                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700"
+                        : personalityMode === 'buddy'
+                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700"
+                        : "bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 border-pink-300 dark:border-pink-700"
+                    )}
                   >
-                    <Upload className="h-5 w-5" />
-                    Choose File
+                    {(() => {
+                      const currentMode = personalityModes.find(m => m.value === personalityMode)
+                      const Icon = currentMode?.icon || GraduationCap
+                      return (
+                        <>
+                          <Icon className="w-3.5 h-3.5" />
+                          {currentMode?.label}
+                          <ChevronDown className={cn(
+                            "w-3 h-3 transition-transform",
+                            showPersonalityDropdown && "rotate-180"
+                          )} />
+                        </>
+                      )
+                    })()}
                   </button>
 
-                  <input
-                    id="chat-file-input"
-                    type="file"
-                    className="hidden"
-                    onChange={handleFileChange}
-                    accept=".pdf,.txt,.doc,.docx,.json,.md"
-                  />
-
-                  <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                    Supported formats: PDF, TXT, DOC, DOCX, JSON, MD
-                  </p>
+                  {showPersonalityDropdown && (
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                      {personalityModes.map((mode) => {
+                        const Icon = mode.icon
+                        const isActive = personalityMode === mode.value
+                        return (
+                          <button
+                            key={mode.value}
+                            onClick={() => {
+                              setPersonalityMode(mode.value)
+                              setShowPersonalityDropdown(false)
+                            }}
+                            className={cn(
+                              "w-full flex items-start gap-3 p-3 text-left transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0",
+                              isActive
+                                ? "bg-accent-primary/10 dark:bg-accent-primary/20"
+                                : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                            )}
+                          >
+                            <Icon className={cn(
+                              "w-4 h-4 flex-shrink-0 mt-0.5",
+                              isActive ? "text-accent-primary" : mode.color
+                            )} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className={cn(
+                                  "text-sm font-semibold",
+                                  isActive ? "text-accent-primary" : "text-gray-900 dark:text-white"
+                                )}>
+                                  {mode.label}
+                                </span>
+                                {isActive && (
+                                  <div className="w-1.5 h-1.5 rounded-full bg-accent-primary" />
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                {mode.description}
+                              </p>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
+
+                {/* Explain Level Dropdown */}
+                <div className="relative" ref={explainDropdownRef}>
+                  <button
+                    onClick={() => setShowExplainDropdown(!showExplainDropdown)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all border bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  >
+                    <span>{explainLevel ? explainLikePresets.find(p => p.level === explainLevel)?.icon : '📊'}</span>
+                    <span>{explainLevel ? explainLikePresets.find(p => p.level === explainLevel)?.label : 'Auto'}</span>
+                    <ChevronDown className={cn(
+                      "w-3 h-3 transition-transform",
+                      showExplainDropdown && "rotate-180"
+                    )} />
+                  </button>
+
+                  {showExplainDropdown && (
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                      <button
+                        onClick={() => {
+                          setExplainLevel(null)
+                          setShowExplainDropdown(false)
+                        }}
+                        className={cn(
+                          "w-full flex items-start gap-3 p-3 text-left transition-colors border-b border-gray-100 dark:border-gray-700",
+                          !explainLevel
+                            ? "bg-accent-primary/10 dark:bg-accent-primary/20"
+                            : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        )}
+                      >
+                        <span className="text-base">📊</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={cn(
+                              "text-sm font-semibold",
+                              !explainLevel ? "text-accent-primary" : "text-gray-900 dark:text-white"
+                            )}>
+                              Auto Level
+                            </span>
+                            {!explainLevel && (
+                              <div className="w-1.5 h-1.5 rounded-full bg-accent-primary" />
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                            Adapts to context
+                          </p>
+                        </div>
+                      </button>
+                      {explainLikePresets.map((preset) => {
+                        const isActive = explainLevel === preset.level
+                        return (
+                          <button
+                            key={preset.level}
+                            onClick={() => {
+                              setExplainLevel(preset.level)
+                              setShowExplainDropdown(false)
+                            }}
+                            className={cn(
+                              "w-full flex items-start gap-3 p-3 text-left transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0",
+                              isActive
+                                ? "bg-accent-primary/10 dark:bg-accent-primary/20"
+                                : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                            )}
+                          >
+                            <span className="text-base">{preset.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className={cn(
+                                  "text-sm font-semibold",
+                                  isActive ? "text-accent-primary" : "text-gray-900 dark:text-white"
+                                )}>
+                                  {preset.label}
+                                </span>
+                                {isActive && (
+                                  <div className="w-1.5 h-1.5 rounded-full bg-accent-primary" />
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                {preset.description}
+                              </p>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Teaching Mode - Only for Tutor */}
+                {personalityMode === 'tutor' && (
+                  <div className="relative" ref={modeDropdownRef}>
+                    <button
+                      onClick={() => setShowModeDropdown(!showModeDropdown)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all border",
+                        teachingMode === 'socratic'
+                          ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700"
+                          : teachingMode === 'direct'
+                          ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700"
+                          : "bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 text-accent-primary border-accent-primary/30 dark:border-accent-primary/50"
+                      )}
+                    >
+                      {(() => {
+                        const currentMode = teachingModes.find(m => m.value === teachingMode)
+                        const Icon = currentMode?.icon || Brain
+                        return (
+                          <>
+                            <Icon className="w-3.5 h-3.5" />
+                            {currentMode?.label}
+                            <ChevronDown className={cn(
+                              "w-3 h-3 transition-transform",
+                              showModeDropdown && "rotate-180"
+                            )} />
+                          </>
+                        )
+                      })()}
+                    </button>
+
+                    {showModeDropdown && (
+                      <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                        {teachingModes.map((mode) => {
+                          const Icon = mode.icon
+                          const isActive = teachingMode === mode.value
+                          return (
+                            <button
+                              key={mode.value}
+                              onClick={() => {
+                                setTeachingMode(mode.value)
+                                setShowModeDropdown(false)
+                              }}
+                              className={cn(
+                                "w-full flex items-start gap-3 p-3 text-left transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0",
+                                isActive
+                                  ? "bg-accent-primary/10 dark:bg-accent-primary/20"
+                                  : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                              )}
+                            >
+                              <Icon className={cn(
+                                "w-4 h-4 flex-shrink-0 mt-0.5",
+                                isActive ? "text-accent-primary" : mode.color
+                              )} />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className={cn(
+                                    "text-sm font-semibold",
+                                    isActive ? "text-accent-primary" : "text-gray-900 dark:text-white"
+                                  )}>
+                                    {mode.label}
+                                  </span>
+                                  {isActive && (
+                                    <div className="w-1.5 h-1.5 rounded-full bg-accent-primary" />
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                  {mode.description}
+                                </p>
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Attach Document Button */}
+                <button
+                  onClick={triggerChatFileInput}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all border bg-accent-primary/10 dark:bg-accent-primary/20 text-accent-primary border-accent-primary/30 dark:border-accent-primary/50 hover:bg-accent-primary/20 dark:hover:bg-accent-primary/30"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Attach Document
+                </button>
+                <input
+                  id="chat-file-input"
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileChange}
+                  accept=".pdf,.txt,.doc,.docx,.json,.md"
+                />
+
               </div>
             </div>
           </div>
+
+          {/* Chat Messages - Full Width */}
+          <div className="flex-1 flex flex-col min-h-0 p-4">
+            {messages.length === 0 ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center max-w-lg">
+                  <div className="w-20 h-20 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <MessageSquare className="h-10 w-10 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+                    {personalityMode === 'comedy' ? 'Ready for some laughs!' : 'Ask me anything!'}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    {personalityMode === 'tutor'
+                      ? "I'm your AI tutor. Ask about any topic and I'll help you learn through guided questions."
+                      : personalityMode === 'buddy'
+                      ? "Hey! I'm your study buddy. Let's chat about anything - I'll explain it in a fun, casual way."
+                      : "Need a study break? Let's have some fun! Ask for jokes, roasts, or just chat."}
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <button
+                      onClick={triggerChatFileInput}
+                      className="flex items-center gap-2 px-4 py-2 bg-accent-primary/10 dark:bg-accent-primary/20 text-accent-primary rounded-lg text-sm font-medium hover:bg-accent-primary/20 dark:hover:bg-accent-primary/30 transition-colors"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Attach a document
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                ref={messagesContainerRef}
+                className="chat-scrollbar space-y-4 flex-1 overflow-y-auto pr-2 max-w-4xl mx-auto w-full"
+              >
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={cn(
+                      "flex",
+                      message.type === "user" ? "justify-end" : "justify-start"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "flex max-w-[85%] gap-2",
+                        message.type === "user" ? "flex-row-reverse" : "flex-row"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
+                          message.type === "user"
+                            ? "bg-gradient-to-br from-accent-primary to-accent-secondary"
+                            : "bg-accent-primary/10 dark:bg-accent-primary/20"
+                        )}
+                      >
+                        {message.type === "user" ? (
+                          <User className="h-4 w-4 text-white" />
+                        ) : (
+                          <Bot className="h-4 w-4 text-accent-primary" />
+                        )}
+                      </div>
+                      <div
+                        className={cn(
+                          "rounded-lg px-4 py-2",
+                          message.type === "user"
+                            ? "bg-gradient-to-r from-accent-primary to-accent-secondary text-white"
+                            : "bg-accent-primary/5 dark:bg-accent-primary/10 text-gray-900 dark:text-gray-100 border border-accent-primary/30 dark:border-accent-primary/50"
+                        )}
+                      >
+                        {message.type === "user" ? (
+                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        ) : (
+                          <MarkdownRenderer
+                            content={message.content}
+                            className="text-sm prose-sm max-w-none prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-900 dark:prose-p:text-gray-100"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="flex gap-2">
+                      <div className="w-8 h-8 bg-accent-primary/10 dark:bg-accent-primary/20 rounded-full flex items-center justify-center">
+                        <Bot className="h-4 w-4 text-accent-primary" />
+                      </div>
+                      <div className="bg-accent-primary/5 dark:bg-accent-primary/10 rounded-lg px-4 py-2 flex items-center gap-2 border border-accent-primary/30 dark:border-accent-primary/50">
+                        <Loader2 className="h-4 w-4 animate-spin text-accent-primary" />
+                        <span className="text-sm text-accent-primary">
+                          Thinking...
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+
+          {/* Input Area */}
+          <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 pb-20 md:pb-4 flex-shrink-0">
+            <div className="flex gap-2 items-end max-w-4xl mx-auto">
+              {/* Voice Chat */}
+              <VoiceChat
+                onTranscription={(text) => {
+                  setInputMessage(prev => prev + (prev ? ' ' : '') + text)
+                }}
+                textToSpeak={lastAssistantMessage}
+                isAssistantSpeaking={isAssistantSpeaking}
+                onSpeakingChange={setIsAssistantSpeaking}
+                disabled={isLoading}
+              />
+
+              <textarea
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder={personalityMode === 'comedy' ? "Ask for a joke, or say 'roast me'..." : "Ask me anything..."}
+                autoComplete="off"
+                autoCapitalize="sentences"
+                autoCorrect="on"
+                spellCheck="true"
+                enterKeyHint="send"
+                className="flex-1 resize-none border border-accent-primary/30 dark:border-accent-primary/50 rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent-primary focus:border-transparent bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 text-sm min-h-[44px] max-h-[120px]"
+                rows={1}
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={!inputMessage.trim() || isLoading}
+                className={cn(
+                  "px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary hover:opacity-90 text-white rounded-lg transition-colors flex items-center justify-center min-w-[44px] shadow-lg",
+                  (!inputMessage.trim() || isLoading) &&
+                  "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
         ) : chatDocument.isProcessing ? (
           /* Loading State */
           <div className="flex-1 flex items-center justify-center p-4">
@@ -974,8 +1417,171 @@ export default function ChatInterface() {
                     </span>
                   </div>
 
-                  {/* Teaching Mode Dropdown */}
+                  {/* Mode Controls */}
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Personality Mode Dropdown */}
+                    <div className="relative" ref={personalityDropdownRef}>
+                      <button
+                        onClick={() => setShowPersonalityDropdown(!showPersonalityDropdown)}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all border",
+                          personalityMode === 'tutor'
+                            ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700"
+                            : personalityMode === 'buddy'
+                            ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700"
+                            : "bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 border-pink-300 dark:border-pink-700"
+                        )}
+                      >
+                        {(() => {
+                          const currentMode = personalityModes.find(m => m.value === personalityMode)
+                          const Icon = currentMode?.icon || GraduationCap
+                          return (
+                            <>
+                              <Icon className="w-3.5 h-3.5" />
+                              {currentMode?.label}
+                              <ChevronDown className={cn(
+                                "w-3 h-3 transition-transform",
+                                showPersonalityDropdown && "rotate-180"
+                              )} />
+                            </>
+                          )
+                        })()}
+                      </button>
+
+                      {showPersonalityDropdown && (
+                        <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                          {personalityModes.map((mode) => {
+                            const Icon = mode.icon
+                            const isActive = personalityMode === mode.value
+                            return (
+                              <button
+                                key={mode.value}
+                                onClick={() => {
+                                  setPersonalityMode(mode.value)
+                                  setShowPersonalityDropdown(false)
+                                }}
+                                className={cn(
+                                  "w-full flex items-start gap-3 p-3 text-left transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0",
+                                  isActive
+                                    ? "bg-accent-primary/10 dark:bg-accent-primary/20"
+                                    : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                )}
+                              >
+                                <Icon className={cn(
+                                  "w-4 h-4 flex-shrink-0 mt-0.5",
+                                  isActive ? "text-accent-primary" : mode.color
+                                )} />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className={cn(
+                                      "text-sm font-semibold",
+                                      isActive ? "text-accent-primary" : "text-gray-900 dark:text-white"
+                                    )}>
+                                      {mode.label}
+                                    </span>
+                                    {isActive && (
+                                      <div className="w-1.5 h-1.5 rounded-full bg-accent-primary" />
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                    {mode.description}
+                                  </p>
+                                </div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Explain Level Dropdown */}
+                    <div className="relative" ref={explainDropdownRef}>
+                      <button
+                        onClick={() => setShowExplainDropdown(!showExplainDropdown)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all border bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700"
+                      >
+                        <span>{explainLevel ? explainLikePresets.find(p => p.level === explainLevel)?.icon : '📊'}</span>
+                        <span>{explainLevel ? explainLikePresets.find(p => p.level === explainLevel)?.label : 'Auto Level'}</span>
+                        <ChevronDown className={cn(
+                          "w-3 h-3 transition-transform",
+                          showExplainDropdown && "rotate-180"
+                        )} />
+                      </button>
+
+                      {showExplainDropdown && (
+                        <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                          <button
+                            onClick={() => {
+                              setExplainLevel(null)
+                              setShowExplainDropdown(false)
+                            }}
+                            className={cn(
+                              "w-full flex items-start gap-3 p-3 text-left transition-colors border-b border-gray-100 dark:border-gray-700",
+                              !explainLevel
+                                ? "bg-accent-primary/10 dark:bg-accent-primary/20"
+                                : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                            )}
+                          >
+                            <span className="text-base">📊</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className={cn(
+                                  "text-sm font-semibold",
+                                  !explainLevel ? "text-accent-primary" : "text-gray-900 dark:text-white"
+                                )}>
+                                  Auto Level
+                                </span>
+                                {!explainLevel && (
+                                  <div className="w-1.5 h-1.5 rounded-full bg-accent-primary" />
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                Adapts to conversation context
+                              </p>
+                            </div>
+                          </button>
+                          {explainLikePresets.map((preset) => {
+                            const isActive = explainLevel === preset.level
+                            return (
+                              <button
+                                key={preset.level}
+                                onClick={() => {
+                                  setExplainLevel(preset.level)
+                                  setShowExplainDropdown(false)
+                                }}
+                                className={cn(
+                                  "w-full flex items-start gap-3 p-3 text-left transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0",
+                                  isActive
+                                    ? "bg-accent-primary/10 dark:bg-accent-primary/20"
+                                    : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                )}
+                              >
+                                <span className="text-base">{preset.icon}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className={cn(
+                                      "text-sm font-semibold",
+                                      isActive ? "text-accent-primary" : "text-gray-900 dark:text-white"
+                                    )}>
+                                      {preset.label}
+                                    </span>
+                                    {isActive && (
+                                      <div className="w-1.5 h-1.5 rounded-full bg-accent-primary" />
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                    {preset.description}
+                                  </p>
+                                </div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Teaching Mode Dropdown - Only show for Tutor personality */}
+                    {personalityMode === 'tutor' && (
                     <div className="relative" ref={modeDropdownRef}>
                       <button
                         onClick={() => setShowModeDropdown(!showModeDropdown)}
@@ -1050,26 +1656,8 @@ export default function ChatInterface() {
                         </div>
                       )}
                     </div>
+                    )}
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleHome}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                        title="Select a different document (preserves chat history)"
-                      >
-                        <Home className="w-3.5 h-3.5" />
-                        Home
-                      </button>
-
-                      <button
-                        onClick={handleReset}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                        title="Clear chat history for this document"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                        Clear Chat
-                      </button>
-                    </div>
                   </div>
                 </div>
               </div>
