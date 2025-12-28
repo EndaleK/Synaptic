@@ -1,8 +1,17 @@
 @import "tailwindcss";
 @import "../styles/react-pdf.css";
 
-/* Google Fonts - Handwriting font for Study Buddy */
-@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
+/* Google Fonts - Handwriting font for Study Buddy + Distinctive display font */
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+
+/* Distinctive Typography Classes */
+.font-display {
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+}
+
+.font-body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
 
 /* Enable class-based dark mode for Tailwind CSS v4 */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -31,6 +40,14 @@
   /* Additional brain logo colors */
   --accent-blue: 45 62 159;           /* Deep blue from logo #2D3E9F */
   --accent-orange: 255 107 53;        /* Orange from logo #FF6B35 */
+
+  /* Neon accent palette for dark mode dashboard */
+  --neon-cyan: 6 182 212;             /* #06B6D4 - Focus, learning */
+  --neon-green: 34 197 94;            /* #22C55E - Success, streaks */
+  --neon-purple: 168 85 247;          /* #A855F7 - Premium, creativity */
+  --neon-orange: 249 115 22;          /* #F97316 - Energy, alerts */
+  --neon-gold: 251 191 36;            /* #FBBF24 - Achievement, badges */
+  --neon-pink: 236 72 153;            /* #EC4899 - Podcast, highlights */
 
   /* Mode-specific colors (60-30-10 color rule implementation) */
   /* Primary (60%) - Surface colors */
@@ -294,6 +311,385 @@ html.font-size-large {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.5s ease-out;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s infinite;
+}
+
+/* Neon glow effects for dark mode dashboard */
+@keyframes neon-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 20px currentColor;
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+    opacity: 0.9;
+  }
+}
+
+.glow-cyan {
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3), 0 0 20px rgba(6, 182, 212, 0.15);
+}
+
+.glow-green {
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.3), 0 0 20px rgba(34, 197, 94, 0.15);
+}
+
+.glow-purple {
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.3), 0 0 20px rgba(168, 85, 247, 0.15);
+}
+
+.glow-orange {
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.3), 0 0 20px rgba(249, 115, 22, 0.15);
+}
+
+.glow-pink {
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.3), 0 0 20px rgba(236, 72, 153, 0.15);
+}
+
+.glow-gold {
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.3), 0 0 20px rgba(251, 191, 36, 0.15);
+}
+
+/* Hover glow variants */
+.hover\:glow-cyan:hover {
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.4), 0 0 30px rgba(6, 182, 212, 0.2);
+}
+
+.hover\:glow-green:hover {
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.4), 0 0 30px rgba(34, 197, 94, 0.2);
+}
+
+.hover\:glow-purple:hover {
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.4), 0 0 30px rgba(168, 85, 247, 0.2);
+}
+
+.hover\:glow-orange:hover {
+  box-shadow: 0 0 15px rgba(249, 115, 22, 0.4), 0 0 30px rgba(249, 115, 22, 0.2);
+}
+
+.hover\:glow-pink:hover {
+  box-shadow: 0 0 15px rgba(236, 72, 153, 0.4), 0 0 30px rgba(236, 72, 153, 0.2);
+}
+
+/* Glass morphism effect for dark mode cards */
+.glass-card {
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.glass-card-light {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Clean dark background */
+.dark-bg {
+  background: #0f172a;
+}
+
+/* Tile style variations for modern dashboard */
+.tile-solid {
+  background: white;
+  border: 1px solid #e5e7eb;
+}
+
+.dark .tile-solid {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(71, 85, 105, 0.3);
+}
+
+.tile-outlined {
+  background: transparent;
+  border: 2px solid #e5e7eb;
+}
+
+.dark .tile-outlined {
+  background: transparent;
+  border-color: rgba(71, 85, 105, 0.5);
+}
+
+.tile-elevated {
+  background: white;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.dark .tile-elevated {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(71, 85, 105, 0.2);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+.tile-accent {
+  background: #f0f9ff;
+  border: 1px solid #e0f2fe;
+}
+
+.dark .tile-accent {
+  background: rgba(6, 182, 212, 0.1);
+  border-color: rgba(6, 182, 212, 0.2);
+}
+
+/* Shimmer effect for buttons */
+@keyframes shimmer-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.shimmer-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-effect::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  animation: shimmer-slide 2s infinite;
+}
+
+/* Flame flicker animation */
+@keyframes flame-flicker {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+  25% {
+    transform: scale(1.05) rotate(-2deg);
+    filter: brightness(1.1);
+  }
+  50% {
+    transform: scale(0.98) rotate(1deg);
+    filter: brightness(0.95);
+  }
+  75% {
+    transform: scale(1.02) rotate(-1deg);
+    filter: brightness(1.05);
+  }
+}
+
+.animate-flame {
+  animation: flame-flicker 1.5s ease-in-out infinite;
+}
+
+/* Floating animation for icons */
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-float-gentle {
+  animation: float-gentle 3s ease-in-out infinite;
+}
+
+/* Ring pulse animation */
+@keyframes ring-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(6, 182, 212, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0);
+  }
+}
+
+.animate-ring-pulse {
+  animation: ring-pulse 2s infinite;
+}
+
+/* Stagger animation delays for list items */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+.stagger-7 { animation-delay: 0.35s; }
+.stagger-8 { animation-delay: 0.4s; }
+
+/* Orchestrated page load animation */
+@keyframes hero-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.animate-hero-reveal {
+  animation: hero-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+/* Card hover glow effect */
+@keyframes card-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(123, 63, 242, 0.1), 0 4px 20px rgba(0, 0, 0, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(123, 63, 242, 0.2), 0 8px 30px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Gradient border animation */
+@keyframes gradient-border {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-border {
+  background-size: 200% 200%;
+  animation: gradient-border 3s ease infinite;
+}
+
+/* Floating orb animation for background */
+@keyframes float-orb {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.3;
+  }
+  33% {
+    transform: translate(20px, -30px) scale(1.1);
+    opacity: 0.4;
+  }
+  66% {
+    transform: translate(-10px, 20px) scale(0.95);
+    opacity: 0.25;
+  }
+}
+
+.animate-float-orb {
+  animation: float-orb 20s ease-in-out infinite;
+}
+
+/* Sparkle effect */
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
+}
+
+.animate-sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+/* Streak fire animation - more dramatic */
+@keyframes fire-dance {
+  0%, 100% {
+    transform: scaleY(1) scaleX(1);
+    filter: brightness(1);
+  }
+  25% {
+    transform: scaleY(1.1) scaleX(0.95);
+    filter: brightness(1.15);
+  }
+  50% {
+    transform: scaleY(0.95) scaleX(1.05);
+    filter: brightness(0.9);
+  }
+  75% {
+    transform: scaleY(1.05) scaleX(0.98);
+    filter: brightness(1.1);
+  }
+}
+
+.animate-fire-dance {
+  animation: fire-dance 0.8s ease-in-out infinite;
+}
+
+/* Entrance animation */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.4s ease-out forwards;
+  opacity: 0;
+}
+
+/* Gradient text effect */
+.gradient-text {
+  background: linear-gradient(135deg, #06b6d4 0%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* Typography utilities - Systematic Scale */
@@ -823,6 +1219,33 @@ html {
   .chat-scrollbar::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.1);
   }
+}
+
+/* Dashboard scrollbar - minimal and elegant */
+.dashboard-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+.dark .dashboard-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.dark .dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* Selection styling */

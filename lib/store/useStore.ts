@@ -54,6 +54,7 @@ interface UIState {
 }
 
 // User Store
+// SECURITY: Only persist non-sensitive user preferences, NOT personal information
 export const useUserStore = create<UserState>()(
   persist(
     (set) => ({
@@ -71,11 +72,33 @@ export const useUserStore = create<UserState>()(
     {
       name: 'user-storage',
       storage: createJSONStorage(() => localStorage),
+      // CRITICAL: Only persist preferences, NOT personal information
+      // Personal data (email, name, clerk_user_id, stripe_customer_id) stays in memory only
+      partialize: (state) => ({
+        // From userProfile, only persist non-sensitive subscription/preference data
+        userProfile: state.userProfile ? {
+          id: state.userProfile.id,
+          subscription_tier: state.userProfile.subscription_tier,
+          subscription_status: state.userProfile.subscription_status,
+          learning_style: state.userProfile.learning_style,
+          preferred_mode: state.userProfile.preferred_mode,
+          primary_role: state.userProfile.primary_role,
+          onboarding_completed: state.userProfile.onboarding_completed,
+          // Explicitly EXCLUDE: email, full_name, clerk_user_id, stripe_customer_id
+        } : null,
+        // These are safe to persist (user preferences, not PII)
+        learningStyle: state.learningStyle,
+        preferredMode: state.preferredMode,
+        hasCompletedAssessment: state.hasCompletedAssessment,
+        assessmentScores: state.assessmentScores,
+      }),
     }
   )
 )
 
 // Document Store
+// NOTE: Document content is NOT persisted to localStorage to avoid exceeding browser storage limits
+// Only metadata (id, name, fileType, etc.) is stored. Content must be fetched from Supabase on demand.
 export const useDocumentStore = create<DocumentState>()(
   persist(
     (set) => ({
@@ -93,6 +116,18 @@ export const useDocumentStore = create<DocumentState>()(
     {
       name: 'document-storage',
       storage: createJSONStorage(() => localStorage),
+      // CRITICAL: Only persist metadata, NOT content (which can be 5-10MB+)
+      partialize: (state) => ({
+        currentDocument: state.currentDocument ? {
+          id: state.currentDocument.id,
+          name: state.currentDocument.name,
+          fileType: state.currentDocument.fileType,
+          storagePath: state.currentDocument.storagePath,
+          fileSize: state.currentDocument.fileSize,
+          // Explicitly exclude: content, sections, metadata (large objects)
+        } : null,
+        documentHistory: state.documentHistory,
+      }),
     }
   )
 )

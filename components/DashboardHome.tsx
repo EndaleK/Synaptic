@@ -48,7 +48,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
   const [weeklyStats, setWeeklyStats] = useState({ cardsReviewed: 0, minutesStudied: 0, daysActive: 0 })
   const [recentActivity, setRecentActivity] = useState<Array<{ id: string; type: string; name: string; timestamp: string; duration?: string; source?: string }>>([])
   const [actionState, setActionState] = useState<ActionState>({ type: 'loading' })
-  const { userProfile, learningProfile } = useUserStore()
+  const { userProfile, hasCompletedAssessment } = useUserStore()
   const [showAllRecent, setShowAllRecent] = useState(false)
   const [showAllUsage, setShowAllUsage] = useState(false)
   const [monthlyUsage, setMonthlyUsage] = useState({
@@ -346,92 +346,101 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
   }
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-violet-50/30 dark:from-[#0a0a0f] dark:via-[#0f0f18] dark:to-[#0a0a0f]">
-      {/* Ambient background effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[40%] -right-[20%] w-[80%] h-[80%] rounded-full bg-gradient-to-br from-violet-200/20 via-pink-200/10 to-transparent dark:from-violet-900/10 dark:via-pink-900/5 blur-3xl" />
-        <div className="absolute -bottom-[40%] -left-[20%] w-[80%] h-[80%] rounded-full bg-gradient-to-tr from-blue-200/20 via-cyan-200/10 to-transparent dark:from-blue-900/10 dark:via-cyan-900/5 blur-3xl" />
+    <div className="min-h-full bg-[#fafbfc] dark:bg-[#0a0a0f] font-body relative overflow-hidden">
+      {/* Layered atmospheric background */}
+      <div className="fixed inset-0 pointer-events-none">
+        {/* Base gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-50/50 via-white to-pink-50/30 dark:from-violet-950/20 dark:via-[#0a0a0f] dark:to-pink-950/10" />
+
+        {/* Animated floating orbs */}
+        <div className="absolute top-[10%] right-[15%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-violet-400/20 via-purple-300/10 to-transparent dark:from-violet-600/10 dark:via-purple-500/5 blur-3xl animate-float-orb" />
+        <div className="absolute bottom-[20%] left-[10%] w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-pink-300/20 via-rose-200/10 to-transparent dark:from-pink-600/10 dark:via-rose-500/5 blur-3xl animate-float-orb" style={{ animationDelay: '-7s' }} />
+        <div className="absolute top-[50%] left-[50%] w-[600px] h-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-blue-200/10 via-cyan-100/5 to-transparent dark:from-blue-700/5 dark:via-cyan-600/3 blur-3xl animate-float-orb" style={{ animationDelay: '-14s' }} />
+
+        {/* Subtle grid pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
       </div>
 
       {/* Main container */}
-      <div className="relative w-full max-w-6xl mx-auto px-3 sm:px-5 lg:px-6 py-4 lg:py-8">
+      <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
 
         {/* Alerts */}
-        <div className="space-y-2 mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="space-y-2 mb-8">
           <UsageWarningNotification />
           <NotificationBanner />
         </div>
 
-        {/* Hero Section */}
-        <section className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        {/* Hero Section - Orchestrated reveal */}
+        <section className="mb-10">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
             {/* Greeting */}
-            <div className="space-y-0.5">
-              <p className="text-xs font-medium tracking-wide text-violet-600 dark:text-violet-400 uppercase">
+            <div className="space-y-2 animate-hero-reveal">
+              <p className="text-[11px] font-semibold tracking-[0.2em] text-violet-600 dark:text-violet-400 uppercase font-body">
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.1]">
                 <span className="text-gray-900 dark:text-white">{getGreeting()}, </span>
-                <span className="bg-gradient-to-r from-violet-600 via-pink-600 to-orange-500 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-violet-600 via-pink-500 to-orange-500 bg-clip-text text-transparent animate-gradient-border bg-[length:200%_200%]">
                   {isClient && isUserLoaded ? (user?.firstName || user?.username || 'there') : 'there'}
                 </span>
               </h1>
-              <p className="text-base text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-lg text-gray-500 dark:text-gray-400 font-body font-light max-w-md">
                 Ready to continue your learning journey?
               </p>
             </div>
 
-            {/* Stats Card */}
-            <div className="flex items-center gap-5 p-4 bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-white/10 shadow-xl shadow-gray-200/20 dark:shadow-none">
+            {/* Stats Card - Glass morphism */}
+            <div className="animate-hero-reveal stagger-2 flex items-center gap-6 p-5 bg-white/80 dark:bg-white/[0.03] backdrop-blur-2xl rounded-2xl border border-white/50 dark:border-white/10 shadow-2xl shadow-violet-500/5 dark:shadow-none">
               {/* Streak */}
-              <div className="flex items-center gap-2.5">
-                <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center ${
+              <div className="flex items-center gap-3">
+                <div className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 ${
                   currentStreak > 0
-                    ? 'bg-gradient-to-br from-orange-400 to-red-500 shadow-lg shadow-orange-500/30'
-                    : 'bg-gray-100 dark:bg-gray-800'
+                    ? 'bg-gradient-to-br from-orange-400 via-red-500 to-rose-600 shadow-xl shadow-orange-500/40'
+                    : 'bg-gray-100 dark:bg-gray-800/50'
                 }`}>
-                  <Flame className={`w-6 h-6 ${currentStreak > 0 ? 'text-white' : 'text-gray-400'}`} />
+                  <Flame className={`w-7 h-7 ${currentStreak > 0 ? 'text-white animate-fire-dance' : 'text-gray-400'}`} />
                   {currentStreak > 0 && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center text-[9px] font-bold text-yellow-900 shadow-lg">
+                    <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gradient-to-br from-yellow-300 to-amber-500 rounded-full flex items-center justify-center text-[10px] font-black text-amber-900 shadow-lg ring-2 ring-white dark:ring-gray-900">
                       {currentStreak > 99 ? '99+' : currentStreak}
                     </div>
                   )}
                 </div>
                 <div>
-                  <p className="text-xl font-black text-gray-900 dark:text-white tabular-nums">
+                  <p className="text-2xl font-display font-black text-gray-900 dark:text-white tabular-nums">
                     {isLoadingStreak ? '—' : currentStreak}
                   </p>
-                  <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">day streak</p>
+                  <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">day streak</p>
                 </div>
               </div>
 
               {/* Divider */}
-              <div className="w-px h-10 bg-gradient-to-b from-transparent via-gray-300 dark:via-gray-600 to-transparent" />
+              <div className="w-px h-12 bg-gradient-to-b from-transparent via-gray-300 dark:via-white/20 to-transparent" />
 
               {/* Today's Progress */}
-              <div className="flex items-center gap-2.5">
-                <div className="relative w-12 h-12">
-                  <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
-                    <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" strokeWidth="4" className="text-gray-200 dark:text-gray-700" />
+              <div className="flex items-center gap-3">
+                <div className="relative w-14 h-14">
+                  <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
+                    <circle cx="28" cy="28" r="24" fill="none" stroke="currentColor" strokeWidth="4" className="text-gray-100 dark:text-white/10" />
                     <circle
-                      cx="24" cy="24" r="20" fill="none" stroke="url(#progressGradient)" strokeWidth="4" strokeLinecap="round"
-                      strokeDasharray={`${Math.min((todayGoalCurrent / 10) * 125.6, 125.6)} 125.6`}
-                      className="transition-all duration-1000 ease-out"
+                      cx="28" cy="28" r="24" fill="none" stroke="url(#progressGradient2)" strokeWidth="4" strokeLinecap="round"
+                      strokeDasharray={`${Math.min((todayGoalCurrent / 10) * 150.8, 150.8)} 150.8`}
+                      className="transition-all duration-1000 ease-out drop-shadow-[0_0_8px_rgba(123,63,242,0.5)]"
                     />
                     <defs>
-                      <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <linearGradient id="progressGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stopColor="#7B3FF2" />
-                        <stop offset="100%" stopColor="#E91E8C" />
+                        <stop offset="50%" stopColor="#E91E8C" />
+                        <stop offset="100%" stopColor="#FF6B35" />
                       </linearGradient>
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs font-bold text-gray-900 dark:text-white">{todayGoalCurrent}</span>
+                    <span className="text-sm font-display font-black text-gray-900 dark:text-white">{todayGoalCurrent}</span>
                   </div>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">Today</p>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400">{10 - todayGoalCurrent} cards left</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{Math.max(0, 10 - todayGoalCurrent)} cards left</p>
                 </div>
               </div>
             </div>
@@ -439,23 +448,23 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
         </section>
 
         {/* Smart Recommendations & Weekly Progress - Side by Side */}
-        <section className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+        <section className="mb-10 animate-hero-reveal stagger-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
             {/* Smart Recommendations - AI-powered "What to study next" */}
             <SmartRecommendations maxItems={3} showStats={true} />
 
-            {/* Weekly Progress */}
-            <div className="p-4 sm:p-5 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-gray-200/50 dark:border-white/10">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">This Week</h3>
-                <div className="flex items-center gap-1.5">
+            {/* Weekly Progress - Enhanced card */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl shadow-gray-200/20 dark:shadow-none">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+                <h3 className="text-lg font-display font-bold text-gray-900 dark:text-white">This Week</h3>
+                <div className="flex items-center gap-2">
                   {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
                     <div
                       key={index}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold transition-all duration-500 ${
                         index < weeklyStats.daysActive
-                          ? 'bg-gradient-to-br from-violet-500 to-pink-500 text-white shadow-lg shadow-violet-500/30'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                          ? 'bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-violet-500/30 scale-105'
+                          : 'bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500'
                       }`}
                     >
                       {day}
@@ -465,30 +474,36 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3 rounded-lg bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-500/10 dark:to-violet-500/10">
-                  <div className="flex items-center gap-2.5">
-                    <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50/50 dark:from-indigo-500/10 dark:to-violet-500/5 border border-indigo-100/50 dark:border-indigo-500/10 hover:shadow-lg hover:shadow-indigo-500/10 transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 group-hover:scale-110 transition-transform duration-300">
+                      <BookOpen className="w-5 h-5 text-white" />
+                    </div>
                     <div>
-                      <p className="text-xl font-black text-gray-900 dark:text-white tabular-nums">{weeklyStats.cardsReviewed}</p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400">cards reviewed</p>
+                      <p className="text-2xl font-display font-black text-gray-900 dark:text-white tabular-nums">{weeklyStats.cardsReviewed}</p>
+                      <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">cards reviewed</p>
                     </div>
                   </div>
                 </div>
-                <div className="p-3 rounded-lg bg-gradient-to-br from-violet-50 to-pink-50 dark:from-violet-500/10 dark:to-pink-500/10">
-                  <div className="flex items-center gap-2.5">
-                    <Clock className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-violet-50 to-pink-50/50 dark:from-violet-500/10 dark:to-pink-500/5 border border-violet-100/50 dark:border-violet-500/10 hover:shadow-lg hover:shadow-violet-500/10 transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center shadow-lg shadow-violet-500/30 group-hover:scale-110 transition-transform duration-300">
+                      <Clock className="w-5 h-5 text-white" />
+                    </div>
                     <div>
-                      <p className="text-xl font-black text-gray-900 dark:text-white tabular-nums">{Math.round(weeklyStats.minutesStudied / 60 * 10) / 10}</p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400">hours studied</p>
+                      <p className="text-2xl font-display font-black text-gray-900 dark:text-white tabular-nums">{Math.round(weeklyStats.minutesStudied / 60 * 10) / 10}</p>
+                      <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">hours studied</p>
                     </div>
                   </div>
                 </div>
-                <div className="p-3 rounded-lg bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/10">
-                  <div className="flex items-center gap-2.5">
-                    <Flame className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <div className="group p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50/50 dark:from-emerald-500/10 dark:to-teal-500/5 border border-emerald-100/50 dark:border-emerald-500/10 hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
+                      <Flame className="w-5 h-5 text-white" />
+                    </div>
                     <div>
-                      <p className="text-xl font-black text-gray-900 dark:text-white tabular-nums">{weeklyStats.daysActive}</p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400">days active</p>
+                      <p className="text-2xl font-display font-black text-gray-900 dark:text-white tabular-nums">{weeklyStats.daysActive}</p>
+                      <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">days active</p>
                     </div>
                   </div>
                 </div>
@@ -498,96 +513,100 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
         </section>
 
         {/* Stats Grid */}
-        <section className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-400">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-            {/* Recent Content */}
-            <div className="p-4 sm:p-5 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-gray-200/50 dark:border-white/10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-lg bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+        <section className="mb-10 animate-hero-reveal stagger-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+            {/* Recent Content - Enhanced */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl shadow-gray-200/20 dark:shadow-none">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                    <Clock className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Recent Content</h3>
+                  <h3 className="text-base font-display font-bold text-gray-900 dark:text-white">Recent Content</h3>
                 </div>
                 <button
                   onClick={() => router.push('/dashboard/documents')}
-                  className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-1 group"
+                  className="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-1.5 group px-3 py-1.5 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-all"
                 >
-                  View All <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                  View All <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
 
               {recentActivity.length > 0 ? (
                 <div className="space-y-2">
-                  {(showAllRecent ? recentActivity : recentActivity.slice(0, 3)).map((activity) => {
+                  {(showAllRecent ? recentActivity : recentActivity.slice(0, 3)).map((activity, index) => {
                     const Icon = getActivityIcon(activity.type)
                     return (
-                      <div key={activity.id} className="flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                        <div className="w-8 h-8 rounded-md bg-gradient-to-br from-violet-100 to-pink-100 dark:from-violet-500/20 dark:to-pink-500/20 flex items-center justify-center flex-shrink-0">
-                          <Icon className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                      <div
+                        key={activity.id}
+                        className="group flex items-center gap-3 p-3 rounded-xl hover:bg-violet-50/50 dark:hover:bg-white/5 transition-all duration-300 cursor-pointer"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-pink-100 dark:from-violet-500/20 dark:to-pink-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                          <Icon className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-gray-900 dark:text-white truncate">{activity.name}</p>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400">{activity.source || activity.type}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">{activity.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{activity.source || activity.type}</p>
                         </div>
-                        <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500">{formatDate(activity.timestamp)}</p>
+                        <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">{formatDate(activity.timestamp)}</p>
                       </div>
                     )
                   })}
                   {recentActivity.length > 3 && (
                     <button
                       onClick={() => setShowAllRecent(!showAllRecent)}
-                      className="w-full text-center text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 py-1.5 flex items-center justify-center gap-1 transition-colors"
+                      className="w-full text-center text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 py-2 flex items-center justify-center gap-1.5 transition-colors rounded-lg hover:bg-gray-50 dark:hover:bg-white/5"
                     >
                       {showAllRecent ? 'Show Less' : `Show ${recentActivity.length - 3} More`}
-                      <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${showAllRecent ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showAllRecent ? 'rotate-180' : ''}`} />
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="py-6 text-center">
-                  <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-gray-400" />
+                <div className="py-8 text-center">
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 dark:from-white/10 dark:to-white/5 flex items-center justify-center">
+                    <FileText className="w-7 h-7 text-gray-400" />
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">No recent content yet</p>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">Start learning to see your activity here</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">No recent content yet</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Start learning to see your activity here</p>
                 </div>
               )}
             </div>
 
-            {/* Monthly Usage */}
-            <div className="p-4 sm:p-5 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-gray-200/50 dark:border-white/10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
-                    <TrendingUp className="w-4 h-4 text-white" />
+            {/* Monthly Usage - Enhanced */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl shadow-gray-200/20 dark:shadow-none">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-violet-500/30 animate-gradient-border bg-[length:200%_200%]">
+                    <TrendingUp className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-white">Monthly Usage</h3>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Resets on the 1st</p>
+                    <h3 className="text-base font-display font-bold text-gray-900 dark:text-white">Monthly Usage</h3>
+                    <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Resets on the 1st</p>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {visibleUsageItems.map((item) => {
                   const Icon = item.icon
                   const percentage = Math.min((item.used / item.limit) * 100, 100)
                   const isOverLimit = item.used >= item.limit
                   return (
-                    <div key={item.key}>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <Icon className="w-3.5 h-3.5 text-gray-400" />
-                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{item.label}</span>
+                    <div key={item.key} className="group">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-4 h-4 text-gray-400 group-hover:text-violet-500 transition-colors" />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{item.label}</span>
                         </div>
-                        <span className={`text-xs font-bold tabular-nums ${isOverLimit ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
-                          {item.used}<span className="text-gray-400 font-normal">/{item.limit}</span>
+                        <span className={`text-sm font-display font-bold tabular-nums ${isOverLimit ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
+                          {item.used}<span className="text-gray-400 font-normal text-xs">/{item.limit}</span>
                         </span>
                       </div>
-                      <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-2 bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all duration-700 ease-out ${getUsageColor(item.used, item.limit)}`}
+                          className={`h-full rounded-full transition-all duration-1000 ease-out ${getUsageColor(item.used, item.limit)}`}
                           style={{ width: `${percentage}%` }}
                         />
                       </div>
@@ -598,10 +617,10 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                 {usageItems.length > 3 && (
                   <button
                     onClick={() => setShowAllUsage(!showAllUsage)}
-                    className="w-full text-center text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 py-1.5 flex items-center justify-center gap-1 transition-colors"
+                    className="w-full text-center text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 py-2 flex items-center justify-center gap-1.5 transition-colors rounded-lg hover:bg-gray-50 dark:hover:bg-white/5"
                   >
                     {showAllUsage ? 'Show Less' : `Show all (${usageItems.length - 3} more)`}
-                    <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${showAllUsage ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showAllUsage ? 'rotate-180' : ''}`} />
                   </button>
                 )}
               </div>
@@ -609,7 +628,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
               {userProfile?.subscription_tier !== 'premium' && (
                 <button
                   onClick={() => router.push('/pricing')}
-                  className="w-full mt-4 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-bold shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 transition-all duration-300 hover:scale-[1.02]"
+                  className="w-full mt-5 py-3.5 bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 hover:from-violet-700 hover:via-purple-700 hover:to-pink-700 text-white rounded-xl text-sm font-bold shadow-xl shadow-violet-500/30 hover:shadow-2xl hover:shadow-violet-500/40 transition-all duration-300 hover:scale-[1.02] animate-gradient-border bg-[length:200%_200%]"
                 >
                   Upgrade to Premium
                 </button>
@@ -618,95 +637,115 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
           </div>
         </section>
 
-        {/* Learning Modes Grid */}
-        <section className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              Choose how to learn
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400">9 learning modes</p>
+        {/* Learning Modes Grid - Dramatic redesign */}
+        <section className="mb-10 animate-hero-reveal stagger-5">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-display font-bold text-gray-900 dark:text-white">
+                Choose how to learn
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Pick your perfect study mode</p>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 dark:bg-violet-500/10">
+              <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+              <span className="text-xs font-semibold text-violet-600 dark:text-violet-400">9 modes</span>
+            </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2.5 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             {learningModes.map((mode, index) => {
               const Icon = mode.icon
               return (
                 <button
                   key={mode.id}
                   onClick={() => handleModeClick(mode)}
-                  className="group relative p-4 sm:p-5 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-gray-200/50 dark:border-white/10 hover:border-transparent hover:shadow-xl hover:shadow-gray-200/50 dark:hover:shadow-none transition-all duration-300 text-left overflow-hidden"
-                  style={{ animationDelay: `${index * 50}ms` }}
+                  className="group relative p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 hover:border-transparent hover:shadow-2xl hover:shadow-violet-500/10 dark:hover:shadow-none transition-all duration-500 text-left overflow-hidden hover:scale-[1.02]"
+                  style={{ animationDelay: `${index * 60}ms` }}
                 >
-                  {/* Hover gradient overlay */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${mode.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl`} />
+                  {/* Animated gradient overlay on hover */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${mode.color} opacity-0 group-hover:opacity-100 transition-all duration-500 rounded-2xl`} />
+
+                  {/* Shimmer effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-out" />
 
                   <div className="relative z-10">
-                    <div className={`w-10 h-10 rounded-lg ${mode.bgColor} flex items-center justify-center mb-3 group-hover:bg-white/20 group-hover:scale-110 transition-all duration-300`}>
-                      <Icon className={`w-5 h-5 ${mode.textColor} group-hover:text-white transition-colors duration-300`} />
+                    <div className={`w-12 h-12 rounded-xl ${mode.bgColor} flex items-center justify-center mb-4 group-hover:bg-white/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg group-hover:shadow-xl`}>
+                      <Icon className={`w-6 h-6 ${mode.textColor} group-hover:text-white transition-colors duration-300`} />
                     </div>
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-white transition-colors duration-300">{mode.name}</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 group-hover:text-white/70 transition-colors duration-300 mt-0.5">{mode.description}</p>
+                    <h3 className="text-base font-display font-bold text-gray-900 dark:text-white group-hover:text-white transition-colors duration-300">{mode.name}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 group-hover:text-white/80 transition-colors duration-300 mt-1 font-medium">{mode.description}</p>
                   </div>
+
+                  {/* Corner accent */}
+                  <div className={`absolute -bottom-10 -right-10 w-24 h-24 rounded-full bg-gradient-to-br ${mode.color} opacity-0 group-hover:opacity-20 blur-2xl transition-all duration-500`} />
                 </button>
               )
             })}
           </div>
         </section>
 
-        {/* Learning Style Discovery Card */}
-        {!learningProfile && (
-          <section className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-            <div className="relative overflow-hidden p-5 sm:p-6 rounded-xl bg-violet-600">
-              {/* Pattern overlay */}
-              <div className="absolute inset-0 opacity-10">
-                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+        {/* Learning Style Discovery Card - Enhanced */}
+        {!hasCompletedAssessment && (
+          <section className="mb-10 animate-hero-reveal stagger-6">
+            <div className="relative overflow-hidden p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600">
+              {/* Animated background pattern */}
+              <div className="absolute inset-0 opacity-20">
+                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
               </div>
 
+              {/* Floating accent orbs */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-float-orb" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-pink-400/20 rounded-full blur-3xl animate-float-orb" style={{ animationDelay: '-5s' }} />
+
               <div className="relative z-10">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                      <Sparkles className="w-6 h-6 text-white" />
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-xl flex items-center justify-center shadow-xl">
+                      <Sparkles className="w-7 h-7 text-white animate-sparkle" />
                     </div>
                     <div>
-                      <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                      <h3 className="text-xl sm:text-2xl font-display font-bold text-white flex items-center gap-2">
                         Discover Your Learning Style
                       </h3>
-                      <p className="text-sm text-white/70">
+                      <p className="text-sm text-white/70 font-medium mt-1">
                         Take our 2-minute assessment for personalized experiences
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setLearningStyleExpanded(!learningStyleExpanded)}
-                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                    className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all duration-300 hover:scale-110"
                   >
-                    {learningStyleExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {learningStyleExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </button>
                 </div>
 
                 {learningStyleExpanded && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {[
                         { icon: Eye, label: "Visual" },
                         { icon: Headphones, label: "Auditory" },
                         { icon: Hand, label: "Kinesthetic" },
                         { icon: BookText, label: "Reading" },
-                      ].map((style) => (
-                        <div key={style.label} className="flex items-center gap-2 p-2.5 rounded-lg bg-white/10 backdrop-blur-sm">
-                          <style.icon className="w-4 h-4 text-white" />
-                          <span className="text-xs font-medium text-white">{style.label}</span>
+                      ].map((style, index) => (
+                        <div
+                          key={style.label}
+                          className="flex items-center gap-3 p-3.5 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
+                          style={{ animationDelay: `${index * 100}ms` }}
+                        >
+                          <style.icon className="w-5 h-5 text-white" />
+                          <span className="text-sm font-semibold text-white">{style.label}</span>
                         </div>
                       ))}
                     </div>
 
                     <button
                       onClick={() => onModeSelect('quiz')}
-                      className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 bg-white hover:bg-gray-50 text-violet-600 rounded-lg font-bold text-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                      className="group flex items-center justify-center gap-2.5 w-full sm:w-auto px-8 py-4 bg-white hover:bg-gray-50 text-violet-600 rounded-xl font-bold text-sm shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-[1.03]"
                     >
-                      <Sparkles className="w-4 h-4" />
+                      <Sparkles className="w-5 h-5 group-hover:animate-sparkle" />
                       Take Assessment
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                   </div>
                 )}
@@ -715,38 +754,41 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
           </section>
         )}
 
-        {/* Subscription Footer */}
-        {userProfile?.subscription_tier !== 'premium' && (
-          <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-600">
-            <div className="relative overflow-hidden p-4 sm:p-6 rounded-xl bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white/10 dark:via-white/5 dark:to-white/10">
-              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djZoLTJ2LTZoMnptMC0xMHY2aC0ydi02aDJ6bTAtMTB2NmgtMlY0aDJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-50" />
+        {/* Footer spacer for sticky CTA */}
+        {userProfile?.subscription_tier !== 'premium' && <div className="h-24 sm:h-20" />}
+      </div>
 
-              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
+      {/* Sticky Subscription CTA - Fixed at bottom */}
+      {userProfile?.subscription_tier !== 'premium' && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 p-3 sm:p-4 bg-gradient-to-t from-black/90 via-black/80 to-transparent backdrop-blur-xl">
+          <div className="max-w-6xl mx-auto">
+            <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white/[0.1] dark:via-white/[0.05] dark:to-white/[0.1] border border-white/10">
+              {/* Subtle animated gradient */}
+              <div className="absolute inset-0 bg-gradient-to-r from-violet-600/20 via-transparent to-pink-600/20 animate-gradient-border bg-[length:200%_200%]" />
+
+              <div className="relative z-10 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="hidden sm:flex w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 items-center justify-center shadow-xl shadow-violet-500/40">
                     <Sparkles className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white">Free Plan</h3>
-                    <p className="text-xs text-gray-400">Unlock unlimited access with Premium</p>
+                    <h3 className="text-sm sm:text-base font-display font-bold text-white">Upgrade to Premium</h3>
+                    <p className="text-xs sm:text-sm text-gray-400 font-medium hidden sm:block">Unlock unlimited access to all features</p>
                   </div>
                 </div>
                 <button
                   onClick={() => router.push('/pricing')}
-                  className="px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 rounded-lg text-sm font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
+                  className="group px-5 sm:px-8 py-3 sm:py-3.5 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 hover:from-violet-600 hover:via-purple-600 hover:to-pink-600 text-white rounded-xl text-sm font-bold shadow-xl shadow-violet-500/30 hover:shadow-2xl hover:shadow-violet-500/40 transition-all duration-300 hover:scale-[1.03] flex items-center gap-2"
                 >
-                  <Sparkles className="w-4 h-4 text-violet-600" />
-                  Upgrade to Premium
-                  <ChevronRight className="w-4 h-4" />
+                  <span className="hidden sm:inline">Get Premium</span>
+                  <span className="sm:hidden">Upgrade</span>
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </div>
-          </section>
-        )}
-
-        {/* Footer spacer */}
-        <div className="h-16 lg:h-6" />
-      </div>
+          </div>
+        </div>
+      )}
 
       {/* Milestone Celebration Modal */}
       <MilestoneCelebrationModal
