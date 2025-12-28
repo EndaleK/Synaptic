@@ -139,6 +139,18 @@ function DocumentsPageContent() {
         return
       }
 
+      // Fetch full document including extracted_text
+      // (getUserDocuments excludes extracted_text to reduce payload size)
+      const response = await fetch(`/api/documents/${documentId}`)
+      if (!response.ok) {
+        throw new Error('Failed to load document content')
+      }
+      const { document: fullDocument } = await response.json()
+
+      if (!fullDocument) {
+        throw new Error('Document not found')
+      }
+
       // Update last accessed (fire and forget - don't block navigation)
       fetch(`/api/documents/${document.id}`, {
         method: 'PATCH',
@@ -147,13 +159,13 @@ function DocumentsPageContent() {
       }).catch(() => {}) // Silently ignore errors
 
       setCurrentDocument({
-        id: document.id,
-        name: document.file_name,
-        content: document.extracted_text || '',
-        fileType: document.file_type,
-        storagePath: document.storage_path,
-        fileSize: document.file_size,
-        metadata: document.metadata
+        id: fullDocument.id,
+        name: fullDocument.file_name,
+        content: fullDocument.extracted_text || '',
+        fileType: fullDocument.file_type,
+        storagePath: fullDocument.storage_path,
+        fileSize: fullDocument.file_size,
+        metadata: fullDocument.metadata
       })
 
       setActiveMode(mode)
