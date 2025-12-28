@@ -269,7 +269,10 @@ export async function POST(
             console.log(`🔍 Parsing DOCX with mammoth...`)
             try {
               const mammoth = await import('mammoth')
-              const result = await mammoth.extractRawText({ arrayBuffer })
+              // Convert ArrayBuffer to Node.js Buffer for mammoth
+              // mammoth uses {buffer} in Node.js, not {arrayBuffer} (which is browser-only)
+              const buffer = Buffer.from(arrayBuffer)
+              const result = await mammoth.extractRawText({ buffer })
 
               if (!result.value || result.value.trim().length === 0) {
                 console.error(`❌ DOCX extracted empty text`)

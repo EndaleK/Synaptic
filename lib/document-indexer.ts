@@ -259,8 +259,12 @@ async function extractDOCXText(fileData: Blob): Promise<string> {
   const mammoth = await import('mammoth')
   const arrayBuffer = await fileData.arrayBuffer()
 
+  // Convert ArrayBuffer to Node.js Buffer for mammoth
+  // mammoth uses {buffer} in Node.js, not {arrayBuffer} (which is browser-only)
+  const buffer = Buffer.from(arrayBuffer)
+
   const result = await mammoth.extractRawText({
-    arrayBuffer,
+    buffer,
   })
 
   if (!result.value || result.value.trim().length === 0) {

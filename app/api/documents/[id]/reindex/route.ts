@@ -86,7 +86,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         ) {
           const mammoth = await import('mammoth')
           const arrayBuffer = await fileData.arrayBuffer()
-          const result = await mammoth.extractRawText({ arrayBuffer })
+          // Convert ArrayBuffer to Node.js Buffer for mammoth
+          // mammoth uses {buffer} in Node.js, not {arrayBuffer} (which is browser-only)
+          const buffer = Buffer.from(arrayBuffer)
+          const result = await mammoth.extractRawText({ buffer })
           text = result.value || ''
         } else if (document.file_type === 'text/plain') {
           text = await fileData.text()

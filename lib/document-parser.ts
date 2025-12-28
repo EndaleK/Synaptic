@@ -75,8 +75,10 @@ async function parseDocxFile(file: File): Promise<ParseResult> {
     console.log(`Parsing DOCX file: ${file.name}`)
     const arrayBuffer = await file.arrayBuffer()
 
-    // Mammoth.js accepts arrayBuffer directly in browser environment
-    const result = await mammoth.extractRawText({ arrayBuffer })
+    // Convert ArrayBuffer to Node.js Buffer for mammoth
+    // mammoth uses {buffer} in Node.js, not {arrayBuffer} (which is browser-only)
+    const buffer = Buffer.from(arrayBuffer)
+    const result = await mammoth.extractRawText({ buffer })
 
     console.log(`DOCX extraction result: ${result.value.length} characters`)
 
@@ -96,15 +98,17 @@ async function parseDocFile(file: File): Promise<ParseResult> {
     console.log(`Parsing DOC file: ${file.name}`)
     const arrayBuffer = await file.arrayBuffer()
 
-    // Mammoth.js accepts arrayBuffer directly in browser environment
-    const result = await mammoth.extractRawText({ arrayBuffer })
+    // Convert ArrayBuffer to Node.js Buffer for mammoth
+    // mammoth uses {buffer} in Node.js, not {arrayBuffer} (which is browser-only)
+    const buffer = Buffer.from(arrayBuffer)
+    const result = await mammoth.extractRawText({ buffer })
 
     console.log(`DOC extraction result: ${result.value.length} characters`)
-    
+
     if (!result.value || result.value.trim().length === 0) {
       return { text: "", error: "DOC file appears to be empty or contains no extractable text" }
     }
-    
+
     return { text: result.value }
   } catch (error) {
     console.error("DOC parsing error:", error)
