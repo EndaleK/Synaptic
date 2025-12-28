@@ -512,8 +512,54 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
           </div>
         </section>
 
-        {/* Stats Grid */}
+        {/* Learning Modes Grid - Dramatic redesign */}
         <section className="mb-10 animate-hero-reveal stagger-4">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-display font-bold text-gray-900 dark:text-white">
+                Choose how to learn
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Pick your perfect study mode</p>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 dark:bg-violet-500/10">
+              <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+              <span className="text-xs font-semibold text-violet-600 dark:text-violet-400">9 modes</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+            {learningModes.map((mode, index) => {
+              const Icon = mode.icon
+              return (
+                <button
+                  key={mode.id}
+                  onClick={() => handleModeClick(mode)}
+                  className="group relative p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 hover:border-transparent hover:shadow-2xl hover:shadow-violet-500/10 dark:hover:shadow-none transition-all duration-500 text-left overflow-hidden hover:scale-[1.02]"
+                  style={{ animationDelay: `${index * 60}ms` }}
+                >
+                  {/* Animated gradient overlay on hover */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${mode.color} opacity-0 group-hover:opacity-100 transition-all duration-500 rounded-2xl`} />
+
+                  {/* Shimmer effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-out" />
+
+                  <div className="relative z-10">
+                    <div className={`w-12 h-12 rounded-xl ${mode.bgColor} flex items-center justify-center mb-4 group-hover:bg-white/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg group-hover:shadow-xl`}>
+                      <Icon className={`w-6 h-6 ${mode.textColor} group-hover:text-white transition-colors duration-300`} />
+                    </div>
+                    <h3 className="text-base font-display font-bold text-gray-900 dark:text-white group-hover:text-white transition-colors duration-300">{mode.name}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 group-hover:text-white/80 transition-colors duration-300 mt-1 font-medium">{mode.description}</p>
+                  </div>
+
+                  {/* Corner accent */}
+                  <div className={`absolute -bottom-10 -right-10 w-24 h-24 rounded-full bg-gradient-to-br ${mode.color} opacity-0 group-hover:opacity-20 blur-2xl transition-all duration-500`} />
+                </button>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* Stats Grid - Recent Content & Monthly Usage */}
+        <section className="mb-10 animate-hero-reveal stagger-5">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
             {/* Recent Content - Enhanced */}
             <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl shadow-gray-200/20 dark:shadow-none">
@@ -634,52 +680,6 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                 </button>
               )}
             </div>
-          </div>
-        </section>
-
-        {/* Learning Modes Grid - Dramatic redesign */}
-        <section className="mb-10 animate-hero-reveal stagger-5">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-display font-bold text-gray-900 dark:text-white">
-                Choose how to learn
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Pick your perfect study mode</p>
-            </div>
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 dark:bg-violet-500/10">
-              <Sparkles className="w-3.5 h-3.5 text-violet-500" />
-              <span className="text-xs font-semibold text-violet-600 dark:text-violet-400">9 modes</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-            {learningModes.map((mode, index) => {
-              const Icon = mode.icon
-              return (
-                <button
-                  key={mode.id}
-                  onClick={() => handleModeClick(mode)}
-                  className="group relative p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 hover:border-transparent hover:shadow-2xl hover:shadow-violet-500/10 dark:hover:shadow-none transition-all duration-500 text-left overflow-hidden hover:scale-[1.02]"
-                  style={{ animationDelay: `${index * 60}ms` }}
-                >
-                  {/* Animated gradient overlay on hover */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${mode.color} opacity-0 group-hover:opacity-100 transition-all duration-500 rounded-2xl`} />
-
-                  {/* Shimmer effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-out" />
-
-                  <div className="relative z-10">
-                    <div className={`w-12 h-12 rounded-xl ${mode.bgColor} flex items-center justify-center mb-4 group-hover:bg-white/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg group-hover:shadow-xl`}>
-                      <Icon className={`w-6 h-6 ${mode.textColor} group-hover:text-white transition-colors duration-300`} />
-                    </div>
-                    <h3 className="text-base font-display font-bold text-gray-900 dark:text-white group-hover:text-white transition-colors duration-300">{mode.name}</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 group-hover:text-white/80 transition-colors duration-300 mt-1 font-medium">{mode.description}</p>
-                  </div>
-
-                  {/* Corner accent */}
-                  <div className={`absolute -bottom-10 -right-10 w-24 h-24 rounded-full bg-gradient-to-br ${mode.color} opacity-0 group-hover:opacity-20 blur-2xl transition-all duration-500`} />
-                </button>
-              )
-            })}
           </div>
         </section>
 
