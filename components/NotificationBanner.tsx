@@ -14,19 +14,10 @@ export default function NotificationBanner() {
     const dismissed = localStorage.getItem('notification-banner-dismissed')
     const hasPermission = notifications.isSupported() && notifications.isEnabled()
 
-    // Debug logging
-    console.log('NotificationBanner state:', {
-      isSupported: notifications.isSupported(),
-      hasPermission,
-      dismissed,
-      currentPermission: typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'N/A'
-    })
-
     // Show banner if notifications are supported but not enabled and not dismissed
     if (notifications.isSupported() && !hasPermission && !dismissed) {
       // Delay showing the banner slightly to avoid overwhelming the user
       const timer = setTimeout(() => {
-        console.log('Showing notification banner')
         setShow(true)
       }, 2000)
       return () => clearTimeout(timer)

@@ -212,10 +212,7 @@ export async function checkStorageHealth(): Promise<boolean> {
     return false
   }
 
-  console.log(
-    `[StorageMonitor] ✅ Storage healthy: ${estimate.usagePercent.toFixed(1)}% used`,
-    `(${formatBytes(estimate.usage)} / ${formatBytes(estimate.quota)})`
-  )
+  // Storage is healthy - no need to log in production
   return true
 }
 
@@ -230,12 +227,7 @@ export function initStorageMonitor(): void {
   checkStorageHealth().then((isHealthy) => {
     if (!isHealthy) {
       // Auto-cleanup stale data if storage is near limit
-      const { keysRemoved, bytesFreed } = cleanupStaleData()
-      if (keysRemoved.length > 0) {
-        console.log(
-          `[StorageMonitor] Auto-cleaned ${keysRemoved.length} stale items, freed ${formatBytes(bytesFreed)}`
-        )
-      }
+      cleanupStaleData()
     }
   })
 

@@ -52,73 +52,41 @@ export function useStudySessionTracking(options: SessionTrackingOptions = {}) {
 
   // Start a new study session
   const startSession = async () => {
-    if (!user) {
-      console.log('[Session Tracking] No user, skipping session start')
-      return
-    }
-
-    if (isTracking) {
-      console.log('[Session Tracking] Already tracking, skipping session start')
-      return
-    }
-
-    console.log(`[Session Tracking] Starting session for mode: ${activeMode}`)
+    if (!user || isTracking) return
 
     try {
       const sessionType = getSessionType(activeMode)
-      console.log(`[Session Tracking] Session type: ${sessionType}`)
-
-      const requestBody = {
-        sessionType: sessionType,
-        plannedDurationMinutes: 60
-      }
-      console.log('[Session Tracking] Request body:', requestBody)
-
       const response = await fetch('/api/study-sessions/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          sessionType: sessionType,
+          plannedDurationMinutes: 60
+        })
       })
-
-      console.log(`[Session Tracking] Response status: ${response.status}`)
 
       if (response.ok) {
         const data = await response.json()
-        console.log('[Session Tracking] Response data:', data)
-
         setSessionId(data.sessionId)
         setIsTracking(true)
         sessionStartTime.current = Date.now()
         lastActivityTime.current = Date.now()
-
-        console.log(`✅ Study session started: ${sessionType} (ID: ${data.sessionId})`)
-
-        // Start heartbeat to update last activity
         startHeartbeat()
-      } else {
-        const errorText = await response.text()
-        console.error('[Session Tracking] Failed to start session:', response.status, errorText)
       }
     } catch (error) {
-      console.error('[Session Tracking] Error starting session:', error)
+      // Silently handle errors
     }
   }
 
   // Complete the current study session
   const completeSession = async (force: boolean = false) => {
-    if (!sessionId || !sessionStartTime.current) {
-      console.log('[Session Tracking] No session to complete')
-      return
-    }
+    if (!sessionId || !sessionStartTime.current) return
 
     const durationMs = Date.now() - sessionStartTime.current
     const durationMinutes = Math.floor(durationMs / 60000)
 
-    console.log(`[Session Tracking] Completing session: ${durationMinutes} minutes (force: ${force})`)
-
     // Only save sessions longer than minimum duration (unless forced)
     if (!force && durationMinutes < minSessionDuration) {
-      console.log(`⏭️  Session too short (${durationMinutes}min < ${minSessionDuration}min), not saving`)
       setSessionId(null)
       setIsTracking(false)
       sessionStartTime.current = null
@@ -126,7 +94,7 @@ export function useStudySessionTracking(options: SessionTrackingOptions = {}) {
     }
 
     try {
-      const response = await fetch('/api/study-sessions/complete', {
+      await fetch('/api/study-sessions/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -134,17 +102,8 @@ export function useStudySessionTracking(options: SessionTrackingOptions = {}) {
           durationMinutes: durationMinutes
         })
       })
-
-      console.log(`[Session Tracking] Complete response status: ${response.status}`)
-
-      if (response.ok) {
-        console.log(`✅ Study session completed: ${durationMinutes} minutes`)
-      } else {
-        const errorText = await response.text()
-        console.error('[Session Tracking] Failed to complete session:', response.status, errorText)
-      }
     } catch (error) {
-      console.error('[Session Tracking] Error completing session:', error)
+      // Silently handle errors
     } finally {
       setSessionId(null)
       setIsTracking(false)
@@ -163,7 +122,6 @@ export function useStudySessionTracking(options: SessionTrackingOptions = {}) {
     }
 
     inactivityTimer.current = setTimeout(() => {
-      console.log('⏸️  User inactive, completing session')
       completeSession()
     }, inactivityTimeout)
   }
@@ -172,9 +130,7 @@ export function useStudySessionTracking(options: SessionTrackingOptions = {}) {
   const startHeartbeat = () => {
     heartbeatInterval.current = setInterval(() => {
       const timeSinceActivity = Date.now() - lastActivityTime.current
-
       if (timeSinceActivity > inactivityTimeout) {
-        console.log('⏸️  Inactivity detected via heartbeat')
         completeSession()
       }
     }, 30000) // Check every 30 seconds
@@ -190,33 +146,19 @@ export function useStudySessionTracking(options: SessionTrackingOptions = {}) {
 
   // Auto-start session when component mounts or mode changes
   useEffect(() => {
-    console.log('[Session Tracking] Auto-start check:', {
-      autoStart,
-      hasUser: !!user,
-      isTracking,
-      activeMode
-    })
-
     if (autoStart && user && activeMode !== 'home') {
       if (isTracking) {
         // Mode changed while tracking - complete old session and start new one
-        console.log('[Session Tracking] Mode changed, completing old session and starting new one')
         const completeAndRestart = async () => {
           await completeSession(true)
-          setTimeout(() => startSession(), 200) // Small delay to ensure completion
+          setTimeout(() => startSession(), 200)
         }
         completeAndRestart()
       } else {
-        // Not tracking yet - start new session
-        console.log('[Session Tracking] Conditions met, starting session')
         startSession()
       }
     } else if (activeMode === 'home' && isTracking) {
-      // User went to home - complete session
-      console.log('[Session Tracking] User went to home, completing session')
       completeSession(true)
-    } else {
-      console.log('[Session Tracking] Conditions not met for auto-start')
     }
   }, [user, activeMode, autoStart])
 
@@ -257,25 +199,13 @@ export function useStudySessionTracking(options: SessionTrackingOptions = {}) {
   // Handle visibility change (tab switching)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Tab hidden - pause tracking
-        if (isTracking) {
-          console.log('👁️  Tab hidden, pausing session')
-        }
-      } else {
-        // Tab visible - resume tracking
-        if (isTracking) {
-          console.log('👁️  Tab visible, resuming session')
-          recordActivity()
-        }
+      if (!document.hidden && isTracking) {
+        recordActivity()
       }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [isTracking])
 
   return {
