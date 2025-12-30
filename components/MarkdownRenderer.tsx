@@ -32,6 +32,7 @@ const initializeMermaid = () => {
       securityLevel: 'loose',
       fontFamily: 'inherit',
       suppressErrors: true,
+      logLevel: 'fatal', // Only log fatal errors, suppress syntax warnings
       // Increase timeout for complex diagrams
       maxTextSize: 50000,
       // Global settings to prevent text truncation
@@ -82,9 +83,8 @@ const initializeMermaid = () => {
       },
     })
     mermaidInitialized = true
-    console.log('[Mermaid] Initialized successfully')
   } catch (error) {
-    console.error('[Mermaid] Initialization error:', error)
+    // Silently handle initialization errors
   }
 }
 
@@ -331,7 +331,6 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     // CRITICAL: Reject if ANY line looks like a numbered list (markdown contamination)
     const hasNumberedList = lines.some(line => /^\d+\./.test(line))
     if (hasNumberedList) {
-      console.warn('⚠️ Rejecting Mermaid: contains numbered list items', lines.filter(l => /^\d+\./.test(l)))
       return false
     }
 
@@ -419,7 +418,6 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
 
       // Validate before attempting to render
       if (!isValidMermaidCode(sanitizedCode)) {
-        console.warn('[Mermaid] Invalid code, skipping render:', sanitizedCode.substring(0, 100))
         setRenderedDiagrams(prev => new Map(prev).set(key, 'FAILED'))
         return
       }
@@ -471,27 +469,24 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
       // Use unique ID with random suffix to avoid collisions
       const id = `mermaid-${Date.now()}-${Math.random().toString(36).substring(7)}`
 
-      console.log('[Mermaid] Attempting render:', { key, id, codeLength: cleanedCode.length })
-
       // Mermaid.render can throw - wrap in try-catch
       const { svg } = await mermaid.render(id, cleanedCode)
 
       if (svg) {
         // Post-process SVG to fix text truncation issues
         const processedSvg = postProcessSvg(svg)
-        console.log('[Mermaid] Render successful:', { key, svgLength: processedSvg.length })
         setRenderedDiagrams(prev => new Map(prev).set(key, processedSvg))
       } else {
-        console.warn('[Mermaid] Render returned empty SVG:', { key })
+        // Empty SVG - silently fail
         setRenderedDiagrams(prev => new Map(prev).set(key, 'FAILED'))
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error('[Mermaid] Rendering error:', { key, error: errorMessage })
-
-      // Log the problematic code for debugging (first 200 chars) - show sanitized version
-      console.error('[Mermaid] Failed code snippet (sanitized):', cleanedCode.substring(0, 300))
-      console.error('[Mermaid] Original code snippet:', code.substring(0, 200))
+      // Silently handle Mermaid syntax errors - they're expected for AI-generated content
+      // Only log in development for debugging
+      if (process.env.NODE_ENV === 'development') {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.debug('[Mermaid] Rendering failed:', errorMessage.substring(0, 100))
+      }
 
       setRenderedDiagrams(prev => new Map(prev).set(key, 'FAILED'))
     }
