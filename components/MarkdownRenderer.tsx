@@ -572,8 +572,11 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
             }
             codeString = codeString.replace(/\n$/, '')
 
-            // Check if it's a mermaid diagram
-            if (!inline && language === 'mermaid') {
+            // Check if it's a mermaid diagram - either explicitly labeled or detected by content
+            const isMermaidByLanguage = language === 'mermaid'
+            const isMermaidByContent = !inline && !language && codeString.trim().match(/^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey|gitgraph|mindmap|timeline)\b/i)
+
+            if (!inline && (isMermaidByLanguage || isMermaidByContent)) {
               // If diagrams are disabled (streaming) or not yet on client, show as code block
               if (disableDiagrams || !isClient) {
                 return (
