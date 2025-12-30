@@ -159,7 +159,7 @@ export function getProviderForFeature(feature: string): AIProvider {
  * Default provider selection per feature
  *
  * Strategy (December 2025 Update):
- * - Chat & Study Buddy: Anthropic Haiku 4.5 (fast, quality responses)
+ * - Chat & Study Buddy: DeepSeek (cost-effective, good quality for conversational)
  * - Mind Map, Flashcards, Exams: Anthropic Sonnet 4.5 (superior structured output)
  * - Podcast & Study Guide: DeepSeek (cost-effective for long-form content)
  * - TTS: OpenAI (best audio quality)
@@ -168,8 +168,8 @@ export function getProviderForFeature(feature: string): AIProvider {
  */
 function getDefaultProvider(feature: string): ProviderType {
   const defaults: Record<string, ProviderType> = {
-    'chat': 'anthropic',             // ⭐ Haiku 4.5 - fast, quality chat responses
-    'study_buddy': 'anthropic',      // ⭐ Haiku 4.5 - real-time assistant
+    'chat': 'deepseek',              // 💰 DeepSeek - cost-effective for chat
+    'study_buddy': 'deepseek',       // 💰 DeepSeek - cost-effective for conversational
     'mindmap': 'anthropic',          // ⭐ Sonnet 4.5 - excels at complex JSON structures
     'exam': 'anthropic',             // ⭐ Sonnet 4.5 - quality questions = strong first impression
     'flashcards': 'anthropic',       // ⭐ Sonnet 4.5 - superior card quality
