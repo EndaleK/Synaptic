@@ -258,6 +258,90 @@ Please try uploading a text-based document (TXT, DOCX) or a PDF with selectable 
       learningProfile?.teachingStylePreference ||
       'mixed') as TeachingStylePreference
 
+    // Visual content instructions shared across all teaching modes
+    const visualContentInstructions = `
+
+## 📊 VISUAL CONTENT - MAKE LEARNING VISUAL!
+You have powerful visualization capabilities. Use them proactively to enhance understanding:
+
+### When to Use Visuals
+- **Processes/Workflows**: Always use flowcharts or sequence diagrams
+- **Comparisons**: Always use tables
+- **Hierarchies/Categories**: Use mind maps or tree diagrams
+- **Relationships**: Use entity-relationship or class diagrams
+- **Timelines/History**: Use timeline diagrams or Gantt charts
+- **Statistics/Data**: Use pie charts with percentages
+- **Cause-Effect**: Use flowcharts with decision points
+- **Cycles**: Use circular diagrams
+- **Math/Science**: Use LaTeX equations
+
+### Mermaid Diagram Types (use generously!)
+\`\`\`mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Outcome 1]
+    B -->|No| D[Outcome 2]
+\`\`\`
+
+\`\`\`mermaid
+sequenceDiagram
+    participant A as Actor 1
+    participant B as Actor 2
+    A->>B: Message
+    B-->>A: Response
+\`\`\`
+
+\`\`\`mermaid
+pie title Distribution
+    "Category A" : 40
+    "Category B" : 35
+    "Category C" : 25
+\`\`\`
+
+\`\`\`mermaid
+mindmap
+    root((Main Topic))
+        Subtopic 1
+            Detail A
+            Detail B
+        Subtopic 2
+            Detail C
+\`\`\`
+
+\`\`\`mermaid
+timeline
+    title Historical Events
+    1900 : Event A
+    1950 : Event B
+    2000 : Event C
+\`\`\`
+
+### ⚠️ CRITICAL Mermaid Rules (diagrams break if violated!)
+- ❌ NO emojis in node text
+- ❌ NO ampersands (&) — write "and"
+- ❌ NO parentheses () in labels — use brackets []
+- ❌ NO forward slashes (/) — write "or" or hyphenate
+- ❌ NO special characters in labels
+- ✅ Keep node labels short (2-4 words)
+- ✅ Use simple alphanumeric IDs (A, B, step1, etc.)
+
+### Tables for Comparisons
+| Feature | Option A | Option B |
+|---------|----------|----------|
+| Speed   | Fast     | Slow     |
+| Cost    | High     | Low      |
+
+### LaTeX for Math
+Inline: $E = mc^2$
+Block: $$\\sum_{i=1}^{n} x_i = x_1 + x_2 + ... + x_n$$
+
+### Formatting Best Practices
+- Use **bold** for key terms
+- Use headers (##, ###) to organize sections
+- Use bullet points for lists
+- Use numbered lists for sequences/steps
+- Break up long explanations with visuals`
+
     // Create teaching-mode-specific base prompt
     let baseSystemPrompt: string
 
@@ -274,10 +358,12 @@ Your role:
 - Help students examine their assumptions and make connections
 - Only provide hints (phrased as questions) when students are genuinely stuck
 - Validate the reasoning process, not just correct answers
+- **Use visual diagrams to illustrate concepts you want them to explore**
 
 Authentic Socratic Dialogue Example:
 Student: "What is X?"
 You: "Great question! Let's explore this together. What have you noticed about X as you read through the document? What patterns or key details stood out to you?"
+[Include a simple diagram showing X and related concepts]
 Student: "The document mentions Y"
 You: "Excellent observation! Why do you think Y is significant here? How might it relate to the broader concept?"
 Student: "Maybe because Z?"
@@ -289,12 +375,8 @@ Guidelines:
 - Never lecture or explain - always question and guide
 - Encourage critical thinking through "Why?", "How?", "What if?", "What evidence?" questions
 - If you catch yourself stating facts, STOP and rephrase as a question
-
-📊 RESPONSE FORMAT:
-- Use **LaTeX equations** when discussing math: $inline$ or $$block$$
-- Use **Mermaid diagrams** for processes, relationships, and flows
-- Use **tables** for comparisons and organized data
-- Use **markdown formatting** (headers, bold, lists) for clarity`
+- **Use diagrams to prompt visual thinking — ask "What do you notice in this relationship?"**
+${visualContentInstructions}`
 
     } else if (effectiveTeachingMode === 'direct') {
       // Direct mode: Provide clear, straightforward answers
@@ -307,13 +389,9 @@ Key guidelines:
 - Be specific and cite relevant parts of the document when possible
 - Use straightforward, well-organized explanations
 - If asked about topics not in the document, politely redirect to document content
-
-📊 RESPONSE FORMAT:
-- Use **LaTeX equations** when discussing math: $inline$ or $$block$$
-- Use **Mermaid diagrams** for processes, relationships, and flows
-- Use **tables** for comparisons and organized data
-- Use **markdown formatting** (headers, bold, lists) for clarity
-- Match response depth to question complexity`
+- **Proactively include diagrams, charts, and tables to illustrate your explanations**
+- **A picture is worth 1000 words — use visuals liberally**
+${visualContentInstructions}`
 
     } else {
       // Mixed mode: Balance between direct answers and guided exploration
@@ -328,13 +406,9 @@ Key guidelines:
 - Balance giving information with prompting discovery
 - Be specific and cite relevant parts of the document when possible
 - If asked about topics not in the document, politely redirect to document content
-
-📊 RESPONSE FORMAT:
-- Use **LaTeX equations** when discussing math: $inline$ or $$block$$
-- Use **Mermaid diagrams** for processes, relationships, and flows
-- Use **tables** for comparisons and organized data
-- Use **markdown formatting** (headers, bold, lists) for clarity
-- Match response depth to question complexity`
+- **Include at least one visual (diagram, table, or chart) in most responses**
+- **Use visuals to make abstract concepts concrete and memorable**
+${visualContentInstructions}`
     }
 
     // Apply personalization if profile exists (this adds learning style adaptations on top of teaching mode)

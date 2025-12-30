@@ -8,7 +8,7 @@
 import { logger } from './logger'
 
 /**
- * AI Model Pricing (as of January 2025)
+ * AI Model Pricing (Updated December 2025)
  * Prices are per 1M tokens
  */
 const PRICING = {
@@ -43,18 +43,26 @@ const PRICING = {
     input: 30.00, // $30.00 per 1M characters
     output: 0,
   },
-  // Anthropic Claude Models
+  // Anthropic Claude Models (Updated December 2025)
+  'claude-3-5-haiku-20241022': {
+    input: 1.00,  // $1.00 per 1M input tokens - FAST, cost-effective
+    output: 5.00, // $5.00 per 1M output tokens - for chat & Study Buddy
+  },
   'claude-3-5-sonnet': {
     input: 3.00,  // $3.00 per 1M input tokens (deprecated)
     output: 15.00, // $15.00 per 1M output tokens (deprecated)
   },
   'claude-sonnet-4-20250514': {
-    input: 3.00,  // $3.00 per 1M input tokens
-    output: 15.00, // $15.00 per 1M output tokens
+    input: 3.00,  // $3.00 per 1M input tokens - balanced quality
+    output: 15.00, // $15.00 per 1M output tokens - for flashcards, mind maps, exams
+  },
+  'claude-opus-4-5-20251101': {
+    input: 5.00,  // $5.00 per 1M input tokens - most intelligent
+    output: 25.00, // $25.00 per 1M output tokens - for complex tasks
   },
   'claude-3-opus': {
-    input: 15.00, // $15.00 per 1M input tokens
-    output: 75.00, // $75.00 per 1M output tokens
+    input: 15.00, // $15.00 per 1M input tokens (legacy)
+    output: 75.00, // $75.00 per 1M output tokens (legacy)
   },
   // Google Gemini Models
   'gemini-1.5-pro': {

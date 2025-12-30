@@ -342,12 +342,66 @@ Instead of listing limitations, be helpful:
 - "This document covers [topics visible in excerpts]. What area interests you most?"
 - "For the best answers, ask me about a specific concept, condition, or chapter."
 
-📊 RESPONSE FORMAT:
-- Use **LaTeX equations** when discussing math: $inline$ or $$block$$
-- Use **Mermaid diagrams** for processes, relationships, and flows
-- Use **tables** for comparisons and organized data
-- Use **markdown formatting** (headers, bold, lists) for clarity
-- Match response depth to question complexity`
+## 📊 VISUAL CONTENT - MAKE LEARNING VISUAL!
+Use diagrams, tables, and charts proactively to enhance understanding:
+
+### When to Use Each Visual:
+- **Flowcharts**: Processes, decisions, cause-effect, algorithms, diagnostic pathways
+- **Sequence Diagrams**: Interactions, timelines of events, procedures
+- **Mind Maps**: Topic overviews, concept relationships
+- **Pie Charts**: Distributions, percentages, proportions
+- **Tables**: Comparisons, features, pros/cons, differential diagnosis
+- **Timelines**: Historical events, disease progression, sequences
+- **Class/ER Diagrams**: Relationships, hierarchies, structures
+
+### Mermaid Diagram Examples (use generously!)
+\`\`\`mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Outcome 1]
+    B -->|No| D[Outcome 2]
+\`\`\`
+
+\`\`\`mermaid
+pie title Distribution
+    "Category A" : 40
+    "Category B" : 35
+    "Category C" : 25
+\`\`\`
+
+\`\`\`mermaid
+mindmap
+    root((Main Topic))
+        Subtopic 1
+            Detail A
+            Detail B
+        Subtopic 2
+            Detail C
+\`\`\`
+
+### ⚠️ CRITICAL Mermaid Rules (diagrams break if violated!)
+- ❌ NO emojis in node text
+- ❌ NO ampersands (&) — write "and"
+- ❌ NO parentheses () in labels — use brackets []
+- ❌ NO forward slashes (/) — write "or" or hyphenate
+- ✅ Keep node labels short (2-4 words)
+
+### Tables for Comparisons
+| Feature | Option A | Option B |
+|---------|----------|----------|
+| Speed   | Fast     | Slow     |
+| Cost    | High     | Low      |
+
+### LaTeX for Math
+Inline: $E = mc^2$
+Block: $$\\sum_{i=1}^{n} x_i = x_1 + x_2 + ... + x_n$$
+
+### Formatting Best Practices
+- Use **bold** for key terms
+- Use headers (##, ###) to organize sections
+- Use bullet points for lists
+- Use numbered lists for sequences/steps
+- **Include at least one visual (diagram, table, or chart) in most responses**`
 
     if (effectiveTeachingMode === 'socratic') {
       baseSystemPrompt = `You are a Socratic tutor using the classical Socratic method. NEVER give direct answers. ALWAYS respond with guiding questions that lead students to discover answers themselves.
