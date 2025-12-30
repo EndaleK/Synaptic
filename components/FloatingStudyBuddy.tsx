@@ -1,17 +1,24 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Send, Loader2, MessageCircle, X, History, Copy, Check } from "lucide-react"
+import { Send, Loader2, MessageCircle, X, History, Copy, Check, Bot, Maximize2, Minimize2, PanelRightClose } from "lucide-react"
 import { useStudyBuddyStore } from "@/lib/store/useStudyBuddyStore"
 import { useDocumentStore, useUIStore } from "@/lib/store/useStore"
 import { useToast } from "./ToastContainer"
 import { cn } from "@/lib/utils"
 import MarkdownRenderer from "./MarkdownRenderer"
+import { ActionSuggestionList } from "./teacher/ActionSuggestionCard"
+import type { SuggestedAction } from "@/lib/teacher-agent/types"
+import type { PreferredMode } from "@/lib/supabase/types"
+import { getGreetingMessage, type MotivationMessage } from "@/lib/motivation-messages"
+import { StudyBuddyGreeting } from "./BuddyMessage"
+import { useUser } from "@clerk/nextjs"
 
 export default function FloatingStudyBuddy() {
   const toast = useToast()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const { user } = useUser()
 
   // Keep existing Study Buddy store for conversation management
   const {
@@ -20,16 +27,30 @@ export default function FloatingStudyBuddy() {
     startNewConversation,
     conversationHistory,
     loadConversation,
-    currentConversation
+    currentConversation,
+    // View mode
+    viewMode,
+    setViewMode,
+    panelWidth,
+    // Agentic Teacher state (always enabled)
+    pendingActions,
+    executingActionId,
+    addPendingActions,
+    approveAction,
+    rejectAction,
+    updateActionStatus,
+    setExecutingAction,
+    clearPendingActions,
+    // Activity tracking
+    updateLastActivity
   } = useStudyBuddyStore()
 
   const { currentDocument } = useDocumentStore()
-  const { activeMode } = useUIStore()
+  const { activeMode, setActiveMode } = useUIStore()
 
   const messages = getCurrentMessages()
 
   // UI state
-  const [isMinimized, setIsMinimized] = useState(true)
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [streamingMessage, setStreamingMessage] = useState("")
@@ -37,6 +58,11 @@ export default function FloatingStudyBuddy() {
   const [showHistory, setShowHistory] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [greetingMessage, setGreetingMessage] = useState<MotivationMessage | null>(null)
+
+  // Derived state from viewMode
+  const isMinimized = viewMode === 'minimized'
+  const isPanel = viewMode === 'panel'
 
   // Detect mobile on mount
   useEffect(() => {
@@ -67,19 +93,70 @@ export default function FloatingStudyBuddy() {
     }
   }, [isMinimized])
 
+  // Generate greeting message when Study Buddy opens
+  useEffect(() => {
+    if (!isMinimized && messages.length === 0) {
+      setGreetingMessage(getGreetingMessage())
+    }
+  }, [isMinimized, messages.length])
+
   // Don't show when user is in Chat mode (Chat has its own interface)
   if (activeMode === 'chat') {
     return null
   }
 
-  // Parse quick commands
-  const parseQuickCommand = (text: string): { command: string | null; actualMessage: string } => {
+  // Available slash commands for help display
+  const SLASH_COMMANDS = [
+    { cmd: '/clear', desc: 'Clear chat history' },
+    { cmd: '/new', desc: 'Start a new conversation' },
+    { cmd: '/help', desc: 'Show available commands' },
+    { cmd: '/explain [topic]', desc: 'Get detailed explanation' },
+    { cmd: '/summarize', desc: 'Summarize document or discussion' },
+    { cmd: '/quiz', desc: 'Create quiz questions' },
+    { cmd: '/eli5 [topic]', desc: 'Explain like I\'m 5' },
+    { cmd: '/example [concept]', desc: 'Get real-world examples' },
+    { cmd: '/flashcards', desc: 'Go to Flashcards mode' },
+    { cmd: '/mindmap', desc: 'Go to Mind Map mode' },
+    { cmd: '/podcast', desc: 'Go to Podcast mode' },
+    { cmd: '/home', desc: 'Go to Dashboard home' },
+  ]
+
+  // Parse quick commands - returns action type for special commands
+  const parseQuickCommand = (text: string): { command: string | null; actualMessage: string; action?: 'clear' | 'new' | 'help' | 'navigate' | 'message'; navigateTo?: PreferredMode } => {
     const commandMatch = text.match(/^\/(\w+)\s*(.*)/)
     if (commandMatch) {
       const [, command, rest] = commandMatch
       let actualMessage = rest.trim()
+      const cmd = command.toLowerCase()
 
-      switch (command.toLowerCase()) {
+      // Special commands that don't send a message
+      switch (cmd) {
+        case 'clear':
+          return { command: cmd, actualMessage: '', action: 'clear' }
+        case 'new':
+          return { command: cmd, actualMessage: '', action: 'new' }
+        case 'help':
+        case 'commands':
+          return { command: cmd, actualMessage: '', action: 'help' }
+        case 'flashcards':
+          return { command: cmd, actualMessage: '', action: 'navigate', navigateTo: 'flashcards' }
+        case 'mindmap':
+          return { command: cmd, actualMessage: '', action: 'navigate', navigateTo: 'mindmap' }
+        case 'podcast':
+          return { command: cmd, actualMessage: '', action: 'navigate', navigateTo: 'podcast' }
+        case 'home':
+          return { command: cmd, actualMessage: '', action: 'navigate', navigateTo: 'home' }
+        case 'chat':
+          return { command: cmd, actualMessage: '', action: 'navigate', navigateTo: 'chat' }
+        case 'writer':
+        case 'write':
+          return { command: cmd, actualMessage: '', action: 'navigate', navigateTo: 'writer' }
+        case 'video':
+          return { command: cmd, actualMessage: '', action: 'navigate', navigateTo: 'video' }
+      }
+
+      // Commands that transform into messages
+      switch (cmd) {
         case 'explain':
           actualMessage = `Please explain ${actualMessage || 'this topic'} in detail.`
           break
@@ -97,13 +174,31 @@ export default function FloatingStudyBuddy() {
         case 'example':
           actualMessage = `Can you give me a real-world example of ${actualMessage || 'this concept'}?`
           break
+        case 'define':
+          actualMessage = `What is the definition of ${actualMessage || 'this term'}?`
+          break
+        case 'compare':
+          actualMessage = `Can you compare and contrast ${actualMessage || 'these concepts'}?`
+          break
+        case 'steps':
+          actualMessage = `Can you break down ${actualMessage || 'this process'} into step-by-step instructions?`
+          break
         default:
-          return { command: null, actualMessage: text }
+          return { command: null, actualMessage: text, action: 'message' }
       }
 
-      return { command: command.toLowerCase(), actualMessage }
+      return { command: cmd, actualMessage, action: 'message' }
     }
-    return { command: null, actualMessage: text }
+    return { command: null, actualMessage: text, action: 'message' }
+  }
+
+  // Show help message with available commands
+  const showHelpMessage = () => {
+    const helpContent = SLASH_COMMANDS.map(c => `**${c.cmd}** - ${c.desc}`).join('\n')
+    addMessage({
+      role: 'assistant',
+      content: `## Available Commands\n\n${helpContent}\n\n*Tip: Type any command to use it!*`
+    })
   }
 
   // Handle sending a message
@@ -111,14 +206,43 @@ export default function FloatingStudyBuddy() {
     if (!input.trim() || isLoading) return
 
     const userInput = input.trim()
-    const { command, actualMessage } = parseQuickCommand(userInput)
+    const { command, actualMessage, action, navigateTo } = parseQuickCommand(userInput)
 
     setInput("")
+
+    // Handle special commands that don't require API call
+    if (action === 'clear') {
+      startNewConversation()
+      clearPendingActions()
+      toast.success('Chat cleared')
+      return
+    }
+
+    if (action === 'new') {
+      startNewConversation()
+      clearPendingActions()
+      setGreetingMessage(getGreetingMessage())
+      toast.success('Started new conversation')
+      return
+    }
+
+    if (action === 'help') {
+      showHelpMessage()
+      return
+    }
+
+    if (action === 'navigate' && navigateTo) {
+      setActiveMode(navigateTo)
+      toast.success(`Switched to ${navigateTo} mode`)
+      return
+    }
+
+    // For message commands, proceed with API call
     setIsLoading(true)
     setStreamingMessage("")
 
-    if (command) {
-      toast.success(`Quick command: /${command}`)
+    if (command && action === 'message') {
+      toast.success(`/${command}`)
     }
 
     try {
@@ -129,7 +253,7 @@ export default function FloatingStudyBuddy() {
       })
 
       // Prepare messages for API
-      const conversationHistory = [
+      const conversationHistoryForApi = [
         ...messages.map(m => ({
           role: m.role,
           content: m.content
@@ -140,23 +264,19 @@ export default function FloatingStudyBuddy() {
         }
       ]
 
-      // Build context-aware prompt
-      let contextInfo = ""
-      if (currentDocument) {
-        contextInfo = `\n\n[Context: User is studying "${currentDocument.name}" in ${activeMode} mode]`
-      }
+      // Update last activity timestamp
+      updateLastActivity()
 
-      // Call Study Buddy API
-      const response = await fetch('/api/study-buddy/chat', {
+      // Always use Teacher Agent API (unified experience)
+      const response = await fetch('/api/teacher-agent/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          messages: conversationHistory,
-          topic: actualMessage + contextInfo,
-          documentId: currentDocument?.id,
-          activeMode
+          message: actualMessage,
+          conversationId: currentConversation?.id,
+          conversationHistory: conversationHistoryForApi
         })
       })
 
@@ -165,47 +285,21 @@ export default function FloatingStudyBuddy() {
         throw new Error(error.error || 'Failed to get response')
       }
 
-      // Handle streaming response
-      const reader = response.body?.getReader()
-      const decoder = new TextDecoder()
-      let accumulatedResponse = ""
+      const data = await response.json()
 
-      if (!reader) {
-        throw new Error('No response stream available')
-      }
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n\n')
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6))
-              if (data.content) {
-                accumulatedResponse += data.content
-                setStreamingMessage(accumulatedResponse)
-              }
-            } catch (e) {
-              // Skip invalid JSON
-            }
-          }
-        }
-      }
-
-      // Add assistant message to conversation
-      if (accumulatedResponse) {
+      // Add assistant message with suggested actions
+      if (data.message) {
         addMessage({
           role: 'assistant',
-          content: accumulatedResponse
+          content: data.message,
+          suggestedActions: data.suggestedActions
         })
       }
 
-      setStreamingMessage("")
-
+      // Add suggested actions to store
+      if (data.suggestedActions && data.suggestedActions.length > 0) {
+        addPendingActions(data.suggestedActions)
+      }
     } catch (error: unknown) {
       console.error('Study Buddy chat error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to get response from Study Buddy'
@@ -213,6 +307,76 @@ export default function FloatingStudyBuddy() {
     } finally {
       setIsLoading(false)
       inputRef.current?.focus()
+    }
+  }
+
+  // Handle approving an action
+  const handleApproveAction = async (actionId: string) => {
+    approveAction(actionId)
+
+    try {
+      // Execute the action
+      const response = await fetch('/api/teacher-agent/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ actionId })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        updateActionStatus(actionId, 'completed')
+        toast.success(result.message || 'Action completed!')
+
+        // Handle navigation actions
+        if (result.data?.action === 'navigate' && result.data?.mode) {
+          // Map teacher agent modes to app modes
+          const modeMap: Record<string, PreferredMode> = {
+            'home': 'home',
+            'chat': 'chat',
+            'flashcards': 'flashcards',
+            'podcast': 'podcast',
+            'mindmap': 'mindmap',
+            'quiz': 'flashcards', // Quiz uses flashcards mode
+            'quick-summary': 'podcast', // Quick summary uses podcast mode
+            'study-guide': 'studyguide',
+            'writer': 'writer',
+            'video': 'video'
+          }
+          const targetMode = modeMap[result.data.mode as string] || 'home'
+          setActiveMode(targetMode)
+        }
+      } else {
+        updateActionStatus(actionId, 'failed')
+        toast.error(result.error || 'Action failed')
+      }
+    } catch (error) {
+      console.error('Action execution error:', error)
+      updateActionStatus(actionId, 'failed')
+      toast.error('Failed to execute action')
+    } finally {
+      setExecutingAction(null)
+    }
+  }
+
+  // Handle rejecting an action
+  const handleRejectAction = async (actionId: string) => {
+    rejectAction(actionId)
+    toast.info('Action dismissed')
+
+    // Update in database
+    try {
+      await fetch('/api/teacher-agent/execute', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ actionId, status: 'rejected' })
+      })
+    } catch (error) {
+      console.error('Failed to update action status:', error)
     }
   }
 
@@ -273,7 +437,7 @@ export default function FloatingStudyBuddy() {
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
-          onClick={() => setIsMinimized(true)}
+          onClick={() => setViewMode('minimized')}
         />
 
         {/* Full-screen modal */}
@@ -298,7 +462,7 @@ export default function FloatingStudyBuddy() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setIsMinimized(true)}
+                  onClick={() => setViewMode('minimized')}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
@@ -310,13 +474,22 @@ export default function FloatingStudyBuddy() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-4">
             {messages.length === 0 && !streamingMessage && (
-              <div className="text-center py-8">
-                <MessageCircle className="w-12 h-12 text-purple-500 mx-auto mb-3" />
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Hi! I'm your Study Buddy. Ask me anything!
-                </p>
+              <div className="text-center py-6">
+                {greetingMessage ? (
+                  <StudyBuddyGreeting
+                    message={greetingMessage}
+                    userName={user?.firstName || undefined}
+                  />
+                ) : (
+                  <>
+                    <Bot className="w-12 h-12 text-purple-500 mx-auto mb-3" />
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                      Hey! I'm your Study Buddy. Tell me what you want to learn!
+                    </p>
+                  </>
+                )}
                 {quickActions.length > 0 && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 mt-4">
                     <p className="text-xs text-gray-500 dark:text-gray-500 mb-2">Quick actions:</p>
                     {quickActions.map((action, idx) => (
                       <button
@@ -435,7 +608,7 @@ export default function FloatingStudyBuddy() {
         <div className="relative group">
           {/* Main button */}
           <button
-            onClick={() => setIsMinimized(false)}
+            onClick={() => setViewMode('floating')}
             className="w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shadow-lg hover:shadow-2xl transition-all hover:scale-110 active:scale-95 flex items-center justify-center"
             title="Open Study Buddy"
           >
@@ -451,24 +624,42 @@ export default function FloatingStudyBuddy() {
     )
   }
 
-  // Desktop expanded state - Opens above the circular button
+  // Desktop expanded state - Opens above the circular button OR as panel
+  const containerClass = isPanel
+    ? "fixed top-0 right-0 z-50 h-full bg-white dark:bg-gray-900 shadow-2xl border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-all duration-300"
+    : "fixed z-50 w-[400px] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
+
   return (
-    <div className="fixed bottom-28 right-4 z-50 w-[400px] max-h-[600px] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+    <div
+      className={containerClass}
+      style={isPanel
+        ? { width: `${panelWidth}%` }
+        : { bottom: '7rem', right: '1rem', maxHeight: 'calc(100vh - 10rem)' }
+      }
+    >
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <MessageCircle className="w-5 h-5" />
+            <Bot className="w-5 h-5" />
             <div>
               <h3 className="font-bold text-sm">Study Buddy</h3>
               {currentDocument && (
-                <p className="text-xs text-purple-100 truncate max-w-[250px]">
+                <p className="text-xs text-purple-100 truncate max-w-[200px]">
                   {currentDocument.name}
                 </p>
               )}
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {/* Expand/Collapse Panel */}
+            <button
+              onClick={() => setViewMode(isPanel ? 'floating' : 'panel')}
+              className="p-1.5 hover:bg-white/20 rounded transition-colors"
+              title={isPanel ? 'Collapse to floating' : 'Expand to panel'}
+            >
+              {isPanel ? <PanelRightClose className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
             {conversationHistory.length > 0 && (
               <button
                 onClick={() => setShowHistory(!showHistory)}
@@ -479,11 +670,11 @@ export default function FloatingStudyBuddy() {
               </button>
             )}
             <button
-              onClick={() => setIsMinimized(true)}
+              onClick={() => setViewMode('minimized')}
               className="p-1.5 hover:bg-white/20 rounded transition-colors"
               title="Minimize"
             >
-              <X className="w-4 h-4" />
+              {isPanel ? <Minimize2 className="w-4 h-4" /> : <X className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -531,27 +722,46 @@ export default function FloatingStudyBuddy() {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-900">
+      <div className={cn(
+        "flex-1 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-900 min-h-0",
+        isPanel && "p-4"
+      )}>
         {messages.length === 0 && !streamingMessage && (
-          <div className="text-center py-6">
-            <MessageCircle className="w-10 h-10 text-purple-500 mx-auto mb-2" />
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-              Hi! Ask me anything about your studies.
-            </p>
-            {quickActions.length > 0 && (
-              <div className="space-y-1.5">
-                <p className="text-xs text-gray-500 dark:text-gray-500 mb-1">Quick actions:</p>
-                {quickActions.slice(0, 3).map((action, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setInput(action.command)}
-                    className="block w-full text-left px-2 py-1.5 bg-white dark:bg-gray-800 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    {action.label}
-                  </button>
-                ))}
-              </div>
+          <div className="text-center py-6 flex flex-col items-center justify-center h-full">
+            {greetingMessage ? (
+              <StudyBuddyGreeting
+                message={greetingMessage}
+                userName={user?.firstName || undefined}
+                className={isPanel ? "py-8" : ""}
+              />
+            ) : (
+              <>
+                <Bot className={cn("text-purple-500 mx-auto mb-2", isPanel ? "w-12 h-12" : "w-10 h-10")} />
+                <p className={cn("text-gray-600 dark:text-gray-400 mb-3", isPanel ? "text-base" : "text-sm")}>
+                  Hey! I'm your Study Buddy. What would you like to learn today?
+                </p>
+              </>
             )}
+            <div className="space-y-1.5 mt-4">
+              <p className="text-xs text-gray-500 dark:text-gray-500 mb-1">Try saying:</p>
+              {[
+                'Help me study my documents',
+                'What should I review today?',
+                'Create flashcards from my notes',
+                'Quiz me on what I learned'
+              ].slice(0, isPanel ? 4 : 3).map((suggestion, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setInput(suggestion)}
+                  className={cn(
+                    "block w-full text-left px-2 py-1.5 bg-white dark:bg-gray-800 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700",
+                    isPanel ? "text-sm py-2" : "text-xs"
+                  )}
+                >
+                  "{suggestion}"
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -612,43 +822,68 @@ export default function FloatingStudyBuddy() {
         )}
 
         {isLoading && !streamingMessage && (
-          <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs">
-            <Loader2 className="w-3 h-3 animate-spin" />
+          <div className={cn(
+            "flex items-center gap-1.5 text-gray-500 dark:text-gray-400",
+            isPanel ? "text-sm" : "text-xs"
+          )}>
+            <Loader2 className={cn("animate-spin", isPanel ? "w-4 h-4" : "w-3 h-3")} />
             <span>Thinking...</span>
           </div>
+        )}
+
+        {/* Pending Actions from Agentic Teacher */}
+        {pendingActions.length > 0 && (
+          <ActionSuggestionList
+            actions={pendingActions}
+            onApprove={handleApproveAction}
+            onReject={handleRejectAction}
+            executingActionId={executingActionId}
+          />
         )}
 
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
-      <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3">
+      <div className={cn(
+        "flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900",
+        isPanel ? "p-4" : "p-3"
+      )}>
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask anything..."
+            placeholder="Ask me anything..."
             disabled={isLoading}
             rows={1}
-            className="flex-1 px-2 py-1.5 bg-gray-100 dark:bg-gray-800 border-0 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-xs"
-            style={{ minHeight: '32px', maxHeight: '100px' }}
+            className={cn(
+              "flex-1 bg-gray-100 dark:bg-gray-800 border-0 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400",
+              isPanel ? "px-3 py-2 text-sm" : "px-2 py-1.5 text-xs"
+            )}
+            style={{ minHeight: isPanel ? '40px' : '32px', maxHeight: isPanel ? '150px' : '100px' }}
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="p-2 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+            className={cn(
+              "bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition-colors disabled:cursor-not-allowed",
+              isPanel ? "p-3" : "p-2"
+            )}
           >
             {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className={cn("animate-spin", isPanel ? "w-5 h-5" : "w-4 h-4")} />
             ) : (
-              <Send className="w-4 h-4" />
+              <Send className={isPanel ? "w-5 h-5" : "w-4 h-4"} />
             )}
           </button>
         </div>
-        <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">
-          Try: /explain, /summarize, /quiz • Enter to send
+        <p className={cn(
+          "text-gray-500 dark:text-gray-400 mt-1.5 text-center",
+          isPanel ? "text-xs" : "text-[10px]"
+        )}>
+          Ask for help • I can suggest study actions for you
         </p>
       </div>
     </div>
