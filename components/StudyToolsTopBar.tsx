@@ -4,7 +4,13 @@ import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
-import { UserButton } from "@clerk/nextjs"
+import dynamic from "next/dynamic"
+
+// Dynamically import UserButton to avoid hydration mismatch
+const UserButton = dynamic(
+  () => import("@clerk/nextjs").then((mod) => mod.UserButton),
+  { ssr: false, loading: () => <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" /> }
+)
 import {
   BookOpen, MessageSquare, Mic, Network, Clock, PenTool, Youtube, GraduationCap, FileText,
   Library, BookOpenCheck, Calendar, BarChart3, Bell,

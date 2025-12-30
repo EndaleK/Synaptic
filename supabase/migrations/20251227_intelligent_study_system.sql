@@ -8,7 +8,7 @@
 CREATE TABLE IF NOT EXISTS document_analysis (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   document_id UUID UNIQUE REFERENCES documents(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE,
+  user_id BIGINT REFERENCES user_profiles(id) ON DELETE CASCADE,
 
   -- Complexity analysis
   complexity_score INTEGER CHECK (complexity_score BETWEEN 0 AND 100),
@@ -47,14 +47,14 @@ CREATE TABLE IF NOT EXISTS document_analysis (
 -- ============================================
 CREATE TABLE IF NOT EXISTS study_plans (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE,
+  user_id BIGINT REFERENCES user_profiles(id) ON DELETE CASCADE,
 
   -- Plan details
   title TEXT NOT NULL,
   description TEXT,
 
   -- Exam linkage
-  exam_event_id UUID REFERENCES study_schedule(id) ON DELETE SET NULL,
+  exam_event_id BIGINT REFERENCES study_schedule(id) ON DELETE SET NULL,
   exam_date DATE NOT NULL,
   exam_title TEXT, -- Cached from event for display
 
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS study_plans (
 CREATE TABLE IF NOT EXISTS study_plan_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   plan_id UUID REFERENCES study_plans(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE,
+  user_id BIGINT REFERENCES user_profiles(id) ON DELETE CASCADE,
 
   -- Schedule
   scheduled_date DATE NOT NULL,
@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS study_plan_sessions (
 CREATE TABLE IF NOT EXISTS content_generation_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE,
+  user_id BIGINT REFERENCES user_profiles(id) ON DELETE CASCADE,
   plan_id UUID REFERENCES study_plans(id) ON DELETE SET NULL,
 
   -- Job configuration
@@ -155,12 +155,13 @@ CREATE TABLE IF NOT EXISTS content_generation_jobs (
   -- Timing
   queued_at TIMESTAMPTZ DEFAULT NOW(),
   started_at TIMESTAMPTZ,
-  completed_at TIMESTAMPTZ,
-
-  -- Unique constraint to prevent duplicate jobs
-  UNIQUE(document_id, user_id, content_type, status)
-    WHERE status IN ('pending', 'queued', 'processing')
+  completed_at TIMESTAMPTZ
 );
+
+-- Partial unique index to prevent duplicate active jobs
+CREATE UNIQUE INDEX IF NOT EXISTS idx_content_generation_jobs_active_unique
+  ON content_generation_jobs(document_id, user_id, content_type)
+  WHERE status IN ('pending', 'queued', 'processing');
 
 -- ============================================
 -- 5. EXTEND STUDY_SCHEDULE FOR EXAM DATES

@@ -6,6 +6,7 @@ import PodcastPlayer, { type TranscriptEntry } from "./PodcastPlayer"
 import { useToast } from "./ToastContainer"
 import InfoTipBanner from "./InfoTipBanner"
 import type { PodcastFormat } from "@/lib/podcast-generator"
+import { ELEVENLABS_VOICES, DEFAULT_VOICE_HOST_A, DEFAULT_VOICE_HOST_B, type ElevenLabsVoice } from "@/lib/tts-generator"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
 import ChapterSelector from "./ChapterSelector"
 import type { Chapter } from "@/lib/chapter-extractor"
@@ -90,6 +91,10 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
   // Chapter selector modal state
   const [showChapterSelector, setShowChapterSelector] = useState(false)
   const [chaptersData, setChaptersData] = useState<Chapter[]>([])
+
+  // Voice selection state
+  const [voiceHostA, setVoiceHostA] = useState<string>(DEFAULT_VOICE_HOST_A)
+  const [voiceHostB, setVoiceHostB] = useState<string>(DEFAULT_VOICE_HOST_B)
 
   // 📊 Study session tracking
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -227,7 +232,9 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
           format,
           selection,
           customPrompt: customPrompt.trim() || undefined,
-          targetDuration: 10
+          targetDuration: 10,
+          voiceHostA,
+          voiceHostB
         })
       })
 
@@ -535,18 +542,71 @@ export default function PodcastView({ documentId, documentName }: PodcastViewPro
               onClick={() => setShowAdvanced(!showAdvanced)}
               className="text-sm font-medium text-accent-primary hover:text-accent-secondary transition-colors"
             >
-              {showAdvanced ? '− ' : '+ '}Custom Instructions
+              {showAdvanced ? '− ' : '+ '}Advanced Options
             </button>
 
             {showAdvanced && (
-              <div className="mt-3">
-                <textarea
-                  value={customPrompt}
-                  onChange={(e) => setCustomPrompt(e.target.value)}
-                  placeholder="E.g., 'Focus on practical applications' or 'Explain for beginners'"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white text-sm focus:ring-2 focus:ring-accent-primary focus:border-accent-primary transition-all resize-none"
-                  rows={2}
-                />
+              <div className="mt-4 space-y-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                {/* Voice Selection */}
+                <div>
+                  <label className="block text-sm font-semibold text-black dark:text-white mb-3">
+                    🎙️ Voice Selection
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Host A Voice */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                        Host A (Alex)
+                      </label>
+                      <select
+                        value={voiceHostA}
+                        onChange={(e) => setVoiceHostA(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white text-sm focus:ring-2 focus:ring-accent-primary focus:border-accent-primary transition-all"
+                      >
+                        {ELEVENLABS_VOICES.map((voice) => (
+                          <option key={voice.id} value={voice.id}>
+                            {voice.name} - {voice.description} ({voice.gender})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Host B Voice */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                        Host B (Jordan)
+                      </label>
+                      <select
+                        value={voiceHostB}
+                        onChange={(e) => setVoiceHostB(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white text-sm focus:ring-2 focus:ring-accent-primary focus:border-accent-primary transition-all"
+                      >
+                        {ELEVENLABS_VOICES.map((voice) => (
+                          <option key={voice.id} value={voice.id}>
+                            {voice.name} - {voice.description} ({voice.gender})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Powered by ElevenLabs for natural-sounding voices
+                  </p>
+                </div>
+
+                {/* Custom Instructions */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                    Custom Instructions (optional)
+                  </label>
+                  <textarea
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder="E.g., 'Focus on practical applications' or 'Explain for beginners'"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white text-sm focus:ring-2 focus:ring-accent-primary focus:border-accent-primary transition-all resize-none"
+                    rows={2}
+                  />
+                </div>
               </div>
             )}
           </div>

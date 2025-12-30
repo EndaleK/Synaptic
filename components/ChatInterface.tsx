@@ -126,7 +126,7 @@ export default function ChatInterface() {
     explainLevel,
     setExplainLevel
   } = useChatStore()
-  const { activeMode } = useUIStore()
+  const { activeMode, setActiveMode } = useUIStore()
   const hasLoadedDocument = useRef(false)
   const toast = useToast()
 
@@ -592,18 +592,170 @@ export default function ChatInterface() {
     }
   }
 
+  // Available slash commands for Chat
+  const CHAT_SLASH_COMMANDS = [
+    { cmd: '/clear', desc: 'Clear chat history' },
+    { cmd: '/new', desc: 'Start fresh conversation' },
+    { cmd: '/help', desc: 'Show available commands' },
+    { cmd: '/explain [topic]', desc: 'Get detailed explanation' },
+    { cmd: '/summarize', desc: 'Summarize the document' },
+    { cmd: '/quiz', desc: 'Create quiz questions' },
+    { cmd: '/eli5 [topic]', desc: 'Explain like I\'m 5' },
+    { cmd: '/example [concept]', desc: 'Get real-world examples' },
+    { cmd: '/mode [tutor|buddy]', desc: 'Switch personality mode' },
+    { cmd: '/teach [socratic|direct|mixed]', desc: 'Change teaching style' },
+    { cmd: '/home', desc: 'Go to Dashboard home' },
+    { cmd: '/flashcards', desc: 'Go to Flashcards mode' },
+    { cmd: '/mindmap', desc: 'Go to Mind Map mode' },
+    { cmd: '/podcast', desc: 'Go to Podcast mode' },
+  ]
+
+  // Parse and handle slash commands
+  const parseSlashCommand = (text: string): { handled: boolean; transformedMessage?: string } => {
+    const trimmed = text.trim()
+    if (!trimmed.startsWith('/')) return { handled: false }
+
+    const commandMatch = trimmed.match(/^\/(\w+)\s*(.*)/)
+    if (!commandMatch) return { handled: false }
+
+    const [, command, args] = commandMatch
+    const cmd = command.toLowerCase()
+    const argText = args.trim()
+
+    // Commands that are handled immediately (no API call)
+    switch (cmd) {
+      case 'clear':
+        handleClearChat()
+        toast.success('Chat cleared')
+        return { handled: true }
+
+      case 'new':
+        handleClearChat()
+        toast.success('Started fresh conversation')
+        return { handled: true }
+
+      case 'help':
+      case 'commands': {
+        const helpContent = CHAT_SLASH_COMMANDS.map(c => `**${c.cmd}** - ${c.desc}`).join('\n')
+        const helpMessage: Message = {
+          id: generateId(),
+          content: `## Available Commands\n\n${helpContent}\n\n*Tip: Type any command to use it!*`,
+          type: "assistant",
+          timestamp: generateTimestamp()
+        }
+        setMessages(prev => [...prev, helpMessage])
+        return { handled: true }
+      }
+
+      case 'mode':
+        if (argText === 'tutor' || argText === 'buddy' || argText === 'comedy') {
+          setPersonalityMode(argText as PersonalityMode)
+          toast.success(`Switched to ${argText} mode`)
+        } else {
+          toast.error('Usage: /mode [tutor|buddy|comedy]')
+        }
+        return { handled: true }
+
+      case 'teach':
+        if (argText === 'socratic' || argText === 'direct' || argText === 'mixed') {
+          setTeachingMode(argText as TeachingMode)
+          toast.success(`Teaching style: ${argText}`)
+        } else {
+          toast.error('Usage: /teach [socratic|direct|mixed]')
+        }
+        return { handled: true }
+
+      // Navigation commands
+      case 'home':
+        setActiveMode('home')
+        toast.success('Going to Dashboard')
+        return { handled: true }
+      case 'flashcards':
+        setActiveMode('flashcards')
+        toast.success('Switched to Flashcards')
+        return { handled: true }
+      case 'mindmap':
+        setActiveMode('mindmap')
+        toast.success('Switched to Mind Map')
+        return { handled: true }
+      case 'podcast':
+        setActiveMode('podcast')
+        toast.success('Switched to Podcast')
+        return { handled: true }
+      case 'writer':
+      case 'write':
+        setActiveMode('writer')
+        toast.success('Switched to Writer')
+        return { handled: true }
+      case 'video':
+        setActiveMode('video')
+        toast.success('Switched to Video')
+        return { handled: true }
+    }
+
+    // Commands that transform into messages (sent to AI)
+    let transformedMessage: string | undefined
+
+    switch (cmd) {
+      case 'explain':
+        transformedMessage = `Please explain ${argText || 'this topic'} in detail.`
+        break
+      case 'summarize':
+        transformedMessage = argText || (currentDocument
+          ? `Please summarize the key points from this document.`
+          : 'Please summarize what we\'ve discussed.')
+        break
+      case 'quiz':
+        transformedMessage = argText || 'Can you create quiz questions to test my understanding of this material?'
+        break
+      case 'eli5':
+        transformedMessage = `Explain ${argText || 'this concept'} like I'm 5 years old.`
+        break
+      case 'example':
+        transformedMessage = `Can you give me a real-world example of ${argText || 'this concept'}?`
+        break
+      case 'define':
+        transformedMessage = `What is the definition of ${argText || 'this term'}?`
+        break
+      case 'compare':
+        transformedMessage = `Can you compare and contrast ${argText || 'these concepts'}?`
+        break
+      case 'steps':
+        transformedMessage = `Can you break down ${argText || 'this process'} into step-by-step instructions?`
+        break
+      case 'key':
+      case 'keypoints':
+        transformedMessage = 'What are the key points I should remember from this?'
+        break
+      default:
+        // Unknown command, treat as regular message
+        return { handled: false }
+    }
+
+    if (transformedMessage) {
+      toast.success(`/${cmd}`)
+      return { handled: false, transformedMessage }
+    }
+
+    return { handled: false }
+  }
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return
 
-    // Check for /clear command
-    if (inputMessage.trim() === '/clear') {
-      handleClearChat()
+    // Parse slash commands
+    const { handled, transformedMessage } = parseSlashCommand(inputMessage)
+    if (handled) {
+      setInputMessage("")
       return
     }
 
+    // Use transformed message if command was recognized, otherwise use original
+    const messageContent = transformedMessage || inputMessage
+
     const userMessage: Message = {
       id: generateId(),
-      content: inputMessage,
+      content: messageContent,
       type: "user",
       timestamp: generateTimestamp()
     }

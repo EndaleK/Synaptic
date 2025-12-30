@@ -14,7 +14,8 @@ import { createClient } from "@/lib/supabase/server"
 import { searchDocument, getDocumentStats } from "@/lib/vector-store"
 import { generatePodcastScript, type PodcastFormat } from "@/lib/podcast-generator"
 import { generatePodcastAudio } from "@/lib/tts-generator"
-import { concatenateAudioBuffers, generateTranscript } from "@/lib/audio-utils"
+import { concatenateAudioBuffers } from "@/lib/audio-concat"
+import { generateTranscript } from "@/lib/audio-utils"
 import { getUserProfile, getUserLearningProfile } from "@/lib/supabase/user-profile"
 import type { LearningStyle, TeachingStylePreference } from "@/lib/supabase/types"
 import { providerFactory } from "@/lib/ai"
@@ -359,7 +360,7 @@ export async function POST(req: NextRequest) {
         })
 
         const audioSegments = await generatePodcastAudio(script.lines, script.language)
-        const audioBuffer = concatenateAudioBuffers(audioSegments)
+        const audioBuffer = await concatenateAudioBuffers(audioSegments)
         const transcript = generateTranscript(audioSegments)
         const totalDuration = transcript[transcript.length - 1]?.endTime || script.estimatedDuration
 

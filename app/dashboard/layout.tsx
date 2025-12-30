@@ -19,6 +19,9 @@ import TourOverlay from "@/components/Tour/TourOverlay"
 import { useStudySessionTracking } from "@/lib/hooks/useStudySessionTracking"
 import { usePomodoroStore } from "@/lib/store/usePomodoroStore"
 import StudyToolsTopBar from "@/components/StudyToolsTopBar"
+import { StudyReminderPopup } from "@/components/StudyReminderPopup"
+import { useStudyReminders } from "@/lib/hooks/useStudyReminders"
+import { useStudyBuddyStore } from "@/lib/store/useStudyBuddyStore"
 
 export default function DashboardLayout({
   children,
@@ -38,6 +41,21 @@ export default function DashboardLayout({
 
   // Pomodoro timer state
   const { status: pomodoroStatus, timeRemaining, timerType, startTimer } = usePomodoroStore()
+
+  // Study Buddy state for reminder actions
+  const { setViewMode, updateLastActivity } = useStudyBuddyStore()
+
+  // Study reminders hook
+  const {
+    currentReminder,
+    dismissReminder,
+    snoozeReminder
+  } = useStudyReminders({
+    enabled: true,
+    onReminderTriggered: () => {
+      // Could add analytics tracking here
+    }
+  })
 
   // Fix hydration mismatch by only rendering client-only elements after mount
   useEffect(() => {
@@ -59,6 +77,33 @@ export default function DashboardLayout({
   })
 
   const isDarkMode = resolvedTheme === 'dark'
+
+  // Handle reminder primary actions
+  const handleReminderAction = (action: string) => {
+    updateLastActivity()
+
+    switch (action) {
+      case 'review':
+        setActiveMode('flashcards')
+        if (pathname !== '/dashboard') {
+          router.push('/dashboard')
+        }
+        break
+      case 'open_study_buddy':
+        setViewMode('floating')
+        break
+      case 'continue':
+        setViewMode('floating')
+        break
+      case 'break':
+        // Could trigger a break timer here
+        toast.info('Taking a 5-minute break. You\'ve earned it!')
+        break
+      case 'dismiss':
+      default:
+        break
+    }
+  }
 
   const toggleTheme = () => {
     const newTheme = isDarkMode ? 'light' : 'dark'
@@ -332,6 +377,16 @@ export default function DashboardLayout({
 
         {/* Floating Study Buddy - Accessible from all learning modes */}
         <FloatingStudyBuddy />
+
+        {/* Study Reminder Popup */}
+        {isMounted && (
+          <StudyReminderPopup
+            reminder={currentReminder}
+            onPrimaryAction={handleReminderAction}
+            onDismiss={dismissReminder}
+            onSnooze={snoozeReminder}
+          />
+        )}
 
         {/* Bottom Navigation Bar - Mobile Only */}
         <BottomNavigationBar

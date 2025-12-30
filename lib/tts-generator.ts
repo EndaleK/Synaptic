@@ -3,24 +3,132 @@ import type { ScriptLine, Speaker } from "./podcast-generator"
 
 export type TTSVoice = 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'
 export type TTSLanguage = 'en-us' | 'en-gb' | 'ja' | 'zh' | 'es' | 'fr' | 'hi' | 'it' | 'pt-br'
+export type TTSProvider = 'elevenlabs' | 'lemonfox' | 'openai'
 
 export interface AudioSegment {
   speaker: Speaker
   audioBuffer: Buffer
   duration: number // in seconds
   text: string
-  provider?: 'lemonfox' | 'openai' // Track which TTS provider was used
+  provider?: TTSProvider // Track which TTS provider was used
 }
 
 /**
- * Voice mapping for podcast hosts
+ * Voice mapping for podcast hosts (OpenAI/Lemonfox)
  * - Host A (Alex): Uses 'alloy' - warm, balanced male voice
  * - Host B (Jordan): Uses 'nova' - friendly, engaging female voice
- * Works with both OpenAI and Lemonfox.ai (they share voice names!)
  */
 const VOICE_MAP: Record<Speaker, TTSVoice> = {
   host_a: 'alloy',
   host_b: 'nova'
+}
+
+/**
+ * Available ElevenLabs voices for selection
+ * Each voice has a unique character and style
+ */
+export interface ElevenLabsVoice {
+  id: string
+  name: string
+  description: string
+  gender: 'male' | 'female'
+  style: string
+  preview?: string // URL to preview audio
+}
+
+export const ELEVENLABS_VOICES: ElevenLabsVoice[] = [
+  // Male voices
+  { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam', description: 'Deep & authoritative', gender: 'male', style: 'narrative' },
+  { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni', description: 'Warm & conversational', gender: 'male', style: 'conversational' },
+  { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold', description: 'Crisp & confident', gender: 'male', style: 'professional' },
+  { id: 'pqHfZKP75CvOlQylNhV4', name: 'Bill', description: 'Trustworthy & calm', gender: 'male', style: 'documentary' },
+  { id: 'nPczCjzI2devNBz1zQrb', name: 'Brian', description: 'Deep & resonant', gender: 'male', style: 'narrative' },
+  { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie', description: 'Casual & friendly', gender: 'male', style: 'casual' },
+  { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte', description: 'Warm & engaging', gender: 'female', style: 'conversational' },
+  { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel', description: 'British & sophisticated', gender: 'male', style: 'british' },
+  { id: 'cjVigY5qzO86Huf0OWal', name: 'Eric', description: 'Friendly American', gender: 'male', style: 'american' },
+  { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'George', description: 'British & warm', gender: 'male', style: 'british' },
+  { id: 'N2lVS1w4EtoT3dr4eOWO', name: 'Callum', description: 'Transatlantic & versatile', gender: 'male', style: 'versatile' },
+  // Female voices
+  { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel', description: 'Clear & engaging', gender: 'female', style: 'conversational' },
+  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella', description: 'Soft & soothing', gender: 'female', style: 'gentle' },
+  { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi', description: 'Strong & confident', gender: 'female', style: 'assertive' },
+  { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Elli', description: 'Young & energetic', gender: 'female', style: 'youthful' },
+  { id: 'jBpfuIE2acCO8z3wKNLl', name: 'Gigi', description: 'Animated & expressive', gender: 'female', style: 'animated' },
+  { id: 'oWAxZDx7w5VEj9dCyTzz', name: 'Grace', description: 'Southern American', gender: 'female', style: 'american' },
+  { id: 'jsCqWAovK2LkecY7zXl4', name: 'Freya', description: 'Mature & elegant', gender: 'female', style: 'elegant' },
+  { id: 'ThT5KcBeYPX3keUQqHPh', name: 'Dorothy', description: 'British & pleasant', gender: 'female', style: 'british' },
+  { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily', description: 'British & warm', gender: 'female', style: 'british' },
+  { id: 'z9fAnlkpzviPz146aGWa', name: 'Glinda', description: 'Witch-like & mystical', gender: 'female', style: 'character' },
+  { id: 'piTKgcLEGmPE4e6mEKli', name: 'Nicole', description: 'Soft & whispered', gender: 'female', style: 'whisper' },
+]
+
+/**
+ * Default voice selections for podcast hosts
+ */
+export const DEFAULT_VOICE_HOST_A = 'pNInz6obpgDQGcFmaJgB' // Adam
+export const DEFAULT_VOICE_HOST_B = '21m00Tcm4TlvDq8ikWAM' // Rachel
+
+/**
+ * Voice configuration for podcast generation
+ */
+export interface VoiceConfig {
+  hostA: string // ElevenLabs voice ID for host A
+  hostB: string // ElevenLabs voice ID for host B
+}
+
+/**
+ * Get ElevenLabs voice IDs for podcast hosts
+ * Can be customized via voiceConfig parameter
+ */
+function getElevenLabsVoiceMap(voiceConfig?: VoiceConfig): Record<Speaker, string> {
+  return {
+    host_a: voiceConfig?.hostA || DEFAULT_VOICE_HOST_A,
+    host_b: voiceConfig?.hostB || DEFAULT_VOICE_HOST_B,
+  }
+}
+
+/**
+ * Generate speech using ElevenLabs TTS API
+ * High-quality, natural-sounding voices with emotional expression
+ * Pricing: ~$0.30 per 1000 characters (varies by plan)
+ */
+async function generateSpeechWithElevenLabs(
+  text: string,
+  voiceId: string,
+  languageCode?: string
+): Promise<Buffer> {
+  if (!process.env.ELEVENLABS_API_KEY) {
+    throw new Error("ElevenLabs API key not configured")
+  }
+
+  const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    method: "POST",
+    headers: {
+      "xi-api-key": process.env.ELEVENLABS_API_KEY,
+      "Content-Type": "application/json",
+      "Accept": "audio/mpeg"
+    },
+    body: JSON.stringify({
+      text: text,
+      model_id: "eleven_multilingual_v2", // Best quality multilingual model
+      voice_settings: {
+        stability: 0.5,        // Balance between stability and expressiveness
+        similarity_boost: 0.75, // Keep voice consistent
+        style: 0.3,            // Add some style/emotion
+        use_speaker_boost: true
+      },
+      ...(languageCode && { language_code: languageCode })
+    })
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`ElevenLabs API error (${response.status}): ${errorText}`)
+  }
+
+  const arrayBuffer = await response.arrayBuffer()
+  return Buffer.from(arrayBuffer)
 }
 
 /**
@@ -86,48 +194,111 @@ async function generateSpeechWithOpenAI(
 }
 
 /**
+ * Map TTSLanguage to ISO 639-1 language code for ElevenLabs
+ */
+function getElevenLabsLanguageCode(language: TTSLanguage): string | undefined {
+  const languageMap: Record<TTSLanguage, string> = {
+    'en-us': 'en',
+    'en-gb': 'en',
+    'ja': 'ja',
+    'zh': 'zh',
+    'es': 'es',
+    'fr': 'fr',
+    'hi': 'hi',
+    'it': 'it',
+    'pt-br': 'pt'
+  }
+  return languageMap[language]
+}
+
+/**
  * Generate speech audio from a single script line
- * Tries Lemonfox.ai first (cheaper), falls back to OpenAI if needed
+ * Priority: ElevenLabs (best quality) → Lemonfox (cheaper) → OpenAI (fallback)
  */
 export async function generateSpeechForLine(
   line: ScriptLine,
-  language: TTSLanguage = 'en-us'
+  language: TTSLanguage = 'en-us',
+  voiceConfig?: VoiceConfig
 ): Promise<AudioSegment> {
   const voice = VOICE_MAP[line.speaker]
+  const elevenLabsVoiceMap = getElevenLabsVoiceMap(voiceConfig)
+  const elevenLabsVoiceId = elevenLabsVoiceMap[line.speaker]
   let buffer: Buffer
-  let provider: 'lemonfox' | 'openai'
+  let provider: TTSProvider
 
-  console.log(`Generating TTS for ${line.speaker}: "${line.text.substring(0, 50)}..." (language: ${language})`)
+  console.log(`Generating TTS for ${line.speaker}: "${line.text.substring(0, 50)}..." (language: ${language}, voice: ${elevenLabsVoiceId})`)
 
-  // Try Lemonfox.ai first (83% cheaper!)
-  if (process.env.LEMONFOX_API_KEY) {
+  // Try ElevenLabs first (best quality)
+  if (process.env.ELEVENLABS_API_KEY) {
     try {
-      console.log(`[TTS] Trying Lemonfox.ai for ${line.speaker}...`)
+      console.log(`[TTS] Trying ElevenLabs for ${line.speaker} with voice ${elevenLabsVoiceId}...`)
+      const langCode = getElevenLabsLanguageCode(language)
+      buffer = await generateSpeechWithElevenLabs(line.text, elevenLabsVoiceId, langCode)
+      provider = 'elevenlabs'
+      console.log(`[TTS] ✓ ElevenLabs succeeded for ${line.speaker}`)
+    } catch (elevenLabsError: any) {
+      console.warn(`[TTS] ElevenLabs failed for ${line.speaker}: ${elevenLabsError.message}`)
+
+      // Fall back to Lemonfox
+      if (process.env.LEMONFOX_API_KEY) {
+        try {
+          console.log(`[TTS] Falling back to Lemonfox.ai for ${line.speaker}...`)
+          buffer = await generateSpeechWithLemonfox(line.text, voice, language)
+          provider = 'lemonfox'
+          console.log(`[TTS] ✓ Lemonfox.ai fallback succeeded for ${line.speaker}`)
+        } catch (lemonfoxError: any) {
+          console.warn(`[TTS] Lemonfox.ai also failed: ${lemonfoxError.message}`)
+
+          // Final fallback to OpenAI
+          try {
+            console.log(`[TTS] Final fallback to OpenAI for ${line.speaker}...`)
+            buffer = await generateSpeechWithOpenAI(line.text, voice)
+            provider = 'openai'
+            console.log(`[TTS] ✓ OpenAI fallback succeeded for ${line.speaker}`)
+          } catch (openaiError: any) {
+            throw new Error(`All TTS providers failed: ElevenLabs (${elevenLabsError.message}), Lemonfox (${lemonfoxError.message}), OpenAI (${openaiError.message})`)
+          }
+        }
+      } else {
+        // No Lemonfox, try OpenAI directly
+        try {
+          console.log(`[TTS] Falling back to OpenAI for ${line.speaker}...`)
+          buffer = await generateSpeechWithOpenAI(line.text, voice)
+          provider = 'openai'
+          console.log(`[TTS] ✓ OpenAI fallback succeeded for ${line.speaker}`)
+        } catch (openaiError: any) {
+          throw new Error(`TTS failed: ElevenLabs (${elevenLabsError.message}), OpenAI (${openaiError.message})`)
+        }
+      }
+    }
+  } else if (process.env.LEMONFOX_API_KEY) {
+    // No ElevenLabs, try Lemonfox
+    try {
+      console.log(`[TTS] ElevenLabs not configured, trying Lemonfox.ai for ${line.speaker}...`)
       buffer = await generateSpeechWithLemonfox(line.text, voice, language)
       provider = 'lemonfox'
       console.log(`[TTS] ✓ Lemonfox.ai succeeded for ${line.speaker}`)
     } catch (lemonfoxError: any) {
-      console.warn(`[TTS] Lemonfox.ai failed for ${line.speaker}: ${lemonfoxError.message}`)
-      console.log(`[TTS] Falling back to OpenAI for ${line.speaker}...`)
+      console.warn(`[TTS] Lemonfox.ai failed: ${lemonfoxError.message}`)
 
       // Fall back to OpenAI
       try {
+        console.log(`[TTS] Falling back to OpenAI for ${line.speaker}...`)
         buffer = await generateSpeechWithOpenAI(line.text, voice)
         provider = 'openai'
         console.log(`[TTS] ✓ OpenAI fallback succeeded for ${line.speaker}`)
       } catch (openaiError: any) {
-        console.error(`[TTS] Both providers failed for ${line.speaker}`)
-        throw new Error(`TTS generation failed: Lemonfox (${lemonfoxError.message}), OpenAI (${openaiError.message})`)
+        throw new Error(`TTS failed: Lemonfox (${lemonfoxError.message}), OpenAI (${openaiError.message})`)
       }
     }
   } else {
-    // No Lemonfox key configured, use OpenAI directly
-    console.log(`[TTS] Lemonfox.ai not configured, using OpenAI for ${line.speaker}...`)
+    // Only OpenAI available
+    console.log(`[TTS] Only OpenAI configured, using for ${line.speaker}...`)
     try {
       buffer = await generateSpeechWithOpenAI(line.text, voice)
       provider = 'openai'
       console.log(`[TTS] ✓ OpenAI succeeded for ${line.speaker}`)
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error(`[TTS] OpenAI failed for ${line.speaker}:`, error)
       throw new Error(`Failed to generate speech: ${error.message}`)
     }
@@ -157,11 +328,12 @@ export async function generateSpeechForLine(
 export async function generatePodcastAudio(
   lines: ScriptLine[],
   language: TTSLanguage = 'en-us',
-  onProgress?: (current: number, total: number) => void
+  onProgress?: (current: number, total: number) => void,
+  voiceConfig?: VoiceConfig
 ): Promise<AudioSegment[]> {
   const segments: AudioSegment[] = new Array(lines.length) // Pre-allocate array to maintain order
 
-  console.log(`Starting PARALLEL TTS generation for ${lines.length} lines (language: ${language})...`)
+  console.log(`Starting PARALLEL TTS generation for ${lines.length} lines (language: ${language}, voiceConfig: ${voiceConfig ? `hostA=${voiceConfig.hostA}, hostB=${voiceConfig.hostB}` : 'default'})...`)
 
   // Batch size: Process 5-10 lines concurrently to respect rate limits
   // OpenAI TTS: 50 req/min (~1/second), Lemonfox: Similar limits
@@ -184,7 +356,7 @@ export async function generatePodcastAudio(
           const globalIndex = startIdx + batchOffset
           try {
             console.log(`  [Line ${globalIndex + 1}/${lines.length}] Generating TTS for ${line.speaker}...`)
-            const segment = await generateSpeechForLine(line, language)
+            const segment = await generateSpeechForLine(line, language, voiceConfig)
             return { segment, index: globalIndex }
           } catch (error) {
             console.error(`  [Line ${globalIndex + 1}] TTS generation failed:`, error)

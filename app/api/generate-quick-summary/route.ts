@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { createClient } from "@/lib/supabase/server"
 import { generatePodcastScript } from "@/lib/podcast-generator"
-import { generatePodcastAudio } from "@/lib/tts-generator"
-import { concatenateAudioBuffers, generateTranscript } from "@/lib/audio-utils"
+import { generatePodcastAudio, VoiceConfig } from "@/lib/tts-generator"
+import { concatenateAudioBuffers } from "@/lib/audio-concat"
+import { generateTranscript } from "@/lib/audio-utils"
 import { getUserProfile, getUserLearningProfile } from "@/lib/supabase/user-profile"
 import type { LearningStyle, TeachingStylePreference } from "@/lib/supabase/types"
 import { providerFactory } from "@/lib/ai"
@@ -21,6 +22,8 @@ interface QuickSummaryRequest {
   url?: string // For web URLs
   youtubeUrl?: string // For YouTube videos
   language?: string
+  voiceHostA?: string // ElevenLabs voice ID for host A
+  voiceHostB?: string // ElevenLabs voice ID for host B
 }
 
 export async function POST(req: NextRequest) {
@@ -49,8 +52,16 @@ export async function POST(req: NextRequest) {
       documentId,
       url,
       youtubeUrl,
-      language = 'en-us'
+      language = 'en-us',
+      voiceHostA,
+      voiceHostB
     } = body
+
+    // Build voice config if custom voices are provided
+    const voiceConfig: VoiceConfig | undefined = (voiceHostA || voiceHostB) ? {
+      hostA: voiceHostA || 'pNInz6obpgDQGcFmaJgB', // Default to Adam
+      hostB: voiceHostB || '21m00Tcm4TlvDq8ikWAM'  // Default to Rachel
+    } : undefined
 
     // Validate input
     if (!inputType || !['document', 'url', 'youtube'].includes(inputType)) {
@@ -398,14 +409,15 @@ Return the JSON array now:`,
         logger.debug('Generating quick summary audio', {
           userId,
           lineCount: script.lines.length,
-          language: script.language
+          language: script.language,
+          voiceConfig: voiceConfig ? { hostA: voiceConfig.hostA, hostB: voiceConfig.hostB } : 'default'
         })
 
-        const audioSegments = await generatePodcastAudio(script.lines, script.language)
+        const audioSegments = await generatePodcastAudio(script.lines, script.language, undefined, voiceConfig)
 
         // Concatenate audio segments
         logger.debug('Concatenating audio segments', { userId, segmentCount: audioSegments.length })
-        const audioBuffer = concatenateAudioBuffers(audioSegments)
+        const audioBuffer = await concatenateAudioBuffers(audioSegments)
 
         // Generate transcript with timestamps
         const transcript = generateTranscript(audioSegments)

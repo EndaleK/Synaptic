@@ -375,7 +375,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
             {/* Greeting */}
             <div className="space-y-2 animate-hero-reveal">
-              <p className="text-[11px] font-semibold tracking-[0.2em] text-violet-600 dark:text-violet-400 uppercase font-body">
+              <p className="text-[22px] font-semibold tracking-[0.15em] text-violet-600 dark:text-violet-400 uppercase font-body">
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.1]">
@@ -686,7 +686,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
         {/* Learning Style Discovery Card - Enhanced */}
         {!hasCompletedAssessment && (
           <section className="mb-10 animate-hero-reveal stagger-6">
-            <div className="relative overflow-hidden p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600">
+            <div className="relative overflow-hidden p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-violet-400 via-fuchsia-400 to-orange-400">
               {/* Animated background pattern */}
               <div className="absolute inset-0 opacity-20">
                 <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
@@ -694,7 +694,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
 
               {/* Floating accent orbs */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-float-orb" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-pink-400/20 rounded-full blur-3xl animate-float-orb" style={{ animationDelay: '-5s' }} />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-orange-300/20 rounded-full blur-3xl animate-float-orb" style={{ animationDelay: '-5s' }} />
 
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-6">
@@ -741,7 +741,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
 
                     <button
                       onClick={() => onModeSelect('quiz')}
-                      className="group flex items-center justify-center gap-2.5 w-full sm:w-auto px-8 py-4 bg-white hover:bg-gray-50 text-violet-600 rounded-xl font-bold text-sm shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-[1.03]"
+                      className="group flex items-center justify-center gap-2.5 w-full sm:w-auto px-8 py-4 bg-white hover:bg-gray-50 text-orange-600 rounded-xl font-bold text-sm shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-[1.03]"
                     >
                       <Sparkles className="w-5 h-5 group-hover:animate-sparkle" />
                       Take Assessment

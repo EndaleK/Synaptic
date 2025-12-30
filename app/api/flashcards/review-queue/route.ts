@@ -133,6 +133,20 @@ async function handleGetReviewQueue(req: NextRequest) {
     trackApiMetric('review_queue.due_cards', reviewQueue?.length || 0, 'none')
     trackApiMetric('review_queue.new_cards', newFlashcards?.length || 0, 'none')
 
+    // Get count of cards reviewed today
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+
+    const { count: reviewedTodayCount } = await trackSupabaseQuery(
+      'SELECT',
+      'review_queue',
+      () => supabase
+        .from('review_queue')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userProfileId)
+        .gte('last_reviewed_at', todayStart.toISOString())
+    )
+
     // Format review queue items
     const formattedQueue = (reviewQueue || []).map(item => {
       const flashcard = item.flashcards as any
@@ -228,13 +242,15 @@ async function handleGetReviewQueue(req: NextRequest) {
       matureCards: prioritized.filter(c => c.maturity === 'mature').length,
       averageRetention: prioritized.length > 0
         ? prioritized.reduce((sum, c) => sum + c.estimatedRetention, 0) / prioritized.length
-        : 0
+        : 0,
+      reviewedToday: reviewedTodayCount || 0
     }
 
     // Track final queue statistics
     trackApiMetric('review_queue.total_due', stats.totalDue, 'none')
     trackApiMetric('review_queue.average_retention', Math.round(stats.averageRetention), 'none')
     trackApiMetric('review_queue.mature_cards', stats.matureCards, 'none')
+    trackApiMetric('review_queue.reviewed_today', stats.reviewedToday, 'none')
 
     const duration = Date.now() - startTime
     logger.api('GET', '/api/flashcards/review-queue', 200, duration, {

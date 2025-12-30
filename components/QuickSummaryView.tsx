@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useRef, ChangeEvent } from "react"
-import { Clock, FileText, Link as LinkIcon, Youtube, Loader2, AlertCircle, Upload, Sparkles, Download, Zap, CheckCircle, X, ListChecks, Save, FileDown } from "lucide-react"
+import { Clock, FileText, Link as LinkIcon, Youtube, Loader2, AlertCircle, Upload, Sparkles, Download, Zap, CheckCircle, X, ListChecks, Save, FileDown, Settings2 } from "lucide-react"
+import { ELEVENLABS_VOICES, DEFAULT_VOICE_HOST_A, DEFAULT_VOICE_HOST_B } from "@/lib/tts-generator"
 import PodcastPlayer, { type TranscriptEntry } from "./PodcastPlayer"
 import { useToast } from "./ToastContainer"
 
@@ -47,6 +48,11 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
 
   // Save to library state
   const [isSavingToLibrary, setIsSavingToLibrary] = useState(false)
+
+  // Voice selection state
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [voiceHostA, setVoiceHostA] = useState<string>(DEFAULT_VOICE_HOST_A)
+  const [voiceHostB, setVoiceHostB] = useState<string>(DEFAULT_VOICE_HOST_B)
 
   // Handle file selection
   const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -194,7 +200,9 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
       // Create request body
       const requestBody: any = {
         inputType,
-        language: 'en-us'
+        language: 'en-us',
+        voiceHostA,
+        voiceHostB
       }
 
       if (inputType === 'document') {
@@ -588,6 +596,65 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                   </div>
                 </div>
               )}
+
+              {/* Advanced Options */}
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+                >
+                  <Settings2 className="w-4 h-4" />
+                  {showAdvanced ? '− Hide' : '+'} Voice Settings
+                </button>
+
+                {showAdvanced && (
+                  <div className="mt-3 p-4 bg-amber-50/50 dark:bg-zinc-800/50 rounded-lg border border-amber-200 dark:border-zinc-700">
+                    <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                      🎙️ Voice Selection
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Host A Voice */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 dark:text-zinc-400 mb-1.5">
+                          Host A (Main Speaker)
+                        </label>
+                        <select
+                          value={voiceHostA}
+                          onChange={(e) => setVoiceHostA(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                        >
+                          {ELEVENLABS_VOICES.map((voice) => (
+                            <option key={voice.id} value={voice.id}>
+                              {voice.name} - {voice.description} ({voice.gender})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Host B Voice */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 dark:text-zinc-400 mb-1.5">
+                          Host B (Co-host)
+                        </label>
+                        <select
+                          value={voiceHostB}
+                          onChange={(e) => setVoiceHostB(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                        >
+                          {ELEVENLABS_VOICES.map((voice) => (
+                            <option key={voice.id} value={voice.id}>
+                              {voice.name} - {voice.description} ({voice.gender})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-2">
+                      Powered by ElevenLabs for natural-sounding voices
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {/* Generate Button */}
               <button

@@ -23,7 +23,21 @@ export async function POST(req: NextRequest) {
       .eq('clerk_user_id', userId)
       .single()
 
-    if (fetchError || !profile) {
+    if (fetchError) {
+      console.error('Error fetching user profile for streak:', fetchError)
+      // If specific columns don't exist, try without them
+      if (fetchError.code === '42703' || fetchError.message?.includes('column')) {
+        console.log('Streak columns may not exist, returning default values')
+        return NextResponse.json({
+          currentStreak: 0,
+          longestStreak: 0,
+          error: 'Streak columns not configured'
+        })
+      }
+      return NextResponse.json({ error: 'User profile not found', details: fetchError.message }, { status: 404 })
+    }
+
+    if (!profile) {
       return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
     }
 

@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { createClient } from "@/lib/supabase/server"
 import { generatePodcastScript, type PodcastFormat } from "@/lib/podcast-generator"
-import { generatePodcastAudio } from "@/lib/tts-generator"
-import { concatenateAudioBuffers, generateTranscript } from "@/lib/audio-utils"
+import { generatePodcastAudio, VoiceConfig } from "@/lib/tts-generator"
+import { concatenateAudioBuffers } from "@/lib/audio-concat"
+import { generateTranscript } from "@/lib/audio-utils"
 import { getUserProfile, getUserLearningProfile } from "@/lib/supabase/user-profile"
 import type { LearningStyle, TeachingStylePreference } from "@/lib/supabase/types"
 import { providerFactory } from "@/lib/ai"
@@ -44,8 +45,16 @@ export async function POST(req: NextRequest) {
       format = 'deep-dive',
       customPrompt,
       targetDuration = 10,
-      language = 'en-us'
+      language = 'en-us',
+      voiceHostA,
+      voiceHostB
     } = body
+
+    // Build voice config if custom voices are provided
+    const voiceConfig: VoiceConfig | undefined = (voiceHostA || voiceHostB) ? {
+      hostA: voiceHostA || 'pNInz6obpgDQGcFmaJgB', // Default to Adam
+      hostB: voiceHostB || '21m00Tcm4TlvDq8ikWAM'  // Default to Rachel
+    } : undefined
 
     // Validate input
     try {
@@ -477,12 +486,18 @@ export async function POST(req: NextRequest) {
     // Step 5: Generate audio for each line
     tracker.completeStep(5, 'Generating audio from script...')
 
-    logger.debug('Generating podcast audio', { userId, documentId, lineCount: script.lines.length, language: script.language })
-    const audioSegments = await generatePodcastAudio(script.lines, script.language)
+    logger.debug('Generating podcast audio', {
+      userId,
+      documentId,
+      lineCount: script.lines.length,
+      language: script.language,
+      voiceConfig: voiceConfig ? { hostA: voiceConfig.hostA, hostB: voiceConfig.hostB } : 'default'
+    })
+    const audioSegments = await generatePodcastAudio(script.lines, script.language, undefined, voiceConfig)
 
     // Step 3: Concatenate audio segments
     logger.debug('Concatenating audio segments', { userId, documentId, segmentCount: audioSegments.length })
-    const audioBuffer = concatenateAudioBuffers(audioSegments)
+    const audioBuffer = await concatenateAudioBuffers(audioSegments)
 
     // Step 4: Generate transcript with timestamps
     const transcript = generateTranscript(audioSegments)
