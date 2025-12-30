@@ -262,20 +262,39 @@ Please try uploading a text-based document (TXT, DOCX) or a PDF with selectable 
     const visualContentInstructions = `
 
 ## 📊 VISUAL CONTENT - MAKE LEARNING VISUAL!
-You have powerful visualization capabilities. Use them proactively to enhance understanding:
 
-### When to Use Visuals
-- **Processes/Workflows**: Always use flowcharts or sequence diagrams
-- **Comparisons**: Always use tables
-- **Hierarchies/Categories**: Use mind maps or tree diagrams
-- **Relationships**: Use entity-relationship or class diagrams
-- **Timelines/History**: Use timeline diagrams or Gantt charts
-- **Statistics/Data**: Use pie charts with percentages
-- **Cause-Effect**: Use flowcharts with decision points
-- **Cycles**: Use circular diagrams
-- **Math/Science**: Use LaTeX equations
+### ⚠️ MANDATORY: Use diagrams in EVERY response where applicable!
+You MUST include at least ONE diagram when explaining:
+- Any process, workflow, or sequence of steps
+- Relationships between concepts
+- Hierarchies or categories
+- Comparisons (use tables)
+- Data distributions (use pie charts)
+- Timelines or historical events
 
-### Mermaid Diagram Types (use generously!)
+### 🔴 CRITICAL FORMAT REQUIREMENT
+All diagrams MUST use this EXACT format with the word "mermaid" after the triple backticks:
+
+\`\`\`mermaid
+graph TD
+    A[Step 1] --> B[Step 2]
+\`\`\`
+
+❌ WRONG (will NOT render):
+\`\`\`
+graph TD
+    A --> B
+\`\`\`
+
+✅ CORRECT (will render as diagram):
+\`\`\`mermaid
+graph TD
+    A --> B
+\`\`\`
+
+### Mermaid Diagram Examples
+
+**Flowchart (for processes):**
 \`\`\`mermaid
 graph TD
     A[Start] --> B{Decision}
@@ -283,6 +302,7 @@ graph TD
     B -->|No| D[Outcome 2]
 \`\`\`
 
+**Sequence Diagram (for interactions):**
 \`\`\`mermaid
 sequenceDiagram
     participant A as Actor 1
@@ -291,6 +311,7 @@ sequenceDiagram
     B-->>A: Response
 \`\`\`
 
+**Pie Chart (for distributions):**
 \`\`\`mermaid
 pie title Distribution
     "Category A" : 40
@@ -298,6 +319,7 @@ pie title Distribution
     "Category C" : 25
 \`\`\`
 
+**Mind Map (for concepts):**
 \`\`\`mermaid
 mindmap
     root((Main Topic))
@@ -308,6 +330,7 @@ mindmap
             Detail C
 \`\`\`
 
+**Timeline (for history):**
 \`\`\`mermaid
 timeline
     title Historical Events
@@ -316,14 +339,14 @@ timeline
     2000 : Event C
 \`\`\`
 
-### ⚠️ CRITICAL Mermaid Rules (diagrams break if violated!)
+### ⚠️ Mermaid Syntax Rules (diagrams break if violated!)
 - ❌ NO emojis in node text
-- ❌ NO ampersands (&) — write "and"
-- ❌ NO parentheses () in labels — use brackets []
-- ❌ NO forward slashes (/) — write "or" or hyphenate
-- ❌ NO special characters in labels
-- ✅ Keep node labels short (2-4 words)
-- ✅ Use simple alphanumeric IDs (A, B, step1, etc.)
+- ❌ NO ampersands - write "and" instead
+- ❌ NO parentheses in labels - use dashes or brackets
+- ❌ NO forward slashes - write "or" instead
+- ❌ NO special characters: # < > % in labels
+- ✅ Keep node labels short (2-4 words max)
+- ✅ Use simple IDs: A, B, C or step1, step2
 
 ### Tables for Comparisons
 | Feature | Option A | Option B |
@@ -340,7 +363,7 @@ Block: $$\\sum_{i=1}^{n} x_i = x_1 + x_2 + ... + x_n$$
 - Use headers (##, ###) to organize sections
 - Use bullet points for lists
 - Use numbered lists for sequences/steps
-- Break up long explanations with visuals`
+- Include a diagram in most responses to make concepts visual`
 
     // Create teaching-mode-specific base prompt
     let baseSystemPrompt: string
