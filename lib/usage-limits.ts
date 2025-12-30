@@ -65,6 +65,18 @@ export async function checkUsageLimit(
   feature: FeatureType
 ): Promise<UsageCheckResult> {
   try {
+    // Developer bypass - unlimited access for specific accounts
+    const developerIds = process.env.DEVELOPER_USER_IDS?.split(',').map(id => id.trim()) || []
+    if (developerIds.includes(clerkUserId)) {
+      return {
+        allowed: true,
+        tier: 'developer',
+        used: 0,
+        limit: Infinity,
+        remaining: Infinity
+      }
+    }
+
     const supabase = await createClient()
 
     // Get user profile with subscription info
