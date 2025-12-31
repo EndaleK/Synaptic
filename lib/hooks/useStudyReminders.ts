@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useUser } from '@clerk/nextjs'
 import { useStudyBuddyStore } from '@/lib/store/useStudyBuddyStore'
 import {
   ReminderMessage,
@@ -53,6 +54,7 @@ export function useStudyReminders(
   options: UseStudyRemindersOptions = {}
 ): UseStudyRemindersReturn {
   const { enabled = true, onReminderTriggered } = options
+  const { isLoaded, isSignedIn } = useUser()
 
   const [currentReminder, setCurrentReminder] = useState<ReminderMessage | null>(null)
   const [studyStats, setStudyStats] = useState<StudyStats | null>(null)
@@ -70,8 +72,11 @@ export function useStudyReminders(
     updateLastReminder
   } = useStudyBuddyStore()
 
-  // Fetch study stats periodically
+  // Fetch study stats periodically - only when authenticated
   const fetchStudyStats = useCallback(async () => {
+    // Wait for Clerk to load and verify user is signed in
+    if (!isLoaded || !isSignedIn) return
+
     try {
       const [reviewRes, statsRes] = await Promise.all([
         fetch('/api/flashcards/review-queue'),
@@ -91,9 +96,9 @@ export function useStudyReminders(
         })
       }
     } catch (error) {
-      console.error('Failed to fetch study stats for reminders:', error)
+      // Silently handle errors - don't show to user
     }
-  }, [])
+  }, [isLoaded, isSignedIn])
 
   // Show a reminder
   const triggerReminder = useCallback((

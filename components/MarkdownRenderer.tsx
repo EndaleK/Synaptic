@@ -28,9 +28,9 @@ const initializeMermaid = () => {
   try {
     mermaid.initialize({
       startOnLoad: false,
-      theme: 'default',
+      theme: 'base', // Use base theme for full customization
       securityLevel: 'loose',
-      fontFamily: 'inherit',
+      fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       suppressErrors: true,
       logLevel: 'fatal', // Only log fatal errors, suppress syntax warnings
       // Increase timeout for complex diagrams
@@ -40,45 +40,88 @@ const initializeMermaid = () => {
         useMaxWidth: false, // Allow diagram to expand to fit text
         htmlLabels: true,
         curve: 'basis',
-        nodeSpacing: 80, // More space between nodes
-        rankSpacing: 60, // More space between ranks
-        padding: 20, // More padding inside nodes
-        wrappingWidth: 300, // Wider wrapping before truncation
+        nodeSpacing: 60, // More space between nodes
+        rankSpacing: 50, // More space between ranks
+        padding: 15, // More padding inside nodes
+        wrappingWidth: 280, // Wider wrapping before truncation
+        diagramPadding: 20,
       },
       // Mindmap settings
       mindmap: {
         useMaxWidth: false,
         padding: 20,
       },
-      // Theme variables for text sizing and colors
+      // Theme variables for modern, polished look
       themeVariables: {
+        // Font settings
         fontSize: '14px',
+        fontFamily: '"Inter", "SF Pro Display", -apple-system, sans-serif',
+
+        // Primary colors - Synaptic brand gradient inspired
+        primaryColor: '#7c3aed', // Violet-600
+        primaryTextColor: '#ffffff',
+        primaryBorderColor: '#6d28d9', // Violet-700
+
+        // Secondary colors
+        secondaryColor: '#f0e6ff', // Light violet tint
+        secondaryTextColor: '#4c1d95', // Violet-900
+        secondaryBorderColor: '#c4b5fd', // Violet-300
+
+        // Tertiary/accent colors
+        tertiaryColor: '#faf5ff', // Violet-50
+        tertiaryTextColor: '#5b21b6', // Violet-800
+        tertiaryBorderColor: '#ddd6fe', // Violet-200
+
+        // Background colors
+        background: '#ffffff',
+        mainBkg: '#f5f3ff', // Violet-50
+        nodeBkg: '#f5f3ff',
+
+        // Node styling
+        nodeBorder: '#c4b5fd', // Violet-300
+        nodeTextColor: '#1e1b4b', // Violet-950
+
+        // Line/edge colors
+        lineColor: '#8b5cf6', // Violet-500
+
+        // Text colors
+        textColor: '#1e1b4b', // Violet-950
+
+        // Cluster/subgraph styling
+        clusterBkg: '#ede9fe', // Violet-100
+        clusterBorder: '#a78bfa', // Violet-400
+
+        // Edge label styling
+        edgeLabelBackground: '#ffffff',
+
         // Ensure node labels have enough space
-        nodePadding: '15px',
+        nodePadding: '12px',
+
         // Attractive pie chart colors - modern vibrant palette
-        pie1: '#6366f1', // Indigo
-        pie2: '#22c55e', // Green
+        pie1: '#7c3aed', // Violet
+        pie2: '#10b981', // Emerald
         pie3: '#f59e0b', // Amber
         pie4: '#ec4899', // Pink
         pie5: '#06b6d4', // Cyan
-        pie6: '#8b5cf6', // Violet
+        pie6: '#8b5cf6', // Purple
         pie7: '#f97316', // Orange
         pie8: '#14b8a6', // Teal
-        pie9: '#e11d48', // Rose
+        pie9: '#ef4444', // Red
         pie10: '#3b82f6', // Blue
         pie11: '#84cc16', // Lime
-        pie12: '#a855f7', // Purple
+        pie12: '#a855f7', // Fuchsia
+
         // Pie chart styling
         pieTitleTextSize: '16px',
-        pieTitleTextColor: '#374151',
-        pieSectionTextSize: '14px',
+        pieTitleTextColor: '#1e1b4b',
+        pieSectionTextSize: '13px',
         pieSectionTextColor: '#ffffff',
-        pieLegendTextSize: '13px',
+        pieLegendTextSize: '12px',
         pieLegendTextColor: '#374151',
         pieStrokeColor: '#ffffff',
         pieStrokeWidth: '2px',
-        pieOuterStrokeWidth: '2px',
-        pieOuterStrokeColor: '#e5e7eb',
+        pieOuterStrokeWidth: '0px',
+        pieOuterStrokeColor: 'transparent',
         pieOpacity: '1',
       },
     })
@@ -498,7 +541,7 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
 
   return (
     <div className={`${className} overflow-wrap-anywhere w-full`}>
-      {/* Mermaid diagram styling to prevent text truncation */}
+      {/* Mermaid diagram styling - modern, polished look */}
       <style jsx global>{`
         .mermaid-container {
           overflow-x: auto !important;
@@ -509,23 +552,44 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
           overflow: visible !important;
           min-width: fit-content !important;
         }
+
+        /* Node shapes - subtle rounded corners and shadows */
+        .mermaid-container .node rect,
+        .mermaid-container .node polygon {
+          rx: 8px !important;
+          ry: 8px !important;
+          filter: drop-shadow(0 1px 2px rgba(124, 58, 237, 0.1));
+        }
+        .mermaid-container .node circle,
+        .mermaid-container .node ellipse {
+          filter: drop-shadow(0 1px 2px rgba(124, 58, 237, 0.1));
+        }
+
+        /* Node borders - refined */
         .mermaid-container .node rect,
         .mermaid-container .node polygon,
         .mermaid-container .node circle,
         .mermaid-container .node ellipse {
-          stroke-width: 1px;
+          stroke-width: 1.5px !important;
         }
-        /* Prevent text truncation in all label types */
+
+        /* Text styling - crisp and readable */
         .mermaid-container .nodeLabel,
         .mermaid-container .label,
         .mermaid-container .node text,
-        .mermaid-container .edgeLabel,
-        .mermaid-container .cluster-label,
         .mermaid-container text {
+          font-weight: 500 !important;
           overflow: visible !important;
           text-overflow: clip !important;
-          white-space: nowrap !important;
         }
+
+        /* Edge labels */
+        .mermaid-container .edgeLabel,
+        .mermaid-container .cluster-label {
+          overflow: visible !important;
+          text-overflow: clip !important;
+        }
+
         /* Expand foreignObject containers that hold HTML labels */
         .mermaid-container foreignObject {
           overflow: visible !important;
@@ -533,18 +597,58 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
         .mermaid-container foreignObject div {
           overflow: visible !important;
           text-overflow: clip !important;
-          white-space: nowrap !important;
+          font-weight: 500 !important;
         }
+
         /* Ensure node labels don't get clipped */
         .mermaid-container .node .label {
           overflow: visible !important;
         }
+
+        /* Flowchart links - smoother, more visible */
         .mermaid-container .flowchart-link {
-          stroke-width: 1px;
+          stroke-width: 2px !important;
         }
+
+        /* Arrow markers - larger and more visible */
+        .mermaid-container marker path {
+          fill: #8b5cf6 !important;
+        }
+
         /* Edge labels (text on arrows) */
         .mermaid-container .edgeLabel rect {
-          fill: transparent !important;
+          fill: rgba(255, 255, 255, 0.95) !important;
+          rx: 4px !important;
+          ry: 4px !important;
+        }
+        .mermaid-container .edgeLabel span {
+          font-size: 12px !important;
+          font-weight: 500 !important;
+          color: #5b21b6 !important;
+        }
+
+        /* Cluster/subgraph styling */
+        .mermaid-container .cluster rect {
+          rx: 12px !important;
+          ry: 12px !important;
+          filter: drop-shadow(0 2px 4px rgba(124, 58, 237, 0.08));
+        }
+        .mermaid-container .cluster-label {
+          font-weight: 600 !important;
+        }
+
+        /* Dark mode adjustments */
+        .dark .mermaid-container .node rect,
+        .dark .mermaid-container .node polygon,
+        .dark .mermaid-container .node circle,
+        .dark .mermaid-container .node ellipse {
+          filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+        }
+        .dark .mermaid-container .edgeLabel rect {
+          fill: rgba(30, 27, 75, 0.95) !important;
+        }
+        .dark .mermaid-container .edgeLabel span {
+          color: #c4b5fd !important;
         }
       `}</style>
       <ReactMarkdown
@@ -590,51 +694,90 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
                   diagramsToQueue.current.add(diagramKey)
                 }
 
-                // Show loading state with spinner
+                // Show loading state with elegant spinner
                 return (
-                  <div className="my-4 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg text-center">
-                    <div className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400">
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span>Rendering diagram...</span>
+                  <div className="my-6">
+                    <div
+                      className="relative w-full rounded-xl overflow-hidden"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)',
+                        padding: '1px',
+                      }}
+                    >
+                      <div className="w-full bg-white dark:bg-gray-900 rounded-xl p-8">
+                        <div className="flex flex-col items-center justify-center gap-3">
+                          <div className="relative">
+                            <div className="w-10 h-10 rounded-full border-2 border-violet-200 dark:border-violet-800"></div>
+                            <div className="absolute top-0 left-0 w-10 h-10 rounded-full border-2 border-transparent border-t-violet-500 animate-spin"></div>
+                          </div>
+                          <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Rendering diagram...</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )
               }
 
-              // Rendering failed - show as code block with error message
+              // Rendering failed - show as code block with styled error message
               if (svg === 'FAILED') {
                 return (
-                  <div className="my-4">
-                    <div className="text-sm text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-1">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
-                      <span>Diagram could not be rendered</span>
+                  <div className="my-6">
+                    <div
+                      className="relative w-full rounded-xl overflow-hidden"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 191, 36, 0.05) 100%)',
+                        padding: '1px',
+                      }}
+                    >
+                      <div className="w-full bg-white dark:bg-gray-900 rounded-xl p-4">
+                        <div className="text-sm text-amber-600 dark:text-amber-400 mb-3 flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          <span className="font-medium">Diagram could not be rendered</span>
+                        </div>
+                        <pre className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto text-xs font-mono text-gray-600 dark:text-gray-400">
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        </pre>
+                      </div>
                     </div>
-                    <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto text-sm">
-                      <code className={className} {...props}>
-                        {children}
-                      </code>
-                    </pre>
                   </div>
                 )
               }
 
-              // Render the diagram with proper styling
+              // Render the diagram with polished styling
               return (
-                <div
-                  className="mermaid-container my-4 w-full bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
-                  style={{
-                    // Ensure SVG text is fully visible - allow horizontal scroll if needed
-                    minWidth: 'fit-content',
-                    overflowX: 'auto',
-                    overflowY: 'visible',
-                  }}
-                  dangerouslySetInnerHTML={{ __html: svg }}
-                />
+                <div className="my-6">
+                  {/* Diagram container with gradient border effect */}
+                  <div
+                    className="mermaid-container relative w-full rounded-xl overflow-hidden"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)',
+                      padding: '1px',
+                    }}
+                  >
+                    <div
+                      className="w-full bg-white dark:bg-gray-900 rounded-xl p-6"
+                      style={{
+                        minWidth: 'fit-content',
+                        overflowX: 'auto',
+                        overflowY: 'visible',
+                      }}
+                      dangerouslySetInnerHTML={{ __html: svg }}
+                    />
+                  </div>
+                  {/* Subtle diagram label */}
+                  <div className="flex items-center justify-center mt-2">
+                    <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      Interactive Diagram
+                    </span>
+                  </div>
+                </div>
               )
             }
 

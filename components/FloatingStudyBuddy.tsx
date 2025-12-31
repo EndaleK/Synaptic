@@ -281,6 +281,10 @@ export default function FloatingStudyBuddy() {
       })
 
       if (!response.ok) {
+        // Handle 401 silently - user may need to refresh their session
+        if (response.status === 401) {
+          throw new Error('Session expired. Please refresh the page.')
+        }
         const error = await response.json()
         throw new Error(error.error || 'Failed to get response')
       }
@@ -323,6 +327,13 @@ export default function FloatingStudyBuddy() {
         },
         body: JSON.stringify({ actionId })
       })
+
+      // Handle 401 silently - session may have expired
+      if (response.status === 401) {
+        updateActionStatus(actionId, 'failed')
+        toast.error('Session expired. Please refresh the page.')
+        return
+      }
 
       const result = await response.json()
 

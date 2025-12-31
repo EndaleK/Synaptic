@@ -76,8 +76,13 @@ function DocumentsPageContent() {
       const response = await fetch('/api/documents')
 
       if (!response.ok) {
+        // Handle 401 silently - user may need to refresh or re-authenticate
+        if (response.status === 401) {
+          // Don't show error banner for auth issues - the middleware will handle redirect
+          return
+        }
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || `Failed to fetch documents (${response.status})`)
+        throw new Error(errorData.error || `Failed to fetch documents (${response.status})`)
       }
 
       const data = await response.json()
