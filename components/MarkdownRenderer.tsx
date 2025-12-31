@@ -7,6 +7,7 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import mermaid from 'mermaid'
 import 'katex/dist/katex.min.css'
+import DiagramViewer from './DiagramViewer'
 
 interface MarkdownRendererProps {
   content: string
@@ -747,37 +748,13 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
                 )
               }
 
-              // Render the diagram with polished styling
+              // Render the diagram with interactive viewer (zoom, pan, fullscreen)
               return (
-                <div className="my-6">
-                  {/* Diagram container with gradient border effect */}
-                  <div
-                    className="mermaid-container relative w-full rounded-xl overflow-hidden"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)',
-                      padding: '1px',
-                    }}
-                  >
-                    <div
-                      className="w-full bg-white dark:bg-gray-900 rounded-xl p-6"
-                      style={{
-                        minWidth: 'fit-content',
-                        overflowX: 'auto',
-                        overflowY: 'visible',
-                      }}
-                      dangerouslySetInnerHTML={{ __html: svg }}
-                    />
-                  </div>
-                  {/* Subtle diagram label */}
-                  <div className="flex items-center justify-center mt-2">
-                    <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                      Interactive Diagram
-                    </span>
-                  </div>
-                </div>
+                <DiagramViewer
+                  svg={svg}
+                  title="Mermaid Diagram"
+                  className="mermaid-container"
+                />
               )
             }
 
