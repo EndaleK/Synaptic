@@ -1,6 +1,9 @@
 /**
  * Tool Executor for the Agentic Teacher
  * Executes approved tool calls and returns results
+ *
+ * IMPORTANT: Uses direct function calls instead of HTTP requests to avoid
+ * cookie forwarding issues in server-to-server calls.
  */
 
 import { SupabaseClient } from '@supabase/supabase-js'
@@ -11,14 +14,17 @@ import {
   StudyMode
 } from './types'
 import { generateStudyPlan, saveStudyPlan, type GeneratePlanOptions } from '@/lib/study-plan-generator'
+import { generateFlashcardsAuto } from '@/lib/ai-provider'
+import { generateMindMapAuto } from '@/lib/ai-provider'
+import { logger } from '@/lib/logger'
 
 interface ExecuteToolParams {
   toolName: TeacherToolName
   toolInput: Record<string, unknown>
   context: AgentContext
   supabase: SupabaseClient
-  baseUrl: string // For internal API calls
-  cookieHeader: string // For authenticated API calls (forwarded from browser)
+  baseUrl: string // Kept for backwards compatibility
+  cookieHeader: string // Kept for backwards compatibility
 }
 
 /**
@@ -32,22 +38,30 @@ export async function executeTool({
   baseUrl,
   cookieHeader
 }: ExecuteToolParams): Promise<ToolExecutionResult> {
+  logger.info('Executing teacher tool', {
+    toolName,
+    documentId: toolInput.documentId,
+    userProfileId: context.userProfileId
+  })
+
   try {
     switch (toolName) {
       case 'generate_flashcards':
-        return await executeGenerateFlashcards(toolInput, baseUrl, cookieHeader)
+        // Use direct function call instead of HTTP to avoid cookie issues
+        return await executeGenerateFlashcardsDirect(toolInput, context, supabase)
 
       case 'generate_podcast':
-        return await executeGeneratePodcast(toolInput, baseUrl, cookieHeader)
+        return await executeGeneratePodcast(toolInput)
 
       case 'generate_mindmap':
-        return await executeGenerateMindmap(toolInput, baseUrl, cookieHeader)
+        // Use direct function call instead of HTTP to avoid cookie issues
+        return await executeGenerateMindmapDirect(toolInput, context, supabase)
 
       case 'generate_quiz':
         return await executeGenerateQuiz(toolInput, baseUrl, cookieHeader)
 
       case 'generate_quick_summary':
-        return await executeGenerateQuickSummary(toolInput, baseUrl, cookieHeader)
+        return await executeGenerateQuickSummary(toolInput)
 
       case 'start_review_session':
         return await executeStartReviewSession(toolInput, context)
@@ -65,13 +79,17 @@ export async function executeTool({
         return await executeSwitchMode(toolInput)
 
       default:
+        logger.warn('Unknown tool requested', { toolName })
         return {
           success: false,
           error: `Unknown tool: ${toolName}`
         }
     }
   } catch (error) {
-    console.error(`Tool execution error for ${toolName}:`, error)
+    logger.error(`Tool execution error for ${toolName}`, error, {
+      toolName,
+      documentId: toolInput.documentId
+    })
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -80,96 +98,228 @@ export async function executeTool({
 }
 
 /**
- * Generate flashcards from a document
+ * Generate flashcards from a document using direct function calls
+ * This avoids cookie forwarding issues with HTTP requests
  */
-async function executeGenerateFlashcards(
+async function executeGenerateFlashcardsDirect(
   input: Record<string, unknown>,
-  baseUrl: string,
-  cookieHeader: string
+  context: AgentContext,
+  supabase: SupabaseClient
 ): Promise<ToolExecutionResult> {
-  const response = await fetch(`${baseUrl}/api/generate-flashcards`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Cookie': cookieHeader
-    },
-    body: JSON.stringify({
-      documentId: input.documentId,
-      topicFilter: input.topicFilter,
-      count: input.count || 20
-    })
+  const documentId = input.documentId as string
+  const count = (input.count as number) || 20
+
+  logger.info('Generating flashcards directly', {
+    documentId,
+    count,
+    userProfileId: context.userProfileId
   })
 
-  if (!response.ok) {
-    const error = await response.json()
-    return { success: false, error: error.message || 'Failed to generate flashcards' }
+  // Get document text from database
+  const { data: doc, error: fetchError } = await supabase
+    .from('documents')
+    .select('id, file_name, extracted_text')
+    .eq('id', documentId)
+    .eq('user_id', context.userProfileId)
+    .single()
+
+  if (fetchError || !doc) {
+    logger.error('Failed to fetch document for flashcards', fetchError, { documentId })
+    return {
+      success: false,
+      error: 'Document not found. Please make sure you have access to this document.'
+    }
   }
 
-  const data = await response.json()
+  if (!doc.extracted_text || doc.extracted_text.length === 0) {
+    return {
+      success: false,
+      error: 'Document has no text content. Please try re-uploading the document.'
+    }
+  }
+
+  // Generate flashcards using the AI provider
+  const result = await generateFlashcardsAuto(doc.extracted_text, { count })
+
+  if (!result.flashcards || result.flashcards.length === 0) {
+    return {
+      success: false,
+      error: 'Failed to generate flashcards. Please try again.'
+    }
+  }
+
+  // Save flashcards to database
+  const flashcardsToInsert = result.flashcards.map(card => ({
+    user_id: context.userProfileId,
+    document_id: documentId,
+    front: card.front,
+    back: card.back,
+    mastery_level: 'learning' as const,
+    confidence_score: 0,
+    times_reviewed: 0,
+    times_correct: 0
+  }))
+
+  const { data: insertedCards, error: insertError } = await supabase
+    .from('flashcards')
+    .insert(flashcardsToInsert)
+    .select('id')
+
+  if (insertError) {
+    logger.error('Failed to save flashcards to database', insertError)
+    // Still return success since flashcards were generated
+    return {
+      success: true,
+      data: {
+        count: result.flashcards.length,
+        documentId,
+        saved: false
+      },
+      message: `Created ${result.flashcards.length} flashcards (not saved to database)`
+    }
+  }
+
+  logger.info('Flashcards generated and saved successfully', {
+    documentId,
+    count: result.flashcards.length,
+    provider: result.provider
+  })
+
   return {
     success: true,
     data: {
-      count: data.flashcards?.length || 0,
-      documentId: input.documentId
+      count: result.flashcards.length,
+      documentId,
+      saved: true,
+      action: 'navigate',
+      mode: 'flashcards' as StudyMode
     },
-    message: `Created ${data.flashcards?.length || 0} flashcards`
+    message: `Created ${result.flashcards.length} flashcards from "${doc.file_name}"`
   }
 }
 
 /**
  * Generate a podcast from a document
+ * Note: Podcast generation uses SSE streaming and is handled by the frontend
+ * This action navigates the user to the podcast mode
  */
 async function executeGeneratePodcast(
-  input: Record<string, unknown>,
-  baseUrl: string,
-  cookieHeader: string
+  input: Record<string, unknown>
 ): Promise<ToolExecutionResult> {
-  // This returns SSE, so we need to handle it differently
-  // For now, return that it's being generated
+  // Podcast generation uses SSE streaming, so we just navigate to podcast mode
+  // The frontend will handle the actual generation
   return {
     success: true,
     data: {
       documentId: input.documentId,
       style: input.style || 'conversational',
-      status: 'generating'
+      action: 'navigate',
+      mode: 'podcast' as StudyMode
     },
-    message: 'Podcast generation started. This may take 2-3 minutes.'
+    message: 'Ready to generate podcast. Opening podcast mode...'
   }
 }
 
 /**
- * Generate a mind map from a document
+ * Generate a mind map from a document using direct function calls
+ * This avoids cookie forwarding issues with HTTP requests
  */
-async function executeGenerateMindmap(
+async function executeGenerateMindmapDirect(
   input: Record<string, unknown>,
-  baseUrl: string,
-  cookieHeader: string
+  context: AgentContext,
+  supabase: SupabaseClient
 ): Promise<ToolExecutionResult> {
-  const response = await fetch(`${baseUrl}/api/generate-mindmap`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Cookie': cookieHeader
-    },
-    body: JSON.stringify({
-      documentId: input.documentId,
-      focusTopic: input.focusTopic
-    })
+  const documentId = input.documentId as string
+
+  logger.info('Generating mind map directly', {
+    documentId,
+    userProfileId: context.userProfileId
   })
 
-  if (!response.ok) {
-    const error = await response.json()
-    return { success: false, error: error.message || 'Failed to generate mind map' }
+  // Get document text from database
+  const { data: doc, error: fetchError } = await supabase
+    .from('documents')
+    .select('id, file_name, extracted_text')
+    .eq('id', documentId)
+    .eq('user_id', context.userProfileId)
+    .single()
+
+  if (fetchError || !doc) {
+    logger.error('Failed to fetch document for mind map', fetchError, { documentId })
+    return {
+      success: false,
+      error: 'Document not found. Please make sure you have access to this document.'
+    }
   }
 
-  const data = await response.json()
+  if (!doc.extracted_text || doc.extracted_text.length === 0) {
+    return {
+      success: false,
+      error: 'Document has no text content. Please try re-uploading the document.'
+    }
+  }
+
+  // Generate mind map using the AI provider
+  const result = await generateMindMapAuto(doc.extracted_text, 25)
+
+  if (!result.mindMap) {
+    return {
+      success: false,
+      error: 'Failed to generate mind map. Please try again.'
+    }
+  }
+
+  // Save mind map to database
+  const { data: savedMindMap, error: saveError } = await supabase
+    .from('mindmaps')
+    .insert({
+      user_id: context.userProfileId,
+      document_id: documentId,
+      title: `Mind Map: ${doc.file_name}`,
+      nodes: result.mindMap.nodes || [],
+      edges: result.mindMap.edges || [],
+      metadata: {
+        provider: result.provider,
+        nodeCount: result.mindMap.nodes?.length || 0,
+        generatedAt: new Date().toISOString()
+      }
+    })
+    .select('id')
+    .single()
+
+  if (saveError) {
+    logger.error('Failed to save mind map to database', saveError)
+    return {
+      success: true,
+      data: {
+        nodeCount: result.mindMap.nodes?.length || 0,
+        documentId,
+        saved: false,
+        action: 'navigate',
+        mode: 'mindmap' as StudyMode
+      },
+      message: `Created mind map with ${result.mindMap.nodes?.length || 0} concepts (not saved)`
+    }
+  }
+
+  logger.info('Mind map generated and saved successfully', {
+    documentId,
+    mindmapId: savedMindMap.id,
+    nodeCount: result.mindMap.nodes?.length || 0,
+    provider: result.provider
+  })
+
   return {
     success: true,
     data: {
-      mindmapId: data.id,
-      nodeCount: data.nodes?.length || 0
+      mindmapId: savedMindMap.id,
+      nodeCount: result.mindMap.nodes?.length || 0,
+      documentId,
+      saved: true,
+      action: 'navigate',
+      mode: 'mindmap' as StudyMode
     },
-    message: `Created mind map with ${data.nodes?.length || 0} concepts`
+    message: `Created mind map with ${result.mindMap.nodes?.length || 0} concepts from "${doc.file_name}"`
   }
 }
 
@@ -212,21 +362,21 @@ async function executeGenerateQuiz(
 
 /**
  * Generate a quick summary
+ * Note: Quick summary uses SSE streaming, so we navigate to podcast mode
  */
 async function executeGenerateQuickSummary(
-  input: Record<string, unknown>,
-  baseUrl: string,
-  cookieHeader: string
+  input: Record<string, unknown>
 ): Promise<ToolExecutionResult> {
-  // Similar to podcast, this is SSE
+  // Quick summary uses SSE streaming, handled by frontend
   return {
     success: true,
     data: {
       documentId: input.documentId,
       url: input.url,
-      status: 'generating'
+      action: 'navigate',
+      mode: 'podcast' as StudyMode // Quick summary uses podcast mode
     },
-    message: 'Quick summary generation started. This may take 1-2 minutes.'
+    message: 'Ready to generate quick summary. Opening podcast mode...'
   }
 }
 
