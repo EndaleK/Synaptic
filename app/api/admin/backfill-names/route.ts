@@ -73,9 +73,10 @@ export async function POST() {
 
         try {
           clerkUser = await client.users.getUser(user.clerk_user_id)
-        } catch (clerkError: any) {
+        } catch (clerkError: unknown) {
           // Handle specific Clerk API errors
-          if (clerkError.status === 404 || clerkError.message?.includes('not found')) {
+          const err = clerkError as { status?: number; message?: string }
+          if (err.status === 404 || err.message?.includes('not found')) {
             console.warn(`Clerk user not found (deleted): ${user.clerk_user_id}`)
             results.skipped++
             results.details.push({

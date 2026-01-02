@@ -29,7 +29,7 @@ export default function TermsPage() {
             1. Acceptance of Terms
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            By accessing or using Synaptic ("the Service," "we," "our," or "us"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you may not use the Service. These Terms apply to all users, including free and paid subscribers.
+            By accessing or using Synaptic (&ldquo;the Service,&rdquo; &ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;), you agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;). If you do not agree to these Terms, you may not use the Service. These Terms apply to all users, including free and paid subscribers.
           </p>
           <p className="text-gray-600 dark:text-gray-400">
             We reserve the right to modify these Terms at any time. Changes will be posted on this page, and your continued use of the Service constitutes acceptance of the modified Terms.

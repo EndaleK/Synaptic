@@ -29,7 +29,7 @@ export default function PrivacyPage() {
             1. Introduction
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Welcome to Synaptic ("we," "our," or "us"). We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our AI-powered learning platform.
+            Welcome to Synaptic (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;). We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our AI-powered learning platform.
           </p>
         </section>
 
@@ -206,7 +206,7 @@ export default function PrivacyPage() {
 
         <section className="mb-8">
           <h2 className="text-2xl font-semibold text-black dark:text-white mb-4">
-            8. Children's Privacy
+            8. Children&apos;s Privacy
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
             Synaptic is intended for users aged 13 and older. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe we have collected information from a child under 13, please contact us immediately at <a href="mailto:privacy@synaptic.study" className="text-blue-600 dark:text-blue-400 hover:underline">privacy@synaptic.study</a>.

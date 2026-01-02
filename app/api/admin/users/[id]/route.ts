@@ -25,7 +25,7 @@ export async function GET(
     // Validate UUID format
     try {
       validateUUIDParam(id, 'User ID')
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: 'Invalid ID format' },
         { status: 400 }
@@ -128,7 +128,7 @@ export async function PATCH(
     // Validate UUID format
     try {
       validateUUIDParam(id, 'User ID')
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: 'Invalid ID format' },
         { status: 400 }
@@ -145,7 +145,7 @@ export async function PATCH(
       'documents_used_this_month',
     ]
 
-    const updates: Record<string, any> = {}
+    const updates: Record<string, string | number | boolean | null> = {}
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         updates[field] = body[field]

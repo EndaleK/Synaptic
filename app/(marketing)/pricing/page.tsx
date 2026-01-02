@@ -376,7 +376,7 @@ export default function PricingPage() {
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
               We accept all major credit cards (Visa, Mastercard, American Express) and
-              debit cards through Stripe's secure payment processing.
+              debit cards through Stripe&apos;s secure payment processing.
             </p>
           </div>
 

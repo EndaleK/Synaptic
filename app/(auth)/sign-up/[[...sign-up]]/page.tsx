@@ -47,7 +47,7 @@ function SignUpContent() {
               Referral code applied: <span className="font-mono font-bold">{referralCode}</span>
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              You'll both receive bonus credits after signup!
+              You&apos;ll both receive bonus credits after signup!
             </p>
           </div>
         </div>
