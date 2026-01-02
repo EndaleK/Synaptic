@@ -3,20 +3,16 @@
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { BookOpen, MessageSquare, Mic, Network, Clock, PenTool, Youtube, GraduationCap, FileText, Flame, Zap, ChevronRight, BookMarked, Upload, TrendingUp, Eye, Headphones, Hand, BookText, Sparkles, ChevronDown, ChevronUp, ArrowRight } from "lucide-react"
+import { BookOpen, MessageSquare, Mic, Network, Clock, PenTool, Youtube, GraduationCap, FileText, Flame, Zap, BookMarked, Upload, Sparkles, ChevronDown, ArrowRight } from "lucide-react"
 import { useUIStore, useUserStore, useDocumentStore } from "@/lib/store/useStore"
 import UsageWarningNotification from "@/components/UsageWarningNotification"
 import NotificationBanner from "@/components/NotificationBanner"
-import { notificationManager } from "@/lib/notifications"
-import { analytics } from "@/lib/analytics"
 import MilestoneCelebrationModal, { useMilestoneCelebration } from "@/components/MilestoneCelebrationModal"
 import SmartRecommendations from "@/components/SmartRecommendations"
 import ExamReadinessWidget from "@/components/ExamReadinessWidget"
 import WeakTopicsPanel from "@/components/WeakTopicsPanel"
 import StudyPlanWizard from "@/components/StudyPlanWizard"
-import LeaderboardWidget from "@/components/LeaderboardWidget"
-import StudyChallengeWidget, { CreateChallengeModal } from "@/components/StudyChallengeWidget"
-import ReferralWidget from "@/components/ReferralWidget"
+import { CreateChallengeModal } from "@/components/StudyChallengeWidget"
 import { AchievementUnlockToast } from "@/components/AchievementBadge"
 import type { AchievementDefinition } from "@/lib/achievements"
 
@@ -25,17 +21,21 @@ interface DashboardHomeProps {
   onOpenAssessment?: () => void
 }
 
-// Learning modes with mode-specific colors
-const learningModes = [
-  { id: "documents", name: "Documents", icon: FileText, description: "Manage files", href: "/dashboard/documents", color: "from-slate-500 to-slate-600", bgColor: "bg-slate-500/10", textColor: "text-slate-600 dark:text-slate-400" },
-  { id: "chat", name: "Chat", icon: MessageSquare, description: "Ask & learn", color: "from-blue-500 to-blue-600", bgColor: "bg-blue-500/10", textColor: "text-blue-600 dark:text-blue-400" },
-  { id: "flashcards", name: "Flashcards", icon: BookOpen, description: "Review cards", color: "from-indigo-500 to-indigo-600", bgColor: "bg-indigo-500/10", textColor: "text-indigo-600 dark:text-indigo-400" },
-  { id: "podcast", name: "Podcast", icon: Mic, description: "Listen & learn", color: "from-violet-500 to-violet-600", bgColor: "bg-violet-500/10", textColor: "text-violet-600 dark:text-violet-400" },
-  { id: "mindmap", name: "Mind Map", icon: Network, description: "Visualize", color: "from-emerald-500 to-emerald-600", bgColor: "bg-emerald-500/10", textColor: "text-emerald-600 dark:text-emerald-400" },
+// Primary learning modes (4 most-used)
+const primaryModes = [
+  { id: "flashcards", name: "Flashcards", icon: BookOpen, description: "Review cards due today", color: "from-indigo-500 to-indigo-600", bgColor: "bg-indigo-500/10", textColor: "text-indigo-600 dark:text-indigo-400" },
   { id: "exam", name: "Mock Exam", icon: GraduationCap, description: "Test yourself", color: "from-amber-500 to-amber-600", bgColor: "bg-amber-500/10", textColor: "text-amber-600 dark:text-amber-400" },
-  { id: "writer", name: "Writer", icon: PenTool, description: "Write essays", color: "from-rose-500 to-rose-600", bgColor: "bg-rose-500/10", textColor: "text-rose-600 dark:text-rose-400" },
-  { id: "video", name: "Video", icon: Youtube, description: "YouTube", color: "from-red-500 to-red-600", bgColor: "bg-red-500/10", textColor: "text-red-600 dark:text-red-400" },
-  { id: "quick-summary", name: "Summary", icon: Clock, description: "Quick 5min", color: "from-cyan-500 to-cyan-600", bgColor: "bg-cyan-500/10", textColor: "text-cyan-600 dark:text-cyan-400" },
+  { id: "chat", name: "Chat", icon: MessageSquare, description: "Ask your notes anything", color: "from-blue-500 to-blue-600", bgColor: "bg-blue-500/10", textColor: "text-blue-600 dark:text-blue-400" },
+  { id: "documents", name: "Documents", icon: FileText, description: "Manage your files", href: "/dashboard/documents", color: "from-slate-500 to-slate-600", bgColor: "bg-slate-500/10", textColor: "text-slate-600 dark:text-slate-400" },
+]
+
+// Secondary modes (hidden under "More tools")
+const secondaryModes = [
+  { id: "mindmap", name: "Mind Map", icon: Network, description: "Visualize concepts", color: "from-emerald-500 to-emerald-600", bgColor: "bg-emerald-500/10", textColor: "text-emerald-600 dark:text-emerald-400" },
+  { id: "podcast", name: "Podcast", icon: Mic, description: "Listen & learn", color: "from-violet-500 to-violet-600", bgColor: "bg-violet-500/10", textColor: "text-violet-600 dark:text-violet-400" },
+  { id: "writer", name: "Writer", icon: PenTool, description: "Write essays", href: "/dashboard/writer", color: "from-rose-500 to-rose-600", bgColor: "bg-rose-500/10", textColor: "text-rose-600 dark:text-rose-400" },
+  { id: "video", name: "Video", icon: Youtube, description: "YouTube learning", color: "from-red-500 to-red-600", bgColor: "bg-red-500/10", textColor: "text-red-600 dark:text-red-400" },
+  { id: "quick-summary", name: "Summary", icon: Clock, description: "Quick 5min overview", color: "from-cyan-500 to-cyan-600", bgColor: "bg-cyan-500/10", textColor: "text-cyan-600 dark:text-cyan-400" },
 ]
 
 // Types for primary action state
@@ -56,18 +56,8 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
   const [weeklyStats, setWeeklyStats] = useState({ cardsReviewed: 0, minutesStudied: 0, daysActive: 0 })
   const [recentActivity, setRecentActivity] = useState<Array<{ id: string; type: string; name: string; timestamp: string; duration?: string; source?: string }>>([])
   const [actionState, setActionState] = useState<ActionState>({ type: 'loading' })
-  const { userProfile, hasCompletedAssessment } = useUserStore()
   const [showAllRecent, setShowAllRecent] = useState(false)
-  const [showAllUsage, setShowAllUsage] = useState(false)
-  const [monthlyUsage, setMonthlyUsage] = useState({
-    documents: { used: 0, limit: 10 },
-    flashcards: { used: 0, limit: 100 },
-    podcasts: { used: 0, limit: 5 },
-    mindmaps: { used: 0, limit: 10 },
-    exams: { used: 0, limit: 5 },
-    videos: { used: 0, limit: 10 }
-  })
-  const [learningStyleExpanded, setLearningStyleExpanded] = useState(true)
+  const [showMoreTools, setShowMoreTools] = useState(false)
   const [showStudyPlanWizard, setShowStudyPlanWizard] = useState(false)
   const [showCreateChallengeModal, setShowCreateChallengeModal] = useState(false)
   const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState<AchievementDefinition[]>([])
@@ -193,34 +183,6 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
 
     fetchRecentActivity()
   }, [])
-
-  // Fetch monthly usage
-  useEffect(() => {
-    const fetchMonthlyUsage = async () => {
-      try {
-        const response = await fetch('/api/usage', {
-          credentials: 'include'
-        })
-        if (response.ok) {
-          const data = await response.json()
-          if (data.limits) {
-            setMonthlyUsage({
-              documents: { used: data.limits.documents?.used || 0, limit: data.limits.documents?.limit || 10 },
-              flashcards: { used: data.limits.flashcards?.used || 0, limit: data.limits.flashcards?.limit || 100 },
-              podcasts: { used: data.limits.podcasts?.used || 0, limit: data.limits.podcasts?.limit || 5 },
-              mindmaps: { used: data.limits.mindmaps?.used || 0, limit: data.limits.mindmaps?.limit || 10 },
-              exams: { used: data.limits.exams?.used || 0, limit: data.limits.exams?.limit || 5 },
-              videos: { used: data.limits.videos?.used || 0, limit: data.limits.videos?.limit || 10 }
-            })
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching monthly usage:', error)
-      }
-    }
-
-    fetchMonthlyUsage()
-  }, [userProfile?.subscription_tier])
 
   // Apply pending referral code (from signup flow)
   useEffect(() => {
@@ -362,25 +324,6 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
-  const getUsageColor = (used: number, limit: number) => {
-    const percentage = (used / limit) * 100
-    if (percentage >= 100) return 'bg-red-500'
-    if (percentage >= 80) return 'bg-amber-500'
-    if (percentage >= 50) return 'bg-yellow-500'
-    return 'bg-gradient-to-r from-violet-500 to-pink-500'
-  }
-
-  const usageItems = [
-    { key: 'documents', label: 'Documents', icon: FileText, ...monthlyUsage.documents },
-    { key: 'flashcards', label: 'Flashcards', icon: Zap, ...monthlyUsage.flashcards },
-    { key: 'podcasts', label: 'Podcasts', icon: Mic, ...monthlyUsage.podcasts },
-    { key: 'mindmaps', label: 'Mind Maps', icon: Network, ...monthlyUsage.mindmaps },
-    { key: 'exams', label: 'Mock Exams', icon: GraduationCap, ...monthlyUsage.exams },
-    { key: 'videos', label: 'Videos', icon: Youtube, ...monthlyUsage.videos },
-  ]
-
-  const visibleUsageItems = showAllUsage ? usageItems : usageItems.slice(0, 3)
-
   // Get greeting based on time of day
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -391,18 +334,13 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
 
   return (
     <div className="min-h-full bg-[#fafbfc] dark:bg-[#0a0a0f] font-body relative overflow-hidden">
-      {/* Layered atmospheric background */}
+      {/* Subtle atmospheric background */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* Base gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-50/50 via-white to-pink-50/30 dark:from-violet-950/20 dark:via-[#0a0a0f] dark:to-pink-950/10" />
+        {/* Base gradient - more subtle */}
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-50/30 via-white to-pink-50/20 dark:from-violet-950/10 dark:via-[#0a0a0f] dark:to-pink-950/5" />
 
-        {/* Animated floating orbs */}
-        <div className="absolute top-[10%] right-[15%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-violet-400/20 via-purple-300/10 to-transparent dark:from-violet-600/10 dark:via-purple-500/5 blur-3xl animate-float-orb" />
-        <div className="absolute bottom-[20%] left-[10%] w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-pink-300/20 via-rose-200/10 to-transparent dark:from-pink-600/10 dark:via-rose-500/5 blur-3xl animate-float-orb" style={{ animationDelay: '-7s' }} />
-        <div className="absolute top-[50%] left-[50%] w-[600px] h-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-blue-200/10 via-cyan-100/5 to-transparent dark:from-blue-700/5 dark:via-cyan-600/3 blur-3xl animate-float-orb" style={{ animationDelay: '-14s' }} />
-
-        {/* Subtle grid pattern overlay */}
-        <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+        {/* Single subtle orb for depth */}
+        <div className="absolute top-[20%] right-[20%] w-[400px] h-[400px] rounded-full bg-gradient-to-br from-violet-300/10 via-purple-200/5 to-transparent dark:from-violet-600/5 dark:via-purple-500/3 blur-3xl" />
       </div>
 
       {/* Main container */}
@@ -415,22 +353,70 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
         </div>
 
         {/* Hero Section - Orchestrated reveal */}
-        <section className="mb-10">
+        <section className="mb-12">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
             {/* Greeting */}
-            <div className="space-y-2 animate-hero-reveal">
-              <p className="text-[22px] font-semibold tracking-[0.15em] text-violet-600 dark:text-violet-400 uppercase font-body">
+            <div className="space-y-3 animate-hero-reveal">
+              <p className="text-sm font-semibold tracking-[0.15em] text-violet-600 dark:text-violet-400 uppercase font-body">
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.1]">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-extrabold tracking-tight leading-[1.1]">
                 <span className="text-gray-900 dark:text-white">{getGreeting()}, </span>
                 <span className="bg-gradient-to-r from-violet-600 via-pink-500 to-orange-500 bg-clip-text text-transparent animate-gradient-border bg-[length:200%_200%]">
                   {isClient && isUserLoaded ? (user?.firstName || user?.username || 'there') : 'there'}
                 </span>
               </h1>
-              <p className="text-lg text-gray-500 dark:text-gray-400 font-body font-light max-w-md">
-                Ready to continue your learning journey?
+              <p className="text-base text-gray-500 dark:text-gray-400 font-body font-light max-w-md">
+                What would you like to study today?
               </p>
+
+              {/* Primary Action Buttons */}
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                {actionState.type === 'loading' ? (
+                  <div className="h-10 w-40 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                ) : actionState.type === 'flashcards_due' ? (
+                  <button
+                    onClick={() => {
+                      setActiveMode('flashcards')
+                      onModeSelect('flashcards')
+                    }}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:scale-[1.02]"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    Review {actionState.count} cards
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                ) : actionState.type === 'continue_document' ? (
+                  <button
+                    onClick={() => {
+                      setCurrentDocument({ id: actionState.documentId, file_name: actionState.documentName } as any)
+                      setActiveMode('chat')
+                      onModeSelect('chat')
+                    }}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:scale-[1.02]"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    Continue: {actionState.documentName.length > 20 ? actionState.documentName.slice(0, 20) + '...' : actionState.documentName}
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => router.push('/dashboard/documents')}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:scale-[1.02]"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload Your First Notes
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  onClick={() => router.push('/dashboard/documents')}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 transition-all"
+                >
+                  <FileText className="w-4 h-4" />
+                  Browse Documents
+                </button>
+              </div>
             </div>
 
             {/* Stats Card - Glass morphism */}
@@ -492,7 +478,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
         </section>
 
         {/* Smart Recommendations & Weekly Progress - Side by Side */}
-        <section className="mb-10 animate-hero-reveal stagger-3">
+        <section className="mb-12 animate-hero-reveal stagger-3">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
             {/* Smart Recommendations - AI-powered "What to study next" */}
             <SmartRecommendations maxItems={3} showStats={true} />
@@ -557,24 +543,20 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
         </section>
 
         {/* Exam Readiness Section - Hero Feature */}
-        <section className="mb-10 animate-hero-reveal stagger-4">
-          {/* Create Study Plan Card */}
-          <div className="mb-4 sm:mb-5">
-            <div className="w-full group relative p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-pink-500/10 dark:from-violet-500/5 dark:via-purple-500/3 dark:to-pink-500/5 backdrop-blur-xl border border-violet-200/50 dark:border-violet-500/20 overflow-hidden">
-              {/* Background shimmer */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-violet-500/5 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-out" />
-
-              <div className="relative z-10 flex items-center justify-between">
+        <section className="mb-12 animate-hero-reveal stagger-4">
+          {/* Create Study Plan Card - Simplified */}
+          <div className="mb-5">
+            <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl shadow-gray-200/20 dark:shadow-none">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-xl shadow-violet-500/30">
-                    <Upload className="w-7 h-7 text-white" />
+                  <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-500/10 flex items-center justify-center">
+                    <BookMarked className="w-6 h-6 text-violet-600 dark:text-violet-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-display font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <h3 className="text-base font-display font-bold text-gray-900 dark:text-white">
                       Study Plans
-                      <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-violet-500 to-pink-500 text-white rounded-full">New</span>
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       Create and manage your exam preparation schedules
                     </p>
                   </div>
@@ -582,13 +564,13 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => router.push('/dashboard/study-plans')}
-                    className="px-3 py-1.5 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
+                    className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 rounded-lg transition-colors"
                   >
                     View All
                   </button>
                   <button
                     onClick={() => setShowStudyPlanWizard(true)}
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all flex items-center gap-2"
+                    className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all flex items-center gap-2"
                   >
                     <Upload className="w-4 h-4" />
                     New Plan
@@ -638,273 +620,152 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
           </div>
         )}
 
-        {/* Learning Modes Grid - Dramatic redesign */}
-        <section className="mb-10 animate-hero-reveal stagger-5">
+        {/* Quick Actions - Primary Study Modes */}
+        <section className="mb-12 animate-hero-reveal stagger-5">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-xl font-display font-bold text-gray-900 dark:text-white">
-                Choose how to learn
+                Quick actions
               </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Pick your perfect study mode</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Jump into your study session</p>
             </div>
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 dark:bg-violet-500/10">
+            <button
+              onClick={() => setShowMoreTools(!showMoreTools)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 dark:bg-violet-500/10 hover:bg-violet-100 dark:hover:bg-violet-500/20 transition-colors"
+            >
               <Sparkles className="w-3.5 h-3.5 text-violet-500" />
-              <span className="text-xs font-semibold text-violet-600 dark:text-violet-400">9 modes</span>
-            </div>
+              <span className="text-xs font-semibold text-violet-600 dark:text-violet-400">
+                {showMoreTools ? 'Show less' : 'More tools'}
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 text-violet-500 transition-transform duration-300 ${showMoreTools ? 'rotate-180' : ''}`} />
+            </button>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-            {learningModes.map((mode, index) => {
+
+          {/* Primary Modes - 4 horizontal cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {primaryModes.map((mode, index) => {
               const Icon = mode.icon
               return (
                 <button
                   key={mode.id}
                   onClick={() => handleModeClick(mode)}
-                  className="group relative p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 hover:border-transparent hover:shadow-2xl hover:shadow-violet-500/10 dark:hover:shadow-none transition-all duration-500 text-left overflow-hidden hover:scale-[1.02]"
+                  className="group relative p-5 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 hover:border-transparent hover:shadow-2xl hover:shadow-violet-500/10 dark:hover:shadow-none transition-all duration-500 text-left overflow-hidden hover:scale-[1.02]"
                   style={{ animationDelay: `${index * 60}ms` }}
                 >
                   {/* Animated gradient overlay on hover */}
                   <div className={`absolute inset-0 bg-gradient-to-br ${mode.color} opacity-0 group-hover:opacity-100 transition-all duration-500 rounded-2xl`} />
 
-                  {/* Shimmer effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-out" />
-
                   <div className="relative z-10">
-                    <div className={`w-12 h-12 rounded-xl ${mode.bgColor} flex items-center justify-center mb-4 group-hover:bg-white/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg group-hover:shadow-xl`}>
+                    <div className={`w-12 h-12 rounded-xl ${mode.bgColor} flex items-center justify-center mb-3 group-hover:bg-white/20 group-hover:scale-110 transition-all duration-500 shadow-lg group-hover:shadow-xl`}>
                       <Icon className={`w-6 h-6 ${mode.textColor} group-hover:text-white transition-colors duration-300`} />
                     </div>
                     <h3 className="text-base font-display font-bold text-gray-900 dark:text-white group-hover:text-white transition-colors duration-300">{mode.name}</h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400 group-hover:text-white/80 transition-colors duration-300 mt-1 font-medium">{mode.description}</p>
                   </div>
-
-                  {/* Corner accent */}
-                  <div className={`absolute -bottom-10 -right-10 w-24 h-24 rounded-full bg-gradient-to-br ${mode.color} opacity-0 group-hover:opacity-20 blur-2xl transition-all duration-500`} />
                 </button>
               )
             })}
           </div>
-        </section>
 
-        {/* Social & Engagement - Leaderboard, Challenges & Referrals */}
-        <section className="mb-10 animate-hero-reveal stagger-5">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-display font-bold text-gray-900 dark:text-white">
-                Community
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Compete with friends, take on challenges, and earn rewards</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
-            <LeaderboardWidget
-              limit={5}
-              onViewAll={() => router.push('/dashboard/leaderboard')}
-            />
-            <StudyChallengeWidget
-              onCreateChallenge={() => setShowCreateChallengeModal(true)}
-              onViewAll={() => router.push('/dashboard/challenges')}
-            />
-            <ReferralWidget
-              compact={false}
-              onViewAll={() => router.push('/dashboard/referrals')}
-            />
-          </div>
-        </section>
-
-        {/* Stats Grid - Recent Content & Monthly Usage */}
-        <section className="mb-10 animate-hero-reveal stagger-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-            {/* Recent Content - Enhanced */}
-            <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl shadow-gray-200/20 dark:shadow-none">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
-                    <Clock className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="text-base font-display font-bold text-gray-900 dark:text-white">Recent Content</h3>
-                </div>
-                <button
-                  onClick={() => router.push('/dashboard/documents')}
-                  className="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-1.5 group px-3 py-1.5 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-all"
-                >
-                  View All <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </button>
-              </div>
-
-              {recentActivity.length > 0 ? (
-                <div className="space-y-2">
-                  {(showAllRecent ? recentActivity : recentActivity.slice(0, 3)).map((activity, index) => {
-                    const Icon = getActivityIcon(activity.type)
-                    return (
-                      <div
-                        key={activity.id}
-                        className="group flex items-center gap-3 p-3 rounded-xl hover:bg-violet-50/50 dark:hover:bg-white/5 transition-all duration-300 cursor-pointer"
-                        style={{ animationDelay: `${index * 50}ms` }}
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-pink-100 dark:from-violet-500/20 dark:to-pink-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                          <Icon className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">{activity.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{activity.source || activity.type}</p>
-                        </div>
-                        <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">{formatDate(activity.timestamp)}</p>
-                      </div>
-                    )
-                  })}
-                  {recentActivity.length > 3 && (
-                    <button
-                      onClick={() => setShowAllRecent(!showAllRecent)}
-                      className="w-full text-center text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 py-2 flex items-center justify-center gap-1.5 transition-colors rounded-lg hover:bg-gray-50 dark:hover:bg-white/5"
-                    >
-                      {showAllRecent ? 'Show Less' : `Show ${recentActivity.length - 3} More`}
-                      <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showAllRecent ? 'rotate-180' : ''}`} />
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="py-8 text-center">
-                  <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 dark:from-white/10 dark:to-white/5 flex items-center justify-center">
-                    <FileText className="w-7 h-7 text-gray-400" />
-                  </div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">No recent content yet</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Start learning to see your activity here</p>
-                </div>
-              )}
-            </div>
-
-            {/* Monthly Usage - Enhanced */}
-            <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl shadow-gray-200/20 dark:shadow-none">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-violet-500/30 animate-gradient-border bg-[length:200%_200%]">
-                    <TrendingUp className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-display font-bold text-gray-900 dark:text-white">Monthly Usage</h3>
-                    <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Resets on the 1st</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {visibleUsageItems.map((item) => {
-                  const Icon = item.icon
-                  const percentage = Math.min((item.used / item.limit) * 100, 100)
-                  const isOverLimit = item.used >= item.limit
+          {/* Secondary Modes - Expandable */}
+          {showMoreTools && (
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">More study tools</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {secondaryModes.map((mode, index) => {
+                  const Icon = mode.icon
                   return (
-                    <div key={item.key} className="group">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-4 h-4 text-gray-400 group-hover:text-violet-500 transition-colors" />
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{item.label}</span>
-                        </div>
-                        <span className={`text-sm font-display font-bold tabular-nums ${isOverLimit ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
-                          {item.used}<span className="text-gray-400 font-normal text-xs">/{item.limit}</span>
-                        </span>
+                    <button
+                      key={mode.id}
+                      onClick={() => handleModeClick(mode)}
+                      className="group flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] border border-gray-200 dark:border-gray-800 hover:border-violet-200 dark:hover:border-violet-500/30 transition-all duration-300"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className={`w-9 h-9 rounded-lg ${mode.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                        <Icon className={`w-4 h-4 ${mode.textColor}`} />
                       </div>
-                      <div className="h-2 bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-1000 ease-out ${getUsageColor(item.used, item.limit)}`}
-                          style={{ width: `${percentage}%` }}
-                        />
+                      <div className="text-left">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{mode.name}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{mode.description}</p>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Recent Activity Section */}
+        <section className="mb-12 animate-hero-reveal stagger-6">
+          <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl shadow-gray-200/20 dark:shadow-none">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                  <Clock className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-base font-display font-bold text-gray-900 dark:text-white">Recent Activity</h3>
+              </div>
+              <button
+                onClick={() => router.push('/dashboard/documents')}
+                className="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-1.5 group px-3 py-1.5 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-all"
+              >
+                View All <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+
+            {recentActivity.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {(showAllRecent ? recentActivity : recentActivity.slice(0, 3)).map((activity, index) => {
+                  const Icon = getActivityIcon(activity.type)
+                  return (
+                    <div
+                      key={activity.id}
+                      className="group flex items-center gap-3 p-3 rounded-xl hover:bg-violet-50/50 dark:hover:bg-white/5 transition-all duration-300 cursor-pointer border border-transparent hover:border-violet-200 dark:hover:border-violet-500/20"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-pink-100 dark:from-violet-500/20 dark:to-pink-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                        <Icon className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">{activity.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{formatRelativeTime(activity.timestamp)}</p>
                       </div>
                     </div>
                   )
                 })}
-
-                {usageItems.length > 3 && (
-                  <button
-                    onClick={() => setShowAllUsage(!showAllUsage)}
-                    className="w-full text-center text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 py-2 flex items-center justify-center gap-1.5 transition-colors rounded-lg hover:bg-gray-50 dark:hover:bg-white/5"
-                  >
-                    {showAllUsage ? 'Show Less' : `Show all (${usageItems.length - 3} more)`}
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showAllUsage ? 'rotate-180' : ''}`} />
-                  </button>
-                )}
               </div>
-
-              {userProfile?.subscription_tier !== 'premium' && (
+            ) : (
+              <div className="py-10 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-100 to-pink-100 dark:from-violet-500/10 dark:to-pink-500/10 flex items-center justify-center">
+                  <FileText className="w-8 h-8 text-violet-400 dark:text-violet-500" />
+                </div>
+                <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-1">No activity yet</h4>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 max-w-sm mx-auto">
+                  Your study activity will appear here. Upload your first document to get started!
+                </p>
                 <button
-                  onClick={() => router.push('/pricing')}
-                  className="w-full mt-5 py-3.5 bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 hover:from-violet-700 hover:via-purple-700 hover:to-pink-700 text-white rounded-xl text-sm font-bold shadow-xl shadow-violet-500/30 hover:shadow-2xl hover:shadow-violet-500/40 transition-all duration-300 hover:scale-[1.02] animate-gradient-border bg-[length:200%_200%]"
+                  onClick={() => router.push('/dashboard/documents')}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/25"
                 >
-                  Upgrade to Premium
+                  <Upload className="w-4 h-4" />
+                  Upload Your First Document
                 </button>
-              )}
-            </div>
+              </div>
+            )}
+
+            {recentActivity.length > 3 && (
+              <button
+                onClick={() => setShowAllRecent(!showAllRecent)}
+                className="w-full text-center text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 py-2 mt-3 flex items-center justify-center gap-1.5 transition-colors rounded-lg hover:bg-gray-50 dark:hover:bg-white/5"
+              >
+                {showAllRecent ? 'Show Less' : `Show ${recentActivity.length - 3} More`}
+                <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showAllRecent ? 'rotate-180' : ''}`} />
+              </button>
+            )}
           </div>
         </section>
 
-        {/* Learning Style Discovery Card - Enhanced */}
-        {!hasCompletedAssessment && (
-          <section className="mb-10 animate-hero-reveal stagger-7">
-            <div className="relative overflow-hidden p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-violet-400 via-fuchsia-400 to-orange-400">
-              {/* Animated background pattern */}
-              <div className="absolute inset-0 opacity-20">
-                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-              </div>
-
-              {/* Floating accent orbs */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-float-orb" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-orange-300/20 rounded-full blur-3xl animate-float-orb" style={{ animationDelay: '-5s' }} />
-
-              <div className="relative z-10">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-xl flex items-center justify-center shadow-xl">
-                      <Sparkles className="w-7 h-7 text-white animate-sparkle" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl sm:text-2xl font-display font-bold text-white flex items-center gap-2">
-                        Discover Your Learning Style
-                      </h3>
-                      <p className="text-sm text-white/70 font-medium mt-1">
-                        Take our 2-minute assessment for personalized experiences
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setLearningStyleExpanded(!learningStyleExpanded)}
-                    className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all duration-300 hover:scale-110"
-                  >
-                    {learningStyleExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                  </button>
-                </div>
-
-                {learningStyleExpanded && (
-                  <div className="space-y-5">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {[
-                        { icon: Eye, label: "Visual" },
-                        { icon: Headphones, label: "Auditory" },
-                        { icon: Hand, label: "Kinesthetic" },
-                        { icon: BookText, label: "Reading" },
-                      ].map((style, index) => (
-                        <div
-                          key={style.label}
-                          className="flex items-center gap-3 p-3.5 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
-                          style={{ animationDelay: `${index * 100}ms` }}
-                        >
-                          <style.icon className="w-5 h-5 text-white" />
-                          <span className="text-sm font-semibold text-white">{style.label}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <button
-                      onClick={() => onModeSelect('quiz')}
-                      className="group flex items-center justify-center gap-2.5 w-full sm:w-auto px-8 py-4 bg-white hover:bg-gray-50 text-orange-600 rounded-xl font-bold text-sm shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-[1.03]"
-                    >
-                      <Sparkles className="w-5 h-5 group-hover:animate-sparkle" />
-                      Take Assessment
-                      <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-        )}
 
       </div>
 
