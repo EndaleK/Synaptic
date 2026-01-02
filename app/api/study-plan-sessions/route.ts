@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Build query
+    // Build query - include plan documents for context
     let query = supabase
       .from('study_plan_sessions')
       .select(`
@@ -62,7 +62,8 @@ export async function GET(req: NextRequest) {
           id,
           title,
           exam_date,
-          status
+          status,
+          documents
         )
       `)
       .eq('user_id', profile.id)
@@ -97,28 +98,46 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Transform to camelCase
-    const transformedSessions = (sessions || []).map((session) => ({
-      id: session.id,
-      studyPlanId: session.study_plan_id,
-      userId: session.user_id,
-      scheduledDate: session.scheduled_date,
-      sessionType: session.session_type,
-      estimatedMinutes: session.estimated_minutes,
-      actualMinutes: session.actual_minutes,
-      topics: session.topics || [],
-      status: session.status,
-      isBufferDay: session.is_buffer_day,
-      startedAt: session.started_at,
-      completedAt: session.completed_at,
-      notes: session.notes,
-      createdAt: session.created_at,
-      updatedAt: session.updated_at,
-      // Include plan info
-      planTitle: session.study_plans?.title,
-      planExamDate: session.study_plans?.exam_date,
-      planStatus: session.study_plans?.status,
-    }))
+    // Transform to camelCase with extracted mode and document info
+    const transformedSessions = (sessions || []).map((session) => {
+      const topics = session.topics || []
+      const firstTopic = topics[0] as { name?: string; activityType?: string } | undefined
+      const planDocs = session.study_plans?.documents as Array<{ documentId: string; documentName: string }> | undefined
+      const firstDoc = planDocs?.[0]
+
+      // Extract mode from session_type or first topic's activityType
+      let mode = session.session_type
+      if (firstTopic?.activityType) {
+        mode = firstTopic.activityType
+      }
+
+      return {
+        id: session.id,
+        studyPlanId: session.study_plan_id,
+        userId: session.user_id,
+        scheduledDate: session.scheduled_date,
+        sessionType: session.session_type,
+        estimatedMinutes: session.estimated_minutes,
+        actualMinutes: session.actual_minutes,
+        topics: topics,
+        status: session.status,
+        isBufferDay: session.is_buffer_day,
+        startedAt: session.started_at,
+        completedAt: session.completed_at,
+        notes: session.notes,
+        createdAt: session.created_at,
+        updatedAt: session.updated_at,
+        // Include plan info
+        planTitle: session.study_plans?.title,
+        planExamDate: session.study_plans?.exam_date,
+        planStatus: session.study_plans?.status,
+        // Include mode and document info for action buttons
+        mode: mode,
+        topic: firstTopic?.name,
+        documentId: firstDoc?.documentId,
+        documentName: firstDoc?.documentName,
+      }
+    })
 
     return NextResponse.json({
       sessions: transformedSessions,

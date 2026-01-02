@@ -19,6 +19,11 @@ import {
   Brain,
   TrendingUp,
   ArrowLeft,
+  MessageSquare,
+  Mic,
+  Network,
+  GraduationCap,
+  Sparkles,
 } from 'lucide-react'
 
 interface StudyPlan {
@@ -55,6 +60,21 @@ interface TodaySession {
   topics: Array<{ name: string; minutes: number; activityType: string }>
   status: 'scheduled' | 'in_progress' | 'completed' | 'skipped'
   planTitle?: string
+  mode?: 'flashcards' | 'podcast' | 'mindmap' | 'exam' | 'chat' | 'reading' | 'review'
+  documentId?: string
+  documentName?: string
+  topic?: string
+}
+
+// Learning mode configurations
+const STUDY_MODES = {
+  flashcards: { icon: BookOpen, label: 'Flashcards', color: 'from-indigo-500 to-violet-500', description: 'Review with spaced repetition' },
+  chat: { icon: MessageSquare, label: 'Chat', color: 'from-blue-500 to-cyan-500', description: 'Ask questions about the material' },
+  mindmap: { icon: Network, label: 'Mind Map', color: 'from-emerald-500 to-teal-500', description: 'Visualize concepts and connections' },
+  podcast: { icon: Mic, label: 'Podcast', color: 'from-violet-500 to-purple-500', description: 'Listen and learn on the go' },
+  exam: { icon: GraduationCap, label: 'Mock Exam', color: 'from-amber-500 to-orange-500', description: 'Test your knowledge' },
+  reading: { icon: FileText, label: 'Reading', color: 'from-slate-500 to-gray-500', description: 'Deep dive into the material' },
+  review: { icon: Brain, label: 'Review', color: 'from-pink-500 to-rose-500', description: 'Quick topic review' },
 }
 
 export default function StudyPlansPage() {
@@ -214,40 +234,92 @@ export default function StudyPlansPage() {
               Today&apos;s Study Sessions
             </h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {todaySessions.map((session) => (
-                <div
-                  key={session.id}
-                  className="p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl hover:border-purple-500/40 transition-all"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="text-white font-medium">{session.planTitle || 'Study Session'}</p>
-                      <p className="text-white/60 text-sm capitalize">{session.sessionType.replace('_', ' ')}</p>
+              {todaySessions.map((session) => {
+                const mode = session.mode || 'flashcards'
+                const modeConfig = STUDY_MODES[mode] || STUDY_MODES.flashcards
+                const ModeIcon = modeConfig.icon
+
+                return (
+                  <div
+                    key={session.id}
+                    className="p-5 bg-slate-800/50 border border-white/10 rounded-xl hover:border-white/20 transition-all"
+                  >
+                    {/* Header with mode icon */}
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${modeConfig.color} flex items-center justify-center shadow-lg`}>
+                        <ModeIcon className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-white font-semibold truncate">{session.topic || session.planTitle || 'Study Session'}</p>
+                          <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium border ${
+                            session.status === 'completed'
+                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                              : session.status === 'in_progress'
+                              ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                              : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                          }`}>
+                            {session.status === 'in_progress' ? 'In Progress' : session.status === 'completed' ? 'Done' : 'Pending'}
+                          </span>
+                        </div>
+                        <p className="text-white/50 text-sm">{modeConfig.label} • {session.estimatedMinutes} min</p>
+                      </div>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
-                      session.status === 'completed'
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                        : session.status === 'in_progress'
-                        ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-                        : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                    }`}>
-                      {session.status === 'in_progress' ? 'In Progress' : session.status}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-white/50">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {session.estimatedMinutes} min
-                    </span>
-                    {session.topics && session.topics.length > 0 && (
-                      <span className="flex items-center gap-1">
-                        <BookOpen className="w-4 h-4" />
-                        {session.topics.length} topics
-                      </span>
+
+                    {/* Document info */}
+                    {session.documentName && (
+                      <div className="mb-4 p-2 bg-white/5 rounded-lg">
+                        <p className="text-white/60 text-xs flex items-center gap-1">
+                          <FileText className="w-3 h-3" />
+                          {session.documentName}
+                        </p>
+                      </div>
                     )}
+
+                    {/* Action buttons */}
+                    <div className="flex flex-wrap gap-2">
+                      {/* Primary action - Start studying */}
+                      <button
+                        onClick={() => {
+                          const docParam = session.documentId ? `&documentId=${session.documentId}` : ''
+                          router.push(`/dashboard?mode=${mode}${docParam}`)
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r ${modeConfig.color} text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg`}
+                      >
+                        <Play className="w-4 h-4" />
+                        Start {modeConfig.label}
+                      </button>
+                    </div>
+
+                    {/* Quick access to other modes */}
+                    <div className="mt-3 pt-3 border-t border-white/10">
+                      <p className="text-white/40 text-xs mb-2">Or try another approach:</p>
+                      <div className="flex gap-1.5">
+                        {(['flashcards', 'chat', 'mindmap', 'exam', 'podcast'] as const)
+                          .filter(m => m !== mode)
+                          .slice(0, 4)
+                          .map((altMode) => {
+                            const altConfig = STUDY_MODES[altMode]
+                            const AltIcon = altConfig.icon
+                            return (
+                              <button
+                                key={altMode}
+                                onClick={() => {
+                                  const docParam = session.documentId ? `&documentId=${session.documentId}` : ''
+                                  router.push(`/dashboard?mode=${altMode}${docParam}`)
+                                }}
+                                className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors group"
+                                title={altConfig.label}
+                              >
+                                <AltIcon className="w-4 h-4 text-white/50 group-hover:text-white" />
+                              </button>
+                            )
+                          })}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
