@@ -27,13 +27,13 @@ const learningModes = [
   { id: "study-plans", name: "Plans", icon: CalendarDays, description: "Study plans", href: "/dashboard/study-plans" },
   { id: "chat", name: "Chat", icon: MessageSquare, description: "Ask & learn" },
   { id: "flashcards", name: "Cards", icon: BookOpen, description: "Review" },
-  { id: "podcast", name: "Podcast", icon: Mic, description: "Listen" },
-  { id: "mindmap", name: "Mind Map", icon: Network, description: "Visualize" },
   { id: "exam", name: "Exam", icon: GraduationCap, description: "Test" },
 ]
 
 // Secondary modes (in More dropdown)
 const moreModes = [
+  { id: "podcast", name: "Podcast", icon: Mic, description: "Listen & learn" },
+  { id: "mindmap", name: "Mind Map", icon: Network, description: "Visualize concepts" },
   { id: "writer", name: "Writer", icon: PenTool, description: "Write essays", href: "/dashboard/writer" },
   { id: "video", name: "Video", icon: Youtube, description: "YouTube" },
   { id: "quick-summary", name: "Summary", icon: Clock, description: "Quick 5min" },
