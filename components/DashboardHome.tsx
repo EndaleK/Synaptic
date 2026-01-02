@@ -560,31 +560,42 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
         <section className="mb-10 animate-hero-reveal stagger-4">
           {/* Create Study Plan Card */}
           <div className="mb-4 sm:mb-5">
-            <button
-              onClick={() => setShowStudyPlanWizard(true)}
-              className="w-full group relative p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-pink-500/10 dark:from-violet-500/5 dark:via-purple-500/3 dark:to-pink-500/5 backdrop-blur-xl border border-violet-200/50 dark:border-violet-500/20 hover:border-violet-400/50 dark:hover:border-violet-400/30 hover:shadow-2xl hover:shadow-violet-500/10 transition-all duration-500 text-left overflow-hidden"
-            >
+            <div className="w-full group relative p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-pink-500/10 dark:from-violet-500/5 dark:via-purple-500/3 dark:to-pink-500/5 backdrop-blur-xl border border-violet-200/50 dark:border-violet-500/20 overflow-hidden">
               {/* Background shimmer */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-violet-500/5 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-out" />
 
               <div className="relative z-10 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-xl shadow-violet-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-xl shadow-violet-500/30">
                     <Upload className="w-7 h-7 text-white" />
                   </div>
                   <div>
                     <h3 className="text-lg font-display font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                      Create Study Plan
+                      Study Plans
                       <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-violet-500 to-pink-500 text-white rounded-full">New</span>
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                      Upload your syllabus and let AI create an optimized study schedule
+                      Create and manage your exam preparation schedules
                     </p>
                   </div>
                 </div>
-                <ChevronRight className="w-6 h-6 text-violet-500 group-hover:translate-x-1 transition-transform" />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => router.push('/dashboard/study-plans')}
+                    className="px-3 py-1.5 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
+                  >
+                    View All
+                  </button>
+                  <button
+                    onClick={() => setShowStudyPlanWizard(true)}
+                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all flex items-center gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    New Plan
+                  </button>
+                </div>
               </div>
-            </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
@@ -619,8 +630,8 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                 onClose={() => setShowStudyPlanWizard(false)}
                 onComplete={(planId) => {
                   setShowStudyPlanWizard(false)
-                  // Optionally navigate to the study plan or refresh data
-                  console.log('[DashboardHome] Study plan created:', planId)
+                  // Navigate to the study plans page
+                  router.push('/dashboard/study-plans')
                 }}
               />
             </div>
