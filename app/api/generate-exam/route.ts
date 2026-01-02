@@ -127,13 +127,92 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 8. Validate document has extracted text
-    if (!document.extracted_text || document.extracted_text.length === 0) {
-      return NextResponse.json(
-        { error: 'Document has no readable text content. Please upload a text-based document.' },
-        { status: 400 }
-      )
+    // 8. Validate document has extracted text - or try to extract it on-demand
+    let documentText = document.extracted_text
+
+    if (!documentText || documentText.length === 0) {
+      // Check if this is a PDF that might need on-demand extraction
+      const isPDF = document.metadata?.file_type === 'application/pdf' ||
+                    (document.file_name && document.file_name.toLowerCase().endsWith('.pdf'))
+
+      if (isPDF && document.storage_path) {
+        logger.info('Attempting on-demand PDF text extraction', { userId, documentId: document_id })
+
+        try {
+          // Download and extract text on-demand
+          const { data: fileBlob, error: downloadError } = await supabase
+            .storage
+            .from('documents')
+            .download(document.storage_path)
+
+          if (!downloadError && fileBlob) {
+            const arrayBuffer = await fileBlob.arrayBuffer()
+            const pdfFile = new File([arrayBuffer], document.file_name, { type: 'application/pdf' })
+
+            const { parseServerPDF } = await import('@/lib/server-pdf-parser')
+            const result = await parseServerPDF(pdfFile)
+
+            if (result.text && result.text.length > 0) {
+              documentText = result.text
+
+              // Update the document with the extracted text for future use
+              await supabase
+                .from('documents')
+                .update({
+                  extracted_text: result.text,
+                  metadata: {
+                    ...document.metadata,
+                    has_extracted_text: true,
+                    extraction_method: result.method || 'pdf-parse',
+                    text_length: result.text.length,
+                    page_count: result.pageCount,
+                    on_demand_extraction: true,
+                    extraction_timestamp: new Date().toISOString()
+                  }
+                })
+                .eq('id', document_id)
+
+              logger.info('On-demand PDF extraction successful', {
+                userId,
+                documentId: document_id,
+                textLength: result.text.length,
+                method: result.method
+              })
+            }
+          }
+        } catch (extractError) {
+          logger.error('On-demand PDF extraction failed', extractError, { userId, documentId: document_id })
+        }
+      }
+
+      // If still no text after extraction attempt
+      if (!documentText || documentText.length === 0) {
+        const isLargePdf = isPDF && document.metadata?.text_extraction_queued === true
+
+        if (isLargePdf) {
+          return NextResponse.json(
+            {
+              error: 'Document is still being processed',
+              details: 'This large PDF is being processed in the background. Please try again in a few minutes.',
+              suggestion: 'Large documents may take 1-2 minutes to process. You can check back shortly.'
+            },
+            { status: 202 } // 202 Accepted - processing in progress
+          )
+        }
+
+        return NextResponse.json(
+          {
+            error: 'Document has no readable text content',
+            details: 'This document appears to be a scanned PDF or image-based file that cannot be processed.',
+            suggestion: 'Please upload a text-based document or use OCR software to convert scanned documents.'
+          },
+          { status: 400 }
+        )
+      }
     }
+
+    // Update document reference to use the extracted text
+    const extractedTextContent = documentText
 
     // 9. Determine selection mode and extract relevant text
     let contentText = ''
@@ -202,7 +281,7 @@ export async function POST(request: NextRequest) {
 
       try {
         const { extractChapterText } = await import('@/lib/chapter-extractor')
-        const fullText = document.extracted_text || ''
+        const fullText = extractedTextContent || ''
 
         if (!fullText || fullText.trim().length === 0) {
           return NextResponse.json(
@@ -277,17 +356,17 @@ export async function POST(request: NextRequest) {
             userId,
             documentId: document_id,
           })
-          contentText = document.extracted_text.substring(0, 48000)
+          contentText = extractedTextContent.substring(0, 48000)
         }
       } else {
         // No page range, use full document
-        contentText = document.extracted_text.substring(0, 48000)
+        contentText = extractedTextContent.substring(0, 48000)
       }
 
     } else {
       // FULL DOCUMENT MODE: Use full text
       selectionDescription = 'full document'
-      contentText = document.extracted_text.substring(0, 48000)
+      contentText = extractedTextContent.substring(0, 48000)
 
       logger.info('Exam generation for full document', {
         userId,
@@ -324,6 +403,32 @@ export async function POST(request: NextRequest) {
       questionCount: result.questions.length
     })
 
+    // 10b. Generate a unique, descriptive exam title based on topics
+    const extractedTopics = result.questions
+      .map(q => q.topic)
+      .filter((topic): topic is string => !!topic && topic.trim() !== '')
+
+    // Get unique topics and limit to top 3 for title
+    const uniqueTopics = [...new Set(extractedTopics)]
+    const topTopics = uniqueTopics.slice(0, 3)
+
+    // Create a descriptive title
+    let generatedTitle = title // Use user-provided title as fallback
+    if (topTopics.length > 0) {
+      const topicsString = topTopics.join(', ')
+      // If user provided a generic title (contains "Practice Exam"), replace with descriptive one
+      if (title.includes('Practice Exam') || title.includes('Mock Exam') || title.includes('Exam')) {
+        const docName = document?.file_name?.replace(/\.[^/.]+$/, '') || 'Study'
+        generatedTitle = `${docName}: ${topicsString}`
+      }
+    } else {
+      // If no topics extracted, add timestamp for uniqueness
+      const timestamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      if (title.includes('Practice Exam') || title.includes('Mock Exam')) {
+        generatedTitle = `${title} (${timestamp})`
+      }
+    }
+
     // 11. Track usage and cost
     const modelMap: Record<string, 'gpt-3.5-turbo' | 'claude-3-5-sonnet' | 'gemini-1.5-pro' | 'deepseek-chat'> = {
       'deepseek': 'deepseek-chat',
@@ -336,10 +441,10 @@ export async function POST(request: NextRequest) {
     const costEstimate = estimateRequestCost(modelForCost as any, contentText, 4000)
     trackUsage(userId, modelForCost as any, costEstimate.inputTokens, costEstimate.outputTokens)
 
-    // 11. Create exam record in database
+    // 12. Create exam record in database
     const examData: ExamInsert = {
       user_id: profile.id,
-      title,
+      title: generatedTitle,
       description: description || null,
       document_id: document_id,
       question_source: 'document',
@@ -357,16 +462,16 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (examError || !exam) {
-      logger.error('Failed to create exam record', examError, { userId, title })
+      logger.error('Failed to create exam record', examError, { userId, title: generatedTitle })
       return NextResponse.json(
         { error: 'Failed to create exam record' },
         { status: 500 }
       )
     }
 
-    logger.info('Exam record created', { userId, examId: exam.id, title })
+    logger.info('Exam record created', { userId, examId: exam.id, title: generatedTitle })
 
-    // 12. Save all questions to database
+    // 13. Save all questions to database
     const questionsToInsert: ExamQuestionInsert[] = result.questions.map((q, index) => ({
       exam_id: exam.id,
       question_text: q.question_text,

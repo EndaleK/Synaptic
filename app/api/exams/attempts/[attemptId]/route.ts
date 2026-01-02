@@ -67,21 +67,99 @@ export async function GET(
     }
 
     // 4. Fetch associated exam with questions
-    const { data: exam, error: examError } = await supabase
-      .from('exams')
-      .select(`
-        *,
-        exam_questions (*)
-      `)
-      .eq('id', attempt.exam_id)
-      .single()
+    // For adaptive exams started from documentId, exam_id may be null
+    let exam = null
 
-    if (examError || !exam) {
-      logger.error('Exam not found for attempt', examError, { userId, attemptId, examId: attempt.exam_id })
+    if (attempt.exam_id) {
+      const { data: examData, error: examError } = await supabase
+        .from('exams')
+        .select(`
+          *,
+          exam_questions (*)
+        `)
+        .eq('id', attempt.exam_id)
+        .single()
+
+      if (examError || !examData) {
+        logger.error('Exam not found for attempt', examError, { userId, attemptId, examId: attempt.exam_id })
+        return NextResponse.json(
+          { error: 'Associated exam not found' },
+          { status: 404 }
+        )
+      }
+
+      exam = examData
+    } else if (attempt.is_adaptive && attempt.adaptive_questions) {
+      // For adaptive exams without a parent exam, fetch questions directly
+      const questionIds = attempt.adaptive_questions
+
+      const { data: questions } = await supabase
+        .from('exam_questions')
+        .select('*')
+        .in('id', questionIds)
+
+      // Extract unique topics from questions for a descriptive title
+      const extractedTopics = (questions || [])
+        .map(q => q.topic)
+        .filter((topic): topic is string => !!topic && topic.trim() !== '')
+      const uniqueTopics = [...new Set(extractedTopics)].slice(0, 3)
+
+      // Try to get document name if questions have source_document_id
+      let docName = 'Study Material'
+      const sourceDocId = questions?.[0]?.source_document_id
+      if (sourceDocId) {
+        const { data: doc } = await supabase
+          .from('documents')
+          .select('file_name')
+          .eq('id', sourceDocId)
+          .single()
+        if (doc?.file_name) {
+          docName = doc.file_name.replace(/\.[^/.]+$/, '')
+        }
+      }
+
+      // Create descriptive title
+      const adaptiveTitle = uniqueTopics.length > 0
+        ? `${docName}: ${uniqueTopics.join(', ')}`
+        : `${docName} - Adaptive Exam`
+
+      // Create a virtual exam object for the review mode
+      exam = {
+        id: null,
+        title: adaptiveTitle,
+        description: 'Adaptive difficulty exam that adjusts to your performance',
+        difficulty: 'adaptive',
+        question_count: questionIds.length,
+        exam_questions: questions || [],
+        created_at: attempt.started_at,
+        updated_at: attempt.completed_at || attempt.started_at
+      }
+    }
+
+    if (!exam) {
+      logger.error('No exam data found for attempt', null, { userId, attemptId })
       return NextResponse.json(
-        { error: 'Associated exam not found' },
+        { error: 'No exam data found for this attempt' },
         { status: 404 }
       )
+    }
+
+    // 5. Fetch previous attempts for this exam (for comparison)
+    // Only fetch if there's an associated exam_id
+    let previousAttempts: any[] = []
+
+    if (attempt.exam_id) {
+      const { data: prevAttempts } = await supabase
+        .from('exam_attempts')
+        .select('id, score, correct_answers, total_questions, completed_at, time_taken_seconds')
+        .eq('user_id', profile.id)
+        .eq('exam_id', attempt.exam_id)
+        .eq('status', 'completed')
+        .neq('id', attemptId)
+        .order('completed_at', { ascending: false })
+        .limit(5)
+
+      previousAttempts = prevAttempts || []
     }
 
     const duration = Date.now() - startTime
@@ -90,12 +168,14 @@ export async function GET(
       userId,
       attemptId,
       examId: exam.id,
-      questionCount: exam.exam_questions?.length || 0
+      questionCount: exam.exam_questions?.length || 0,
+      previousAttemptsCount: previousAttempts?.length || 0
     })
 
     return NextResponse.json({
       attempt,
       exam,
+      previousAttempts,
       message: 'Exam attempt retrieved successfully'
     })
 

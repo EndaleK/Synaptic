@@ -157,7 +157,22 @@ export default function ExamSetupModal({
           setIsGenerating(false)
           return
         }
-        throw new Error(data.error || data.details || 'Failed to generate exam')
+
+        // Check if document is still being processed (202)
+        if (response.status === 202) {
+          setError(data.details || 'Document is still being processed. Please try again in a few minutes.')
+          setIsGenerating(false)
+          return
+        }
+
+        // Build a helpful error message
+        let errorMsg = data.error || 'Failed to generate exam'
+        if (data.suggestion) {
+          errorMsg += `. ${data.suggestion}`
+        } else if (data.details) {
+          errorMsg += `: ${data.details}`
+        }
+        throw new Error(errorMsg)
       }
 
       console.log('✅ Exam generated successfully!', {

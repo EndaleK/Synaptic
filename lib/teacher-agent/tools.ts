@@ -201,7 +201,7 @@ export const teacherTools: ClaudeToolDefinition[] = [
   },
   {
     name: 'search_documents',
-    description: 'Search through the user\'s uploaded documents to find relevant information. Use this to find specific content or answer questions about their materials.',
+    description: 'Search through the user\'s uploaded documents. ONLY use this tool when the user explicitly asks to "search", "find", or "look up" something in their documents. Do NOT use for general questions like "list chapters" or "what are the main concepts" - answer those directly instead.',
     input_schema: {
       type: 'object',
       properties: {
@@ -215,7 +215,7 @@ export const teacherTools: ClaudeToolDefinition[] = [
   },
   {
     name: 'explain_concept',
-    description: 'Provide a detailed explanation of a concept, potentially using context from documents. Use this when the user asks "what is...", "explain...", or doesn\'t understand something.',
+    description: 'Provide a detailed, in-depth explanation of a complex concept that requires extended teaching. ONLY use this for complex topics that need step-by-step breakdown. For simple questions like "what is X" or "list the chapters", just answer directly without using this tool.',
     input_schema: {
       type: 'object',
       properties: {

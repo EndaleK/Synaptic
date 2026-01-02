@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,7 +13,17 @@ import {
   Target,
   RefreshCw,
   ArrowLeft,
-  BookOpen
+  BookOpen,
+  Lightbulb,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Timer,
+  Zap,
+  History,
+  Sparkles,
+  BarChart3,
+  Brain
 } from "lucide-react"
 import type { Exam, ExamQuestion, ExamAnswer } from "@/lib/supabase/types"
 
@@ -37,6 +47,8 @@ interface ExamAttempt {
   correct_answers: number | null
   score: number | null
   answers: ExamAnswer[]
+  is_adaptive?: boolean
+  topic_scores?: Record<string, number>
 }
 
 interface ExamWithQuestions extends Exam {
@@ -46,6 +58,26 @@ interface ExamWithQuestions extends Exam {
 interface AttemptWithExam {
   attempt: ExamAttempt
   exam: ExamWithQuestions
+  previousAttempts?: ExamAttempt[]
+}
+
+interface AIExplanation {
+  whyWrong: string
+  keyConceptsMissed: string[]
+  studyTip: string
+  similarQuestions: {
+    question: string
+    correctAnswer: string
+    hint: string
+  }[]
+}
+
+interface TimeAnalysis {
+  averageTimePerQuestion: number
+  expectedTimePerQuestion: number
+  tooSlow: string[]  // question IDs
+  tooFast: string[]  // question IDs
+  optimal: string[]  // question IDs
 }
 
 export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamReviewModeProps) {
@@ -54,6 +86,14 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'correct' | 'incorrect'>('all')
+
+  // New enhanced features state
+  const [aiExplanations, setAiExplanations] = useState<Record<string, AIExplanation>>({})
+  const [loadingExplanation, setLoadingExplanation] = useState<string | null>(null)
+  const [timeAnalysis, setTimeAnalysis] = useState<TimeAnalysis | null>(null)
+  const [showComparison, setShowComparison] = useState(false)
+  const [showTimeAnalysis, setShowTimeAnalysis] = useState(false)
+  const [activeTab, setActiveTab] = useState<'review' | 'insights' | 'topics'>('review')
 
   // Load exam attempt and questions
   useEffect(() => {
@@ -86,6 +126,120 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
 
     loadAttempt()
   }, [attemptId])
+
+  // Calculate time analysis when data loads
+  useEffect(() => {
+    if (data?.attempt.answers) {
+      const answers = data.attempt.answers
+      const totalTime = data.attempt.time_taken_seconds || 0
+      const questionCount = answers.length
+
+      if (questionCount > 0 && totalTime > 0) {
+        const avgTime = totalTime / questionCount
+        const expectedTime = 60 // 60 seconds per question is reasonable
+
+        const tooSlow: string[] = []
+        const tooFast: string[] = []
+        const optimal: string[] = []
+
+        answers.forEach((answer) => {
+          const timeSpent = answer.time_spent || 0
+          if (timeSpent > expectedTime * 2) {
+            tooSlow.push(answer.question_id)
+          } else if (timeSpent < expectedTime * 0.3) {
+            tooFast.push(answer.question_id)
+          } else {
+            optimal.push(answer.question_id)
+          }
+        })
+
+        setTimeAnalysis({
+          averageTimePerQuestion: Math.round(avgTime),
+          expectedTimePerQuestion: expectedTime,
+          tooSlow,
+          tooFast,
+          optimal
+        })
+      }
+    }
+  }, [data])
+
+  // Fetch AI explanation for a question
+  const fetchAIExplanation = useCallback(async (questionId: string, questionText: string, userAnswer: string, correctAnswer: string, topic: string) => {
+    if (aiExplanations[questionId] || loadingExplanation) return
+
+    setLoadingExplanation(questionId)
+
+    try {
+      const response = await fetch('/api/exams/explanations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          questionId,
+          questionText,
+          userAnswer,
+          correctAnswer,
+          topic,
+          examId: data?.exam.id
+        })
+      })
+
+      if (response.ok) {
+        const explanation = await response.json()
+        setAiExplanations(prev => ({
+          ...prev,
+          [questionId]: explanation
+        }))
+      }
+    } catch (err) {
+      console.error('Failed to fetch AI explanation:', err)
+    } finally {
+      setLoadingExplanation(null)
+    }
+  }, [aiExplanations, loadingExplanation, data?.exam.id])
+
+  // Get performance trend compared to previous attempts
+  const getPerformanceTrend = (): { trend: 'up' | 'down' | 'stable', change: number } | null => {
+    if (!data?.previousAttempts || data.previousAttempts.length === 0) return null
+
+    const currentScore = data.attempt.score || 0
+    const previousScore = data.previousAttempts[0]?.score || 0
+    const change = currentScore - previousScore
+
+    if (change > 5) return { trend: 'up', change }
+    if (change < -5) return { trend: 'down', change }
+    return { trend: 'stable', change }
+  }
+
+  // Get topic performance breakdown
+  const getTopicPerformance = (): { topic: string, correct: number, total: number, percentage: number }[] => {
+    if (!data) return []
+
+    const topicStats: Record<string, { correct: number, total: number }> = {}
+
+    data.exam.exam_questions.forEach(question => {
+      const topic = question.topic || 'General'
+      const answer = data.attempt.answers.find(a => a.question_id === question.id)
+
+      if (!topicStats[topic]) {
+        topicStats[topic] = { correct: 0, total: 0 }
+      }
+
+      topicStats[topic].total++
+      if (answer?.is_correct) {
+        topicStats[topic].correct++
+      }
+    })
+
+    return Object.entries(topicStats)
+      .map(([topic, stats]) => ({
+        topic,
+        correct: stats.correct,
+        total: stats.total,
+        percentage: Math.round((stats.correct / stats.total) * 100)
+      }))
+      .sort((a, b) => a.percentage - b.percentage) // Weakest topics first
+  }
 
   const formatTime = (seconds: number | null): string => {
     if (!seconds) return 'N/A'
@@ -171,6 +325,8 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
   const correctCount = attempt.correct_answers || 0
   const incorrectCount = attempt.total_questions - correctCount
   const allQuestions = exam.exam_questions
+  const performanceTrend = getPerformanceTrend()
+  const topicPerformance = getTopicPerformance()
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16 md:pb-0">
@@ -209,17 +365,31 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
 
           {/* Performance Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {/* Score */}
+            {/* Score with Trend */}
             <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 rounded-lg p-2.5 border border-indigo-200 dark:border-indigo-800">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 bg-indigo-600 rounded-lg">
                   <Trophy className="w-5 h-5 text-white" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">Score</p>
-                  <p className="text-xl font-bold text-indigo-900 dark:text-indigo-100">
-                    {scorePercentage.toFixed(1)}%
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xl font-bold text-indigo-900 dark:text-indigo-100">
+                      {scorePercentage.toFixed(1)}%
+                    </p>
+                    {performanceTrend && (
+                      <div className={`flex items-center gap-0.5 text-xs font-medium ${
+                        performanceTrend.trend === 'up' ? 'text-green-600 dark:text-green-400' :
+                        performanceTrend.trend === 'down' ? 'text-red-600 dark:text-red-400' :
+                        'text-gray-500 dark:text-gray-400'
+                      }`}>
+                        {performanceTrend.trend === 'up' && <TrendingUp className="w-3.5 h-3.5" />}
+                        {performanceTrend.trend === 'down' && <TrendingDown className="w-3.5 h-3.5" />}
+                        {performanceTrend.trend === 'stable' && <Minus className="w-3.5 h-3.5" />}
+                        <span>{Math.abs(performanceTrend.change).toFixed(0)}%</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -270,7 +440,45 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
             </div>
           </div>
 
-          {/* Filter Tabs */}
+          {/* Main Tabs */}
+          <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 mt-3">
+            <button
+              onClick={() => setActiveTab('review')}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'review'
+                  ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              Review
+            </button>
+            <button
+              onClick={() => setActiveTab('insights')}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'insights'
+                  ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              Insights
+            </button>
+            <button
+              onClick={() => setActiveTab('topics')}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'topics'
+                  ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <Brain className="w-4 h-4" />
+              Topics
+            </button>
+          </div>
+
+          {/* Filter Tabs (only shown in review mode) */}
+          {activeTab === 'review' && (
           <div className="flex gap-1.5 sm:gap-2 mt-3 overflow-x-auto pb-1">
             <button
               onClick={() => {
@@ -312,11 +520,219 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
               Incorrect ({incorrectCount})
             </button>
           </div>
+          )}
         </div>
       </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+        {/* Insights Tab */}
+        {activeTab === 'insights' && (
+          <div className="space-y-4 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+            {/* Time Analysis */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Timer className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Time Analysis</h3>
+              </div>
+
+              {timeAnalysis ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                        {timeAnalysis.averageTimePerQuestion}s
+                      </p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400">Avg per question</p>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                        {timeAnalysis.optimal.length}
+                      </p>
+                      <p className="text-xs text-green-600 dark:text-green-400">Optimal pace</p>
+                    </div>
+                    <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                        {timeAnalysis.tooSlow.length + timeAnalysis.tooFast.length}
+                      </p>
+                      <p className="text-xs text-amber-600 dark:text-amber-400">Need attention</p>
+                    </div>
+                  </div>
+
+                  {timeAnalysis.tooSlow.length > 0 && (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                            Spent too long on {timeAnalysis.tooSlow.length} question{timeAnalysis.tooSlow.length > 1 ? 's' : ''}
+                          </p>
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                            Consider time management strategies. If stuck, move on and return later.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {timeAnalysis.tooFast.length > 0 && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <Zap className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                            Rushed through {timeAnalysis.tooFast.length} question{timeAnalysis.tooFast.length > 1 ? 's' : ''}
+                          </p>
+                          <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                            Take more time to read carefully. Quick answers often lead to mistakes.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Time data not available for this attempt.
+                </p>
+              )}
+            </div>
+
+            {/* Previous Attempts Comparison */}
+            {data.previousAttempts && data.previousAttempts.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <History className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Previous Attempts</h3>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border-2 border-indigo-200 dark:border-indigo-800">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/50 px-2 py-0.5 rounded">
+                        Current
+                      </span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        {new Date(attempt.completed_at || '').toLocaleDateString()}
+                      </span>
+                    </div>
+                    <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                      {scorePercentage.toFixed(1)}%
+                    </span>
+                  </div>
+
+                  {data.previousAttempts.slice(0, 3).map((prevAttempt, index) => (
+                    <div key={prevAttempt.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                          Attempt {data.previousAttempts!.length - index}
+                        </span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          {new Date(prevAttempt.completed_at || '').toLocaleDateString()}
+                        </span>
+                      </div>
+                      <span className={`text-lg font-bold ${
+                        (prevAttempt.score || 0) >= 70 ? 'text-green-600 dark:text-green-400' :
+                        (prevAttempt.score || 0) >= 50 ? 'text-yellow-600 dark:text-yellow-400' :
+                        'text-red-600 dark:text-red-400'
+                      }`}>
+                        {(prevAttempt.score || 0).toFixed(1)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {performanceTrend && (
+                  <div className={`mt-4 p-3 rounded-lg ${
+                    performanceTrend.trend === 'up' ? 'bg-green-50 dark:bg-green-900/20' :
+                    performanceTrend.trend === 'down' ? 'bg-red-50 dark:bg-red-900/20' :
+                    'bg-gray-50 dark:bg-gray-700/50'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      {performanceTrend.trend === 'up' && <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />}
+                      {performanceTrend.trend === 'down' && <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />}
+                      {performanceTrend.trend === 'stable' && <Minus className="w-5 h-5 text-gray-600 dark:text-gray-400" />}
+                      <p className={`text-sm font-medium ${
+                        performanceTrend.trend === 'up' ? 'text-green-800 dark:text-green-200' :
+                        performanceTrend.trend === 'down' ? 'text-red-800 dark:text-red-200' :
+                        'text-gray-800 dark:text-gray-200'
+                      }`}>
+                        {performanceTrend.trend === 'up' && `Great improvement! You scored ${Math.abs(performanceTrend.change).toFixed(1)}% higher than last time.`}
+                        {performanceTrend.trend === 'down' && `Score dropped ${Math.abs(performanceTrend.change).toFixed(1)}% from last attempt. Review your weak areas.`}
+                        {performanceTrend.trend === 'stable' && 'Your performance is consistent. Focus on weak topics to improve.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Topics Tab */}
+        {activeTab === 'topics' && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6 max-h-[calc(100vh-280px)] overflow-y-auto">
+            <div className="flex items-center gap-2 mb-4 sticky top-0 bg-white dark:bg-gray-800 pb-2 -mt-1 pt-1">
+              <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Topic Performance</h3>
+            </div>
+
+            <div className="space-y-3">
+              {topicPerformance.map((topic) => (
+                <div key={topic.topic} className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {topic.topic}
+                    </span>
+                    <span className={`text-sm font-bold ${
+                      topic.percentage >= 80 ? 'text-green-600 dark:text-green-400' :
+                      topic.percentage >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
+                      'text-red-600 dark:text-red-400'
+                    }`}>
+                      {topic.correct}/{topic.total} ({topic.percentage}%)
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full transition-all ${
+                        topic.percentage >= 80 ? 'bg-green-500' :
+                        topic.percentage >= 60 ? 'bg-yellow-500' :
+                        'bg-red-500'
+                      }`}
+                      style={{ width: `${topic.percentage}%` }}
+                    />
+                  </div>
+                  {topic.percentage < 60 && (
+                    <p className="text-xs text-red-600 dark:text-red-400">
+                      Focus area: Needs more practice
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {topicPerformance.filter(t => t.percentage < 60).length > 0 && (
+              <div className="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                <div className="flex items-start gap-3">
+                  <Lightbulb className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-100">
+                      Study Recommendation
+                    </h4>
+                    <p className="text-sm text-indigo-800 dark:text-indigo-200 mt-1">
+                      Focus on {topicPerformance.filter(t => t.percentage < 60).map(t => t.topic).join(', ')} before your next attempt.
+                      Consider reviewing flashcards or creating a study plan for these topics.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Review Tab - Original Question Review */}
+        {activeTab === 'review' && (
+        <>
         {filteredQuestions.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
             <Target className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
@@ -325,9 +741,9 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-4 max-h-[calc(100vh-320px)] md:max-h-[calc(100vh-280px)]">
             {/* Question Review */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3 overflow-y-auto pr-1">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-5">
                 {/* Question Header */}
                 <div className="flex items-start justify-between mb-4">
@@ -480,6 +896,122 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
                   </div>
                 )}
 
+                {/* AI "Why Was I Wrong?" Button for incorrect answers */}
+                {!currentAnswer?.is_correct && (
+                  <div className="mb-4">
+                    {!aiExplanations[currentQuestion.id] ? (
+                      <button
+                        onClick={() => fetchAIExplanation(
+                          currentQuestion.id,
+                          currentQuestion.question_text,
+                          currentAnswer?.user_answer || '',
+                          currentQuestion.correct_answer,
+                          currentQuestion.topic || 'General'
+                        )}
+                        disabled={loadingExplanation === currentQuestion.id}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loadingExplanation === currentQuestion.id ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <span>Analyzing your answer...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-5 h-5" />
+                            <span>Why was I wrong? (AI Analysis)</span>
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Why Wrong */}
+                        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                          <div className="flex items-start gap-2 mb-2">
+                            <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5" />
+                            <h3 className="text-sm font-bold text-purple-900 dark:text-purple-100">
+                              Why Your Answer Was Wrong
+                            </h3>
+                          </div>
+                          <p className="text-sm text-purple-800 dark:text-purple-200 leading-relaxed ml-7">
+                            {aiExplanations[currentQuestion.id].whyWrong}
+                          </p>
+                        </div>
+
+                        {/* Key Concepts Missed */}
+                        {aiExplanations[currentQuestion.id].keyConceptsMissed.length > 0 && (
+                          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                            <div className="flex items-start gap-2 mb-2">
+                              <Lightbulb className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                              <h3 className="text-sm font-bold text-amber-900 dark:text-amber-100">
+                                Key Concepts to Review
+                              </h3>
+                            </div>
+                            <ul className="ml-7 space-y-1">
+                              {aiExplanations[currentQuestion.id].keyConceptsMissed.map((concept, i) => (
+                                <li key={i} className="text-sm text-amber-800 dark:text-amber-200 flex items-start gap-1.5">
+                                  <span className="text-amber-500">•</span>
+                                  {concept}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Study Tip */}
+                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                          <div className="flex items-start gap-2 mb-2">
+                            <Target className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
+                            <h3 className="text-sm font-bold text-green-900 dark:text-green-100">
+                              Study Tip
+                            </h3>
+                          </div>
+                          <p className="text-sm text-green-800 dark:text-green-200 leading-relaxed ml-7">
+                            {aiExplanations[currentQuestion.id].studyTip}
+                          </p>
+                        </div>
+
+                        {/* Similar Practice Questions */}
+                        {aiExplanations[currentQuestion.id].similarQuestions.length > 0 && (
+                          <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
+                            <div className="flex items-start gap-2 mb-3">
+                              <Brain className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mt-0.5" />
+                              <h3 className="text-sm font-bold text-indigo-900 dark:text-indigo-100">
+                                Practice Similar Questions
+                              </h3>
+                            </div>
+                            <div className="ml-7 space-y-3">
+                              {aiExplanations[currentQuestion.id].similarQuestions.map((sq, i) => (
+                                <div key={i} className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-indigo-100 dark:border-indigo-900">
+                                  <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                                    {sq.question}
+                                  </p>
+                                  <details className="group">
+                                    <summary className="text-xs text-indigo-600 dark:text-indigo-400 cursor-pointer hover:underline">
+                                      Show hint
+                                    </summary>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">
+                                      {sq.hint}
+                                    </p>
+                                  </details>
+                                  <details className="group mt-1">
+                                    <summary className="text-xs text-green-600 dark:text-green-400 cursor-pointer hover:underline">
+                                      Show answer
+                                    </summary>
+                                    <p className="text-xs text-green-700 dark:text-green-300 mt-1 font-medium">
+                                      {sq.correctAnswer}
+                                    </p>
+                                  </details>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Source Reference */}
                 {currentQuestion.source_reference && (
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2.5 mb-4">
@@ -565,9 +1097,12 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
             </div>
           </div>
         )}
+        </>
+        )}
       </div>
 
       {/* Mobile Fixed Bottom Navigation */}
+      {activeTab === 'review' && (
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-3 py-2.5 z-20 shadow-lg">
         <div className="flex items-center gap-2">
           <button
@@ -593,6 +1128,7 @@ export default function ExamReviewMode({ attemptId, onRetake, onExit }: ExamRevi
           </button>
         </div>
       </div>
+      )}
     </div>
   )
 }

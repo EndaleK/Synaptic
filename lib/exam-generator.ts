@@ -3,7 +3,7 @@
  * Uses AI to generate exam questions from document text
  */
 
-import { getProviderForFeature, type AIProvider } from './ai'
+import { getProviderForFeature, providerFactory, type AIProvider } from './ai'
 import type { QuestionType, Difficulty, ExamDifficulty } from './supabase/types'
 import { logger } from './logger'
 
@@ -48,7 +48,7 @@ export async function generateExamQuestions(
   } = options
 
   // Get provider (use configured provider for 'exam' feature)
-  const provider = getProviderForFeature('exam')
+  let provider = getProviderForFeature('exam')
 
   if (!provider.isConfigured()) {
     throw new Error(`AI provider not configured. Please add the appropriate API key to your environment variables.`)
@@ -139,8 +139,9 @@ ${truncatedText}
 
 Generate ${questionCount} exam questions now. Return ONLY the JSON array, no other text:`
 
-  try {
-    const response = await provider.complete(
+  // Helper function to attempt generation with a provider
+  async function attemptGeneration(aiProvider: AIProvider): Promise<string> {
+    const response = await aiProvider.complete(
       [
         {
           role: 'system',
@@ -156,8 +157,65 @@ Generate ${questionCount} exam questions now. Return ONLY the JSON array, no oth
         maxTokens: 4000
       }
     )
+    return response.content.trim()
+  }
 
-    const rawResponse = response.content.trim()
+  try {
+    let rawResponse: string
+    let usedProvider = provider
+
+    try {
+      rawResponse = await attemptGeneration(provider)
+    } catch (primaryError) {
+      // Check if this is an authentication error - try fallback providers
+      const errorMessage = primaryError instanceof Error ? primaryError.message : String(primaryError)
+      const isAuthError = errorMessage.includes('authentication_error') ||
+                          errorMessage.includes('invalid') ||
+                          errorMessage.includes('401') ||
+                          errorMessage.includes('api_key') ||
+                          errorMessage.includes('API key')
+
+      if (isAuthError) {
+        logger.warn(`Primary provider ${provider.name} authentication failed, trying fallbacks`, {
+          error: errorMessage
+        })
+
+        // Try OpenAI as fallback
+        const openaiProvider = providerFactory.getProvider('openai')
+        if (openaiProvider.isConfigured()) {
+          try {
+            logger.info('Attempting exam generation with OpenAI fallback')
+            rawResponse = await attemptGeneration(openaiProvider)
+            usedProvider = openaiProvider
+          } catch (openaiError) {
+            // Try DeepSeek as last resort
+            const deepseekProvider = providerFactory.getProvider('deepseek')
+            if (deepseekProvider.isConfigured()) {
+              logger.info('Attempting exam generation with DeepSeek fallback')
+              rawResponse = await attemptGeneration(deepseekProvider)
+              usedProvider = deepseekProvider
+            } else {
+              throw primaryError // Re-throw original error if no fallbacks work
+            }
+          }
+        } else {
+          // Try DeepSeek directly if OpenAI not configured
+          const deepseekProvider = providerFactory.getProvider('deepseek')
+          if (deepseekProvider.isConfigured()) {
+            logger.info('Attempting exam generation with DeepSeek fallback')
+            rawResponse = await attemptGeneration(deepseekProvider)
+            usedProvider = deepseekProvider
+          } else {
+            throw primaryError
+          }
+        }
+      } else {
+        throw primaryError // Re-throw non-auth errors
+      }
+    }
+
+    // Update provider reference for logging
+    provider = usedProvider
 
     logger.debug('Raw AI response for exam generation', {
       provider: provider.name,

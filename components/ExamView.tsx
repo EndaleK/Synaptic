@@ -15,15 +15,17 @@ import {
   ArrowRight,
   CheckCircle2,
   Star,
-  Trash2
+  Trash2,
+  Zap
 } from "lucide-react"
 import ExamSetupModal from "./ExamSetupModal"
 import ExamInterface from "./ExamInterface"
 import ExamReviewMode from "./ExamReviewMode"
 import ExamAnalytics from "./ExamAnalytics"
+import AdaptiveExamView from "./AdaptiveExamView"
 import type { Exam, Document } from "@/lib/supabase/types"
 
-type ExamViewMode = 'list' | 'setup' | 'taking' | 'review' | 'analytics'
+type ExamViewMode = 'list' | 'setup' | 'taking' | 'review' | 'analytics' | 'adaptive'
 
 interface ExamAttempt {
   id: string
@@ -191,6 +193,11 @@ export default function ExamView() {
     setViewMode('taking')
   }
 
+  const handleStartAdaptiveExam = (exam: ExamWithAttempts) => {
+    setSelectedExam(exam)
+    setViewMode('adaptive')
+  }
+
   const handleExamComplete = (attemptId: string, score: number) => {
     setSelectedAttemptId(attemptId)
     setViewMode('review')
@@ -278,6 +285,20 @@ export default function ExamView() {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     return `${mins} min`
+  }
+
+  // Render adaptive exam interface
+  if (viewMode === 'adaptive' && selectedExam) {
+    return (
+      <AdaptiveExamView
+        examId={selectedExam.id}
+        onComplete={(attemptId, score) => {
+          setSelectedAttemptId(attemptId)
+          setViewMode('review')
+        }}
+        onExit={handleBackToList}
+      />
+    )
   }
 
   // Render exam taking interface
@@ -524,6 +545,14 @@ export default function ExamView() {
                   >
                     <Play className="w-4 h-4 sm:w-5 sm:h-5" />
                     {exam.attempt_count && exam.attempt_count > 0 ? 'Retake' : 'Start'} Exam
+                  </button>
+                  <button
+                    onClick={() => handleStartAdaptiveExam(exam)}
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-colors active:scale-95 text-sm font-medium"
+                    title="Adaptive difficulty that adjusts based on your performance"
+                  >
+                    <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Adaptive
                   </button>
                   {exam.latest_attempt && (
                     <button

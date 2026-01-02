@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
 import { Check, GraduationCap } from "lucide-react"
 import { useToast } from '@/components/ToastContainer'
+import { CompetitorComparison } from '@/components/CompetitorComparison'
 
 export default function PricingPage() {
   const toast = useToast()
@@ -337,6 +338,19 @@ export default function PricingPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Competitor Comparison Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-black dark:text-white mb-4">
+            Why Choose Synaptic?
+          </h2>
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            See how we compare to other study tools — more features, better value, all in one place.
+          </p>
+        </div>
+        <CompetitorComparison />
       </div>
 
       {/* FAQ Section */}
