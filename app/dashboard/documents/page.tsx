@@ -504,10 +504,10 @@ function DocumentsPageContent() {
             </button>
 
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-accent-secondary">
-                My Documents
+              <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white">
+                Documents
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-xs md:text-sm mt-0.5 md:mt-1">
+              <p className="text-gray-500 dark:text-gray-500 text-xs mt-0.5">
                 {sortedDocuments.length} {sortedDocuments.length === 1 ? 'document' : 'documents'}
               </p>
             </div>
@@ -560,14 +560,14 @@ function DocumentsPageContent() {
               </button>
 
               {/* Divider */}
-              <div className="h-6 w-px bg-gray-300 dark:bg-gray-700" />
+              <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
 
               {/* Upload Button - Primary */}
               <button
                 onClick={() => setIsUploadModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-semibold hover:shadow-lg transition-all"
+                className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-colors"
               >
-                <Upload className="w-5 h-5" />
+                <Upload className="w-4 h-4" />
                 <span>Upload</span>
               </button>
             </div>
@@ -604,9 +604,9 @@ function DocumentsPageContent() {
           {!isSidebarCollapsed && (
             <div className={cn(
               "flex-shrink-0 transition-all duration-300 hidden md:block",
-              isSidebarCollapsed ? "w-0 overflow-hidden" : "w-[280px] lg:w-[320px]"
+              isSidebarCollapsed ? "w-0 overflow-hidden" : "w-[260px] lg:w-[280px]"
             )}>
-              <div className="sticky top-6 bg-white dark:bg-gray-900 rounded-xl shadow-xl border-2 border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="sticky top-6 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
                 <QuickAccess
                   selectedSection={quickAccessSection}
                   onSelectSection={(section) => {
