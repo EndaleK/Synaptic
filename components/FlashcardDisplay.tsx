@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Flashcard, MasteryLevel } from "@/lib/types"
 import DocumentSwitcherModal from "./DocumentSwitcherModal"
 import ShareModal from "./ShareModal"
+import FlashcardExportModal from "./FlashcardExportModal"
 import { useToast } from "./ToastContainer"
 import { useDocumentStore } from "@/lib/store/useStore"
 import { useFlashcardStore } from "@/lib/store/useFlashcardStore"
@@ -28,6 +29,7 @@ export default function FlashcardDisplay({ flashcards, onReset, onRegenerate, is
   const [studiedCards, setStudiedCards] = useState<Set<string>>(new Set())
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showAnkiExportModal, setShowAnkiExportModal] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isSaved, setIsSaved] = useState(false) // Start as unsaved, user can click to confirm save
   const exportMenuRef = useRef<HTMLDivElement>(null)
@@ -1133,10 +1135,27 @@ ${'='.repeat(50)}`).join('\n')}`
                 </button>
 
                 {showExportMenu && (
-                  <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
+                  <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[160px]">
+                    <div className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                      For Anki / Other Apps
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowAnkiExportModal(true)
+                        setShowExportMenu(false)
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 min-h-[44px] flex items-center gap-2"
+                    >
+                      <span className="text-lg">📦</span>
+                      Anki / CSV Export
+                    </button>
+                    <div className="border-t border-gray-100 dark:border-gray-700"></div>
+                    <div className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                      Quick Export
+                    </div>
                     <button
                       onClick={handleExportJSON}
-                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded-t-lg text-gray-700 dark:text-gray-300 min-h-[44px] flex items-center"
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 min-h-[44px] flex items-center"
                     >
                       JSON
                     </button>
@@ -1144,7 +1163,7 @@ ${'='.repeat(50)}`).join('\n')}`
                       onClick={handleExportHTML}
                       className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 min-h-[44px] flex items-center"
                     >
-                      HTML
+                      Interactive HTML
                     </button>
                     <button
                       onClick={handleExportText}
@@ -1380,6 +1399,14 @@ ${'='.repeat(50)}`).join('\n')}`
         url="https://synaptic.study"
         title="Share Synaptic"
         description="Scan this QR code to access Synaptic - AI-powered personalized learning"
+      />
+
+      {/* Anki Export Modal */}
+      <FlashcardExportModal
+        isOpen={showAnkiExportModal}
+        onClose={() => setShowAnkiExportModal(false)}
+        documentId={currentDocument?.id}
+        documentName={currentDocument?.name}
       />
     </div>
   )

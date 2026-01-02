@@ -11,6 +11,14 @@ import { notificationManager } from "@/lib/notifications"
 import { analytics } from "@/lib/analytics"
 import MilestoneCelebrationModal, { useMilestoneCelebration } from "@/components/MilestoneCelebrationModal"
 import SmartRecommendations from "@/components/SmartRecommendations"
+import ExamReadinessWidget from "@/components/ExamReadinessWidget"
+import WeakTopicsPanel from "@/components/WeakTopicsPanel"
+import StudyPlanWizard from "@/components/StudyPlanWizard"
+import LeaderboardWidget from "@/components/LeaderboardWidget"
+import StudyChallengeWidget, { CreateChallengeModal } from "@/components/StudyChallengeWidget"
+import ReferralWidget from "@/components/ReferralWidget"
+import { AchievementUnlockToast } from "@/components/AchievementBadge"
+import type { AchievementDefinition } from "@/lib/achievements"
 
 interface DashboardHomeProps {
   onModeSelect: (mode: string) => void
@@ -60,6 +68,9 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
     videos: { used: 0, limit: 10 }
   })
   const [learningStyleExpanded, setLearningStyleExpanded] = useState(true)
+  const [showStudyPlanWizard, setShowStudyPlanWizard] = useState(false)
+  const [showCreateChallengeModal, setShowCreateChallengeModal] = useState(false)
+  const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState<AchievementDefinition[]>([])
 
   // Prevent hydration mismatch
   const [isClient, setIsClient] = useState(false)
@@ -210,6 +221,39 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
 
     fetchMonthlyUsage()
   }, [userProfile?.subscription_tier])
+
+  // Apply pending referral code (from signup flow)
+  useEffect(() => {
+    const applyPendingReferral = async () => {
+      const pendingCode = localStorage.getItem('pending_referral_code')
+      if (!pendingCode) return
+
+      try {
+        const response = await fetch('/api/referrals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ referral_code: pendingCode })
+        })
+
+        if (response.ok) {
+          console.log('[DashboardHome] Referral code applied successfully')
+          // Clear the pending code
+          localStorage.removeItem('pending_referral_code')
+        } else {
+          const data = await response.json()
+          // If already referred or invalid, just clear it
+          if (data.error?.includes('already') || data.error?.includes('Invalid')) {
+            localStorage.removeItem('pending_referral_code')
+          }
+        }
+      } catch (error) {
+        console.error('[DashboardHome] Error applying referral code:', error)
+      }
+    }
+
+    applyPendingReferral()
+  }, [])
 
   // Trigger browser notifications (once per session)
   useEffect(() => {
@@ -512,8 +556,79 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
           </div>
         </section>
 
-        {/* Learning Modes Grid - Dramatic redesign */}
+        {/* Exam Readiness Section - Hero Feature */}
         <section className="mb-10 animate-hero-reveal stagger-4">
+          {/* Create Study Plan Card */}
+          <div className="mb-4 sm:mb-5">
+            <button
+              onClick={() => setShowStudyPlanWizard(true)}
+              className="w-full group relative p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-pink-500/10 dark:from-violet-500/5 dark:via-purple-500/3 dark:to-pink-500/5 backdrop-blur-xl border border-violet-200/50 dark:border-violet-500/20 hover:border-violet-400/50 dark:hover:border-violet-400/30 hover:shadow-2xl hover:shadow-violet-500/10 transition-all duration-500 text-left overflow-hidden"
+            >
+              {/* Background shimmer */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-violet-500/5 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-out" />
+
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-xl shadow-violet-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                    <Upload className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-display font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      Create Study Plan
+                      <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-violet-500 to-pink-500 text-white rounded-full">New</span>
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                      Upload your syllabus and let AI create an optimized study schedule
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="w-6 h-6 text-violet-500 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+            <ExamReadinessWidget
+              onViewDetails={() => onModeSelect('exam')}
+            />
+            <WeakTopicsPanel
+              onGenerateFlashcards={(topic) => {
+                onModeSelect('flashcards')
+              }}
+              onStartQuiz={(topic) => {
+                onModeSelect('exam')
+              }}
+              onReviewFlashcards={(topic) => {
+                onModeSelect('flashcards')
+              }}
+            />
+          </div>
+        </section>
+
+        {/* Study Plan Wizard Modal */}
+        {showStudyPlanWizard && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setShowStudyPlanWizard(false)}
+            />
+            {/* Wizard */}
+            <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+              <StudyPlanWizard
+                onClose={() => setShowStudyPlanWizard(false)}
+                onComplete={(planId) => {
+                  setShowStudyPlanWizard(false)
+                  // Optionally navigate to the study plan or refresh data
+                  console.log('[DashboardHome] Study plan created:', planId)
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Learning Modes Grid - Dramatic redesign */}
+        <section className="mb-10 animate-hero-reveal stagger-5">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-xl font-display font-bold text-gray-900 dark:text-white">
@@ -558,8 +673,34 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
           </div>
         </section>
 
-        {/* Stats Grid - Recent Content & Monthly Usage */}
+        {/* Social & Engagement - Leaderboard, Challenges & Referrals */}
         <section className="mb-10 animate-hero-reveal stagger-5">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-display font-bold text-gray-900 dark:text-white">
+                Community
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Compete with friends, take on challenges, and earn rewards</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+            <LeaderboardWidget
+              limit={5}
+              onViewAll={() => router.push('/dashboard/leaderboard')}
+            />
+            <StudyChallengeWidget
+              onCreateChallenge={() => setShowCreateChallengeModal(true)}
+              onViewAll={() => router.push('/dashboard/challenges')}
+            />
+            <ReferralWidget
+              compact={false}
+              onViewAll={() => router.push('/dashboard/referrals')}
+            />
+          </div>
+        </section>
+
+        {/* Stats Grid - Recent Content & Monthly Usage */}
+        <section className="mb-10 animate-hero-reveal stagger-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
             {/* Recent Content - Enhanced */}
             <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl shadow-gray-200/20 dark:shadow-none">
@@ -685,7 +826,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
 
         {/* Learning Style Discovery Card - Enhanced */}
         {!hasCompletedAssessment && (
-          <section className="mb-10 animate-hero-reveal stagger-6">
+          <section className="mb-10 animate-hero-reveal stagger-7">
             <div className="relative overflow-hidden p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-violet-400 via-fuchsia-400 to-orange-400">
               {/* Animated background pattern */}
               <div className="absolute inset-0 opacity-20">
@@ -761,6 +902,26 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
         days={currentStreak}
         isOpen={showCelebration}
         onClose={closeCelebration}
+      />
+
+      {/* Achievement Unlock Toast - Shows newly unlocked achievements */}
+      {newlyUnlockedAchievements.length > 0 && (
+        <AchievementUnlockToast
+          achievement={newlyUnlockedAchievements[0]}
+          onClose={() => {
+            setNewlyUnlockedAchievements(prev => prev.slice(1))
+          }}
+        />
+      )}
+
+      {/* Create Challenge Modal */}
+      <CreateChallengeModal
+        isOpen={showCreateChallengeModal}
+        onClose={() => setShowCreateChallengeModal(false)}
+        onCreated={(challenge) => {
+          console.log('[DashboardHome] Challenge created:', challenge)
+          // Could show a toast or refresh the challenges list
+        }}
       />
     </div>
   )
