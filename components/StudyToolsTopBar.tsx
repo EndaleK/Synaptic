@@ -15,14 +15,13 @@ import {
   BookOpen, MessageSquare, Mic, Network, Clock, PenTool, Youtube, GraduationCap, FileText,
   Library, BookOpenCheck, Calendar, BarChart3, Bell,
   Play, Pause, Square, ChevronDown, RotateCcw, Coffee, Brain, Zap,
-  Settings, Home, MoreHorizontal, CalendarDays
+  Settings, MoreHorizontal, CalendarDays
 } from "lucide-react"
 import { usePomodoroStore } from "@/lib/store/usePomodoroStore"
 import { useUIStore } from "@/lib/store/useStore"
 
-// Main learning modes
+// Main learning modes (Home accessible via logo click)
 const learningModes = [
-  { id: "home", name: "Home", icon: Home, description: "Dashboard" },
   { id: "documents", name: "Docs", icon: FileText, description: "Manage files", href: "/dashboard/documents" },
   { id: "study-plans", name: "Plans", icon: CalendarDays, description: "Study plans", href: "/dashboard/study-plans" },
   { id: "chat", name: "Chat", icon: MessageSquare, description: "Ask & learn" },
