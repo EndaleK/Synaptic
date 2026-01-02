@@ -35,6 +35,26 @@ const StudySessionView = dynamic(() => import('@/components/StudySessionView'), 
   ssr: false,
 })
 
+interface StudyPlanDocument {
+  documentId: string
+  documentName: string
+  estimatedHours: number
+  priority: number
+  // Today's session info for this document (if any)
+  todaySession?: {
+    sessionId: string
+    topic: string
+    topicPages?: { startPage?: number; endPage?: number }
+  }
+  // Next scheduled session (if no session today)
+  nextSession?: {
+    sessionId: string
+    topic: string
+    scheduledDate: string
+    topicPages?: { startPage?: number; endPage?: number }
+  }
+}
+
 interface StudyPlan {
   id: string
   title: string
@@ -50,12 +70,7 @@ interface StudyPlan {
   weakTopics: string[]
   sessionsCompleted: number
   sessionsTotal: number
-  documents: Array<{
-    documentId: string
-    documentName: string
-    estimatedHours: number
-    priority: number
-  }>
+  documents: StudyPlanDocument[]
   createdAt: string
   updatedAt: string
 }
@@ -109,7 +124,70 @@ export default function StudyPlansPage() {
       const response = await fetch(`/api/study-plans?status=${status}`)
       if (response.ok) {
         const data = await response.json()
-        setPlans(data.plans || [])
+        const fetchedPlans = data.plans || []
+
+        // Enrich each plan's documents with today's session info
+        const today = new Date().toISOString().split('T')[0]
+        const enrichedPlans = await Promise.all(
+          fetchedPlans.map(async (plan: StudyPlan) => {
+            if (!plan.documents || plan.documents.length === 0) return plan
+
+            // Fetch sessions for this plan to find today's sessions per document
+            try {
+              const sessionsResponse = await fetch(
+                `/api/study-plan-sessions?planId=${plan.id}&includeUpcoming=true`
+              )
+              if (!sessionsResponse.ok) return plan
+
+              const sessionsData = await sessionsResponse.json()
+              const sessions = sessionsData.sessions || []
+
+              // Map sessions to documents
+              const enrichedDocs = plan.documents.map((doc: StudyPlanDocument) => {
+                // Find today's session for this document
+                const todaySession = sessions.find(
+                  (s: TodaySession) =>
+                    s.documentId === doc.documentId &&
+                    s.scheduledDate === today &&
+                    s.status !== 'completed' &&
+                    s.status !== 'skipped'
+                )
+
+                // Find next scheduled session if no today session
+                const nextSession = !todaySession
+                  ? sessions.find(
+                      (s: TodaySession) =>
+                        s.documentId === doc.documentId &&
+                        s.scheduledDate > today &&
+                        s.status === 'scheduled'
+                    )
+                  : undefined
+
+                return {
+                  ...doc,
+                  todaySession: todaySession ? {
+                    sessionId: todaySession.id,
+                    topic: todaySession.topic || todaySession.topics?.[0]?.name || 'Study Session',
+                    topicPages: todaySession.topicPages,
+                  } : undefined,
+                  nextSession: nextSession ? {
+                    sessionId: nextSession.id,
+                    topic: nextSession.topic || nextSession.topics?.[0]?.name || 'Study Session',
+                    scheduledDate: nextSession.scheduledDate,
+                    topicPages: nextSession.topicPages,
+                  } : undefined,
+                }
+              })
+
+              return { ...plan, documents: enrichedDocs }
+            } catch (err) {
+              console.error('Error fetching sessions for plan:', err)
+              return plan
+            }
+          })
+        )
+
+        setPlans(enrichedPlans)
       }
     } catch (error) {
       console.error('Error fetching plans:', error)
@@ -471,7 +549,7 @@ export default function StudyPlansPage() {
               return (
                 <div
                   key={plan.id}
-                  className="bg-slate-800/50 border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all"
+                  className="bg-slate-800/50 border border-white/10 rounded-2xl hover:border-white/20 transition-all"
                 >
                   {/* Main Row */}
                   <div
@@ -596,33 +674,81 @@ export default function StudyPlansPage() {
                             Study Materials
                           </h4>
                           <div className="space-y-2">
-                            {plan.documents?.slice(0, 3).map((doc, i) => (
-                              <div key={i} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors group">
-                                <div className="flex items-start justify-between gap-2 mb-2">
-                                  <p className="text-white text-sm font-medium truncate flex-1">{doc.documentName}</p>
-                                  <span className="text-white/40 text-xs flex-shrink-0">{doc.estimatedHours.toFixed(1)}h</span>
+                            {plan.documents?.slice(0, 3).map((doc, i) => {
+                              // Build session-aware navigation URL
+                              const buildModeUrl = (mode: string) => {
+                                const params = new URLSearchParams()
+                                params.set('mode', mode)
+                                params.set('documentId', doc.documentId)
+
+                                if (doc.todaySession) {
+                                  params.set('sessionId', doc.todaySession.sessionId)
+                                  params.set('sessionTopic', doc.todaySession.topic)
+                                  if (doc.todaySession.topicPages?.startPage) {
+                                    params.set('startPage', doc.todaySession.topicPages.startPage.toString())
+                                  }
+                                  if (doc.todaySession.topicPages?.endPage) {
+                                    params.set('endPage', doc.todaySession.topicPages.endPage.toString())
+                                  }
+                                }
+
+                                return `/dashboard?${params.toString()}`
+                              }
+
+                              return (
+                                <div key={i} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors group">
+                                  <div className="flex items-start justify-between gap-2 mb-1">
+                                    <p className="text-white text-sm font-medium truncate flex-1">{doc.documentName}</p>
+                                    <span className="text-white/40 text-xs flex-shrink-0">{doc.estimatedHours.toFixed(1)}h</span>
+                                  </div>
+
+                                  {/* Session info: topic + page range */}
+                                  {doc.todaySession ? (
+                                    <div className="flex items-center gap-1.5 mb-2 text-xs">
+                                      <span className="text-purple-400">📍</span>
+                                      <span className="text-white/70 truncate">{doc.todaySession.topic}</span>
+                                      {doc.todaySession.topicPages?.startPage && doc.todaySession.topicPages?.endPage && (
+                                        <span className="text-white/40 flex-shrink-0">
+                                          • Pages {doc.todaySession.topicPages.startPage}-{doc.todaySession.topicPages.endPage}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : doc.nextSession ? (
+                                    <div className="flex items-center gap-1.5 mb-2 text-xs">
+                                      <span className="text-amber-400">⏳</span>
+                                      <span className="text-white/50 truncate">
+                                        Next: {doc.nextSession.topic} on {new Date(doc.nextSession.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1.5 mb-2 text-xs">
+                                      <span className="text-white/30">—</span>
+                                      <span className="text-white/40">No session scheduled</span>
+                                    </div>
+                                  )}
+
+                                  <div className="flex gap-1">
+                                    {(['flashcards', 'chat', 'mindmap'] as const).map((mode) => {
+                                      const config = STUDY_MODES[mode]
+                                      const Icon = config.icon
+                                      return (
+                                        <button
+                                          key={mode}
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            router.push(buildModeUrl(mode))
+                                          }}
+                                          className="p-1.5 bg-white/5 hover:bg-white/15 rounded-lg transition-colors"
+                                          title={`${config.label}${doc.todaySession ? ` - ${doc.todaySession.topic}` : ''}`}
+                                        >
+                                          <Icon className="w-3.5 h-3.5 text-white/50 hover:text-white" />
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
                                 </div>
-                                <div className="flex gap-1">
-                                  {(['flashcards', 'chat', 'mindmap'] as const).map((mode) => {
-                                    const config = STUDY_MODES[mode]
-                                    const Icon = config.icon
-                                    return (
-                                      <button
-                                        key={mode}
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          router.push(`/dashboard?mode=${mode}&documentId=${doc.documentId}`)
-                                        }}
-                                        className="p-1.5 bg-white/5 hover:bg-white/15 rounded-lg transition-colors"
-                                        title={config.label}
-                                      >
-                                        <Icon className="w-3.5 h-3.5 text-white/50 hover:text-white" />
-                                      </button>
-                                    )
-                                  })}
-                                </div>
-                              </div>
-                            ))}
+                              )
+                            })}
                             {(plan.documents?.length || 0) > 3 && (
                               <p className="text-white/40 text-xs pl-1">+{plan.documents.length - 3} more documents</p>
                             )}
@@ -736,7 +862,7 @@ export default function StudyPlansPage() {
                             <MoreVertical className="w-5 h-5" />
                           </button>
                           {showDeleteConfirm === plan.id && (
-                            <div className="absolute right-0 top-full mt-2 p-4 bg-slate-800 border border-white/20 rounded-xl shadow-xl z-10 w-64">
+                            <div className="absolute right-0 top-full mt-2 p-4 bg-slate-800 border border-white/20 rounded-xl shadow-xl z-50 w-64">
                               <p className="text-white text-sm mb-3">Delete this study plan?</p>
                               <div className="flex gap-2">
                                 <button

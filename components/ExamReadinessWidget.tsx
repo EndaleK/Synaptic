@@ -115,14 +115,69 @@ export default function ExamReadinessWidget({
   if (error || !data) {
     return (
       <div className={cn(
-        "bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6",
-        compact && "p-4"
+        "bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden",
+        compact ? "p-4" : "p-6"
       )}>
-        <div className="text-center py-4">
-          <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">
-            {error || 'Start studying to see your exam readiness'}
-          </p>
+        {!compact && (
+          <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-100 dark:border-gray-800">
+            <Target className="w-5 h-5 text-violet-600" />
+            <h3 className="font-semibold text-gray-900 dark:text-white">Exam Readiness</h3>
+          </div>
+        )}
+        <div className="flex items-center gap-4">
+          {/* Ready to start progress ring */}
+          <div className={cn("relative flex-shrink-0", compact ? "w-14 h-14" : "w-20 h-20")}>
+            <svg className={cn("w-full h-full -rotate-90", compact ? "w-14 h-14" : "w-20 h-20")}>
+              <circle
+                cx={compact ? "28" : "40"}
+                cy={compact ? "28" : "40"}
+                r={compact ? "24" : "34"}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={compact ? "4" : "6"}
+                className="text-gray-100 dark:text-gray-800"
+              />
+              <circle
+                cx={compact ? "28" : "40"}
+                cy={compact ? "28" : "40"}
+                r={compact ? "24" : "34"}
+                fill="none"
+                strokeWidth={compact ? "4" : "6"}
+                strokeLinecap="round"
+                strokeDasharray="8 8"
+                className="text-violet-200 dark:text-violet-800"
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Zap className={cn("text-violet-400", compact ? "w-5 h-5" : "w-7 h-7")} />
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <h4 className={cn(
+              "font-semibold text-gray-900 dark:text-white",
+              compact ? "text-sm" : "text-base"
+            )}>
+              Ready to start
+            </h4>
+            <p className={cn(
+              "text-gray-500 dark:text-gray-400",
+              compact ? "text-xs" : "text-sm"
+            )}>
+              {error || "Upload notes and take a practice exam to track your progress"}
+            </p>
+            {!compact && (
+              <button
+                onClick={onViewDetails}
+                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-600 bg-violet-50 dark:bg-violet-500/10 dark:text-violet-400 rounded-lg hover:bg-violet-100 dark:hover:bg-violet-500/20 transition-colors"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                Create Study Plan
+              </button>
+            )}
+          </div>
+
+          {compact && <ChevronRight className="w-5 h-5 text-gray-400" />}
         </div>
       </div>
     )
