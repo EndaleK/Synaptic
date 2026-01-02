@@ -12,6 +12,7 @@ import DocumentSwitcherModal from "./DocumentSwitcherModal"
 import SectionNavigator from "./SectionNavigator"
 import InfoTipBanner from "./InfoTipBanner"
 import MarkdownRenderer from "./MarkdownRenderer"
+import SessionFocusBanner from "./SessionFocusBanner"
 import type { DocumentSection } from "@/lib/document-parser/section-detector"
 
 // Dynamic imports for voice features
@@ -1317,6 +1318,12 @@ export default function ChatInterface() {
 
           {/* Chat Messages - Full Width */}
           <div className="flex-1 flex flex-col min-h-0 p-4">
+            {/* Session Focus Banner - shown when navigating from study plan */}
+            <SessionFocusBanner
+              onSuggestQuestion={(question) => setInputMessage(question)}
+              className="max-w-4xl mx-auto w-full"
+            />
+
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center max-w-lg">
@@ -1816,6 +1823,11 @@ export default function ChatInterface() {
 
               {/* Chat Messages */}
               <div className="flex-1 flex flex-col min-h-0 p-4">
+                {/* Session Focus Banner - shown when navigating from study plan */}
+                <SessionFocusBanner
+                  onSuggestQuestion={(question) => setInputMessage(question)}
+                />
+
                 {messages.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center max-w-md">

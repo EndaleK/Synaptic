@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import {
   Calendar,
   Clock,
@@ -24,7 +25,15 @@ import {
   Network,
   GraduationCap,
   Sparkles,
+  FileQuestion,
+  Trophy,
+  RefreshCw,
 } from 'lucide-react'
+
+// Dynamically import StudySessionView to prevent SSR issues
+const StudySessionView = dynamic(() => import('@/components/StudySessionView'), {
+  ssr: false,
+})
 
 interface StudyPlan {
   id: string
@@ -58,12 +67,17 @@ interface TodaySession {
   sessionType: string
   estimatedMinutes: number
   topics: Array<{ name: string; minutes: number; activityType: string }>
-  status: 'scheduled' | 'in_progress' | 'completed' | 'skipped'
+  status: 'scheduled' | 'in_progress' | 'completed' | 'skipped' | 'missed'
   planTitle?: string
   mode?: 'flashcards' | 'podcast' | 'mindmap' | 'exam' | 'chat' | 'reading' | 'review'
   documentId?: string
   documentName?: string
   topic?: string
+  // Enhanced session fields
+  hasDailyQuiz?: boolean
+  hasWeeklyExam?: boolean
+  weekNumber?: number
+  topicPages?: { startPage?: number; endPage?: number }
 }
 
 // Learning mode configurations
@@ -85,6 +99,9 @@ export default function StudyPlansPage() {
   const [activeTab, setActiveTab] = useState<'active' | 'completed' | 'all'>('active')
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
+  // Session view state
+  const [activeSession, setActiveSession] = useState<TodaySession | null>(null)
+  const [rescheduling, setRescheduling] = useState(false)
 
   const fetchPlans = useCallback(async () => {
     try {
@@ -118,6 +135,55 @@ export default function StudyPlansPage() {
     fetchPlans()
     fetchTodaySessions()
   }, [fetchPlans, fetchTodaySessions])
+
+  // Reschedule missed sessions
+  const handleReschedule = async () => {
+    setRescheduling(true)
+    try {
+      const response = await fetch('/api/study-plan-sessions/reschedule', {
+        method: 'POST',
+      })
+      if (response.ok) {
+        const data = await response.json()
+        if (data.rescheduled > 0) {
+          fetchTodaySessions()
+          fetchPlans()
+        }
+      }
+    } catch (error) {
+      console.error('Error rescheduling sessions:', error)
+    } finally {
+      setRescheduling(false)
+    }
+  }
+
+  // Start a study session
+  const handleStartSession = (session: TodaySession) => {
+    setActiveSession(session)
+  }
+
+  // Handle session completion
+  const handleSessionComplete = () => {
+    setActiveSession(null)
+    fetchTodaySessions()
+    fetchPlans()
+  }
+
+  // Navigate to learning mode from session view
+  const handleNavigateToMode = (mode: string, contentId?: string) => {
+    if (!activeSession) return
+
+    const params = new URLSearchParams()
+    params.set('mode', mode)
+    if (activeSession.documentId) params.set('documentId', activeSession.documentId)
+    if (activeSession.topic) params.set('sessionTopic', activeSession.topic)
+    if (activeSession.topicPages?.startPage) params.set('startPage', activeSession.topicPages.startPage.toString())
+    if (activeSession.topicPages?.endPage) params.set('endPage', activeSession.topicPages.endPage.toString())
+    if (contentId) params.set('contentId', contentId)
+    params.set('sessionId', activeSession.id)
+
+    router.push(`/dashboard?${params.toString()}`)
+  }
 
   const handleStatusChange = async (planId: string, newStatus: 'active' | 'paused' | 'completed') => {
     try {
@@ -229,10 +295,20 @@ export default function StudyPlansPage() {
         {/* Today's Sessions */}
         {todaySessions.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Target className="w-5 h-5 text-purple-400" />
-              Today&apos;s Study Sessions
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Target className="w-5 h-5 text-purple-400" />
+                Today&apos;s Study Sessions
+              </h2>
+              <button
+                onClick={handleReschedule}
+                disabled={rescheduling}
+                className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-lg transition-colors text-sm"
+              >
+                <RefreshCw className={`w-4 h-4 ${rescheduling ? 'animate-spin' : ''}`} />
+                Reschedule Missed
+              </button>
+            </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {todaySessions.map((session) => {
                 const mode = session.mode || 'flashcards'
@@ -250,19 +326,36 @@ export default function StudyPlansPage() {
                         <ModeIcon className="w-6 h-6 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <p className="text-white font-semibold truncate">{session.topic || session.planTitle || 'Study Session'}</p>
                           <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium border ${
                             session.status === 'completed'
                               ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                               : session.status === 'in_progress'
                               ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                              : session.status === 'missed'
+                              ? 'bg-red-500/20 text-red-400 border-red-500/30'
                               : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
                           }`}>
-                            {session.status === 'in_progress' ? 'In Progress' : session.status === 'completed' ? 'Done' : 'Pending'}
+                            {session.status === 'in_progress' ? 'In Progress' : session.status === 'completed' ? 'Done' : session.status === 'missed' ? 'Missed' : 'Pending'}
                           </span>
                         </div>
                         <p className="text-white/50 text-sm">{modeConfig.label} • {session.estimatedMinutes} min</p>
+                        {/* Quiz/Exam badges */}
+                        <div className="flex gap-1.5 mt-1.5">
+                          {session.hasDailyQuiz && (
+                            <span className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 text-amber-400 rounded text-xs">
+                              <FileQuestion className="w-3 h-3" />
+                              Quiz
+                            </span>
+                          )}
+                          {session.hasWeeklyExam && (
+                            <span className="flex items-center gap-1 px-1.5 py-0.5 bg-rose-500/10 text-rose-400 rounded text-xs">
+                              <Trophy className="w-3 h-3" />
+                              Week {session.weekNumber} Exam
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -272,32 +365,34 @@ export default function StudyPlansPage() {
                         <p className="text-white/60 text-xs flex items-center gap-1">
                           <FileText className="w-3 h-3" />
                           {session.documentName}
+                          {session.topicPages?.startPage && session.topicPages?.endPage && (
+                            <span className="ml-1 text-white/40">
+                              (Pages {session.topicPages.startPage}-{session.topicPages.endPage})
+                            </span>
+                          )}
                         </p>
                       </div>
                     )}
 
                     {/* Action buttons */}
                     <div className="flex flex-wrap gap-2">
-                      {/* Primary action - Start studying */}
+                      {/* Primary action - Start Session with integrated view */}
                       <button
-                        onClick={() => {
-                          const docParam = session.documentId ? `&documentId=${session.documentId}` : ''
-                          router.push(`/dashboard?mode=${mode}${docParam}`)
-                        }}
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r ${modeConfig.color} text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg`}
+                        onClick={() => handleStartSession(session)}
+                        disabled={session.status === 'completed'}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r ${modeConfig.color} text-white rounded-lg font-medium hover:opacity-90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
-                        <Play className="w-4 h-4" />
-                        Start {modeConfig.label}
+                        <Sparkles className="w-4 h-4" />
+                        {session.status === 'completed' ? 'Completed' : 'Start Session'}
                       </button>
                     </div>
 
                     {/* Quick access to other modes */}
                     <div className="mt-3 pt-3 border-t border-white/10">
-                      <p className="text-white/40 text-xs mb-2">Or try another approach:</p>
+                      <p className="text-white/40 text-xs mb-2">Quick access:</p>
                       <div className="flex gap-1.5">
                         {(['flashcards', 'chat', 'mindmap', 'exam', 'podcast'] as const)
-                          .filter(m => m !== mode)
-                          .slice(0, 4)
+                          .slice(0, 5)
                           .map((altMode) => {
                             const altConfig = STUDY_MODES[altMode]
                             const AltIcon = altConfig.icon
@@ -676,6 +771,27 @@ export default function StudyPlansPage() {
           </div>
         )}
       </div>
+
+      {/* Study Session View Modal */}
+      {activeSession && (
+        <StudySessionView
+          sessionId={activeSession.id}
+          planId={activeSession.studyPlanId}
+          planTitle={activeSession.planTitle || 'Study Plan'}
+          topic={activeSession.topic || activeSession.topics?.[0]?.name || 'Study Session'}
+          topicPages={activeSession.topicPages}
+          documentId={activeSession.documentId}
+          documentName={activeSession.documentName}
+          estimatedMinutes={activeSession.estimatedMinutes}
+          sessionType={activeSession.sessionType}
+          weekNumber={activeSession.weekNumber || 1}
+          hasDailyQuiz={activeSession.hasDailyQuiz || false}
+          hasWeeklyExam={activeSession.hasWeeklyExam || false}
+          onClose={() => setActiveSession(null)}
+          onComplete={handleSessionComplete}
+          onNavigateToMode={handleNavigateToMode}
+        />
+      )}
     </div>
   )
 }

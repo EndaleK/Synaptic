@@ -37,6 +37,12 @@ export interface StudyPlanDocument {
   analysis?: DocumentAnalysis
 }
 
+export interface TopicPageRange {
+  startPage?: number
+  endPage?: number
+  sections?: string[]
+}
+
 export interface StudyPlanSession {
   id?: string
   planId?: string
@@ -50,7 +56,13 @@ export interface StudyPlanSession {
   documentName?: string
   sessionType: SessionType
   reviewNumber: number
-  status: 'pending' | 'in_progress' | 'completed' | 'skipped' | 'rescheduled'
+  status: 'pending' | 'in_progress' | 'completed' | 'skipped' | 'rescheduled' | 'missed'
+  // Enhanced session fields
+  hasDailyQuiz: boolean
+  hasWeeklyExam: boolean
+  weekNumber: number
+  topicPages?: TopicPageRange
+  rescheduledFrom?: string
 }
 
 export interface StudyPlan {
@@ -158,13 +170,37 @@ function getAvailableDays(startDate: Date, endDate: Date, includeWeekends: boole
 }
 
 /**
+ * Calculate week number for a date relative to start date.
+ */
+function getWeekNumber(date: Date, startDate: Date): number {
+  const msPerDay = 24 * 60 * 60 * 1000
+  const daysDiff = Math.floor((date.getTime() - startDate.getTime()) / msPerDay)
+  return Math.floor(daysDiff / 7) + 1
+}
+
+/**
+ * Check if a date is the last day of its week (Saturday or last study day before Sunday).
+ */
+function isLastDayOfWeek(date: Date, nextDate: Date | undefined, startDate: Date): boolean {
+  const currentWeek = getWeekNumber(date, startDate)
+  const nextWeek = nextDate ? getWeekNumber(nextDate, startDate) : currentWeek + 1
+  return nextWeek > currentWeek
+}
+
+/**
  * Distribute topics across available days with spaced repetition.
+ * Enhanced to include:
+ * - Daily quizzes for each session
+ * - Weekly exams at week boundaries
+ * - Topic page ranges for focused content generation
+ * - Week number tracking
  */
 function distributeTopicsWithSpacing(
   topics: Array<{ topic: DocumentTopic; documentId: string; documentName: string }>,
   availableDays: Date[],
   learningStyle: LearningStyle,
-  dailyTargetMinutes: number
+  dailyTargetMinutes: number,
+  startDate: Date
 ): StudyPlanSession[] {
   const sessions: StudyPlanSession[] = []
   const modePriorities = LEARNING_STYLE_MODE_PRIORITIES[learningStyle]
@@ -218,6 +254,20 @@ function distributeTopicsWithSpacing(
     // Select primary mode based on learning style and content type
     const primaryMode = selectModeForTopic(topic, modePriorities)
 
+    // Calculate week number and check for weekly exam
+    const weekNumber = getWeekNumber(day, startDate)
+    const nextDay = dayIndex + 1 < learningDays.length ? learningDays[dayIndex + 1] : undefined
+    const isWeekEnd = isLastDayOfWeek(day, nextDay, startDate)
+
+    // Build topic pages from topic data if available
+    const topicPages: TopicPageRange | undefined = topic.pageRange
+      ? {
+          startPage: topic.pageRange.start,
+          endPage: topic.pageRange.end,
+          sections: topic.sections || [topic.title],
+        }
+      : undefined
+
     // Create initial learning session
     sessions.push({
       userId: '', // Will be set when saving
@@ -230,6 +280,11 @@ function distributeTopicsWithSpacing(
       sessionType: 'new',
       reviewNumber: 1,
       status: 'pending',
+      // Enhanced fields
+      hasDailyQuiz: true, // All sessions have daily quizzes
+      hasWeeklyExam: isWeekEnd, // Only end-of-week sessions have weekly exams
+      weekNumber,
+      topicPages,
     })
 
     dayMinutes.set(dateKey, currentMinutes + topic.estimatedMinutes)
@@ -244,6 +299,10 @@ function distributeTopicsWithSpacing(
         const reviewMinutes = dayMinutes.get(reviewDateKey) || 0
 
         if (reviewMinutes + MODE_DURATION_MINUTES.review <= dailyTargetMinutes * 1.5) {
+          const reviewWeekNumber = getWeekNumber(reviewDay, startDate)
+          const nextReviewDay = reviewDayIndex + 1 < learningDays.length ? learningDays[reviewDayIndex + 1] : undefined
+          const isReviewWeekEnd = isLastDayOfWeek(reviewDay, nextReviewDay, startDate)
+
           sessions.push({
             userId: '',
             scheduledDate: new Date(reviewDay),
@@ -255,6 +314,11 @@ function distributeTopicsWithSpacing(
             sessionType: 'review',
             reviewNumber: i + 2,
             status: 'pending',
+            // Enhanced fields
+            hasDailyQuiz: true,
+            hasWeeklyExam: isReviewWeekEnd,
+            weekNumber: reviewWeekNumber,
+            topicPages, // Same topic pages as original session
           })
 
           dayMinutes.set(reviewDateKey, reviewMinutes + MODE_DURATION_MINUTES.review)
@@ -266,9 +330,21 @@ function distributeTopicsWithSpacing(
   }
 
   // Schedule final review sessions
-  for (const reviewDay of reviewDays) {
+  for (let i = 0; i < reviewDays.length; i++) {
+    const reviewDay = reviewDays[i]
+    const weekNumber = getWeekNumber(reviewDay, startDate)
+    const isLastReviewDay = i === reviewDays.length - 1
+
     for (const { topic, documentId, documentName } of sortedTopics.slice(0, 5)) {
       // Focus on top 5 most important topics
+      const topicPages: TopicPageRange | undefined = topic.pageRange
+        ? {
+            startPage: topic.pageRange.start,
+            endPage: topic.pageRange.end,
+            sections: topic.sections || [topic.title],
+          }
+        : undefined
+
       sessions.push({
         userId: '',
         scheduledDate: new Date(reviewDay),
@@ -280,6 +356,11 @@ function distributeTopicsWithSpacing(
         sessionType: 'final_review',
         reviewNumber: 99, // Final review marker
         status: 'pending',
+        // Enhanced fields
+        hasDailyQuiz: true,
+        hasWeeklyExam: isLastReviewDay, // Final exam on last day
+        weekNumber,
+        topicPages,
       })
     }
   }
@@ -400,7 +481,8 @@ export async function generateStudyPlan(
     allTopics,
     availableDays,
     learningStyle,
-    dailyTargetMinutes
+    dailyTargetMinutes,
+    startDate
   )
 
   // Set userId on all sessions
@@ -499,6 +581,12 @@ export async function saveStudyPlan(plan: StudyPlan): Promise<StudyPlan> {
     session_type: session.sessionType,
     review_number: session.reviewNumber,
     status: 'pending',
+    // Enhanced fields
+    has_daily_quiz: session.hasDailyQuiz ?? true,
+    has_weekly_exam: session.hasWeeklyExam ?? false,
+    week_number: session.weekNumber ?? 1,
+    topic_pages: session.topicPages ?? null,
+    rescheduled_from: session.rescheduledFrom ?? null,
   }))
 
   if (sessionsToInsert.length > 0) {
@@ -586,6 +674,12 @@ export async function getStudyPlan(planId: string, userId: string): Promise<Stud
       sessionType: s.session_type as SessionType,
       reviewNumber: s.review_number,
       status: s.status,
+      // Enhanced fields
+      hasDailyQuiz: s.has_daily_quiz ?? true,
+      hasWeeklyExam: s.has_weekly_exam ?? false,
+      weekNumber: s.week_number ?? 1,
+      topicPages: s.topic_pages as TopicPageRange | undefined,
+      rescheduledFrom: s.rescheduled_from,
     })),
   }
 }
@@ -747,5 +841,11 @@ export async function getTodaysSessions(userId: string): Promise<StudyPlanSessio
     sessionType: s.session_type as SessionType,
     reviewNumber: s.review_number,
     status: s.status,
+    // Enhanced fields
+    hasDailyQuiz: s.has_daily_quiz ?? true,
+    hasWeeklyExam: s.has_weekly_exam ?? false,
+    weekNumber: s.week_number ?? 1,
+    topicPages: s.topic_pages as TopicPageRange | undefined,
+    rescheduledFrom: s.rescheduled_from,
   }))
 }
