@@ -21,7 +21,7 @@ interface RateLimitConfig {
 
 // Initialize Redis client from environment variables
 let redis: Redis | null = null
-let rateLimiters: Map<string, Ratelimit> = new Map()
+const rateLimiters: Map<string, Ratelimit> = new Map()
 
 /**
  * Initialize Redis client (lazy initialization)

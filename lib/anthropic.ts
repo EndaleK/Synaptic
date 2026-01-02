@@ -196,7 +196,7 @@ DO NOT include any text outside the JSON array.`
 
   try {
     // Remove markdown code blocks if present
-    let responseText = result.content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+    const responseText = result.content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
 
     const parsedFlashcards = JSON.parse(responseText)
 
@@ -339,7 +339,7 @@ DO NOT include any text outside the JSON object.`
 
   try {
     // Remove markdown code blocks if present
-    let responseText = result.content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+    const responseText = result.content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
 
     const mindMapData = JSON.parse(responseText)
 

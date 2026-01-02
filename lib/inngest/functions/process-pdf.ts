@@ -239,10 +239,10 @@ export const processPDFFunction = inngest.createFunction(
       { timeout: '4m' }
     )
 
-    let extractionSuccess = extractionResult.success
-    let processingMethod = extractionResult.method || 'pdf-parse'
-    let pageCount: number | undefined = extractionResult.pageCount
-    let textLength: number = extractionResult.textLength || 0
+    const extractionSuccess = extractionResult.success
+    const processingMethod = extractionResult.method || 'pdf-parse'
+    const pageCount: number | undefined = extractionResult.pageCount
+    const textLength: number = extractionResult.textLength || 0
 
     // Step 3: Index extracted text into ChromaDB for RAG (if extraction successful)
     // Fetch text from database for RAG indexing

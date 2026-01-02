@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/admin'
 import { createClient } from '@/lib/supabase/server'
 
@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/server'
  *
  * Requires: viewer role or higher
  */
-export async function GET(req: NextRequest) {
+export async function GET() {
   // Check admin access
   const adminOrResponse = await requireAdmin('viewer')
   if (adminOrResponse instanceof NextResponse) {

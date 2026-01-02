@@ -141,11 +141,11 @@ export async function POST(
     // ChromaDB indexing happens lazily when user first needs it
     const isPDF = document.file_type === 'application/pdf'
     const isLargeFile = actualFileSize > LARGE_FILE_THRESHOLD
-    let processingStatus: 'completed' = 'completed' // Always completed immediately
+    const processingStatus: 'completed' = 'completed' // Always completed immediately
     let extractedText: string | null = null
     let hasExtractedText = false
-    let ragIndexed = false
-    let ragChunkCount = 0
+    const ragIndexed = false
+    const ragChunkCount = 0
     let extractionMethod: string = 'none'
     let pageCount: number | undefined = undefined
 

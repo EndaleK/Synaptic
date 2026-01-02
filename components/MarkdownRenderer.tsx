@@ -195,7 +195,7 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     let sanitized = code
 
     // Remove emojis - they cause syntax errors in node labels
-    // eslint-disable-next-line no-misleading-character-class
+     
     sanitized = sanitized.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}]/gu, '')
 
     // ============================================================
@@ -345,7 +345,7 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     // ============================================================
     sanitized = sanitized.replace(/\[([^\]]*)\]/g, (match, content) => {
       // Replace parentheses with dashes for readability
-      let cleaned = content.replace(/\(([^)]+)\)/g, '- $1')
+      const cleaned = content.replace(/\(([^)]+)\)/g, '- $1')
       return '[' + cleaned + ']'
     })
 

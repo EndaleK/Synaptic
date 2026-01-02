@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
       ?.map((e) => (e.class as any)?.teacher_id)
       .filter(Boolean) as string[]
 
-    let teacherMap = new Map<string, { name: string | null; email: string }>()
+    const teacherMap = new Map<string, { name: string | null; email: string }>()
 
     if (teacherIds.length > 0) {
       const { data: teachers } = await supabase
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
 
     // Get enrollment counts
     const classIds = enrollments?.map((e) => (e.class as any)?.id).filter(Boolean) as string[]
-    let enrollmentCounts = new Map<string, number>()
+    const enrollmentCounts = new Map<string, number>()
 
     if (classIds.length > 0) {
       const { data: counts } = await supabase

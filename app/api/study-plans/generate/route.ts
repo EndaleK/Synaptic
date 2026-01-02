@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get existing mastery levels from flashcard performance if not provided
-    let masteryLevels = existingMasteryLevels
+    const masteryLevels = existingMasteryLevels
     if (Object.keys(masteryLevels).length === 0) {
       const { data: flashcards } = await supabase
         .from('flashcards')

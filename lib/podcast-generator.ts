@@ -92,7 +92,7 @@ export async function generatePodcastScript(
   const wordCount = Math.floor(targetDuration * 150) // ~150 words per minute of speech
 
   // Build base system prompt
-  let baseSystemPrompt = `You are an expert podcast script writer for an educational AI audio series. You create engaging, natural-sounding conversations between two hosts who discuss documents.
+  const baseSystemPrompt = `You are an expert podcast script writer for an educational AI audio series. You create engaging, natural-sounding conversations between two hosts who discuss documents.
 
 Host Personalities:
 - **Alex** (host_a): Curious, asks great questions, makes complex topics accessible. Slightly more enthusiastic.

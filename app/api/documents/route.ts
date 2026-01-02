@@ -16,6 +16,7 @@ import { canUploadDocument, trackDocumentUpload } from '@/lib/usage-tracker'
 import { processFileParallel, shouldUseParallelProcessing, estimateUploadTime } from '@/lib/upload-optimizer'
 import { withMonitoring, trackApiMetric, flagSlowOperation, addApiContext } from '@/lib/monitoring/api-monitor'
 import { trackSupabaseQuery } from '@/lib/monitoring/supabase-monitor'
+import { createClient } from '@/lib/supabase/server'
 
 // Vercel limits: 4.5MB max request body size (cannot be changed)
 // For files > 5MB, use /api/upload-large-document (chunked upload)
@@ -204,7 +205,7 @@ async function handlePostDocument(request: NextRequest) {
     })
 
     // Get user profile ID first (documents.user_id references user_profiles.id, not clerk_user_id)
-    const supabase = await import('@/lib/supabase/server').then(m => m.createClient())
+    const supabase = await createClient()
 
     const { data: profile, error: profileError } = await trackSupabaseQuery(
       'SELECT',

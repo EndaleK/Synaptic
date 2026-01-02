@@ -166,7 +166,7 @@ async function handleGetStudyStatistics(req: NextRequest) {
 
     if (sortedDates[0] === todayStr || sortedDates[0] === yesterdayStr) {
       // Calculate consecutive days backwards from today
-      let checkDate = new Date(userNow)
+      const checkDate = new Date(userNow)
       if (sortedDates[0] === yesterdayStr) {
         checkDate.setUTCDate(checkDate.getUTCDate() - 1)
       }

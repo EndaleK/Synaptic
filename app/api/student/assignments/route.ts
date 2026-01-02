@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
 
     // Get student's submissions for these assignments
     const assignmentIds = assignments?.map((a) => a.id) || []
-    let submissionMap = new Map<string, { status: string; score: number | null }>()
+    const submissionMap = new Map<string, { status: string; score: number | null }>()
 
     if (assignmentIds.length > 0) {
       const { data: submissions } = await supabase

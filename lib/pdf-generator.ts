@@ -114,7 +114,7 @@ export async function generateStudyGuidePDF(options: PDFGenerationOptions): Prom
   const titleLines = doc.splitTextToSize(sanitizeText(studyGuide.title), titleMaxWidth)
 
   // Center each line of the title
-  let titleY = 50
+  const titleY = 50
   titleLines.forEach((line: string, index: number) => {
     doc.text(line, pageWidth / 2, titleY + (index * 7), { align: 'center' })
   })

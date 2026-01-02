@@ -158,7 +158,7 @@ export default function ContentSelectionModal({
     try {
       let response
       let apiEndpoint = ''
-      let requestBody: any = {
+      const requestBody: any = {
         documentId: document.id,
         selection
       }

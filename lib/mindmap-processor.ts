@@ -156,7 +156,7 @@ function getNodeColor(level: number): string {
 export function parseAIMindMap(aiResponse: string): MindMapData {
   try {
     // Remove markdown code blocks if present
-    let cleanResponse = aiResponse
+    const cleanResponse = aiResponse
       .replace(/```json\s*/g, '')
       .replace(/```\s*/g, '')
       .trim();

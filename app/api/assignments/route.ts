@@ -101,7 +101,7 @@ export async function GET(req: NextRequest) {
     }
 
     // For students, include their submission status
-    let submissionMap = new Map<string, { status: string; score?: number }>()
+    const submissionMap = new Map<string, { status: string; score?: number }>()
 
     if (context.organization?.role === 'student' && assignments?.length) {
       const assignmentIds = assignments.map(a => a.id)

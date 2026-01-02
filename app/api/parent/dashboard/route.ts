@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
       const yesterdayStr = yesterday.toISOString().split('T')[0]
 
       if (sortedDates[0] === todayStr || sortedDates[0] === yesterdayStr) {
-        let checkDate = new Date(now)
+        const checkDate = new Date(now)
         if (sortedDates[0] === yesterdayStr) {
           checkDate.setDate(checkDate.getDate() - 1)
         }

@@ -362,7 +362,7 @@ export async function POST(req: NextRequest) {
     const envProvider = process.env.MINDMAP_PROVIDER as 'openai' | 'deepseek' | 'anthropic' | undefined
 
     let selectedProviderType: 'openai' | 'deepseek' | 'anthropic'
-    let wasDowngraded = false
+    const wasDowngraded = false
 
     if (envProvider) {
       selectedProviderType = envProvider

@@ -146,7 +146,7 @@ export function calculateAssessmentResults(
   }
 
   // Recommend learning mode based on comprehensive profile
-  let recommended_mode: PreferredMode = determineRecommendedMode(
+  const recommended_mode: PreferredMode = determineRecommendedMode(
     dominant_learning_style,
     intelligence_scores,
     environmental_preferences

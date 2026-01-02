@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
     // Calculate date range based on period
     const now = new Date()
     let startDate: Date
-    let endDate = now
+    const endDate = now
 
     if (period === 'current_year') {
       // School year starts September 1

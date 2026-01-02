@@ -12,7 +12,6 @@ import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
 import { withMonitoring, trackApiMetric, addApiContext, flagSlowOperation } from '@/lib/monitoring/api-monitor'
 import {
   performAISafetyCheck,
-  createSafeSystemPrompt,
   sanitizeAIOutput,
   checkResponseForLeakage,
   trackSuspiciousActivity

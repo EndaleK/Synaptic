@@ -495,7 +495,7 @@ export async function generateMindMap(
 
   // Determine visualization template
   let selectedTemplate: TemplateType = userTemplate || 'hierarchical' // Default to hierarchical if not specified
-  let templateSelectionMode: 'user' | 'ai-auto' = userTemplate ? 'user' : 'ai-auto'
+  const templateSelectionMode: 'user' | 'ai-auto' = userTemplate ? 'user' : 'ai-auto'
 
   // Truncate if necessary (reduced for faster processing)
   const maxChars = 24000

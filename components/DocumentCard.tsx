@@ -405,7 +405,10 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
                   )}
                   {document.storage_path && (
                     <button
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        window.open(`/api/documents/${document.id}/download`, '_blank')
+                      }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       <Download className="w-3.5 h-3.5" />

@@ -1,23 +1,15 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import {
   Building2,
   Users,
   School,
-  GraduationCap,
   Check,
-  ChevronRight,
-  Sparkles,
   Shield,
   BarChart3,
   BookOpen,
-  Headphones,
-  Network,
   FileText,
-  Clock,
-  Zap,
   Mail,
   Phone,
   ArrowRight,
@@ -100,8 +92,6 @@ const TIERS = [
 ]
 
 export default function InstitutionalPricingPage() {
-  const [showContactForm, setShowContactForm] = useState(false)
-
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Hero Section */}
