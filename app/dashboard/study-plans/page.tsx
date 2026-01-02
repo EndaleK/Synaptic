@@ -392,7 +392,7 @@ export default function StudyPlansPage() {
                             {plan.status}
                           </span>
                         </div>
-                        {plan.examTitle && (
+                        {plan.examTitle && plan.examTitle !== plan.title && (
                           <p className="text-white/60 text-sm mb-3">{plan.examTitle}</p>
                         )}
                         <div className="flex flex-wrap items-center gap-4 text-sm text-white/50">
@@ -461,9 +461,40 @@ export default function StudyPlansPage() {
 
                   {/* Expanded Details */}
                   {isExpanded && (
-                    <div className="px-6 pb-6 border-t border-white/10 pt-4">
+                    <div className="px-6 pb-6 border-t border-white/10 pt-5">
+                      {/* Start Studying Now - Primary CTA */}
+                      <div className="mb-6">
+                        <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-purple-400" />
+                          Start Studying Now
+                        </h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                          {(['flashcards', 'chat', 'mindmap', 'exam', 'podcast'] as const).map((mode) => {
+                            const config = STUDY_MODES[mode]
+                            const Icon = config.icon
+                            const firstDoc = plan.documents?.[0]
+                            return (
+                              <button
+                                key={mode}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  const docParam = firstDoc?.documentId ? `&documentId=${firstDoc.documentId}` : ''
+                                  router.push(`/dashboard?mode=${mode}${docParam}`)
+                                }}
+                                className={`flex flex-col items-center gap-2 p-3 bg-gradient-to-br ${config.color} bg-opacity-10 hover:bg-opacity-20 border border-white/10 hover:border-white/20 rounded-xl transition-all group`}
+                              >
+                                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${config.color} flex items-center justify-center shadow-lg`}>
+                                  <Icon className="w-5 h-5 text-white" />
+                                </div>
+                                <span className="text-white text-xs font-medium">{config.label}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
                       <div className="grid md:grid-cols-3 gap-6">
-                        {/* Documents */}
+                        {/* Documents with Actions */}
                         <div>
                           <h4 className="text-sm font-medium text-white/70 mb-3 flex items-center gap-2">
                             <FileText className="w-4 h-4" />
@@ -471,19 +502,40 @@ export default function StudyPlansPage() {
                           </h4>
                           <div className="space-y-2">
                             {plan.documents?.slice(0, 3).map((doc, i) => (
-                              <div key={i} className="p-2 bg-white/5 rounded-lg text-sm">
-                                <p className="text-white truncate">{doc.documentName}</p>
-                                <p className="text-white/40 text-xs">{doc.estimatedHours.toFixed(1)}h estimated</p>
+                              <div key={i} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors group">
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <p className="text-white text-sm font-medium truncate flex-1">{doc.documentName}</p>
+                                  <span className="text-white/40 text-xs flex-shrink-0">{doc.estimatedHours.toFixed(1)}h</span>
+                                </div>
+                                <div className="flex gap-1">
+                                  {(['flashcards', 'chat', 'mindmap'] as const).map((mode) => {
+                                    const config = STUDY_MODES[mode]
+                                    const Icon = config.icon
+                                    return (
+                                      <button
+                                        key={mode}
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          router.push(`/dashboard?mode=${mode}&documentId=${doc.documentId}`)
+                                        }}
+                                        className="p-1.5 bg-white/5 hover:bg-white/15 rounded-lg transition-colors"
+                                        title={config.label}
+                                      >
+                                        <Icon className="w-3.5 h-3.5 text-white/50 hover:text-white" />
+                                      </button>
+                                    )
+                                  })}
+                                </div>
                               </div>
                             ))}
                             {(plan.documents?.length || 0) > 3 && (
-                              <p className="text-white/40 text-xs">+{plan.documents.length - 3} more</p>
+                              <p className="text-white/40 text-xs pl-1">+{plan.documents.length - 3} more documents</p>
                             )}
                           </div>
                         </div>
 
                         {/* Weak Topics */}
-                        {plan.weakTopics && plan.weakTopics.length > 0 && (
+                        {plan.weakTopics && plan.weakTopics.length > 0 ? (
                           <div>
                             <h4 className="text-sm font-medium text-white/70 mb-3 flex items-center gap-2">
                               <Brain className="w-4 h-4" />
@@ -491,11 +543,19 @@ export default function StudyPlansPage() {
                             </h4>
                             <div className="flex flex-wrap gap-2">
                               {plan.weakTopics.slice(0, 5).map((topic, i) => (
-                                <span key={i} className="px-2 py-1 bg-amber-500/10 text-amber-400 rounded-lg text-xs border border-amber-500/20">
+                                <span key={i} className="px-2.5 py-1.5 bg-amber-500/10 text-amber-400 rounded-lg text-xs font-medium border border-amber-500/20">
                                   {topic}
                                 </span>
                               ))}
                             </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <h4 className="text-sm font-medium text-white/70 mb-3 flex items-center gap-2">
+                              <Brain className="w-4 h-4" />
+                              Focus Areas
+                            </h4>
+                            <p className="text-white/40 text-sm">Complete some study sessions to identify weak areas</p>
                           </div>
                         )}
 
@@ -505,18 +565,18 @@ export default function StudyPlansPage() {
                             <TrendingUp className="w-4 h-4" />
                             Progress
                           </h4>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
+                          <div className="space-y-3 text-sm">
+                            <div className="flex justify-between items-center">
                               <span className="text-white/50">Sessions</span>
-                              <span className="text-white">{plan.sessionsCompleted}/{plan.sessionsTotal}</span>
+                              <span className="text-white font-medium">{plan.sessionsCompleted}/{plan.sessionsTotal || '—'}</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                               <span className="text-white/50">Daily Target</span>
-                              <span className="text-white">{plan.dailyTargetHours}h</span>
+                              <span className="text-white font-medium">{plan.dailyTargetHours}h</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                               <span className="text-white/50">Learning Style</span>
-                              <span className="text-white capitalize">{plan.learningStyle}</span>
+                              <span className="text-white font-medium capitalize">{plan.learningStyle}</span>
                             </div>
                           </div>
                         </div>
