@@ -56,6 +56,18 @@ export default function ReferralWidget({
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
+  // Default stats when API is unavailable
+  const defaultStats: ReferralStats = {
+    referral_code: 'LOADING',
+    total_referrals: 0,
+    referral_credits: 0,
+    pending_referrals: 0,
+    completed_referrals: 0,
+    milestones: [],
+    next_milestone: null,
+    recent_referrals: []
+  }
+
   useEffect(() => {
     const fetchReferralStats = async () => {
       try {
@@ -65,7 +77,7 @@ export default function ReferralWidget({
 
         if (!response.ok) {
           // Don't throw - just use defaults (table may not exist yet)
-          setStats({ referralCount: 0, earnedRewards: 0, pendingRewards: 0 })
+          setStats(defaultStats)
           return
         }
 
@@ -76,7 +88,7 @@ export default function ReferralWidget({
       } catch (err) {
         // Silently fail - referrals feature may not be set up yet
         console.debug('Referrals not available:', err)
-        setStats({ referralCount: 0, earnedRewards: 0, pendingRewards: 0 })
+        setStats(defaultStats)
       } finally {
         setIsLoading(false)
       }
@@ -255,7 +267,7 @@ export default function ReferralWidget({
       )}
 
       {/* Milestones achieved */}
-      {stats.milestones.length > 0 && !compact && (
+      {stats.milestones && stats.milestones.length > 0 && !compact && (
         <div className="p-4 border-b border-gray-100 dark:border-gray-700">
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Achievements</p>
           <div className="space-y-2">
@@ -281,7 +293,7 @@ export default function ReferralWidget({
       )}
 
       {/* Recent Referrals */}
-      {stats.recent_referrals.length > 0 && !compact && (
+      {stats.recent_referrals && stats.recent_referrals.length > 0 && !compact && (
         <div className="p-4 border-b border-gray-100 dark:border-gray-700">
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Recent Referrals</p>
           <div className="space-y-2">
