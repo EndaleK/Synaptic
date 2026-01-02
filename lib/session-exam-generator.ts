@@ -15,7 +15,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
-import { getAIProvider } from '@/lib/ai'
+import { getProviderForFeature } from '@/lib/ai'
 import type { TopicPageRange } from '@/lib/study-plan-generator'
 
 // ============================================
@@ -263,7 +263,7 @@ export async function generateDailyQuiz(
   }
 
   // Generate questions using AI
-  const provider = getAIProvider('openai')
+  const provider = getProviderForFeature('exam')
   const prompt = DAILY_QUIZ_PROMPT
     .replace('{questionCount}', questionCount.toString())
     .replace('{topic}', topicFocus)
@@ -363,7 +363,7 @@ export async function generateWeeklyExam(
   }
 
   // Generate questions using AI
-  const provider = getAIProvider('openai')
+  const provider = getProviderForFeature('exam')
   const prompt = WEEKLY_EXAM_PROMPT
     .replace('{questionCount}', questionCount.toString())
     .replace('{topics}', topicsWithContent.join('\n\n'))

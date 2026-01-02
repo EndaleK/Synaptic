@@ -10,7 +10,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
-import { getAIProvider } from '@/lib/ai'
+import { providerFactory } from '@/lib/ai'
 
 // ============================================
 // Types
@@ -256,7 +256,7 @@ export async function extractTopicsWithAI(
   documentId: string
 ): Promise<DocumentTopic[]> {
   try {
-    const provider = getAIProvider('deepseek') // Cost-effective for analysis
+    const provider = providerFactory.getProviderWithFallback('deepseek') // Cost-effective for analysis
     const truncatedText = text.slice(0, 20000)
 
     const response = await provider.complete({

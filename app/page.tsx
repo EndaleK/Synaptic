@@ -5,7 +5,7 @@ import { useAuth } from "@clerk/nextjs"
 import {
   BookOpen, Brain, Mic, Network, Sparkles, ArrowRight,
   ClipboardCheck, TrendingDown, Award, Star,
-  Bot, Upload, Calendar, Trophy, Target, FileCheck2
+  Bot, Upload, Calendar, Trophy, Target, FileCheck2, Mail
 } from "lucide-react"
 import { PricingCarousel } from "@/components/PricingCarousel"
 
