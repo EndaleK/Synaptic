@@ -10,7 +10,11 @@ import {
   Loader2,
   CheckCircle,
   Info,
-  ChevronDown
+  ChevronDown,
+  FileImage,
+  Grid3X3,
+  List,
+  Scissors
 } from 'lucide-react'
 
 interface ExportFormat {
@@ -58,6 +62,9 @@ export default function FlashcardExportModal({
   const [includeReversed, setIncludeReversed] = useState(false)
   const [includeTags, setIncludeTags] = useState(true)
   const [showAdvanced, setShowAdvanced] = useState(false)
+  // PDF-specific options
+  const [pdfLayout, setPdfLayout] = useState<'grid' | 'list' | 'printable'>('grid')
+  const [includeAnswers, setIncludeAnswers] = useState(true)
 
   // Fetch export options
   useEffect(() => {
@@ -115,7 +122,12 @@ export default function FlashcardExportModal({
           documentId: selectedDocumentId !== 'all' ? selectedDocumentId : undefined,
           deckName,
           includeReversed,
-          includeTags
+          includeTags,
+          // PDF-specific options
+          ...(selectedFormat === 'pdf' && {
+            pdfLayout,
+            includeAnswers
+          })
         })
       })
 
@@ -125,7 +137,13 @@ export default function FlashcardExportModal({
       }
 
       // Get filename from header
-      const filename = response.headers.get('X-Filename') || `flashcards.${selectedFormat === 'apkg' ? 'apkg' : selectedFormat === 'csv' ? 'csv' : 'txt'}`
+      const formatExtensions: Record<string, string> = {
+        'anki-text': 'txt',
+        'csv': 'csv',
+        'apkg': 'apkg',
+        'pdf': 'pdf'
+      }
+      const filename = response.headers.get('X-Filename') || `flashcards.${formatExtensions[selectedFormat] || 'txt'}`
 
       // Download the file
       const blob = await response.blob()
@@ -157,6 +175,8 @@ export default function FlashcardExportModal({
         return <FileText className="w-5 h-5" />
       case 'csv':
         return <Table className="w-5 h-5" />
+      case 'pdf':
+        return <FileImage className="w-5 h-5" />
       case 'apkg':
         return <Package className="w-5 h-5" />
       default:
@@ -274,6 +294,70 @@ export default function FlashcardExportModal({
                   ))}
                 </div>
               </div>
+
+              {/* PDF Layout Options */}
+              {selectedFormat === 'pdf' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    PDF Layout
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    <button
+                      onClick={() => setPdfLayout('grid')}
+                      className={`p-3 rounded-xl border-2 transition-all text-center ${
+                        pdfLayout === 'grid'
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      <Grid3X3 className={`w-5 h-5 mx-auto mb-1 ${pdfLayout === 'grid' ? 'text-blue-500' : 'text-gray-400'}`} />
+                      <p className={`text-xs font-medium ${pdfLayout === 'grid' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                        Grid
+                      </p>
+                      <p className="text-xs text-gray-500">2x3 cards</p>
+                    </button>
+                    <button
+                      onClick={() => setPdfLayout('list')}
+                      className={`p-3 rounded-xl border-2 transition-all text-center ${
+                        pdfLayout === 'list'
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      <List className={`w-5 h-5 mx-auto mb-1 ${pdfLayout === 'list' ? 'text-blue-500' : 'text-gray-400'}`} />
+                      <p className={`text-xs font-medium ${pdfLayout === 'list' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                        List
+                      </p>
+                      <p className="text-xs text-gray-500">Q&A format</p>
+                    </button>
+                    <button
+                      onClick={() => setPdfLayout('printable')}
+                      className={`p-3 rounded-xl border-2 transition-all text-center ${
+                        pdfLayout === 'printable'
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      <Scissors className={`w-5 h-5 mx-auto mb-1 ${pdfLayout === 'printable' ? 'text-blue-500' : 'text-gray-400'}`} />
+                      <p className={`text-xs font-medium ${pdfLayout === 'printable' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                        Printable
+                      </p>
+                      <p className="text-xs text-gray-500">Cut & fold</p>
+                    </button>
+                  </div>
+                  <label className="flex items-center gap-3 cursor-pointer mt-3">
+                    <input
+                      type="checkbox"
+                      checked={includeAnswers}
+                      onChange={(e) => setIncludeAnswers(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      Include answers
+                    </span>
+                  </label>
+                </div>
+              )}
 
               {/* Deck Name */}
               <div>

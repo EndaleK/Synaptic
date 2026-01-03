@@ -80,8 +80,8 @@ export async function getUserContext(clerkUserId: string): Promise<UserContext |
   let organizationContext: UserOrganizationContext | null = null
 
   if (membership && membership.organizations) {
-    const org = membership.organizations as { id: string; name: string; slug: string }
-    const school = membership.schools as { id: string; name: string } | null
+    const org = membership.organizations as unknown as { id: string; name: string; slug: string }
+    const school = membership.schools as unknown as { id: string; name: string } | null
 
     organizationContext = {
       userId: profile.id,
@@ -183,7 +183,7 @@ export async function canAccessClass(
 
   // Check if user is an admin in the same organization
   if (context.organization) {
-    const school = classData.schools as { organization_id: string } | null
+    const school = classData.schools as unknown as { organization_id: string } | null
     const sameOrg = school?.organization_id === context.organization.organizationId
 
     if (sameOrg && (context.organization.role === 'org_admin' || context.organization.role === 'school_admin')) {
@@ -273,7 +273,7 @@ export async function canAccessSubmission(
   }
 
   // Check teacher/admin access
-  const assignment = submission.assignments as {
+  const assignment = submission.assignments as unknown as {
     class_id: string
     classes: {
       teacher_id: string

@@ -13,10 +13,14 @@ import {
   generateCSVExport,
   type FlashcardForExport
 } from '@/lib/anki-export'
+import {
+  generatePDFExport,
+  type PDFLayout
+} from '@/lib/pdf-export'
 
 export const runtime = 'nodejs'
 
-type ExportFormat = 'anki-text' | 'csv' | 'apkg'
+type ExportFormat = 'anki-text' | 'csv' | 'apkg' | 'pdf'
 
 interface ExportRequest {
   format: ExportFormat
@@ -25,6 +29,9 @@ interface ExportRequest {
   deckName?: string
   includeReversed?: boolean
   includeTags?: boolean
+  // PDF-specific options
+  pdfLayout?: PDFLayout
+  includeAnswers?: boolean
 }
 
 /**
@@ -46,7 +53,9 @@ export async function POST(req: NextRequest) {
       documentId,
       deckName = 'Synaptic Export',
       includeReversed = false,
-      includeTags = true
+      includeTags = true,
+      pdfLayout = 'grid',
+      includeAnswers = true
     } = body
 
     const supabase = await createClient()
@@ -174,9 +183,28 @@ export async function POST(req: NextRequest) {
         })
       }
 
+      case 'pdf': {
+        const pdfOptions = {
+          deckName: finalDeckName,
+          layout: pdfLayout,
+          includeAnswers,
+          includeTags
+        }
+        const { filename, data } = await generatePDFExport(exportCards, pdfOptions)
+
+        return new NextResponse(data, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="${filename}"`,
+            'X-Filename': filename
+          }
+        })
+      }
+
       default:
         return NextResponse.json(
-          { error: 'Invalid export format. Use: anki-text, csv, or apkg' },
+          { error: 'Invalid export format. Use: anki-text, csv, apkg, or pdf' },
           { status: 400 }
         )
     }
@@ -261,6 +289,12 @@ export async function GET(req: NextRequest) {
           name: 'CSV (Universal)',
           description: 'Comma-separated values for any app',
           extension: '.csv'
+        },
+        {
+          id: 'pdf',
+          name: 'PDF Study Sheet',
+          description: 'Printable PDF for offline study',
+          extension: '.pdf'
         },
         {
           id: 'apkg',

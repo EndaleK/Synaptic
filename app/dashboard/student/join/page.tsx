@@ -78,7 +78,7 @@ export default function JoinClassPage() {
             Welcome to {success.className}!
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            You've successfully joined the class. Redirecting to your dashboard...
+            You&apos;ve successfully joined the class. Redirecting to your dashboard...
           </p>
         </div>
       ) : (

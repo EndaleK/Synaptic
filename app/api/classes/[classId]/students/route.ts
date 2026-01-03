@@ -61,7 +61,7 @@ export async function GET(
     }
 
     // Get student progress data (flashcard stats, study time, etc.)
-    const studentIds = enrollments?.map(e => (e.student as { id: string })?.id).filter(Boolean) || []
+    const studentIds = enrollments?.map(e => (e.student as unknown as { id: string })?.id).filter(Boolean) || []
 
     // Get flashcard stats for these students in this class
     const { data: flashcardStats } = await supabase
@@ -81,7 +81,7 @@ export async function GET(
     })
 
     const students = enrollments?.map(e => {
-      const student = e.student as { id: string; full_name: string; email: string }
+      const student = e.student as unknown as { id: string; full_name: string; email: string }
       const stats = statsMap.get(student?.id) || { reviewed: 0, correct: 0 }
 
       return {

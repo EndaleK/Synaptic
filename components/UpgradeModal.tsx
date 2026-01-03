@@ -152,7 +152,7 @@ export default function UpgradeModal({ isOpen, onClose, feature, used, limit }: 
                   {info.name} Limit Reached
                 </h3>
                 <p className="text-sm text-orange-700 dark:text-orange-300">
-                  You've used <strong>{used} of {limit}</strong> {info.name.toLowerCase()} this month on the Free plan.
+                  You&apos;ve used <strong>{used} of {limit}</strong> {info.name.toLowerCase()} this month on the Free plan.
                 </p>
               </div>
             </div>

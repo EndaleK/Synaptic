@@ -72,6 +72,7 @@ import PodcastView from "@/components/PodcastView"
 import QuickSummaryView from "@/components/QuickSummaryView"
 import MindMapView from "@/components/MindMapView"
 import StudyGuideView from "@/components/StudyGuideView"
+import ClassesView from "@/components/ClassesView"
 import QuizPromptModal from "@/components/QuizPromptModal"
 import InlineDocumentPicker from "@/components/InlineDocumentPicker"
 import ContentSelectionModal from "@/components/ContentSelectionModal"
@@ -712,6 +713,15 @@ function DashboardContent() {
           <DynamicComponentErrorBoundary componentName="Exam Simulator">
             <div className="h-full">
               <ExamView />
+            </div>
+          </DynamicComponentErrorBoundary>
+        )
+
+      case "classes":
+        return (
+          <DynamicComponentErrorBoundary componentName="Classes">
+            <div className="h-full overflow-y-auto">
+              <ClassesView />
             </div>
           </DynamicComponentErrorBoundary>
         )

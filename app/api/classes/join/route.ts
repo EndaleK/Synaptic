@@ -131,7 +131,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user is in the same organization (if institutional user)
-    const school = classData.school as { id: string; name: string; organization_id: string }
+    const schoolData = classData.school as unknown as { id: string; name: string; organization_id: string }
+    const school = schoolData
 
     if (context.organization) {
       if (school.organization_id !== context.organization.organizationId) {
@@ -249,8 +250,8 @@ export async function GET(req: NextRequest) {
       .eq('class_id', classData.id)
       .eq('status', 'active')
 
-    const school = classData.school as { name: string; organizations: { name: string } }
-    const teacher = classData.teacher as { full_name: string }
+    const school = classData.school as unknown as { name: string; organizations: { name: string } }
+    const teacher = classData.teacher as unknown as { full_name: string }
 
     return NextResponse.json({
       class: {

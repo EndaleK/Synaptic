@@ -2,7 +2,7 @@
 import type { SectionStructure } from '@/lib/document-parser/section-detector'
 
 export type LearningStyle = 'visual' | 'auditory' | 'kinesthetic' | 'reading_writing' | 'mixed'
-export type PreferredMode = 'home' | 'flashcards' | 'chat' | 'podcast' | 'mindmap' | 'writer' | 'video' | 'studyguide'
+export type PreferredMode = 'home' | 'flashcards' | 'chat' | 'podcast' | 'mindmap' | 'writer' | 'video' | 'studyguide' | 'classes'
 export type TeachingStylePreference = 'socratic' | 'direct' | 'mixed'
 
 // Role-based onboarding types

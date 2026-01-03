@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { BookOpen, MessageSquare, Mic, Network, Clock, PenTool, Youtube, GraduationCap, FileText, Flame, Zap, BookMarked, Upload, Sparkles, ChevronDown, ArrowRight } from "lucide-react"
+import { BookOpen, MessageSquare, Mic, Network, Clock, PenTool, Youtube, GraduationCap, FileText, Flame, Zap, BookMarked, Upload, Sparkles, ChevronDown, ArrowRight, Users } from "lucide-react"
 import { useUIStore, useUserStore, useDocumentStore } from "@/lib/store/useStore"
 import { notificationManager } from "@/lib/notifications"
 import { analytics } from "@/lib/analytics"
@@ -38,6 +38,7 @@ const secondaryModes = [
   { id: "writer", name: "Writer", icon: PenTool, description: "Write essays", href: "/dashboard/writer", color: "from-rose-500 to-rose-600", bgColor: "bg-rose-500/10", textColor: "text-rose-600 dark:text-rose-400" },
   { id: "video", name: "Video", icon: Youtube, description: "YouTube learning", color: "from-red-500 to-red-600", bgColor: "bg-red-500/10", textColor: "text-red-600 dark:text-red-400" },
   { id: "quick-summary", name: "Summary", icon: Clock, description: "Quick 5min overview", color: "from-cyan-500 to-cyan-600", bgColor: "bg-cyan-500/10", textColor: "text-cyan-600 dark:text-cyan-400" },
+  { id: "classes", name: "Classes", icon: Users, description: "Group study", color: "from-teal-500 to-teal-600", bgColor: "bg-teal-500/10", textColor: "text-teal-600 dark:text-teal-400" },
 ]
 
 // Types for primary action state

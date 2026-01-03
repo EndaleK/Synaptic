@@ -231,7 +231,7 @@ export default function LandingPage() {
                 3
               </div>
               <h3 className="text-xl font-bold text-black dark:text-white mb-3">
-                Practice until you're exam-ready
+                Practice until you&apos;re exam-ready
               </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                 Flashcards, mock exams, and progress tracking
