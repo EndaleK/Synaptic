@@ -25,7 +25,7 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
   const [selectedGenerationType, setSelectedGenerationType] = useState<'flashcards' | 'podcast' | 'mindmap'>('flashcards')
   const [contentCounts, setContentCounts] = useState({ flashcards: 0, podcasts: 0, mindmaps: 0 })
   const [isDragging, setIsDragging] = useState(false)
-  const [showActions, setShowActions] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
   const isSelected = selectedDocuments?.has(document.id) || false
 
   // Callback when RAG indexing completes
@@ -144,9 +144,11 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
         draggable
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onClick={() => onToggleSelect?.(document.id)}
-        onMouseEnter={() => setShowActions(true)}
-        onMouseLeave={() => setShowActions(false)}
+        onClick={() => {
+          setShowDropdown(false)
+          onToggleSelect?.(document.id)
+        }}
+        onMouseLeave={() => setShowDropdown(false)}
         className={cn(
           "group relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl transition-all duration-200 cursor-grab active:cursor-grabbing flex flex-col h-full overflow-hidden",
           "hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-md",
@@ -296,11 +298,8 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
           )}
         </div>
 
-        {/* Action Bar - Shows on hover with smooth transition */}
-        <div className={cn(
-          "border-t border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-sm transition-all duration-200",
-          showActions || !isReady ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-        )}>
+        {/* Action Bar - Always visible */}
+        <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-sm">
           {/* Primary Actions - Clean horizontal layout */}
           <div className="p-2 flex items-center gap-1">
             <button
@@ -380,7 +379,7 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  setShowActions(!showActions)
+                  setShowDropdown(!showDropdown)
                 }}
                 className="p-2 rounded-lg text-gray-500 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                 title="More actions"
@@ -389,12 +388,13 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
               </button>
 
               {/* Dropdown Menu */}
-              {showActions && (
+              {showDropdown && (
                 <div className="absolute right-0 bottom-full mb-1 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[120px]">
                   {(document.file_type.toLowerCase().includes('pdf') || document.file_name.toLowerCase().endsWith('.pdf')) && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
+                        setShowDropdown(false)
                         router.push(`/dashboard/documents/${document.id}`)
                       }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -407,6 +407,7 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
+                        setShowDropdown(false)
                         window.open(`/api/documents/${document.id}/download`, '_blank')
                       }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -418,6 +419,7 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
+                      setShowDropdown(false)
                       handleDelete()
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
