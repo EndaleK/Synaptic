@@ -8,6 +8,7 @@ import { useUIStore, useUserStore, useDocumentStore } from "@/lib/store/useStore
 import { notificationManager } from "@/lib/notifications"
 import { analytics } from "@/lib/analytics"
 import UsageWarningNotification from "@/components/UsageWarningNotification"
+import UsageWidget from "@/components/UsageWidget"
 import NotificationBanner from "@/components/NotificationBanner"
 import MilestoneCelebrationModal, { useMilestoneCelebration } from "@/components/MilestoneCelebrationModal"
 import SmartRecommendations from "@/components/SmartRecommendations"
@@ -480,9 +481,9 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
           </div>
         </section>
 
-        {/* Smart Recommendations & Weekly Progress - Side by Side */}
+        {/* Smart Recommendations, Weekly Progress & Usage - 3 columns */}
         <section className="mb-12 animate-hero-reveal stagger-3">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
             {/* Smart Recommendations - AI-powered "What to study next" */}
             <SmartRecommendations maxItems={3} showStats={true} />
 
@@ -542,6 +543,9 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                 </div>
               </div>
             </div>
+
+            {/* Usage Widget - Track limits & upgrade to Pro */}
+            <UsageWidget />
           </div>
         </section>
 
