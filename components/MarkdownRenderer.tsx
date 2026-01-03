@@ -22,18 +22,90 @@ interface MarkdownRendererProps {
 // Track if mermaid is initialized (avoid re-initialization issues in production)
 let mermaidInitialized = false
 
+// Helper to temporarily suppress console errors during Mermaid operations
+const suppressConsoleErrors = <T,>(fn: () => T): T => {
+  const originalError = console.error
+  const originalWarn = console.warn
+  const originalLog = console.log
+
+  // Suppress all console output that contains 'mermaid' or 'Syntax error'
+  const suppress = (...args: unknown[]) => {
+    const message = args.join(' ').toLowerCase()
+    if (message.includes('mermaid') || message.includes('syntax error') || message.includes('parse error')) {
+      return // Suppress
+    }
+    originalError.apply(console, args as Parameters<typeof console.error>)
+  }
+
+  console.error = suppress
+  console.warn = (...args: unknown[]) => {
+    const message = args.join(' ').toLowerCase()
+    if (message.includes('mermaid') || message.includes('syntax error')) return
+    originalWarn.apply(console, args as Parameters<typeof console.warn>)
+  }
+  console.log = (...args: unknown[]) => {
+    const message = args.join(' ').toLowerCase()
+    if (message.includes('mermaid') || message.includes('syntax error')) return
+    originalLog.apply(console, args as Parameters<typeof console.log>)
+  }
+
+  try {
+    return fn()
+  } finally {
+    console.error = originalError
+    console.warn = originalWarn
+    console.log = originalLog
+  }
+}
+
+// Async version of suppress
+const suppressConsoleErrorsAsync = async <T,>(fn: () => Promise<T>): Promise<T> => {
+  const originalError = console.error
+  const originalWarn = console.warn
+  const originalLog = console.log
+
+  const suppress = (...args: unknown[]) => {
+    const message = args.join(' ').toLowerCase()
+    if (message.includes('mermaid') || message.includes('syntax error') || message.includes('parse error')) {
+      return
+    }
+    originalError.apply(console, args as Parameters<typeof console.error>)
+  }
+
+  console.error = suppress
+  console.warn = (...args: unknown[]) => {
+    const message = args.join(' ').toLowerCase()
+    if (message.includes('mermaid') || message.includes('syntax error')) return
+    originalWarn.apply(console, args as Parameters<typeof console.warn>)
+  }
+  console.log = (...args: unknown[]) => {
+    const message = args.join(' ').toLowerCase()
+    if (message.includes('mermaid') || message.includes('syntax error')) return
+    originalLog.apply(console, args as Parameters<typeof console.log>)
+  }
+
+  try {
+    return await fn()
+  } finally {
+    console.error = originalError
+    console.warn = originalWarn
+    console.log = originalLog
+  }
+}
+
 // Initialize Mermaid only once
 const initializeMermaid = () => {
   if (mermaidInitialized) return
 
-  try {
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'base', // Use base theme for full customization
-      securityLevel: 'loose',
-      fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      suppressErrors: true,
-      logLevel: 'fatal', // Only log fatal errors, suppress syntax warnings
+  suppressConsoleErrors(() => {
+    try {
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'base', // Use base theme for full customization
+        securityLevel: 'loose',
+        fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        suppressErrors: true,
+        logLevel: 'fatal', // Only log fatal errors, suppress syntax warnings
       // Increase timeout for complex diagrams
       maxTextSize: 50000,
       // Global settings to prevent text truncation
@@ -125,11 +197,12 @@ const initializeMermaid = () => {
         pieOuterStrokeColor: 'transparent',
         pieOpacity: '1',
       },
-    })
-    mermaidInitialized = true
-  } catch (error) {
-    // Silently handle initialization errors
-  }
+      })
+      mermaidInitialized = true
+    } catch (error) {
+      // Silently handle initialization errors
+    }
+  })
 }
 
 export default function MarkdownRenderer({ content, className = '', disableDiagrams = false }: MarkdownRendererProps) {
@@ -513,8 +586,8 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
       // Use unique ID with random suffix to avoid collisions
       const id = `mermaid-${Date.now()}-${Math.random().toString(36).substring(7)}`
 
-      // Mermaid.render can throw - wrap in try-catch
-      const { svg } = await mermaid.render(id, cleanedCode)
+      // Mermaid.render can throw - wrap in suppressConsoleErrorsAsync to hide syntax errors
+      const { svg } = await suppressConsoleErrorsAsync(() => mermaid.render(id, cleanedCode))
 
       if (svg) {
         // Post-process SVG to fix text truncation issues
