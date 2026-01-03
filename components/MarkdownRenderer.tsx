@@ -268,8 +268,16 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     let sanitized = code
 
     // Remove emojis - they cause syntax errors in node labels
-     
+
     sanitized = sanitized.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}]/gu, '')
+
+    // ============================================================
+    // FIX: Handle mindmap nodes starting with colon ": text"
+    // AI often generates mindmap nodes like "      : Python (pandas)"
+    // This is invalid - the colon should be removed or the line reformatted
+    // ============================================================
+    // Match lines that start with whitespace followed by colon and space
+    sanitized = sanitized.replace(/^(\s+):\s+(.+)$/gm, '$1$2')
 
     // ============================================================
     // FIX: Handle <br> and <br/> tags - replace with space or hyphen
@@ -586,25 +594,30 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
       // Use unique ID with random suffix to avoid collisions
       const id = `mermaid-${Date.now()}-${Math.random().toString(36).substring(7)}`
 
-      // Mermaid.render can throw - wrap in suppressConsoleErrorsAsync to hide syntax errors
-      const { svg } = await suppressConsoleErrorsAsync(() => mermaid.render(id, cleanedCode))
+      // Pre-validate using mermaid.parse() - this should silently fail without rendering
+      // Wrap everything in suppressConsoleErrorsAsync to hide all mermaid errors
+      const result = await suppressConsoleErrorsAsync(async () => {
+        try {
+          // Try to parse first - this validates syntax without rendering
+          await mermaid.parse(cleanedCode)
+          // If parse succeeds, render
+          return await mermaid.render(id, cleanedCode)
+        } catch {
+          // Parse or render failed - return null
+          return null
+        }
+      })
 
-      if (svg) {
+      if (result?.svg) {
         // Post-process SVG to fix text truncation issues
-        const processedSvg = postProcessSvg(svg)
+        const processedSvg = postProcessSvg(result.svg)
         setRenderedDiagrams(prev => new Map(prev).set(key, processedSvg))
       } else {
-        // Empty SVG - silently fail
+        // Empty SVG or parse failed - silently fail
         setRenderedDiagrams(prev => new Map(prev).set(key, 'FAILED'))
       }
-    } catch (error: unknown) {
-      // Silently handle Mermaid syntax errors - they're expected for AI-generated content
-      // Only log in development for debugging
-      if (process.env.NODE_ENV === 'development') {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        console.debug('[Mermaid] Rendering failed:', errorMessage.substring(0, 100))
-      }
-
+    } catch {
+      // Silently handle any remaining errors
       setRenderedDiagrams(prev => new Map(prev).set(key, 'FAILED'))
     }
   }
