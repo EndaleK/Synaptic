@@ -280,6 +280,26 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     sanitized = sanitized.replace(/^(\s+):\s+(.+)$/gm, '$1$2')
 
     // ============================================================
+    // FIX: Handle mindmap nodes that are just parenthetical text "(text)"
+    // AI generates lines like "      (13+ years hands-on)" which is invalid
+    // Remove the parentheses and keep the text
+    // ============================================================
+    sanitized = sanitized.replace(/^(\s+)\(([^)]+)\)\s*$/gm, '$1$2')
+
+    // ============================================================
+    // FIX: Handle < and > symbols in mindmap/flowchart content
+    // Lines like ">99.9% uptime" or "<100ms response" are invalid
+    // Replace with text equivalents
+    // ============================================================
+    // Replace > at start of content (after whitespace) with "greater than"
+    sanitized = sanitized.replace(/^(\s+)>(\d)/gm, '$1greater than $2')
+    // Replace < at start of content (after whitespace) with "less than"
+    sanitized = sanitized.replace(/^(\s+)<(\d)/gm, '$1less than $2')
+    // Also handle inline > and < followed by numbers
+    sanitized = sanitized.replace(/>(\d+)/g, 'over $1')
+    sanitized = sanitized.replace(/<(\d+)/g, 'under $1')
+
+    // ============================================================
     // FIX: Handle <br> and <br/> tags - replace with space or hyphen
     // AI often uses <br> for line breaks in labels, but Mermaid doesn't support this
     // ============================================================
