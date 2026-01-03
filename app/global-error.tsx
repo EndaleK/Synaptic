@@ -1,6 +1,5 @@
 'use client'
 
-import * as Sentry from '@sentry/nextjs'
 import { useEffect } from 'react'
 
 export default function GlobalError({
@@ -11,8 +10,13 @@ export default function GlobalError({
   reset: () => void
 }) {
   useEffect(() => {
-    // Log the error to Sentry
-    Sentry.captureException(error)
+    // Log the error to Sentry using dynamic import to avoid SSR issues
+    import('@sentry/nextjs').then((Sentry) => {
+      Sentry.captureException(error)
+    }).catch(() => {
+      // Sentry not available, log to console
+      console.error('Global error:', error)
+    })
   }, [error])
 
   return (
@@ -29,7 +33,7 @@ export default function GlobalError({
         }}>
           <h2 style={{ fontSize: '24px', marginBottom: '16px' }}>Something went wrong!</h2>
           <p style={{ color: '#666', marginBottom: '24px' }}>
-            We've been notified and are working on a fix.
+            We&apos;ve been notified and are working on a fix.
           </p>
           <button
             onClick={() => reset()}
