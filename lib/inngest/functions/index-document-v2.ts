@@ -3,12 +3,13 @@
  *
  * Split worker architecture for large document processing:
  * 1. Coordinator (30s) - Calculates chunks, dispatches jobs
- * 2. Priority Indexer (3 min) - Indexes first 20% for immediate chat
+ * 2. Priority Indexer (5 min) - Indexes first 50% (up to 500 chunks) for immediate chat
  * 3. Batch Indexer (4 min each) - Processes remaining in batches of 200
  *
  * Benefits:
  * - No timeout issues (each job fits within Vercel limits)
  * - Progressive indexing (chat available after priority chunks)
+ * - Large documents like Toronto Notes (1000+ pages) fully accessible immediately
  * - Parallel batch processing for speed
  * - Automatic retries on failure
  */
@@ -26,7 +27,8 @@ import { Pinecone } from '@pinecone-database/pinecone'
 
 const CHUNK_SIZE = 2000
 const CHUNK_OVERLAP = 400
-const PRIORITY_PERCENTAGE = 0.20  // First 20% for immediate chat
+const PRIORITY_PERCENTAGE = 0.50  // First 50% for immediate chat (increased from 20%)
+const MAX_PRIORITY_CHUNKS = 500   // Cap priority at 500 chunks (up from 100)
 const BATCH_SIZE = 200           // Chunks per batch job
 const EMBEDDING_BATCH_SIZE = 100 // Chunks per embedding API call
 const PINECONE_BATCH_SIZE = 100  // Vectors per Pinecone upsert
@@ -141,9 +143,11 @@ export const coordinateIndexing = inngest.createFunction(
     })
 
     const totalChunks = chunks.length
+    // For large documents like Toronto Notes (1000+ pages), index more chunks immediately
+    // This ensures students have access to most/all content right away
     const priorityCount = Math.min(
       Math.ceil(totalChunks * PRIORITY_PERCENTAGE),
-      100  // Cap priority chunks at 100 for fast initial indexing
+      MAX_PRIORITY_CHUNKS  // Cap at 500 chunks (~1M characters of content)
     )
     const remainingChunks = totalChunks - priorityCount
 
@@ -236,8 +240,8 @@ export const coordinateIndexing = inngest.createFunction(
 )
 
 // ============================================================================
-// 2. PRIORITY INDEXER (3 min)
-// Indexes first 20% for immediate chat availability
+// 2. PRIORITY INDEXER (5 min)
+// Indexes first 50% (up to 500 chunks) for immediate chat availability
 // ============================================================================
 
 export const indexPriorityChunks = inngest.createFunction(
@@ -245,7 +249,7 @@ export const indexPriorityChunks = inngest.createFunction(
     id: 'index-priority-chunks-v2',
     name: 'Index Priority Chunks V2',
     retries: 3,
-    maxDuration: 180, // 3 minutes
+    maxDuration: 300, // 5 minutes (increased to handle up to 500 priority chunks)
   },
   { event: 'document/index-priority' },
   async ({ event, step }) => {
