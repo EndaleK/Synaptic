@@ -147,6 +147,7 @@ export default process.env.NODE_ENV === 'production' && process.env.SENTRY_AUTH_
       widenClientFileUpload: true,
 
       // Tunnel requests to avoid ad blockers
-      tunnelRoute: "/monitoring",
+      // Disabled: tunnelRoute causes 401 errors when Sentry auth is misconfigured
+      // tunnelRoute: "/monitoring",
     })
   : configWithPWA;
