@@ -80,8 +80,8 @@ ALTER TABLE study_plan_sessions
   ADD COLUMN IF NOT EXISTS chapter_title TEXT,
   ADD COLUMN IF NOT EXISTS is_chapter_final BOOLEAN DEFAULT false;
 
-CREATE INDEX IF NOT EXISTS idx_sessions_chapter ON study_plan_sessions(plan_id, chapter_id);
-CREATE INDEX IF NOT EXISTS idx_sessions_chapter_final ON study_plan_sessions(plan_id, is_chapter_final) WHERE is_chapter_final = true;
+CREATE INDEX IF NOT EXISTS idx_sessions_chapter ON study_plan_sessions(study_plan_id, chapter_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_chapter_final ON study_plan_sessions(study_plan_id, is_chapter_final) WHERE is_chapter_final = true;
 
 -- ============================================================================
 -- 3. Modify study_session_content: Add guide_day reference
