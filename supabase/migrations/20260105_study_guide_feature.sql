@@ -9,7 +9,7 @@
 CREATE TABLE IF NOT EXISTS study_guide_days (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   plan_id UUID NOT NULL REFERENCES study_plans(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   date DATE NOT NULL,
   week_number INTEGER NOT NULL,
   day_of_week INTEGER NOT NULL DEFAULT 0, -- 0=Sunday, 1=Monday, etc.
@@ -125,7 +125,7 @@ CREATE INDEX IF NOT EXISTS idx_exams_guide_day ON exams(guide_day_id);
 
 CREATE TABLE IF NOT EXISTS content_generation_queue (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   plan_id UUID REFERENCES study_plans(id) ON DELETE CASCADE,
   guide_day_id UUID REFERENCES study_guide_days(id) ON DELETE CASCADE,
   session_id UUID REFERENCES study_plan_sessions(id) ON DELETE CASCADE,
@@ -256,7 +256,7 @@ $$ LANGUAGE plpgsql;
 -- 8. Function: Get today's content generation status for a user
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION get_today_content_status(p_user_id UUID)
+CREATE OR REPLACE FUNCTION get_today_content_status(p_user_id BIGINT)
 RETURNS TABLE (
   plan_id UUID,
   plan_title TEXT,
