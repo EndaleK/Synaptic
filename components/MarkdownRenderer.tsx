@@ -309,11 +309,14 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     sanitized = sanitized.replace(/^(\s+):\s+(.+)$/gm, '$1$2')
 
     // ============================================================
-    // FIX: Handle mindmap nodes that are just parenthetical text "(text)"
-    // AI generates lines like "      (13+ years hands-on)" which is invalid
-    // Remove the parentheses and keep the text
+    // NOTE: We previously removed parentheses from lines like "(text)" but this
+    // broke valid mindmap nodes. In mermaid mindmaps:
+    // - (text) = rounded rectangle node (first level)
+    // - ((text)) = circle/oval node (root)
+    // - [text] = NOT valid in mindmaps (causes errors)
+    // So we should NOT strip parentheses - they're valid syntax!
     // ============================================================
-    sanitized = sanitized.replace(/^(\s+)\(([^)]+)\)\s*$/gm, '$1$2')
+    // REMOVED: sanitized = sanitized.replace(/^(\s+)\(([^)]+)\)\s*$/gm, '$1$2')
 
     // ============================================================
     // FIX: Handle square brackets in mindmap content
@@ -321,22 +324,21 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     // for references like [ER40] or [P47]. Convert to plain text.
     // ============================================================
     if (isMindmap) {
-      // For mindmaps, convert [text] to (text) or just text
-      // But preserve the root node syntax: root((text)) or root(text)
+      // For mindmaps, square brackets [text] inside node labels cause syntax errors
+      // Example: "Edmonton Symptom Assessment System [ESAS]" → remove [ESAS]
+      // But DON'T remove parentheses - they define node shapes in mindmaps!
+      // Valid: (Family Medicine) - first level node
+      // Valid: ((Root Text)) - root node with double parens
       const lines = sanitized.split('\n')
       sanitized = lines.map(line => {
-        // Don't modify the root line
-        if (line.includes('root(')) return line
-        // Replace [text] with text (removing brackets) in non-root lines
+        // Don't modify lines with ::icon() directives
+        if (line.includes('::icon(')) {
+          // Only remove square brackets from content, not icon syntax
+          return line.replace(/\[([^\]]+)\]/g, '$1')
+        }
+        // For other lines, remove square brackets from content
+        // This handles cases like "Symptom Assessment System [ESAS]" → "Symptom Assessment System ESAS"
         return line.replace(/\[([^\]]+)\]/g, '$1')
-      }).join('\n')
-
-      // Also remove parentheses from mindmap content (except root node)
-      // Pattern: match lines with (text) that aren't the root
-      sanitized = sanitized.split('\n').map(line => {
-        if (line.includes('root(')) return line
-        // Replace (text) with just text in content
-        return line.replace(/\(([^)]+)\)/g, '$1')
       }).join('\n')
     }
 
