@@ -134,6 +134,18 @@ const ExamView = dynamic(() => import("@/components/ExamView"), {
   )
 })
 
+const StudyPlanWizard = dynamic(() => import("@/components/StudyPlanWizard"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Loading Study Plan Wizard...</p>
+      </div>
+    </div>
+  )
+})
+
 // StudyBuddyInterface is now merged into ChatInterface - removed separate import
 
 function DashboardContent() {
@@ -579,6 +591,7 @@ function DashboardContent() {
       writer: 'bg-[var(--bg-tint-writer)]',
       video: 'bg-[var(--bg-tint-video)]',
       exam: 'bg-[var(--bg-tint-quiz)]',
+      'study-plan': 'bg-[var(--bg-tint-quiz)]', // Same as exam (planning)
       home: 'bg-transparent' // No tint on home page
     }
     return tints[activeMode] || 'bg-transparent'
@@ -722,6 +735,20 @@ function DashboardContent() {
           <DynamicComponentErrorBoundary componentName="Classes">
             <div className="h-full overflow-y-auto">
               <ClassesView />
+            </div>
+          </DynamicComponentErrorBoundary>
+        )
+
+      case "study-plan":
+        return (
+          <DynamicComponentErrorBoundary componentName="Study Plan">
+            <div className="h-full overflow-y-auto">
+              <StudyPlanWizard
+                onClose={() => setActiveMode('home')}
+                onComplete={(planId) => {
+                  router.push('/dashboard/study-plans')
+                }}
+              />
             </div>
           </DynamicComponentErrorBoundary>
         )
