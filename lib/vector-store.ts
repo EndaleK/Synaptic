@@ -12,6 +12,7 @@ import { Pinecone } from '@pinecone-database/pinecone'
 import { OpenAIEmbeddings } from '@langchain/openai'
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters'
 import { generateEmbeddingsParallel, type ProgressInfo } from './parallel-embeddings'
+import { rerankResults, isRerankAvailable, type RerankResult } from './cohere-rerank'
 
 // Initialize Pinecone client
 const pinecone = new Pinecone({
@@ -543,6 +544,122 @@ export async function searchDocument(
     console.error('Vector search error:', error)
     return []
   }
+}
+
+/**
+ * Options for searchDocumentWithRerank
+ */
+export interface SearchWithRerankOptions {
+  /** Number of results to retrieve from Pinecone (default: 25) */
+  initialTopK?: number
+  /** Number of results to return after reranking (default: 7) */
+  finalTopK?: number
+  /** Clerk user ID for ownership verification (optional) */
+  userId?: string
+  /** Skip reranking and return Pinecone results directly (default: false) */
+  skipRerank?: boolean
+  /** Minimum relevance score after reranking (default: 0.1) */
+  minRelevanceScore?: number
+}
+
+/**
+ * Search result with rerank information
+ */
+export interface SearchResultWithRerank {
+  text: string
+  score: number           // Original Pinecone similarity score
+  chunkIndex: number
+  relevanceScore: number  // Cohere rerank score (or Pinecone score if rerank unavailable)
+  wasReranked: boolean    // Whether Cohere reranking was applied
+}
+
+/**
+ * Search for relevant chunks with Cohere reranking
+ *
+ * This is the recommended search function for RAG pipelines.
+ * It retrieves more results from Pinecone, then uses Cohere to rerank
+ * and filter to the most relevant chunks.
+ *
+ * Flow:
+ * 1. Retrieve initialTopK results from Pinecone (default: 25)
+ * 2. If structural query → skip reranking, return as-is
+ * 3. Rerank with Cohere → return finalTopK results (default: 7)
+ *
+ * Benefits:
+ * - Filters out semantically similar but irrelevant chunks
+ * - Reduces LLM context size (fewer tokens = lower cost)
+ * - Improves answer quality
+ *
+ * @param documentId - UUID of the document to search
+ * @param query - User's search query
+ * @param options - Search and rerank options
+ * @returns Reranked search results
+ */
+export async function searchDocumentWithRerank(
+  documentId: string,
+  query: string,
+  options: SearchWithRerankOptions = {}
+): Promise<SearchResultWithRerank[]> {
+  const {
+    initialTopK = 25,
+    finalTopK = 7,
+    userId,
+    skipRerank = false,
+    minRelevanceScore = 0.1,
+  } = options
+
+  // Check if this is a structural query (chapters, TOC, etc.)
+  const isStructural = isStructuralQuery(query)
+
+  // For structural queries, skip reranking - they need pattern matching, not semantic ranking
+  const shouldRerank = !skipRerank && !isStructural && isRerankAvailable()
+
+  console.log('[Vector Store] Search with rerank:', {
+    documentId: documentId.substring(0, 8),
+    query: query.substring(0, 50),
+    isStructural,
+    shouldRerank,
+    initialTopK,
+    finalTopK,
+  })
+
+  // Step 1: Get results from Pinecone
+  // For structural queries, use the special handling in searchDocument
+  // For regular queries, get more results for reranking
+  const pineconeResults = await searchDocument(
+    documentId,
+    query,
+    shouldRerank ? initialTopK : finalTopK,
+    userId
+  )
+
+  if (pineconeResults.length === 0) {
+    return []
+  }
+
+  // Step 2: Skip reranking if not needed
+  if (!shouldRerank) {
+    return pineconeResults.map(r => ({
+      ...r,
+      relevanceScore: r.score,
+      wasReranked: false,
+    }))
+  }
+
+  // Step 3: Rerank with Cohere
+  const rerankedResults = await rerankResults(query, pineconeResults, {
+    topN: finalTopK,
+    minScore: minRelevanceScore,
+  })
+
+  // Map to our return format
+  return rerankedResults.map(r => ({
+    text: r.text,
+    score: r.score,
+    chunkIndex: r.chunkIndex,
+    relevanceScore: r.relevanceScore,
+    wasReranked: true,
+  }))
 }
 
 /**

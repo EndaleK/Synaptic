@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
-import { searchDocument, getDocumentStats } from '@/lib/vector-store'
+import { searchDocumentWithRerank, getDocumentStats } from '@/lib/vector-store'
 import { getUserProfile, getUserLearningProfile } from '@/lib/supabase/user-profile'
 import { personalizePrompt, createLearningProfile, type LearningProfile } from '@/lib/personalization/personalization-engine'
 import type { LearningStyle, TeachingStylePreference } from '@/lib/supabase/types'
@@ -348,10 +348,14 @@ export async function POST(request: NextRequest) {
       question: message.substring(0, 100),
     })
 
-    // 6. Retrieve relevant chunks using semantic search
-    // Increased to 15 for better coverage of large textbooks like Toronto Notes
-    // searchDocument will increase further to 25 for structural/broad queries
-    const relevantChunks = await searchDocument(documentId, message, 15)
+    // 6. Retrieve relevant chunks using semantic search with Cohere reranking
+    // Retrieves 25 results from Pinecone, reranks with Cohere, returns top 7
+    // Reranking filters out semantically similar but irrelevant chunks
+    const relevantChunks = await searchDocumentWithRerank(documentId, message, {
+      initialTopK: 25,  // Get more results for reranking
+      finalTopK: 7,     // Return top 7 after reranking
+      userId,           // For ownership verification
+    })
 
     if (relevantChunks.length === 0) {
       return NextResponse.json({
@@ -361,11 +365,15 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    const wasReranked = relevantChunks[0]?.wasReranked || false
+
     logger.debug('Retrieved relevant chunks', {
       userId,
       documentId,
       chunksRetrieved: relevantChunks.length,
-      topScore: relevantChunks[0].score,
+      topPineconeScore: relevantChunks[0].score,
+      topRelevanceScore: relevantChunks[0].relevanceScore,
+      wasReranked,
     })
 
     // 7. Combine relevant chunks into context
@@ -617,6 +625,9 @@ Please answer this question based on the relevant excerpts provided above. The e
       chunksUsed: relevantChunks.length,
       totalChunks: docStats.chunkCount,
       documentName: document.file_name,
+      // Include reranking info
+      wasReranked,
+      topRelevanceScore: relevantChunks[0]?.relevanceScore,
       // Include indexing progress info if partially indexed
       ...(indexingStatus && !isFullyIndexed && {
         indexingProgress: indexingStatus.percentComplete,
