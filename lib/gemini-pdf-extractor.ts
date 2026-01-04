@@ -71,6 +71,7 @@ Instructions:
 
 Begin extraction:`
 
+    const startTime = Date.now()
     const result = await model.generateContent([
       {
         inlineData: {
@@ -80,6 +81,8 @@ Begin extraction:`
       },
       { text: prompt },
     ])
+    const duration = Date.now() - startTime
+    logger.info('[Gemini] API call completed', { fileName, durationMs: duration })
 
     const response = await result.response
     const extractedText = response.text()

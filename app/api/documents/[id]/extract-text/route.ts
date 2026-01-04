@@ -100,11 +100,26 @@ export async function POST(
           throw new Error('Failed to download document from storage')
         }
 
-        // Step 3: Extract text
+        // Step 3: Extract text with progress callback for chunked extraction
         send({ type: 'progress', progress: 30, message: 'Extracting text with AI (1-2 minutes)...' })
 
         const file = new File([fileData], document.file_name, { type: document.file_type })
-        const parseResult = await parseServerPDF(file)
+
+        // Progress callback for chunked extraction (reports 30-60% range)
+        const onProgress = async (progress: {
+          currentChunk: number
+          totalChunks: number
+          percentComplete: number
+          message: string
+        }) => {
+          send({
+            type: 'progress',
+            progress: progress.percentComplete,
+            message: progress.message
+          })
+        }
+
+        const parseResult = await parseServerPDF(file, onProgress)
 
         if (parseResult.error || !parseResult.text) {
           throw new Error(`Text extraction failed: ${parseResult.error || 'No text extracted'}`)
