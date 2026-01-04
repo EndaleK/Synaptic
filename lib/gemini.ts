@@ -1,13 +1,18 @@
 /**
  * Google Gemini API Integration
  *
- * Provides integration with Gemini 1.5 Pro for handling very large documents
- * (up to 2M tokens context window). Best for college textbooks and massive PDFs.
+ * Provides integration with Gemini for handling large documents.
+ * Default: gemini-2.0-flash-lite (cost-effective, 1M context)
+ * Override: Set GEMINI_MODEL env var for different model (e.g., gemini-2.5-pro)
  *
  * Features:
- * - 2M token context window (vs 128K for GPT-3.5)
+ * - 1M token context window (flash-lite) or 2M (pro)
  * - Long document processing
  * - Cost tracking integration
+ *
+ * Models:
+ * - gemini-2.0-flash-lite: $0.075/M input (default, 99% cheaper than pro)
+ * - gemini-2.5-pro: $7/M input (for complex reasoning)
  */
 
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai'
@@ -43,10 +48,10 @@ function getGeminiClient() {
 }
 
 /**
- * Generate completion using Gemini 1.5 Pro
+ * Generate completion using Gemini
  *
- * Best for: Documents > 800K characters (200K tokens)
- * Cost: ~$7 per million input tokens, ~$21 per million output tokens
+ * Default model: gemini-2.0-flash-lite (cost-effective)
+ * Override via GEMINI_MODEL env var for pro model when needed
  */
 export async function generateGeminiCompletion(
   messages: GeminiMessage[],
@@ -54,8 +59,11 @@ export async function generateGeminiCompletion(
 ): Promise<{ content: string; usage: GeminiUsageStats }> {
   try {
     const genAI = getGeminiClient()
+    const modelName = process.env.GEMINI_MODEL || 'gemini-2.0-flash-lite'
+    logger.info('[Gemini] Using model', { model: modelName })
+
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-pro',
+      model: modelName,
       generationConfig: {
         temperature: options.temperature ?? 0.3,
         topP: options.topP ?? 0.95,

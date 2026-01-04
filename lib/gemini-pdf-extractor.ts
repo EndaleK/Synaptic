@@ -51,9 +51,11 @@ export async function extractPDFWithGemini(
 
     const genAI = new GoogleGenerativeAI(apiKey)
 
-    // Use Gemini 2.0 Flash for cost-effectiveness and speed
-    // Context: 1M tokens, supports multimodal (text + images)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
+    // Use stable Gemini 2.0 Flash for PDF extraction (cost-effective, 1M context)
+    // Note: Using stable release instead of -exp for reliability
+    const pdfModel = process.env.GEMINI_PDF_MODEL || 'gemini-2.0-flash'
+    logger.info('[Gemini] PDF extraction using model', { model: pdfModel })
+    const model = genAI.getGenerativeModel({ model: pdfModel })
 
     // Convert buffer to base64
     const base64Data = Buffer.from(fileBuffer).toString('base64')
