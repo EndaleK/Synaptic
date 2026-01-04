@@ -128,12 +128,12 @@ export async function processLargePDFInChunks(
     // Combine all chunks
     const combinedText = chunks.join('\n\n--- Page Break ---\n\n')
 
-    console.log(`[Chunked Processing] Completed! Total: ${combinedText.length} characters from ${chunkNumber} chunks`)
+    console.log(`[Chunked Processing] Completed! Total: ${combinedText.length} characters from ${totalChunks} chunks`)
 
     return {
       text: combinedText,
       pageCount: totalPages,
-      chunks: chunkNumber,
+      chunks: totalChunks,
       method: 'chunked-gemini'
     }
 

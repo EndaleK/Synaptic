@@ -3,7 +3,33 @@ import type { ScriptLine, Speaker } from "./podcast-generator"
 
 export type TTSVoice = 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'
 export type TTSLanguage = 'en-us' | 'en-gb' | 'ja' | 'zh' | 'es' | 'fr' | 'hi' | 'it' | 'pt-br'
-export type TTSProvider = 'elevenlabs' | 'lemonfox' | 'openai'
+export type TTSProvider = 'kokoro' | 'elevenlabs' | 'lemonfox' | 'openai'
+
+/**
+ * Kokoro-82M voice IDs via DeepInfra
+ * Cost: $0.62/1M characters (cheapest option!)
+ * Quality: A-grade voices, natural sounding
+ */
+export type KokoroVoice =
+  // American Female (A-grade)
+  | 'af_heart' | 'af_bella' | 'af_nicole' | 'af_nova' | 'af_sarah'
+  | 'af_sky' | 'af_alloy' | 'af_aoede' | 'af_jessica' | 'af_kore' | 'af_river'
+  // American Male
+  | 'am_adam' | 'am_michael' | 'am_fenrir' | 'am_puck' | 'am_echo'
+  | 'am_eric' | 'am_liam' | 'am_onyx' | 'am_santa'
+  // British Female
+  | 'bf_emma' | 'bf_isabella' | 'bf_alice' | 'bf_lily'
+  // British Male
+  | 'bm_daniel' | 'bm_fable' | 'bm_george' | 'bm_lewis'
+
+/**
+ * Kokoro voice mapping for podcast hosts
+ * Using high-quality A-grade voices
+ */
+const KOKORO_VOICE_MAP: Record<Speaker, KokoroVoice> = {
+  host_a: 'am_adam',    // Male host - warm, conversational
+  host_b: 'af_bella'    // Female host - clear, engaging (A- grade)
+}
 
 export interface AudioSegment {
   speaker: Speaker
@@ -86,6 +112,50 @@ function getElevenLabsVoiceMap(voiceConfig?: VoiceConfig): Record<Speaker, strin
     host_a: voiceConfig?.hostA || DEFAULT_VOICE_HOST_A,
     host_b: voiceConfig?.hostB || DEFAULT_VOICE_HOST_B,
   }
+}
+
+/**
+ * Generate speech using Kokoro-82M via DeepInfra
+ * Cost: $0.62/1M characters (cheapest high-quality option!)
+ * Quality: A-grade voices, natural sounding
+ */
+async function generateSpeechWithKokoro(
+  text: string,
+  voice: KokoroVoice,
+  speed: number = 1.0
+): Promise<Buffer> {
+  if (!process.env.DEEPINFRA_API_KEY) {
+    throw new Error("DeepInfra API key not configured")
+  }
+
+  const response = await fetch('https://api.deepinfra.com/v1/inference/hexgrad/Kokoro-82M', {
+    method: 'POST',
+    headers: {
+      'Authorization': `bearer ${process.env.DEEPINFRA_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      text: text,
+      preset_voice: [voice],
+      output_format: 'mp3',
+      speed: speed
+    })
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Kokoro API error (${response.status}): ${errorText}`)
+  }
+
+  // DeepInfra returns JSON with base64 audio
+  const result = await response.json()
+
+  if (result.audio) {
+    // Audio is base64 encoded
+    return Buffer.from(result.audio, 'base64')
+  }
+
+  throw new Error('Kokoro API returned no audio data')
 }
 
 /**
@@ -213,7 +283,13 @@ function getElevenLabsLanguageCode(language: TTSLanguage): string | undefined {
 
 /**
  * Generate speech audio from a single script line
- * Priority: ElevenLabs (best quality) → Lemonfox (cheaper) → OpenAI (fallback)
+ * Priority: Kokoro (cheapest) → ElevenLabs (best quality) → Lemonfox → OpenAI (fallback)
+ *
+ * Cost comparison:
+ * - Kokoro (DeepInfra): $0.62/1M chars
+ * - ElevenLabs: $0.30/1K chars = $300/1M chars
+ * - Lemonfox: $2.50/1M chars
+ * - OpenAI: $15/1M chars
  */
 export async function generateSpeechForLine(
   line: ScriptLine,
@@ -221,14 +297,30 @@ export async function generateSpeechForLine(
   voiceConfig?: VoiceConfig
 ): Promise<AudioSegment> {
   const voice = VOICE_MAP[line.speaker]
+  const kokoroVoice = KOKORO_VOICE_MAP[line.speaker]
   const elevenLabsVoiceMap = getElevenLabsVoiceMap(voiceConfig)
   const elevenLabsVoiceId = elevenLabsVoiceMap[line.speaker]
   let buffer: Buffer
   let provider: TTSProvider
 
-  console.log(`Generating TTS for ${line.speaker}: "${line.text.substring(0, 50)}..." (language: ${language}, voice: ${elevenLabsVoiceId})`)
+  console.log(`Generating TTS for ${line.speaker}: "${line.text.substring(0, 50)}..." (language: ${language})`)
 
-  // Try ElevenLabs first (best quality)
+  // Try Kokoro first (cheapest at $0.62/1M chars)
+  if (process.env.DEEPINFRA_API_KEY) {
+    try {
+      console.log(`[TTS] Trying Kokoro (DeepInfra) for ${line.speaker} with voice ${kokoroVoice}...`)
+      buffer = await generateSpeechWithKokoro(line.text, kokoroVoice)
+      provider = 'kokoro'
+      console.log(`[TTS] ✓ Kokoro succeeded for ${line.speaker}`)
+      return createAudioSegment(line, buffer, provider)
+    } catch (kokoroError: unknown) {
+      const kokoroErrorMsg = kokoroError instanceof Error ? kokoroError.message : String(kokoroError)
+      console.warn(`[TTS] Kokoro failed for ${line.speaker}: ${kokoroErrorMsg}`)
+      // Continue to fallback providers
+    }
+  }
+
+  // Try ElevenLabs second (best quality)
   if (process.env.ELEVENLABS_API_KEY) {
     try {
       console.log(`[TTS] Trying ElevenLabs for ${line.speaker} with voice ${elevenLabsVoiceId}...`)
@@ -236,88 +328,62 @@ export async function generateSpeechForLine(
       buffer = await generateSpeechWithElevenLabs(line.text, elevenLabsVoiceId, langCode)
       provider = 'elevenlabs'
       console.log(`[TTS] ✓ ElevenLabs succeeded for ${line.speaker}`)
-    } catch (elevenLabsError: any) {
-      console.warn(`[TTS] ElevenLabs failed for ${line.speaker}: ${elevenLabsError.message}`)
-
-      // Fall back to Lemonfox
-      if (process.env.LEMONFOX_API_KEY) {
-        try {
-          console.log(`[TTS] Falling back to Lemonfox.ai for ${line.speaker}...`)
-          buffer = await generateSpeechWithLemonfox(line.text, voice, language)
-          provider = 'lemonfox'
-          console.log(`[TTS] ✓ Lemonfox.ai fallback succeeded for ${line.speaker}`)
-        } catch (lemonfoxError: any) {
-          console.warn(`[TTS] Lemonfox.ai also failed: ${lemonfoxError.message}`)
-
-          // Final fallback to OpenAI
-          try {
-            console.log(`[TTS] Final fallback to OpenAI for ${line.speaker}...`)
-            buffer = await generateSpeechWithOpenAI(line.text, voice)
-            provider = 'openai'
-            console.log(`[TTS] ✓ OpenAI fallback succeeded for ${line.speaker}`)
-          } catch (openaiError: any) {
-            throw new Error(`All TTS providers failed: ElevenLabs (${elevenLabsError.message}), Lemonfox (${lemonfoxError.message}), OpenAI (${openaiError.message})`)
-          }
-        }
-      } else {
-        // No Lemonfox, try OpenAI directly
-        try {
-          console.log(`[TTS] Falling back to OpenAI for ${line.speaker}...`)
-          buffer = await generateSpeechWithOpenAI(line.text, voice)
-          provider = 'openai'
-          console.log(`[TTS] ✓ OpenAI fallback succeeded for ${line.speaker}`)
-        } catch (openaiError: any) {
-          throw new Error(`TTS failed: ElevenLabs (${elevenLabsError.message}), OpenAI (${openaiError.message})`)
-        }
-      }
-    }
-  } else if (process.env.LEMONFOX_API_KEY) {
-    // No ElevenLabs, try Lemonfox
-    try {
-      console.log(`[TTS] ElevenLabs not configured, trying Lemonfox.ai for ${line.speaker}...`)
-      buffer = await generateSpeechWithLemonfox(line.text, voice, language)
-      provider = 'lemonfox'
-      console.log(`[TTS] ✓ Lemonfox.ai succeeded for ${line.speaker}`)
-    } catch (lemonfoxError: any) {
-      console.warn(`[TTS] Lemonfox.ai failed: ${lemonfoxError.message}`)
-
-      // Fall back to OpenAI
-      try {
-        console.log(`[TTS] Falling back to OpenAI for ${line.speaker}...`)
-        buffer = await generateSpeechWithOpenAI(line.text, voice)
-        provider = 'openai'
-        console.log(`[TTS] ✓ OpenAI fallback succeeded for ${line.speaker}`)
-      } catch (openaiError: any) {
-        throw new Error(`TTS failed: Lemonfox (${lemonfoxError.message}), OpenAI (${openaiError.message})`)
-      }
-    }
-  } else {
-    // Only OpenAI available
-    console.log(`[TTS] Only OpenAI configured, using for ${line.speaker}...`)
-    try {
-      buffer = await generateSpeechWithOpenAI(line.text, voice)
-      provider = 'openai'
-      console.log(`[TTS] ✓ OpenAI succeeded for ${line.speaker}`)
-    } catch (error: any) {
-      console.error(`[TTS] OpenAI failed for ${line.speaker}:`, error)
-      throw new Error(`Failed to generate speech: ${error.message}`)
+      return createAudioSegment(line, buffer, provider)
+    } catch (elevenLabsError: unknown) {
+      const elevenLabsErrorMsg = elevenLabsError instanceof Error ? elevenLabsError.message : String(elevenLabsError)
+      console.warn(`[TTS] ElevenLabs failed for ${line.speaker}: ${elevenLabsErrorMsg}`)
+      // Continue to fallback providers
     }
   }
 
-  // Estimate duration (neither API provides exact duration)
-  // Average speaking rate: ~150 words per minute
+  // Try Lemonfox third
+  if (process.env.LEMONFOX_API_KEY) {
+    try {
+      console.log(`[TTS] Trying Lemonfox.ai for ${line.speaker}...`)
+      buffer = await generateSpeechWithLemonfox(line.text, voice, language)
+      provider = 'lemonfox'
+      console.log(`[TTS] ✓ Lemonfox.ai succeeded for ${line.speaker}`)
+      return createAudioSegment(line, buffer, provider)
+    } catch (lemonfoxError: unknown) {
+      const lemonfoxErrorMsg = lemonfoxError instanceof Error ? lemonfoxError.message : String(lemonfoxError)
+      console.warn(`[TTS] Lemonfox.ai failed for ${line.speaker}: ${lemonfoxErrorMsg}`)
+      // Continue to final fallback
+    }
+  }
+
+  // Final fallback: OpenAI
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      console.log(`[TTS] Final fallback to OpenAI for ${line.speaker}...`)
+      buffer = await generateSpeechWithOpenAI(line.text, voice)
+      provider = 'openai'
+      console.log(`[TTS] ✓ OpenAI succeeded for ${line.speaker}`)
+      return createAudioSegment(line, buffer, provider)
+    } catch (openaiError: unknown) {
+      const openaiErrorMsg = openaiError instanceof Error ? openaiError.message : String(openaiError)
+      console.error(`[TTS] OpenAI also failed for ${line.speaker}: ${openaiErrorMsg}`)
+    }
+  }
+
+  // All providers failed
+  throw new Error(`All TTS providers failed for ${line.speaker}. Configure at least one: DEEPINFRA_API_KEY, ELEVENLABS_API_KEY, LEMONFOX_API_KEY, or OPENAI_API_KEY`)
+}
+
+/**
+ * Helper function to create AudioSegment with estimated duration
+ */
+function createAudioSegment(line: ScriptLine, buffer: Buffer, provider: TTSProvider): AudioSegment {
+  // Estimate duration - average speaking rate: ~150 words per minute
   const wordCount = line.text.split(/\s+/).length
   const estimatedDuration = (wordCount / 150) * 60 // in seconds
 
-  const segment: AudioSegment = {
+  return {
     speaker: line.speaker,
     audioBuffer: buffer,
     duration: estimatedDuration,
     text: line.text,
     provider
   }
-
-  return segment
 }
 
 /**
