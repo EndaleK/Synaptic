@@ -56,65 +56,72 @@ export async function processLargePDFInChunks(
 
     console.log(`[Chunked Processing] Processing ~${pagesPerChunk} pages per chunk`)
 
-    const chunks: string[] = []
-    let chunkNumber = 0
-
     // Calculate total chunks upfront for progress reporting
     const totalChunks = Math.ceil(totalPages / pagesPerChunk)
 
-    // Process PDF in chunks
+    // Prepare all chunks first (fast, just splitting PDF)
+    console.log(`[Chunked Processing] Preparing ${totalChunks} chunks...`)
+    const chunkBuffers: { chunkNumber: number; buffer: Buffer; startPage: number; endPage: number }[] = []
+
     for (let startPage = 0; startPage < totalPages; startPage += pagesPerChunk) {
-      chunkNumber++
+      const chunkNumber = Math.floor(startPage / pagesPerChunk) + 1
       const endPage = Math.min(startPage + pagesPerChunk, totalPages)
 
-      console.log(`[Chunked Processing] Processing chunk ${chunkNumber}/${totalChunks}: pages ${startPage + 1}-${endPage}`)
+      const chunkPdf = await PDFDocument.create()
+      const copiedPages = await chunkPdf.copyPages(pdfDoc, Array.from(
+        { length: endPage - startPage },
+        (_, i) => startPage + i
+      ))
+      copiedPages.forEach(page => chunkPdf.addPage(page))
+      const chunkBuffer = Buffer.from(await chunkPdf.save())
 
-      // Report progress (30% base + 30% for extraction = 30-60% range)
+      chunkBuffers.push({ chunkNumber, buffer: chunkBuffer, startPage, endPage })
+      console.log(`[Chunked Processing] Prepared chunk ${chunkNumber}: ${(chunkBuffer.length / 1024 / 1024).toFixed(2)}MB`)
+    }
+
+    // Process chunks in parallel batches of 3 for speed (Gemini can handle concurrent requests)
+    const CONCURRENT_CHUNKS = 3
+    const chunks: string[] = new Array(totalChunks).fill('')
+    let processedChunks = 0
+
+    for (let i = 0; i < chunkBuffers.length; i += CONCURRENT_CHUNKS) {
+      const batch = chunkBuffers.slice(i, i + CONCURRENT_CHUNKS)
+
+      // Report progress before batch
       if (onProgress) {
-        const chunkProgress = (chunkNumber - 1) / totalChunks
-        const percentComplete = Math.round(30 + (chunkProgress * 30)) // 30% to 60%
+        const percentComplete = Math.round(30 + (processedChunks / totalChunks) * 30)
         await onProgress({
-          currentChunk: chunkNumber,
+          currentChunk: processedChunks + 1,
           totalChunks,
           percentComplete,
-          message: `Extracting text: chunk ${chunkNumber} of ${totalChunks} (pages ${startPage + 1}-${endPage})...`
+          message: `Extracting text: chunks ${processedChunks + 1}-${Math.min(processedChunks + batch.length, totalChunks)} of ${totalChunks}...`
         })
       }
 
-      try {
-        // Create a new PDF with just this page range
-        const chunkPdf = await PDFDocument.create()
-        const copiedPages = await chunkPdf.copyPages(pdfDoc, Array.from(
-          { length: endPage - startPage },
-          (_, i) => startPage + i
-        ))
+      console.log(`[Chunked Processing] Processing batch: chunks ${batch[0].chunkNumber}-${batch[batch.length - 1].chunkNumber} in parallel`)
 
-        copiedPages.forEach(page => chunkPdf.addPage(page))
+      // Process batch in parallel
+      const batchResults = await Promise.all(
+        batch.map(async ({ chunkNumber, buffer, startPage, endPage }) => {
+          try {
+            const result = await extractPDFWithGemini(buffer, `${fileName}_chunk_${chunkNumber}`)
+            if (result.error || !result.text) {
+              console.warn(`[Chunked Processing] Chunk ${chunkNumber} failed: ${result.error}`)
+              return { chunkNumber, text: `[Chunk ${chunkNumber} extraction failed]\n\n` }
+            }
+            console.log(`[Chunked Processing] Chunk ${chunkNumber} extracted ${result.text.length} chars`)
+            return { chunkNumber, text: result.text }
+          } catch (err) {
+            console.error(`[Chunked Processing] Chunk ${chunkNumber} error:`, err)
+            return { chunkNumber, text: `[Chunk ${chunkNumber} error]\n\n` }
+          }
+        })
+      )
 
-        // Save chunk to buffer
-        const chunkBuffer = Buffer.from(await chunkPdf.save())
-        const chunkSizeMB = chunkBuffer.length / (1024 * 1024)
-
-        console.log(`[Chunked Processing] Chunk ${chunkNumber} size: ${chunkSizeMB.toFixed(2)}MB`)
-
-        // Extract text from this chunk using Gemini
-        const chunkResult = await extractPDFWithGemini(
-          chunkBuffer,
-          `${fileName}_chunk_${chunkNumber}`
-        )
-
-        if (chunkResult.error || !chunkResult.text) {
-          console.warn(`[Chunked Processing] Chunk ${chunkNumber} extraction failed: ${chunkResult.error}`)
-          // Continue with other chunks even if one fails
-          chunks.push(`[Chunk ${chunkNumber} extraction failed: ${chunkResult.error}]\n\n`)
-        } else {
-          console.log(`[Chunked Processing] Chunk ${chunkNumber} extracted ${chunkResult.text.length} characters`)
-          chunks.push(chunkResult.text)
-        }
-
-      } catch (chunkError) {
-        console.error(`[Chunked Processing] Error processing chunk ${chunkNumber}:`, chunkError)
-        chunks.push(`[Chunk ${chunkNumber} processing error]\n\n`)
+      // Store results in order
+      for (const { chunkNumber, text } of batchResults) {
+        chunks[chunkNumber - 1] = text
+        processedChunks++
       }
     }
 
