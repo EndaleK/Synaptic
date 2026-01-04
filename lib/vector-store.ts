@@ -464,8 +464,22 @@ export async function searchDocument(
     if (isStructural) {
       console.log('[Vector Store] Structural query detected, scanning for chapter content...')
 
-      // Find all chunks with chapter content (scans first 50 chunks)
-      const chapterChunks = await findChapterChunks(documentId, 50)
+      // Get document stats to scale scan depth for large documents
+      const docStats = await getDocumentStats(documentId)
+      const totalChunks = docStats.chunkCount || 500
+
+      // For large docs (1000+ chunks), scan more of the document
+      // 10% of doc or 500 chunks, whichever is smaller (min 100)
+      const scanDepth = Math.min(Math.max(Math.ceil(totalChunks * 0.10), 100), 500)
+
+      console.log('[Vector Store] Structural query scan depth:', {
+        totalChunks,
+        scanDepth,
+        percentage: ((scanDepth / totalChunks) * 100).toFixed(1) + '%',
+      })
+
+      // Find all chunks with chapter content
+      const chapterChunks = await findChapterChunks(documentId, scanDepth)
 
       if (chapterChunks.length > 0) {
         console.log(`[Vector Store] Found ${chapterChunks.length} chunks with chapter content`)
@@ -509,9 +523,14 @@ export async function searchDocument(
         return sortedChunks
       }
 
-      // Fallback: if no chapter patterns found, fetch first 20 early chunks
-      console.log('[Vector Store] No chapter patterns found, fetching early chunks as fallback')
-      const earlyIndices = Array.from({ length: 20 }, (_, i) => i)
+      // Fallback: if no chapter patterns found, fetch early chunks scaled by doc size
+      // 5% of doc or 200 chunks, whichever is smaller (min 50)
+      const earlyChunkCount = Math.min(Math.max(Math.ceil(totalChunks * 0.05), 50), 200)
+      console.log('[Vector Store] No chapter patterns found, fetching early chunks as fallback', {
+        earlyChunkCount,
+        totalChunks,
+      })
+      const earlyIndices = Array.from({ length: earlyChunkCount }, (_, i) => i)
       const earlyChunks = await getChunksByIndices(documentId, earlyIndices)
 
       if (earlyChunks.length > 0) {

@@ -350,11 +350,26 @@ export async function POST(request: NextRequest) {
     })
 
     // 6. Retrieve relevant chunks using semantic search with Cohere reranking
-    // Retrieves 25 results from Pinecone, reranks with Cohere, returns top 7
+    // Detect comprehensive questions that need more context (overview, list all, etc.)
+    const isComprehensiveQuery = /how many|list all|all the|complete list|entire|everything|overview|summary|what (topics|chapters|sections|specialties)/i.test(message)
+
+    // For comprehensive queries, retrieve more results to cover more ground
+    // For focused queries, use standard retrieval to keep context focused
+    const initialTopK = isComprehensiveQuery ? 50 : 25
+    const finalTopK = isComprehensiveQuery ? 15 : 7
+
+    logger.debug('RAG retrieval config', {
+      isComprehensiveQuery,
+      initialTopK,
+      finalTopK,
+      query: message.substring(0, 50),
+    })
+
+    // Retrieves results from Pinecone, reranks with Cohere
     // Reranking filters out semantically similar but irrelevant chunks
     const relevantChunks = await searchDocumentWithRerank(documentId, message, {
-      initialTopK: 25,  // Get more results for reranking
-      finalTopK: 7,     // Return top 7 after reranking
+      initialTopK,
+      finalTopK,
       userId,           // For ownership verification
     })
 
