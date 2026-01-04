@@ -6,7 +6,7 @@
 CREATE TABLE IF NOT EXISTS retrieval_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE,
+  user_id BIGINT REFERENCES user_profiles(id) ON DELETE CASCADE,
   query TEXT NOT NULL,
   query_intent TEXT,
   chunks_retrieved INTEGER NOT NULL DEFAULT 0,
