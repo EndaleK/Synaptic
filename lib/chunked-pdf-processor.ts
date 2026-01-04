@@ -16,6 +16,14 @@ interface ChunkedExtractionResult {
   error?: string
 }
 
+// Progress callback for reporting extraction progress
+export type ChunkedProgressCallback = (progress: {
+  currentChunk: number
+  totalChunks: number
+  percentComplete: number
+  message: string
+}) => Promise<void>
+
 /**
  * Process a large PDF by splitting into chunks and processing separately
  * @param pdfBuffer PDF file as Buffer
@@ -25,7 +33,8 @@ interface ChunkedExtractionResult {
 export async function processLargePDFInChunks(
   pdfBuffer: Buffer,
   fileName: string,
-  maxChunkSize: number = 15
+  maxChunkSize: number = 15,
+  onProgress?: ChunkedProgressCallback
 ): Promise<ChunkedExtractionResult> {
   try {
     const fileSizeMB = pdfBuffer.length / (1024 * 1024)
@@ -50,12 +59,27 @@ export async function processLargePDFInChunks(
     const chunks: string[] = []
     let chunkNumber = 0
 
+    // Calculate total chunks upfront for progress reporting
+    const totalChunks = Math.ceil(totalPages / pagesPerChunk)
+
     // Process PDF in chunks
     for (let startPage = 0; startPage < totalPages; startPage += pagesPerChunk) {
       chunkNumber++
       const endPage = Math.min(startPage + pagesPerChunk, totalPages)
 
-      console.log(`[Chunked Processing] Processing chunk ${chunkNumber}: pages ${startPage + 1}-${endPage}`)
+      console.log(`[Chunked Processing] Processing chunk ${chunkNumber}/${totalChunks}: pages ${startPage + 1}-${endPage}`)
+
+      // Report progress (30% base + 30% for extraction = 30-60% range)
+      if (onProgress) {
+        const chunkProgress = (chunkNumber - 1) / totalChunks
+        const percentComplete = Math.round(30 + (chunkProgress * 30)) // 30% to 60%
+        await onProgress({
+          currentChunk: chunkNumber,
+          totalChunks,
+          percentComplete,
+          message: `Extracting text: chunk ${chunkNumber} of ${totalChunks} (pages ${startPage + 1}-${endPage})...`
+        })
+      }
 
       try {
         // Create a new PDF with just this page range

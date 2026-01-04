@@ -8,7 +8,10 @@ import { promisify } from 'util'
 import path from 'path'
 import fs from 'fs'
 import { extractPDFWithGemini } from './gemini-pdf-extractor'
-import { processLargePDFInChunks } from './chunked-pdf-processor'
+import { processLargePDFInChunks, type ChunkedProgressCallback } from './chunked-pdf-processor'
+
+// Progress callback type for external consumers
+export type PDFProgressCallback = ChunkedProgressCallback
 
 const execFileAsync = promisify(execFile)
 
@@ -220,7 +223,10 @@ export async function parsePDFWithPyMuPDF(buffer: Buffer): Promise<PDFParseResul
   }
 }
 
-export async function parseServerPDF(file: File): Promise<PDFParseResult> {
+export async function parseServerPDF(
+  file: File,
+  onProgress?: PDFProgressCallback
+): Promise<PDFParseResult> {
   try {
     const fileSizeMB = file.size / (1024 * 1024)
     console.log(`📄 Server PDF parsing: ${file.name}, size: ${file.size} bytes (${fileSizeMB.toFixed(2)} MB)`)
@@ -252,7 +258,7 @@ export async function parseServerPDF(file: File): Promise<PDFParseResult> {
       // For files >25MB, use chunked processing to bypass Gemini's file size limit
       if (file.size > 25 * 1024 * 1024) {
         console.log(`🤖 Large file detected (${fileSizeMB.toFixed(2)}MB), using chunked Gemini extraction...`)
-        const chunkedResult = await processLargePDFInChunks(buffer, file.name)
+        const chunkedResult = await processLargePDFInChunks(buffer, file.name, 15, onProgress)
 
         if (!chunkedResult.error && chunkedResult.text && chunkedResult.text.length > 1000) {
           console.log(`✅ Chunked Gemini extraction successful: ${chunkedResult.text.length} chars from ${chunkedResult.chunks} chunks`)
@@ -317,7 +323,7 @@ export async function parseServerPDF(file: File): Promise<PDFParseResult> {
 
         // For files >25MB, use chunked processing
         if (file.size > 25 * 1024 * 1024) {
-          const chunkedResult = await processLargePDFInChunks(buffer, file.name)
+          const chunkedResult = await processLargePDFInChunks(buffer, file.name, 15, onProgress)
 
           if (!chunkedResult.error && chunkedResult.text && chunkedResult.text.length > 1000) {
             console.log(`✅ Chunked Gemini extraction successful: ${chunkedResult.text.length} chars from ${chunkedResult.chunks} chunks`)

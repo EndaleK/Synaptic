@@ -168,9 +168,45 @@ export const processPDFFunction = inngest.createFunction(
             fileSize: file.size,
           })
 
-          // Extract text using pdf-parse
+          // Extract text using pdf-parse with progress callback
           const { parseServerPDF } = await import('@/lib/server-pdf-parser')
-          const result = await parseServerPDF(file)
+
+          // Progress callback to update database during chunked extraction
+          const onProgress = async (progress: {
+            currentChunk: number
+            totalChunks: number
+            percentComplete: number
+            message: string
+          }) => {
+            try {
+              const progressSupabase = await createClient()
+              await progressSupabase
+                .from('documents')
+                .update({
+                  processing_progress: {
+                    current_step: 2,
+                    total_steps: 4,
+                    step_name: 'Extracting Text',
+                    progress_percent: progress.percentComplete,
+                    message: progress.message,
+                    updated_at: new Date().toISOString(),
+                    steps_completed: ['update-status-processing'],
+                    current_step_started_at: new Date().toISOString(),
+                    chunk_progress: {
+                      current: progress.currentChunk,
+                      total: progress.totalChunks,
+                    },
+                  },
+                })
+                .eq('id', documentId)
+              logger.info('[Inngest] Progress updated', { documentId, progress: progress.percentComplete })
+            } catch (err) {
+              // Don't fail extraction if progress update fails
+              logger.warn('[Inngest] Failed to update progress', { documentId, error: err })
+            }
+          }
+
+          const result = await parseServerPDF(file, onProgress)
 
           if (!result.error && result.text && result.text.length > 100) {
             logger.info('[Inngest] PDF extraction successful, saving to database...', {
