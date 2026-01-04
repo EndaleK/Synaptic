@@ -524,3 +524,142 @@ export type ExamAttemptInsert = Omit<ExamAttempt, 'id' | 'started_at' | 'complet
 
 // Type for updating exam attempts (commonly used when completing an exam)
 export type ExamAttemptUpdate = Partial<Omit<ExamAttempt, 'id' | 'user_id' | 'exam_id' | 'started_at'>>
+
+// ============================================================================
+// STUDY GUIDE INTERFACES
+// ============================================================================
+
+export type StudyGuideDayStatus = 'pending' | 'generating' | 'ready' | 'partial' | 'skipped'
+export type ContentGenerationStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
+export type ContentType = 'flashcards' | 'podcast' | 'mindmap' | 'daily_quiz' | 'chapter_exam' | 'chat_context'
+export type ExamType = 'daily_quiz' | 'weekly_exam' | 'chapter_completion' | 'custom' | 'mock' | 'practice'
+
+// Topic info for a study guide day
+export interface StudyGuideTopic {
+  topicId: string
+  title: string
+  documentId?: string
+  documentName?: string
+  pageRange?: {
+    start: number
+    end: number
+  }
+  estimatedMinutes: number
+  chapterId?: string
+  chapterTitle?: string
+}
+
+// Daily study guide entry (camelCase for frontend use)
+export interface StudyGuideDay {
+  id: string
+  planId: string
+  userId?: string
+  date: string // ISO date string
+  weekNumber: number
+  dayOfWeek: number // 0=Sunday, 1=Monday, etc.
+  topics: StudyGuideTopic[]
+  status: StudyGuideDayStatus
+  estimatedTotalMinutes: number
+  actualMinutesSpent?: number
+  // Content availability
+  hasFlashcards: boolean
+  hasPodcast: boolean
+  hasMindmap: boolean
+  hasDailyQuiz: boolean
+  hasChat: boolean
+  // Content IDs
+  flashcardSetId?: string
+  podcastId?: string
+  mindmapId?: string
+  dailyQuizId?: string
+  // Timestamps
+  generatedAt?: string
+  lastAccessedAt?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+// Week breakdown for study guide
+export interface StudyGuideWeek {
+  weekNumber: number
+  weekStart: string // ISO date
+  weekEnd: string // ISO date
+  days: StudyGuideDay[]
+  totalEstimatedMinutes?: number
+  completedDays?: number
+  totalDays?: number
+}
+
+// Full study guide breakdown
+export interface StudyGuideBreakdown {
+  planId: string
+  planTitle: string
+  weeks: StudyGuideWeek[]
+  totalWeeks: number
+  totalDays: number
+  daysCompleted: number
+  overallProgress?: number // 0-100
+}
+
+// Content generation queue item
+export interface ContentGenerationQueueItem {
+  id: string
+  user_id: string
+  plan_id?: string
+  guide_day_id?: string
+  session_id?: string
+  content_type: ContentType
+  document_id?: string
+  topic_focus?: string
+  topic_pages?: {
+    startPage: number
+    endPage: number
+    sections?: string[]
+  }
+  priority: number // 1-10, 1=highest
+  status: ContentGenerationStatus
+  attempts: number
+  max_attempts: number
+  result_id?: string
+  result_type?: string
+  error_message?: string
+  scheduled_for: string
+  started_at?: string
+  completed_at?: string
+  created_at: string
+}
+
+// Content status for UI display
+export interface ContentStatus {
+  contentType: ContentType
+  status: ContentGenerationStatus
+  progress: number // 0-100
+  resultId?: string
+  error?: string
+}
+
+// Today's content status response
+export interface TodayContentStatus {
+  planId: string
+  planTitle: string
+  guideDayId: string
+  guideDayDate: string
+  overallStatus: StudyGuideDayStatus
+  contentStatuses: ContentStatus[]
+}
+
+// Extended exam type with study guide fields
+export interface StudyGuideExam extends Exam {
+  exam_type: ExamType
+  chapter_id?: string
+  chapter_title?: string
+  study_plan_id?: string
+  guide_day_id?: string
+  topics_covered?: string[]
+}
+
+// Type for inserting study guide days
+export type StudyGuideDayInsert = Omit<StudyGuideDay, 'id' | 'created_at' | 'updated_at'>
+
+// Type for inserting content generation queue items
+export type ContentGenerationQueueInsert = Omit<ContentGenerationQueueItem, 'id' | 'created_at'>

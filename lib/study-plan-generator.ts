@@ -63,6 +63,10 @@ export interface StudyPlanSession {
   weekNumber: number
   topicPages?: TopicPageRange
   rescheduledFrom?: string
+  // Chapter tracking for chapter completion exams
+  chapterId?: string
+  chapterTitle?: string
+  isChapterFinal?: boolean // True if this is the last session for a chapter
 }
 
 export interface StudyPlan {
@@ -188,12 +192,82 @@ function isLastDayOfWeek(date: Date, nextDate: Date | undefined, startDate: Date
 }
 
 /**
+ * Topic with chapter information for session tracking.
+ */
+interface TopicWithChapter {
+  topic: DocumentTopic
+  documentId: string
+  documentName: string
+  chapterId: string
+  chapterTitle: string
+  chapterOrder: number // Order within the document for identifying final session
+}
+
+/**
+ * Assign chapters to topics based on document and page ranges.
+ * Groups related topics together and assigns sequential chapter IDs.
+ */
+function assignChaptersToTopics(
+  topics: Array<{ topic: DocumentTopic; documentId: string; documentName: string }>
+): TopicWithChapter[] {
+  const result: TopicWithChapter[] = []
+
+  // Group topics by document
+  const topicsByDocument = new Map<string, Array<{ topic: DocumentTopic; documentId: string; documentName: string }>>()
+
+  for (const t of topics) {
+    const existing = topicsByDocument.get(t.documentId) || []
+    existing.push(t)
+    topicsByDocument.set(t.documentId, existing)
+  }
+
+  // Process each document's topics
+  for (const [documentId, docTopics] of topicsByDocument) {
+    // Sort topics by page range start (if available)
+    const sortedByPage = [...docTopics].sort((a, b) => {
+      const aStart = a.topic.pageRange?.start || 0
+      const bStart = b.topic.pageRange?.start || 0
+      return aStart - bStart
+    })
+
+    // Assign chapter IDs based on page breaks (30+ pages apart = new chapter)
+    let currentChapterId = 1
+    let currentChapterStartPage = sortedByPage[0]?.topic.pageRange?.start || 0
+    const PAGE_GAP_THRESHOLD = 30 // Pages apart to consider a new chapter
+
+    for (let i = 0; i < sortedByPage.length; i++) {
+      const t = sortedByPage[i]
+      const topicStartPage = t.topic.pageRange?.start || 0
+
+      // Check if we should start a new chapter
+      if (topicStartPage - currentChapterStartPage > PAGE_GAP_THRESHOLD && i > 0) {
+        currentChapterId++
+        currentChapterStartPage = topicStartPage
+      }
+
+      // Generate chapter title from first topic in chapter or use generic name
+      const chapterTitle = `Chapter ${currentChapterId}: ${t.topic.title.split('-')[0].trim()}`
+
+      result.push({
+        ...t,
+        chapterId: `${documentId}-chapter-${currentChapterId}`,
+        chapterTitle,
+        chapterOrder: i + 1,
+      })
+    }
+  }
+
+  return result
+}
+
+/**
  * Distribute topics across available days with spaced repetition.
  * Enhanced to include:
  * - Daily quizzes for each session
  * - Weekly exams at week boundaries
  * - Topic page ranges for focused content generation
  * - Week number tracking
+ * - Chapter tracking for chapter completion exams
  */
 function distributeTopicsWithSpacing(
   topics: Array<{ topic: DocumentTopic; documentId: string; documentName: string }>,
@@ -205,8 +279,12 @@ function distributeTopicsWithSpacing(
   const sessions: StudyPlanSession[] = []
   const modePriorities = LEARNING_STYLE_MODE_PRIORITIES[learningStyle]
 
+  // Group topics by chapter (inferred from document + page ranges)
+  // Topics from the same document with close page ranges are considered same chapter
+  const topicsWithChapters = assignChaptersToTopics(topics)
+
   // Sort topics by difficulty (harder first) and estimated time
-  const sortedTopics = [...topics].sort((a, b) => {
+  const sortedTopics = [...topicsWithChapters].sort((a, b) => {
     const difficultyOrder = { hard: 0, medium: 1, easy: 2 }
     const aDiff = difficultyOrder[a.topic.difficulty] ?? 1
     const bDiff = difficultyOrder[b.topic.difficulty] ?? 1
@@ -233,9 +311,20 @@ function distributeTopicsWithSpacing(
     reviewDays.length = 0
   }
 
+  // Track chapter completion for detecting final sessions
+  const chapterTopicCounts = new Map<string, number>()
+  const chapterProcessedCounts = new Map<string, number>()
+
+  // Count topics per chapter
+  for (const t of sortedTopics) {
+    const count = chapterTopicCounts.get(t.chapterId) || 0
+    chapterTopicCounts.set(t.chapterId, count + 1)
+    chapterProcessedCounts.set(t.chapterId, 0)
+  }
+
   // Schedule initial learning sessions
   let dayIndex = 0
-  for (const { topic, documentId, documentName } of sortedTopics) {
+  for (const { topic, documentId, documentName, chapterId, chapterTitle } of sortedTopics) {
     if (dayIndex >= learningDays.length) {
       dayIndex = 0 // Wrap around if more topics than days
     }
@@ -268,6 +357,12 @@ function distributeTopicsWithSpacing(
         }
       : undefined
 
+    // Track chapter progress to determine if this is the final session for a chapter
+    const processedInChapter = (chapterProcessedCounts.get(chapterId) || 0) + 1
+    chapterProcessedCounts.set(chapterId, processedInChapter)
+    const totalInChapter = chapterTopicCounts.get(chapterId) || 1
+    const isChapterFinal = processedInChapter === totalInChapter
+
     // Create initial learning session
     sessions.push({
       userId: '', // Will be set when saving
@@ -285,6 +380,10 @@ function distributeTopicsWithSpacing(
       hasWeeklyExam: isWeekEnd, // Only end-of-week sessions have weekly exams
       weekNumber,
       topicPages,
+      // Chapter tracking
+      chapterId,
+      chapterTitle,
+      isChapterFinal, // Triggers chapter completion exam
     })
 
     dayMinutes.set(dateKey, currentMinutes + topic.estimatedMinutes)
@@ -319,6 +418,10 @@ function distributeTopicsWithSpacing(
             hasWeeklyExam: isReviewWeekEnd,
             weekNumber: reviewWeekNumber,
             topicPages, // Same topic pages as original session
+            // Chapter tracking (reviews don't trigger chapter completion)
+            chapterId,
+            chapterTitle,
+            isChapterFinal: false,
           })
 
           dayMinutes.set(reviewDateKey, reviewMinutes + MODE_DURATION_MINUTES.review)
@@ -335,7 +438,7 @@ function distributeTopicsWithSpacing(
     const weekNumber = getWeekNumber(reviewDay, startDate)
     const isLastReviewDay = i === reviewDays.length - 1
 
-    for (const { topic, documentId, documentName } of sortedTopics.slice(0, 5)) {
+    for (const { topic, documentId, documentName, chapterId, chapterTitle } of sortedTopics.slice(0, 5)) {
       // Focus on top 5 most important topics
       const topicPages: TopicPageRange | undefined = topic.pageRange
         ? {
@@ -361,6 +464,10 @@ function distributeTopicsWithSpacing(
         hasWeeklyExam: isLastReviewDay, // Final exam on last day
         weekNumber,
         topicPages,
+        // Chapter tracking (final reviews don't trigger chapter completion)
+        chapterId,
+        chapterTitle,
+        isChapterFinal: false,
       })
     }
   }
@@ -587,6 +694,10 @@ export async function saveStudyPlan(plan: StudyPlan): Promise<StudyPlan> {
     week_number: session.weekNumber ?? 1,
     topic_pages: session.topicPages ?? null,
     rescheduled_from: session.rescheduledFrom ?? null,
+    // Chapter tracking fields
+    chapter_id: session.chapterId ?? null,
+    chapter_title: session.chapterTitle ?? null,
+    is_chapter_final: session.isChapterFinal ?? false,
   }))
 
   if (sessionsToInsert.length > 0) {
@@ -680,6 +791,10 @@ export async function getStudyPlan(planId: string, userId: string): Promise<Stud
       weekNumber: s.week_number ?? 1,
       topicPages: s.topic_pages as TopicPageRange | undefined,
       rescheduledFrom: s.rescheduled_from,
+      // Chapter tracking fields
+      chapterId: s.chapter_id,
+      chapterTitle: s.chapter_title,
+      isChapterFinal: s.is_chapter_final ?? false,
     })),
   }
 }
@@ -847,5 +962,9 @@ export async function getTodaysSessions(userId: string): Promise<StudyPlanSessio
     weekNumber: s.week_number ?? 1,
     topicPages: s.topic_pages as TopicPageRange | undefined,
     rescheduledFrom: s.rescheduled_from,
+    // Chapter tracking fields
+    chapterId: s.chapter_id,
+    chapterTitle: s.chapter_title,
+    isChapterFinal: s.is_chapter_final ?? false,
   }))
 }

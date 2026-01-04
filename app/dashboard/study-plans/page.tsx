@@ -28,11 +28,22 @@ import {
   FileQuestion,
   Trophy,
   RefreshCw,
+  BookMarked,
 } from 'lucide-react'
 
 // Dynamically import StudySessionView to prevent SSR issues
 const StudySessionView = dynamic(() => import('@/components/StudySessionView'), {
   ssr: false,
+})
+
+// Dynamically import StudyGuideTab for the Study Guide view
+const StudyGuideTab = dynamic(() => import('@/components/StudyGuideTab'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center py-20">
+      <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-500 border-t-transparent" />
+    </div>
+  ),
 })
 
 interface StudyPlanDocument {
@@ -117,6 +128,8 @@ export default function StudyPlansPage() {
   // Session view state
   const [activeSession, setActiveSession] = useState<TodaySession | null>(null)
   const [rescheduling, setRescheduling] = useState(false)
+  // Main view tab: schedule (list) or study-guide (daily/weekly breakdown)
+  const [mainView, setMainView] = useState<'schedule' | 'study-guide'>('schedule')
 
   const fetchPlans = useCallback(async () => {
     try {
@@ -366,9 +379,55 @@ export default function StudyPlansPage() {
               New Plan
             </button>
           </div>
+
+          {/* Main View Tabs: Schedule vs Study Guide */}
+          <div className="flex gap-1 mt-4 p-1 bg-white/5 rounded-xl w-fit">
+            <button
+              onClick={() => setMainView('schedule')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                mainView === 'schedule'
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+                  : 'text-white/60 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              Schedule
+            </button>
+            <button
+              onClick={() => setMainView('study-guide')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                mainView === 'study-guide'
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+                  : 'text-white/60 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <BookMarked className="w-4 h-4" />
+              Study Guide
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* Study Guide Tab */}
+      {mainView === 'study-guide' && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <StudyGuideTab
+            plans={plans}
+            onNavigateToMode={(mode, documentId, sessionTopic, topicPages) => {
+              const params = new URLSearchParams()
+              params.set('mode', mode)
+              if (documentId) params.set('documentId', documentId)
+              if (sessionTopic) params.set('sessionTopic', sessionTopic)
+              if (topicPages?.startPage) params.set('startPage', topicPages.startPage.toString())
+              if (topicPages?.endPage) params.set('endPage', topicPages.endPage.toString())
+              router.push(`/dashboard?${params.toString()}`)
+            }}
+          />
+        </div>
+      )}
+
+      {/* Schedule Tab (original view) */}
+      {mainView === 'schedule' && (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Today's Sessions */}
         {todaySessions.length > 0 && (
@@ -897,6 +956,7 @@ export default function StudyPlansPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* Study Session View Modal */}
       {activeSession && (
