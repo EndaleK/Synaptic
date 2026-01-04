@@ -84,16 +84,7 @@ CREATE INDEX IF NOT EXISTS idx_sessions_chapter ON study_plan_sessions(study_pla
 CREATE INDEX IF NOT EXISTS idx_sessions_chapter_final ON study_plan_sessions(study_plan_id, is_chapter_final) WHERE is_chapter_final = true;
 
 -- ============================================================================
--- 3. Modify study_session_content: Add guide_day reference
--- ============================================================================
-
-ALTER TABLE study_session_content
-  ADD COLUMN IF NOT EXISTS guide_day_id UUID REFERENCES study_guide_days(id) ON DELETE SET NULL;
-
-CREATE INDEX IF NOT EXISTS idx_session_content_guide_day ON study_session_content(guide_day_id);
-
--- ============================================================================
--- 4. Modify exams: Add exam_type, chapter tracking, study_plan reference
+-- 3. Modify exams: Add exam_type, chapter tracking, study_plan reference
 -- ============================================================================
 
 -- First check if exam_type column exists, if not add it with constraint
@@ -119,7 +110,7 @@ CREATE INDEX IF NOT EXISTS idx_exams_type ON exams(exam_type);
 CREATE INDEX IF NOT EXISTS idx_exams_guide_day ON exams(guide_day_id);
 
 -- ============================================================================
--- 5. New Table: content_generation_queue
+-- 4. New Table: content_generation_queue
 -- For background processing of auto-generated content
 -- ============================================================================
 
@@ -183,7 +174,7 @@ CREATE POLICY "Users can delete own generation queue"
   USING (user_id = (SELECT id FROM user_profiles WHERE clerk_user_id = auth.uid()::text));
 
 -- ============================================================================
--- 6. Trigger: Auto-update updated_at for study_guide_days
+-- 5. Trigger: Auto-update updated_at for study_guide_days
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION update_study_guide_days_updated_at()
@@ -201,7 +192,7 @@ CREATE TRIGGER trigger_study_guide_days_updated_at
   EXECUTE FUNCTION update_study_guide_days_updated_at();
 
 -- ============================================================================
--- 7. Function: Get study guide for a plan with week/day breakdown
+-- 6. Function: Get study guide for a plan with week/day breakdown
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION get_study_guide_breakdown(p_plan_id UUID)
@@ -253,7 +244,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================================================
--- 8. Function: Get today's content generation status for a user
+-- 7. Function: Get today's content generation status for a user
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION get_today_content_status(p_user_id BIGINT)
