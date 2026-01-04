@@ -22,29 +22,46 @@ interface MarkdownRendererProps {
 // Track if mermaid is initialized (avoid re-initialization issues in production)
 let mermaidInitialized = false
 
-// Helper to temporarily suppress console errors during Mermaid operations
+// Helper to safely convert args to string for checking (handles circular refs, non-stringifiable objects)
+const safeArgsToString = (args: unknown[]): string => {
+  try {
+    return args.map(arg => {
+      if (typeof arg === 'string') return arg
+      if (arg === null) return 'null'
+      if (arg === undefined) return 'undefined'
+      try {
+        return String(arg)
+      } catch {
+        return '[object]'
+      }
+    }).join(' ').toLowerCase()
+  } catch {
+    return ''
+  }
+}
+
+// Sync version of suppress for non-async contexts
 const suppressConsoleErrors = <T,>(fn: () => T): T => {
   const originalError = console.error
   const originalWarn = console.warn
   const originalLog = console.log
 
-  // Suppress all console output that contains 'mermaid' or 'Syntax error'
   const suppress = (...args: unknown[]) => {
-    const message = args.join(' ').toLowerCase()
+    const message = safeArgsToString(args)
     if (message.includes('mermaid') || message.includes('syntax error') || message.includes('parse error')) {
-      return // Suppress
+      return
     }
     originalError.apply(console, args as Parameters<typeof console.error>)
   }
 
   console.error = suppress
   console.warn = (...args: unknown[]) => {
-    const message = args.join(' ').toLowerCase()
+    const message = safeArgsToString(args)
     if (message.includes('mermaid') || message.includes('syntax error')) return
     originalWarn.apply(console, args as Parameters<typeof console.warn>)
   }
   console.log = (...args: unknown[]) => {
-    const message = args.join(' ').toLowerCase()
+    const message = safeArgsToString(args)
     if (message.includes('mermaid') || message.includes('syntax error')) return
     originalLog.apply(console, args as Parameters<typeof console.log>)
   }
@@ -65,7 +82,7 @@ const suppressConsoleErrorsAsync = async <T,>(fn: () => Promise<T>): Promise<T> 
   const originalLog = console.log
 
   const suppress = (...args: unknown[]) => {
-    const message = args.join(' ').toLowerCase()
+    const message = safeArgsToString(args)
     if (message.includes('mermaid') || message.includes('syntax error') || message.includes('parse error')) {
       return
     }
@@ -74,12 +91,12 @@ const suppressConsoleErrorsAsync = async <T,>(fn: () => Promise<T>): Promise<T> 
 
   console.error = suppress
   console.warn = (...args: unknown[]) => {
-    const message = args.join(' ').toLowerCase()
+    const message = safeArgsToString(args)
     if (message.includes('mermaid') || message.includes('syntax error')) return
     originalWarn.apply(console, args as Parameters<typeof console.warn>)
   }
   console.log = (...args: unknown[]) => {
-    const message = args.join(' ').toLowerCase()
+    const message = safeArgsToString(args)
     if (message.includes('mermaid') || message.includes('syntax error')) return
     originalLog.apply(console, args as Parameters<typeof console.log>)
   }
@@ -228,14 +245,23 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     diagramsToQueue.current.clear()
   }, [content])
 
-  // Transfer diagrams from ref to state after render
+  // Transfer diagrams from ref to state after initial render only
   useEffect(() => {
-    if (diagramsToQueue.current.size > 0) {
-      const toQueue = new Set(diagramsToQueue.current)
-      diagramsToQueue.current.clear()
-      setPendingDiagrams(prev => new Set([...prev, ...toQueue]))
-    }
-  })
+    // Use a small delay to batch diagram queueing and prevent infinite loops
+    const timeoutId = setTimeout(() => {
+      if (diagramsToQueue.current.size > 0) {
+        const toQueue = new Set(diagramsToQueue.current)
+        diagramsToQueue.current.clear()
+        setPendingDiagrams(prev => {
+          // Only update if there are actually new diagrams to add
+          const newDiagrams = new Set([...prev, ...toQueue])
+          if (newDiagrams.size === prev.size) return prev
+          return newDiagrams
+        })
+      }
+    }, 0)
+    return () => clearTimeout(timeoutId)
+  }, [content]) // Only re-run when content changes
 
   // Process pending diagrams after render
   useEffect(() => {

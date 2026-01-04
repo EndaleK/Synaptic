@@ -17,9 +17,10 @@
  */
 
 import { useState, useRef, ChangeEvent } from "react"
-import { X, Upload, FileText, Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { X, Upload, FileText, Loader2, CheckCircle, AlertCircle, Minimize2 } from "lucide-react"
 import UploadDisclaimer from "./UploadDisclaimer"
 import InfoTipBanner from "./InfoTipBanner"
+import UploadProgressToast from "./UploadProgressToast"
 
 interface SimpleDocumentUploaderProps {
   isOpen: boolean
@@ -46,7 +47,54 @@ export default function SimpleDocumentUploader({
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'uploading' | 'processing' | 'completed' | 'error'>('idle')
   const [uploadedDocumentId, setUploadedDocumentId] = useState<string | null>(null)
+  const [isBackgrounded, setIsBackgrounded] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Define resetState early so it can be used in early returns
+  const resetState = () => {
+    setFile(null)
+    setIsUploading(false)
+    setUploadProgress(0)
+    setError(null)
+    setStatus('idle')
+    setUploadedDocumentId(null)
+  }
+
+  // Show toast instead of modal when backgrounded
+  if (isBackgrounded && isUploading) {
+    return (
+      <UploadProgressToast
+        fileName={file?.name || 'Document'}
+        progress={uploadProgress}
+        status={status === 'error' ? 'error' : status === 'completed' ? 'completed' : status === 'processing' ? 'processing' : 'uploading'}
+        error={error || undefined}
+        onExpand={() => setIsBackgrounded(false)}
+        onDismiss={() => {
+          if (status === 'completed') {
+            onSuccess()
+          }
+          resetState()
+          setIsBackgrounded(false)
+        }}
+      />
+    )
+  }
+
+  // Show success toast after backgrounded upload completes
+  if (isBackgrounded && status === 'completed') {
+    return (
+      <UploadProgressToast
+        fileName={file?.name || 'Document'}
+        progress={100}
+        status="completed"
+        onDismiss={() => {
+          onSuccess()
+          resetState()
+          setIsBackgrounded(false)
+        }}
+      />
+    )
+  }
 
   if (!isOpen) return null
 
@@ -207,15 +255,6 @@ export default function SimpleDocumentUploader({
     }
   }
 
-  const resetState = () => {
-    setFile(null)
-    setIsUploading(false)
-    setUploadProgress(0)
-    setError(null)
-    setStatus('idle')
-    setUploadedDocumentId(null)
-  }
-
   const handleClose = () => {
     if (!isUploading) {
       onClose()
@@ -297,6 +336,20 @@ export default function SimpleDocumentUploader({
                     {status === 'processing' && 'Processing...'}
                     {status === 'completed' && 'Upload complete!'}
                   </p>
+
+                  {/* Continue in Background button */}
+                  {status !== 'completed' && (
+                    <button
+                      onClick={() => {
+                        setIsBackgrounded(true)
+                        onClose()
+                      }}
+                      className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <Minimize2 className="w-4 h-4" />
+                      Continue in Background
+                    </button>
+                  )}
                 </div>
               )}
 

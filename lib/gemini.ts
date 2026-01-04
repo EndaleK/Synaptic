@@ -95,7 +95,36 @@ export async function generateGeminiCompletion(
     // Send the final message
     const result = await chat.sendMessage(lastMessage.content)
     const response = result.response
+
+    // Check if response was blocked by safety filters
+    if (response.promptFeedback?.blockReason) {
+      logger.warn('Gemini response blocked', {
+        blockReason: response.promptFeedback.blockReason,
+        safetyRatings: response.promptFeedback.safetyRatings,
+      })
+      throw new Error(`Response blocked: ${response.promptFeedback.blockReason}`)
+    }
+
+    // Check if candidates were filtered
+    const candidate = response.candidates?.[0]
+    if (candidate?.finishReason === 'SAFETY') {
+      logger.warn('Gemini candidate blocked by safety', {
+        finishReason: candidate.finishReason,
+        safetyRatings: candidate.safetyRatings,
+      })
+      throw new Error('Response blocked by Gemini safety filters')
+    }
+
     const text = response.text()
+
+    // Handle empty response
+    if (!text || text.trim().length === 0) {
+      logger.warn('Gemini returned empty response', {
+        candidates: response.candidates?.length,
+        finishReason: candidate?.finishReason,
+      })
+      throw new Error('Gemini returned an empty response. Please try rephrasing your question.')
+    }
 
     // Gemini doesn't return token counts directly in the response
     // We'll estimate based on character count (rough approximation: 4 chars = 1 token)
@@ -216,16 +245,50 @@ export async function chatWithGemini(
   userMessage: string,
   teachingMode: 'direct' | 'socratic' | 'guided' = 'direct'
 ): Promise<string> {
-  // Build system context
+  // Build system context with diagram support
   let systemPrompt = `You are an AI teaching assistant. You have access to the following document:\n\n${documentContext}\n\n`
 
   if (teachingMode === 'socratic') {
-    systemPrompt += `Use the Socratic method: Guide the student to discover answers through thoughtful questions rather than providing direct answers. Help them think critically.`
+    systemPrompt += `Use the Socratic method: Guide the student to discover answers through thoughtful questions rather than providing direct answers. Help them think critically.\n\n`
   } else if (teachingMode === 'guided') {
-    systemPrompt += `Provide guided explanations with hints and examples. Break down complex topics step-by-step.`
+    systemPrompt += `Provide guided explanations with hints and examples. Break down complex topics step-by-step.\n\n`
   } else {
-    systemPrompt += `Answer questions directly and clearly based on the document content. Be concise and educational.`
+    systemPrompt += `Answer questions directly and clearly based on the document content. Be concise and educational.\n\n`
   }
+
+  // Add diagram/flowchart instructions
+  systemPrompt += `## Visual Content Instructions
+
+When the user asks for a flowchart, diagram, mind map, or visual representation, create a mermaid diagram using this EXACT format:
+
+\`\`\`mermaid
+graph TD
+    A[First Step] --> B[Second Step]
+    B --> C[Third Step]
+\`\`\`
+
+IMPORTANT MERMAID SYNTAX RULES:
+- Use graph TD for top-down flowcharts, graph LR for left-right
+- Node IDs must be simple (A, B, C or word_with_underscores)
+- Text in brackets: [text], (rounded), {diamond}, ((circle))
+- Arrows: --> for solid, -.-> for dotted, ==> for thick
+- NO special characters in node text (no colons, parentheses, quotes, < > symbols)
+- Keep node text SHORT (under 30 characters)
+- Always start with a clear root node
+
+For complex topics, use subgraphs:
+\`\`\`mermaid
+graph TD
+    subgraph Phase1[First Phase]
+        A[Step 1] --> B[Step 2]
+    end
+    subgraph Phase2[Second Phase]
+        C[Step 3] --> D[Step 4]
+    end
+    Phase1 --> Phase2
+\`\`\`
+
+Always provide a brief text explanation alongside any diagram.`
 
   // Convert conversation history to Gemini format
   const messages: GeminiMessage[] = [

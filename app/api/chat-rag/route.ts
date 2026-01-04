@@ -21,6 +21,8 @@ import { logger } from '@/lib/logger'
 import { estimateRequestCost, trackUsage } from '@/lib/cost-estimator'
 import { ChatMessageSchema } from '@/lib/validation'
 import { checkUsageLimit, incrementUsage } from '@/lib/usage-limits'
+import { routeQuery, type QueryBackend } from '@/lib/query-router'
+import { getIndexingStatus } from '@/lib/progressive-indexer'
 
 interface ChatRAGRequest {
   message: string
@@ -126,24 +128,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // 5. Determine RAG strategy based on document size
+    // 5. Use query router to determine optimal backend (Gemini vs Pinecone)
     const { determineRAGStrategy } = await import('@/lib/document-indexer')
     const { isGeminiRAGAvailable, queryDocumentWithGemini } = await import('@/lib/gemini-rag')
 
     const documentText = document.extracted_text || ''
-    const ragStrategy = documentText ? determineRAGStrategy(documentText) : 'chromadb'
 
-    logger.info('RAG strategy selected', {
+    // Get routing decision based on query intent and document state
+    const routingDecision = await routeQuery(documentId, message, userId)
+
+    // Check progressive indexing status
+    const indexingStatus = await getIndexingStatus(documentId)
+    const canChat = indexingStatus?.canChat || false
+    const isFullyIndexed = indexingStatus?.phase === 'completed' || document.rag_indexed === true
+
+    logger.info('RAG strategy selected via query router', {
       userId,
       documentId,
-      strategy: ragStrategy,
+      backend: routingDecision.backend,
+      intent: routingDecision.intent,
+      confidence: routingDecision.confidence,
       textLength: documentText.length,
       geminiAvailable: isGeminiRAGAvailable(),
+      canChat,
+      isFullyIndexed,
+      indexingProgress: indexingStatus?.percentComplete,
     })
 
-    // 5a. If Gemini strategy, use direct context window (no vector search)
-    if (ragStrategy === 'gemini' && isGeminiRAGAvailable()) {
-      logger.info('Using Gemini RAG with 2M token context window', { userId, documentId })
+    // 5a. If Gemini backend selected, use direct context window (no vector search)
+    if (routingDecision.backend === 'gemini' && isGeminiRAGAvailable()) {
+      logger.info('Using Gemini RAG with 2M token context window', {
+        userId,
+        documentId,
+        intent: routingDecision.intent,
+        reason: routingDecision.reason,
+      })
 
       try {
         // Map teaching mode to Gemini format
@@ -178,60 +197,148 @@ export async function POST(request: NextRequest) {
           documentName: document.file_name,
         })
       } catch (geminiError: any) {
-        logger.error('Gemini RAG failed, falling back to ChromaDB', geminiError, {
+        logger.error('Gemini RAG failed', geminiError, {
           userId,
           documentId,
+          errorMessage: geminiError.message,
         })
+
+        // If Gemini returned an empty response or was blocked, return a helpful message
+        if (geminiError.message?.includes('empty response') || geminiError.message?.includes('blocked')) {
+          return NextResponse.json({
+            response: "I'm having trouble generating a response for this request. This might be due to content restrictions or the complexity of the request. Please try rephrasing your question or asking something more specific.",
+            timestamp: new Date().toISOString(),
+            strategy: 'gemini',
+            documentName: document.file_name,
+            error: 'generation_failed',
+          })
+        }
 
         // Fall through to ChromaDB path below
         // Don't return error - try ChromaDB as fallback
       }
     }
 
-    // 5b. ChromaDB strategy: Check vector store status and trigger indexing if needed
+    // 5b. Pinecone/hybrid strategy: Check indexing status and handle progressive indexing
     const docStats = await getDocumentStats(documentId)
+
+    // Check if we need to start indexing
     if (!docStats.exists || docStats.chunkCount === 0) {
-      logger.info('Document not indexed, triggering on-demand indexing', { documentId })
-
-      // Import indexing helper
-      const { indexDocumentForRAG } = await import('@/lib/document-indexer')
-
-      // Trigger indexing
-      const indexResult = await indexDocumentForRAG(documentId, userId)
-
-      if (!indexResult.success) {
-        logger.error('Document indexing failed', {
+      // Check if indexing is already in progress
+      if (indexingStatus && ['priority_indexing', 'full_indexing'].includes(indexingStatus.phase)) {
+        // Indexing is in progress - inform user about progress
+        logger.info('Document indexing in progress', {
           documentId,
-          error: indexResult.error,
+          phase: indexingStatus.phase,
+          progress: indexingStatus.percentComplete,
         })
 
-        // Provide helpful error message for users
-        const errorMessage = indexResult.error?.includes('too large')
-          ? `This PDF is too large for automatic text extraction. ${indexResult.error}`
-          : `Failed to prepare document for chat: ${indexResult.error || 'Unknown error'}. Please try re-uploading the document or use a smaller file.`
-
-        return NextResponse.json(
-          {
-            response: errorMessage,
+        if (canChat) {
+          // Priority chunks are ready - allow chat with partial index
+          logger.info('Using partial index for chat (priority chunks ready)', { documentId })
+        } else {
+          // Not ready yet - show progress
+          return NextResponse.json({
+            response: `Your document is being indexed... ${indexingStatus.percentComplete}% complete. Chat will be available shortly once priority sections are indexed.`,
             timestamp: new Date().toISOString(),
-            error: true,
-          },
-          { status: 200 } // Return 200 so the UI can show the message as a chat response
-        )
+            indexingInProgress: true,
+            indexingProgress: indexingStatus.percentComplete,
+            estimatedTimeRemaining: indexingStatus.estimatedTimeRemaining,
+          })
+        }
+      } else {
+        // No indexing started - trigger V2 progressive indexing for large documents
+        logger.info('Document not indexed, triggering on-demand indexing', { documentId })
+
+        // Import V2 indexing functions
+        const { startV2Indexing, indexDocumentForRAG } = await import('@/lib/document-indexer')
+
+        // First, quickly check document size to decide between V2 workers or direct indexing
+        // For large files (>1MB), use V2 progressive indexing to avoid timeouts
+        const fileSizeBytes = document.file_size || 0
+        const useV2 = fileSizeBytes > 1 * 1024 * 1024 // 1MB threshold for V2
+
+        if (useV2) {
+          // Use V2 split workers for large documents
+          logger.info('Using V2 progressive indexing for large document', {
+            documentId,
+            fileSizeMB: (fileSizeBytes / 1024 / 1024).toFixed(2),
+          })
+
+          const v2Result = await startV2Indexing(documentId, userId)
+
+          if (!v2Result.success) {
+            logger.error('V2 indexing failed to start', {
+              documentId,
+              error: v2Result.error,
+            })
+
+            // Provide helpful error message
+            const errorMessage = v2Result.error?.includes('too large')
+              ? `This PDF is too large for text extraction. ${v2Result.error}`
+              : v2Result.error?.includes('scanned') || v2Result.error?.includes('OCR')
+              ? `This appears to be a scanned PDF. ${v2Result.error}`
+              : `Failed to prepare document for chat: ${v2Result.error || 'Unknown error'}. Please try re-uploading.`
+
+            return NextResponse.json(
+              {
+                response: errorMessage,
+                timestamp: new Date().toISOString(),
+                error: true,
+              },
+              { status: 200 }
+            )
+          }
+
+          // V2 indexing dispatched - inform user that progressive indexing has started
+          return NextResponse.json({
+            response: `I'm indexing your document now. This large document is being processed in the background with priority indexing - you'll be able to start chatting in about 1-2 minutes once the first section is ready. Please try your question again shortly!`,
+            timestamp: new Date().toISOString(),
+            indexingInProgress: true,
+            indexingProgress: 5,
+            dispatchedV2: true,
+          })
+        }
+
+        // For smaller documents, use direct indexing (faster, no worker overhead)
+        const indexResult = await indexDocumentForRAG(documentId, userId)
+
+        if (!indexResult.success) {
+          logger.error('Document indexing failed', {
+            documentId,
+            error: indexResult.error,
+          })
+
+          // Provide helpful error message
+          const errorMessage = indexResult.error?.includes('too large')
+            ? `This PDF is too large for automatic text extraction. ${indexResult.error}`
+            : indexResult.error?.includes('scanned') || indexResult.error?.includes('OCR')
+            ? `This appears to be a scanned PDF. ${indexResult.error}`
+            : `Failed to prepare document for chat: ${indexResult.error || 'Unknown error'}. Please try re-uploading the document.`
+
+          return NextResponse.json(
+            {
+              response: errorMessage,
+              timestamp: new Date().toISOString(),
+              error: true,
+            },
+            { status: 200 }
+          )
+        }
+
+        logger.info('Document indexed successfully for RAG', {
+          documentId,
+          chunks: indexResult.chunks,
+        })
+
+        // Return success message indicating document is ready
+        return NextResponse.json({
+          response: `I've indexed your document and it's now ready for chat! It has been split into ${indexResult.chunks} chunks for efficient retrieval. Please send your question again to continue.`,
+          timestamp: new Date().toISOString(),
+          indexed: true,
+          chunks: indexResult.chunks,
+        })
       }
-
-      logger.info('Document indexed successfully for RAG', {
-        documentId,
-        chunks: indexResult.chunks,
-      })
-
-      // Return success message indicating document is ready
-      return NextResponse.json({
-        response: `I've indexed your document and it's now ready for chat! It has been split into ${indexResult.chunks} chunks for efficient retrieval. Please send your question again to continue.`,
-        timestamp: new Date().toISOString(),
-        indexed: true,
-        chunks: indexResult.chunks,
-      })
     }
 
     logger.info('RAG chat started', {
@@ -504,10 +611,17 @@ Please answer this question based on the relevant excerpts provided above. The e
     return NextResponse.json({
       response: aiResponse,
       timestamp: new Date().toISOString(),
-      strategy: 'chromadb',
+      strategy: 'pinecone',
+      backend: routingDecision.backend,
+      queryIntent: routingDecision.intent,
       chunksUsed: relevantChunks.length,
       totalChunks: docStats.chunkCount,
       documentName: document.file_name,
+      // Include indexing progress info if partially indexed
+      ...(indexingStatus && !isFullyIndexed && {
+        indexingProgress: indexingStatus.percentComplete,
+        indexingPhase: indexingStatus.phase,
+      }),
     })
   } catch (error: unknown) {
     const duration = Date.now() - startTime

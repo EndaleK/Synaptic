@@ -56,4 +56,34 @@ export type InngestEvents = {
       fileName: string
     }
   }
+
+  // V2 Split Worker Events (for large document indexing)
+  'document/index-v2': {
+    data: {
+      documentId: string
+      userId: string
+      text: string
+    }
+  }
+  'document/index-priority': {
+    data: {
+      documentId: string
+      userId: string
+      chunks: Array<{ text: string; index: number }>
+      totalChunks: number
+      priorityCount: number
+    }
+  }
+  'document/index-batch': {
+    data: {
+      documentId: string
+      userId: string
+      batchIndex: number
+      totalBatches: number
+      chunks: Array<{ text: string; index: number }>
+      startIndex: number
+      totalChunks: number
+      priorityCount: number
+    }
+  }
 }

@@ -55,15 +55,68 @@ async function handleGetDocuments(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
+    const status = searchParams.get('status') // Filter by processing status: 'processing', 'completed', 'failed', 'pending'
 
-    logger.debug('Fetching documents', { userId, limit, offset })
+    logger.debug('Fetching documents', { userId, limit, offset, status })
 
     // Fetch documents from database with monitoring
-    const { documents, error } = await trackSupabaseQuery(
-      'SELECT',
-      'documents',
-      () => getUserDocuments(userId!, limit, offset)
-    )
+    let documentsResult: { documents: any[] | null; error: string | null }
+
+    if (status === 'processing') {
+      // Special case: filter for documents that are processing or pending
+      const supabase = await createClient()
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('clerk_user_id', userId)
+        .single()
+
+      if (profile) {
+        const { data, error: fetchError } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('user_id', profile.id)
+          .in('processing_status', ['pending', 'processing'])
+          .order('created_at', { ascending: false })
+          .limit(limit)
+
+        documentsResult = { documents: data, error: fetchError?.message || null }
+      } else {
+        documentsResult = { documents: [], error: null }
+      }
+    } else if (status) {
+      // Filter by specific status
+      const supabase = await createClient()
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('clerk_user_id', userId)
+        .single()
+
+      if (profile) {
+        const { data, error: fetchError } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('user_id', profile.id)
+          .eq('processing_status', status)
+          .order('created_at', { ascending: false })
+          .limit(limit)
+          .range(offset, offset + limit - 1)
+
+        documentsResult = { documents: data, error: fetchError?.message || null }
+      } else {
+        documentsResult = { documents: [], error: null }
+      }
+    } else {
+      // Default: fetch all documents
+      documentsResult = await trackSupabaseQuery(
+        'SELECT',
+        'documents',
+        () => getUserDocuments(userId!, limit, offset)
+      )
+    }
+
+    const { documents, error } = documentsResult
 
     if (error) {
       logger.error('Failed to fetch documents from database', new Error(error), { userId })

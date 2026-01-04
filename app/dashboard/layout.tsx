@@ -12,6 +12,7 @@ import { useToast } from "@/components/ToastContainer"
 import { SignOutButton } from "@clerk/nextjs"
 import FloatingPomodoroTimer from "@/components/FloatingPomodoroTimer"
 import FloatingStudyBuddy from "@/components/FloatingStudyBuddy"
+import BackgroundProcessingIndicator from "@/components/BackgroundProcessingIndicator"
 import BottomNavigationBar from "@/components/BottomNavigationBar"
 import RoleSwitcher from "@/components/RoleSwitcher"
 import { TourProvider } from "@/components/Tour/TourProvider"
@@ -377,6 +378,9 @@ export default function DashboardLayout({
 
         {/* Floating Study Buddy - Accessible from all learning modes */}
         <FloatingStudyBuddy />
+
+        {/* Background Processing Indicator - Shows documents being processed */}
+        <BackgroundProcessingIndicator />
 
         {/* Study Reminder Popup */}
         {isMounted && (

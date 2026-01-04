@@ -272,12 +272,31 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
             </div>
           )}
 
-          {/* RAG Indexing Required Notice */}
-          {isReady && document.file_size > 10 * 1024 * 1024 && !document.extracted_text && document.rag_indexed !== true && (
-            <div className="mt-3 p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg">
-              <p className="text-xs text-amber-700 dark:text-amber-400 mb-2">
-                Large file — indexing required for AI features
+          {/* Processing Status Overlay */}
+          {document.processing_status === 'processing' && (
+            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                <p className="text-xs font-medium text-blue-700 dark:text-blue-400">
+                  Processing document...
+                </p>
+              </div>
+              <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
+                You can browse other documents while this processes
               </p>
+            </div>
+          )}
+
+          {/* RAG Indexing Required Notice - Enhanced */}
+          {isReady && document.file_size > 10 * 1024 * 1024 && !document.extracted_text && document.rag_indexed !== true && (
+            <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg">
+              <p className="text-xs font-medium text-amber-800 dark:text-amber-300 mb-1">
+                Large Document ({formatFileSize(document.file_size)})
+              </p>
+              <div className="text-xs text-amber-700/80 dark:text-amber-400/80 space-y-0.5 mb-2">
+                <p>• Flashcards, Podcasts, Mind Maps work with summary</p>
+                <p>• Full AI chat requires indexing (~2-5 min)</p>
+              </div>
               <IndexDocumentButton
                 documentId={document.id}
                 documentName={document.file_name}

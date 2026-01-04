@@ -3,17 +3,28 @@
  *
  * Handles on-demand indexing of large documents for vector search.
  * Downloads document from storage, extracts text, and indexes into ChromaDB.
+ *
+ * V2 Split Workers:
+ * - For large documents, uses Inngest V2 workers to avoid timeouts
+ * - Coordinator (30s) → Priority (3 min) → Batch workers (4 min each)
+ * - Chat available after priority chunks indexed (~20% of document)
  */
 
 import { createClient } from '@/lib/supabase/server'
 import { indexDocument } from '@/lib/vector-store'
 import { logger } from '@/lib/logger'
+import { inngest } from '@/lib/inngest/client'
 
 export interface IndexingResult {
   success: boolean
   chunks: number
   error?: string
+  /** True if V2 background indexing was dispatched (progressive) */
+  dispatchedV2?: boolean
 }
+
+/** Threshold for using V2 split workers (characters) - 100K chars ~ 25K tokens */
+const V2_INDEXING_THRESHOLD = 100_000
 
 /**
  * RAG strategy type for document processing
@@ -272,4 +283,236 @@ async function extractDOCXText(fileData: Blob): Promise<string> {
   }
 
   return result.value
+}
+
+/**
+ * Start V2 progressive indexing for a document
+ *
+ * This dispatches an Inngest event that triggers the V2 split worker pipeline:
+ * 1. Coordinator (30s) - calculates chunks, dispatches jobs
+ * 2. Priority Indexer (3 min) - indexes first 20% for immediate chat
+ * 3. Batch Indexers (4 min each) - process remaining chunks
+ *
+ * Benefits:
+ * - No timeout issues (each worker fits within Vercel limits)
+ * - Progressive indexing (chat available after priority chunks)
+ * - Parallel batch processing for speed
+ *
+ * @param documentId - UUID of the document to index
+ * @param userId - Clerk user ID (for internal user_id lookup)
+ * @returns Result with dispatchedV2=true if successfully queued
+ */
+export async function startV2Indexing(
+  documentId: string,
+  userId: string
+): Promise<IndexingResult> {
+  try {
+    const supabase = await createClient()
+
+    // 1. Get user profile
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('clerk_user_id', userId)
+      .single()
+
+    if (!profile) {
+      throw new Error('User profile not found')
+    }
+
+    // 2. Get document metadata
+    const { data: document, error: docError } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('id', documentId)
+      .eq('user_id', profile.id)
+      .single()
+
+    if (docError || !document) {
+      throw new Error('Document not found or unauthorized')
+    }
+
+    logger.info('[V2 Indexing] Starting progressive indexing', {
+      userId,
+      documentId,
+      fileName: document.file_name,
+      fileType: document.file_type,
+    })
+
+    // 3. Extract text from document (same logic as indexDocumentForRAG)
+    let text: string = ''
+
+    const dbTextLength = document.extracted_text?.length || 0
+    const fileSizeBytes = document.file_size || 0
+    const estimatedCharsPerByte = 0.5
+    const estimatedFullTextLength = fileSizeBytes * estimatedCharsPerByte
+    const isLikelyTruncated = dbTextLength > 0 && dbTextLength < estimatedFullTextLength * 0.5
+    const shouldReExtract = fileSizeBytes > 1 * 1024 * 1024 || isLikelyTruncated
+
+    if (shouldReExtract || !document.extracted_text || document.extracted_text.trim().length === 0) {
+      logger.info('[V2 Indexing] Downloading fresh text from storage', {
+        documentId,
+        reason: !document.extracted_text ? 'no_db_text' :
+                isLikelyTruncated ? 'likely_truncated' : 'large_file',
+        dbTextLength,
+        fileSizeBytes
+      })
+
+      const { data: fileData, error: downloadError } = await supabase
+        .storage
+        .from('documents')
+        .download(document.storage_path)
+
+      if (downloadError || !fileData) {
+        throw new Error(`Failed to download document: ${downloadError?.message || 'Unknown error'}`)
+      }
+
+      // Check file size limit
+      const fileSizeMB = fileData.size / (1024 * 1024)
+      if (document.file_type === 'application/pdf' && fileSizeMB > 100) {
+        throw new Error(
+          `This PDF is too large (${fileSizeMB.toFixed(1)}MB) for text extraction. ` +
+          `Maximum supported size is 100MB.`
+        )
+      }
+
+      // Extract text based on file type
+      if (document.file_type === 'application/pdf') {
+        text = await extractPDFText(fileData, document.file_name)
+      } else if (
+        document.file_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        document.file_type === 'application/msword'
+      ) {
+        text = await extractDOCXText(fileData)
+      } else if (document.file_type === 'text/plain') {
+        text = await fileData.text()
+      } else {
+        throw new Error(`Unsupported file type: ${document.file_type}`)
+      }
+
+      logger.info('[V2 Indexing] Text extraction successful', {
+        documentId,
+        textLength: text.length,
+      })
+    } else {
+      text = document.extracted_text!
+      logger.info('[V2 Indexing] Using existing extracted text', {
+        documentId,
+        textLength: text.length,
+      })
+    }
+
+    // 4. Validate text content
+    if (!text || text.trim().length < 100) {
+      throw new Error('Insufficient text content for indexing (minimum 100 characters)')
+    }
+
+    // 5. Update document status to show indexing has started
+    await supabase
+      .from('documents')
+      .update({
+        rag_indexing_status: 'priority_indexing',
+        processing_status: 'processing',
+        processing_progress: {
+          phase: 'coordinating',
+          priority_complete: false,
+          percent_complete: 0,
+          updated_at: new Date().toISOString(),
+        },
+      })
+      .eq('id', documentId)
+
+    // 6. Dispatch V2 indexing event to Inngest
+    try {
+      await inngest.send({
+        name: 'document/index-v2',
+        data: {
+          documentId,
+          userId: profile.id.toString(),
+          text,
+        },
+      })
+
+      logger.info('[V2 Indexing] Dispatched to Inngest V2 workers', {
+        documentId,
+        textLength: text.length,
+      })
+
+      return {
+        success: true,
+        chunks: 0, // Will be calculated by coordinator
+        dispatchedV2: true,
+      }
+    } catch (inngestError) {
+      // Inngest failed (not configured, network issue, etc.)
+      // Revert status to 'completed' so document isn't stuck
+      logger.error('[V2 Indexing] Inngest dispatch failed, reverting to completed status', inngestError, {
+        documentId,
+      })
+
+      await supabase
+        .from('documents')
+        .update({
+          processing_status: 'completed',
+          rag_indexing_status: null,
+          processing_progress: null,
+          metadata: {
+            ...document?.metadata,
+            inngest_failed: true,
+            inngest_error: inngestError instanceof Error ? inngestError.message : 'Unknown error',
+            updated_at: new Date().toISOString(),
+          },
+        })
+        .eq('id', documentId)
+
+      // Return success=false but document is still usable (not stuck)
+      return {
+        success: false,
+        chunks: 0,
+        error: 'Background indexing unavailable. Document is still usable but RAG features may be limited.',
+        dispatchedV2: false,
+      }
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+    logger.error('[V2 Indexing] Failed to start progressive indexing', error, {
+      documentId,
+      userId,
+    })
+
+    // Also revert status on general errors
+    try {
+      await supabase
+        .from('documents')
+        .update({
+          processing_status: 'completed',
+          rag_indexing_status: null,
+        })
+        .eq('id', documentId)
+    } catch {
+      // Ignore cleanup errors
+    }
+
+    return {
+      success: false,
+      chunks: 0,
+      error: errorMessage,
+    }
+  }
+}
+
+/**
+ * Determine if a document should use V2 split workers based on text length
+ *
+ * V2 workers are better for large documents because:
+ * - No timeout issues (each worker fits within Vercel limits)
+ * - Progressive indexing (chat available after 20% indexed)
+ * - Parallel batch processing for speed
+ *
+ * @param textLength - Number of characters in the document
+ * @returns true if document should use V2 workers
+ */
+export function shouldUseV2Indexing(textLength: number): boolean {
+  return textLength >= V2_INDEXING_THRESHOLD
 }

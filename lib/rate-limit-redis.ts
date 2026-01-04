@@ -86,6 +86,7 @@ function getClientId(req: NextRequest, userId?: string): string {
 
 /**
  * Check if request should be rate limited (Redis-backed)
+ * Has a 2 second timeout to prevent slow DNS lookups from blocking requests
  */
 export async function checkRateLimitRedis(
   clientId: string,
@@ -93,7 +94,16 @@ export async function checkRateLimitRedis(
 ): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
   try {
     const limiter = getRateLimiter(config)
-    const result = await limiter.limit(clientId)
+
+    // Add timeout to prevent slow DNS lookups from blocking requests
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Redis rate limit timeout')), 2000)
+    })
+
+    const result = await Promise.race([
+      limiter.limit(clientId),
+      timeoutPromise
+    ])
 
     return {
       allowed: result.success,
@@ -101,7 +111,18 @@ export async function checkRateLimitRedis(
       resetTime: result.reset,
     }
   } catch (error) {
-    logger.error('Redis rate limit check failed', { error, clientId })
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+
+    // Mark Redis as failed to avoid repeated timeouts
+    if (errorMsg.includes('timeout') || errorMsg.includes('ENOTFOUND') || errorMsg.includes('ECONNREFUSED')) {
+      markRedisConnectionFailed()
+    }
+
+    // Log at debug level to reduce noise when Redis is unavailable
+    logger.debug('Redis rate limit check failed (using fallback)', {
+      error: errorMsg,
+      clientId
+    })
     // On error, allow request (fail open for availability)
     return {
       allowed: true,
@@ -179,9 +200,34 @@ export async function addRateLimitHeadersRedis(
   }
 }
 
+// Track if Redis connection has failed (to avoid repeated timeouts)
+let redisConnectionFailed = false
+let redisFailureTime = 0
+const REDIS_RETRY_INTERVAL = 5 * 60 * 1000 // Retry every 5 minutes
+
 /**
- * Check if Redis is configured
+ * Check if Redis is configured and likely to work
+ * After a connection failure, skip Redis for 5 minutes to avoid repeated timeouts
  */
 export function isRedisConfigured(): boolean {
-  return !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  // Check if env vars are set
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    return false
+  }
+
+  // If Redis recently failed, skip it for a while
+  if (redisConnectionFailed && Date.now() - redisFailureTime < REDIS_RETRY_INTERVAL) {
+    return false
+  }
+
+  return true
+}
+
+/**
+ * Mark Redis as failed to avoid repeated connection attempts
+ */
+export function markRedisConnectionFailed(): void {
+  redisConnectionFailed = true
+  redisFailureTime = Date.now()
+  logger.info('Redis connection failed, will retry in 5 minutes')
 }

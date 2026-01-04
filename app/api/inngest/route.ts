@@ -14,13 +14,13 @@
 import { serve } from 'inngest/next'
 import { inngest } from '@/lib/inngest/client'
 import { processPDFFunction } from '@/lib/inngest/functions/process-pdf'
+import { indexDocumentV2Functions } from '@/lib/inngest/functions/index-document-v2'
 
 // Register all Inngest functions here
 const functions = [
   processPDFFunction,
-  // Add more functions as needed:
-  // ragIndexFunction,
-  // ocrProcessFunction,
+  // V2 split workers for large document indexing
+  ...indexDocumentV2Functions,
 ]
 
 // Create the Inngest handler

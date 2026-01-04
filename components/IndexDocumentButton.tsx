@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Database, Loader2, CheckCircle, XCircle, AlertCircle, X } from "lucide-react"
+import { Database, Loader2, CheckCircle, XCircle, AlertCircle, X, Minimize2 } from "lucide-react"
 
 interface IndexDocumentButtonProps {
   documentId: string
@@ -27,6 +27,7 @@ export default function IndexDocumentButton({
   const [message, setMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [result, setResult] = useState<{ chunkCount?: number; textLength?: number; collectionName?: string; alreadyIndexed?: boolean; alreadyExtracted?: boolean; method?: string } | null>(null)
+  const [isBackgrounded, setIsBackgrounded] = useState(false)
 
   const startIndexing = async () => {
     setShowDialog(true)
@@ -184,6 +185,96 @@ export default function IndexDocumentButton({
     lg: "text-lg"
   }
 
+  // Truncate long file names
+  const truncatedName = documentName.length > 25
+    ? documentName.slice(0, 22) + '...'
+    : documentName
+
+  // Background toast component
+  const BackgroundToast = () => (
+    <div className="fixed bottom-4 right-4 z-50 w-80 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
+      {/* Header */}
+      <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center gap-2">
+          {status === 'success' ? (
+            <CheckCircle className="w-4 h-4 text-green-500" />
+          ) : status === 'error' ? (
+            <XCircle className="w-4 h-4 text-red-500" />
+          ) : (
+            <Database className="w-4 h-4 text-violet-500 animate-pulse" />
+          )}
+          <span className="text-sm font-medium text-gray-900 dark:text-white">
+            {status === 'success' ? 'Complete' : status === 'error' ? 'Error' : 'Indexing'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          {status === 'indexing' && (
+            <button
+              onClick={() => {
+                setIsBackgrounded(false)
+                setShowDialog(true)
+              }}
+              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              title="Expand"
+            >
+              <X className="w-4 h-4 rotate-45" />
+            </button>
+          )}
+          {(status === 'success' || status === 'error') && (
+            <button
+              onClick={() => {
+                setIsBackgrounded(false)
+                setStatus('idle')
+                setProgress(0)
+                setMessage('')
+              }}
+              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              title="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-3">
+        <p className="text-sm text-gray-700 dark:text-gray-300 truncate mb-2" title={documentName}>
+          {truncatedName}
+        </p>
+
+        {/* Progress bar */}
+        <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+          <div
+            className={`h-full transition-all duration-300 ${
+              status === 'success' ? 'bg-green-500' :
+              status === 'error' ? 'bg-red-500' :
+              'bg-violet-500'
+            }`}
+            style={{ width: `${status === 'success' ? 100 : progress}%` }}
+          />
+        </div>
+
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          {status === 'success' ? 'Indexing complete!' :
+           status === 'error' ? errorMessage || 'Indexing failed' :
+           `${progress}% - ${message}`}
+        </p>
+
+        {status === 'indexing' && (
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            You can continue browsing while this indexes
+          </p>
+        )}
+      </div>
+    </div>
+  )
+
+  // Show toast when backgrounded
+  if (isBackgrounded && (isIndexing || status === 'success' || status === 'error')) {
+    return <BackgroundToast />
+  }
+
   return (
     <>
       <button
@@ -304,8 +395,20 @@ export default function IndexDocumentButton({
                   <div className="flex-1">
                     <p className="font-semibold text-blue-900 dark:text-blue-100">Processing Document</p>
                     <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                      This may take 1-3 minutes depending on document size. Please keep this window open.
+                      This may take 1-3 minutes depending on document size.
                     </p>
+
+                    {/* Continue in Background Button */}
+                    <button
+                      onClick={() => {
+                        setIsBackgrounded(true)
+                        setShowDialog(false)
+                      }}
+                      className="mt-3 flex items-center gap-2 px-3 py-1.5 text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
+                    >
+                      <Minimize2 className="w-4 h-4" />
+                      Continue in Background
+                    </button>
                   </div>
                 </div>
               </div>

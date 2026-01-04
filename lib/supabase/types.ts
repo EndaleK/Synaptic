@@ -10,6 +10,7 @@ export type UserRole = 'learner' | 'parent' | 'educator' | 'institution'
 export type SubscriptionTier = 'free' | 'premium' | 'enterprise'
 export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'past_due'
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'needs_ocr'
+export type RAGIndexingStatus = 'not_started' | 'priority_indexing' | 'priority_complete' | 'full_indexing' | 'completed' | 'failed'
 export type MessageType = 'user' | 'assistant'
 export type TeachingMode = 'direct' | 'socratic' | 'guided'
 export type Difficulty = 'easy' | 'medium' | 'hard'
@@ -90,6 +91,11 @@ export interface Document {
   rag_chunk_count?: number
   rag_indexed_at?: string
   rag_indexing_error?: string
+  // Progressive indexing fields (for immediate chat at 20% indexed)
+  rag_indexed_chunks?: number
+  rag_total_chunks?: number
+  rag_indexing_status?: RAGIndexingStatus
+  rag_priority_chunks_indexed?: boolean
   // Enhanced features
   is_starred?: boolean
   is_deleted?: boolean

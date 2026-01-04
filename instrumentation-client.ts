@@ -15,9 +15,8 @@ Sentry.init({
 
   // Filtering
   beforeSend(event, hint) {
-    // Don't send errors in development
+    // Don't send errors in development - silently drop them
     if (process.env.NODE_ENV === 'development') {
-      console.error('Sentry error (not sent in dev):', hint.originalException || hint.syntheticException);
       return null;
     }
 
