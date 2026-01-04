@@ -97,6 +97,7 @@ export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState<string>("Thinking...")
   const [chatDocument, setChatDocument] = useState<ChatDocument>({
     file: null,
     content: "",
@@ -765,6 +766,21 @@ export default function ChatInterface() {
     setInputMessage("")
     setIsLoading(true)
 
+    // Check if this is a large document that may need indexing (first-time chat)
+    const fileSizeBytes = currentDocument?.fileSize || 0
+    const isLargeDocument = fileSizeBytes > 1 * 1024 * 1024 // > 1MB
+    const isFirstMessage = messages.length === 0
+    const needsIndexing = isLargeDocument && isFirstMessage && !currentDocument?.rag_indexed_at
+
+    // Set appropriate loading message
+    if (needsIndexing) {
+      setLoadingMessage("Preparing document for chat (this may take 1-2 minutes for large files)...")
+    } else if (isLargeDocument) {
+      setLoadingMessage("Searching document...")
+    } else {
+      setLoadingMessage("Thinking...")
+    }
+
     try {
       // Determine if we have a document attached
       const hasDocument = !!chatDocument.file
@@ -1414,7 +1430,7 @@ export default function ChatInterface() {
                       <div className="bg-accent-primary/5 dark:bg-accent-primary/10 rounded-lg px-4 py-2 flex items-center gap-2 border border-accent-primary/30 dark:border-accent-primary/50">
                         <Loader2 className="h-4 w-4 animate-spin text-accent-primary" />
                         <span className="text-sm text-accent-primary">
-                          Thinking...
+                          {loadingMessage}
                         </span>
                       </div>
                     </div>
@@ -1920,7 +1936,7 @@ export default function ChatInterface() {
                           <div className="bg-accent-primary/5 dark:bg-accent-primary/10 rounded-lg px-4 py-2 flex items-center gap-2 border border-accent-primary/30 dark:border-accent-primary/50">
                             <Loader2 className="h-4 w-4 animate-spin text-accent-primary" />
                             <span className="text-sm text-accent-primary">
-                              Thinking...
+                              {loadingMessage}
                             </span>
                           </div>
                         </div>
