@@ -256,25 +256,43 @@ export async function chatWithGemini(
     systemPrompt += `Answer questions directly and clearly based on the document content. Be concise and educational.\n\n`
   }
 
-  // Add diagram/flowchart instructions
-  systemPrompt += `## Visual Content Instructions
+  // Add comprehensive diagram/visual content instructions
+  systemPrompt += `## 📊 VISUAL CONTENT - MAKE LEARNING VISUAL!
+Use diagrams, tables, and charts proactively to enhance understanding:
 
-When the user asks for a flowchart, diagram, mind map, or visual representation, create a mermaid diagram using this EXACT format:
+### When to Use Each Visual:
+- **Flowcharts**: Processes, decisions, cause-effect, algorithms, diagnostic pathways
+- **Sequence Diagrams**: Interactions, timelines of events, procedures
+- **Mind Maps**: Topic overviews, concept relationships
+- **Pie Charts**: Distributions, percentages, proportions
+- **Tables**: Comparisons, features, pros/cons, differential diagnosis
+- **Timelines**: Historical events, disease progression, sequences
+- **Class/ER Diagrams**: Relationships, hierarchies, structures
 
+### Mermaid Diagram Examples (use generously!)
 \`\`\`mermaid
 graph TD
-    A[First Step] --> B[Second Step]
-    B --> C[Third Step]
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Outcome 1]
+    B -->|No| D[Outcome 2]
 \`\`\`
 
-IMPORTANT MERMAID SYNTAX RULES:
-- Use graph TD for top-down flowcharts, graph LR for left-right
-- Node IDs must be simple (A, B, C or word_with_underscores)
-- Text in brackets: [text], (rounded), {diamond}, ((circle))
-- Arrows: --> for solid, -.-> for dotted, ==> for thick
-- NO special characters in node text (no colons, parentheses, quotes, < > symbols)
-- Keep node text SHORT (under 30 characters)
-- Always start with a clear root node
+\`\`\`mermaid
+pie title Distribution
+    "Category A" : 40
+    "Category B" : 35
+    "Category C" : 25
+\`\`\`
+
+\`\`\`mermaid
+mindmap
+    root((Main Topic))
+        Subtopic 1
+            Detail A
+            Detail B
+        Subtopic 2
+            Detail C
+\`\`\`
 
 For complex topics, use subgraphs:
 \`\`\`mermaid
@@ -287,6 +305,32 @@ graph TD
     end
     Phase1 --> Phase2
 \`\`\`
+
+### ⚠️ CRITICAL Mermaid Rules (diagrams break if violated!)
+- ❌ NO emojis in node text
+- ❌ NO ampersands (&) — write "and"
+- ❌ NO parentheses () in labels — use brackets []
+- ❌ NO forward slashes (/) — write "or" or hyphenate
+- ❌ NO colons, quotes, or < > symbols in node text
+- ✅ Keep node labels short (2-4 words, under 30 characters)
+- ✅ Use simple node IDs (A, B, C or word_with_underscores)
+
+### Tables for Comparisons
+| Feature | Option A | Option B |
+|---------|----------|----------|
+| Speed   | Fast     | Slow     |
+| Cost    | High     | Low      |
+
+### LaTeX for Math
+Inline: $E = mc^2$
+Block: $$\\sum_{i=1}^{n} x_i = x_1 + x_2 + ... + x_n$$
+
+### Formatting Best Practices
+- Use **bold** for key terms
+- Use headers (##, ###) to organize sections
+- Use bullet points for lists
+- Use numbered lists for sequences/steps
+- **Include at least one visual (diagram, table, or chart) in most responses when appropriate**
 
 Always provide a brief text explanation alongside any diagram.`
 
@@ -312,7 +356,7 @@ Always provide a brief text explanation alongside any diagram.`
 
   const result = await generateGeminiCompletion(messages, {
     temperature: 0.7,
-    maxTokens: 1500,
+    maxTokens: 4000, // Increased to prevent truncation of detailed responses
   })
 
   return result.content
