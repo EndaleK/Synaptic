@@ -26,9 +26,14 @@ console.log('[Vector Store] Pinecone Index:', indexName)
 const index = pinecone.index(indexName)
 
 // Initialize OpenAI embeddings for all embedding operations
+// Using text-embedding-3-large with Matryoshka truncation to 1536 dimensions
+// - Large model has superior semantic understanding (~5% better retrieval)
+// - Matryoshka allows truncating to any dimension without retraining
+// - 1536 dims keeps Pinecone storage cost same as small model
 const embeddings = new OpenAIEmbeddings({
   openAIApiKey: process.env.OPENAI_API_KEY,
-  modelName: 'text-embedding-3-small', // Cost-effective, 1536 dimensions
+  modelName: 'text-embedding-3-large',
+  dimensions: 1536, // Matryoshka truncation - same as small model dimensions
 })
 
 /**

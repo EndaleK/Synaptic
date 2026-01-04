@@ -23,6 +23,7 @@ import { ChatMessageSchema } from '@/lib/validation'
 import { checkUsageLimit, incrementUsage } from '@/lib/usage-limits'
 import { routeQuery, type QueryBackend } from '@/lib/query-router'
 import { getIndexingStatus } from '@/lib/progressive-indexer'
+import { logRetrievalEvent, createRetrievalEvent } from '@/lib/retrieval-monitor'
 
 interface ChatRAGRequest {
   message: string
@@ -374,6 +375,23 @@ export async function POST(request: NextRequest) {
       topPineconeScore: relevantChunks[0].score,
       topRelevanceScore: relevantChunks[0].relevanceScore,
       wasReranked,
+    })
+
+    // 6.5. Log retrieval event for quality monitoring (async, non-blocking)
+    const retrievalEvent = createRetrievalEvent(
+      documentId,
+      profile.id,
+      message,
+      relevantChunks,
+      {
+        queryIntent: routingDecision.intent,
+        responseStrategy: 'pinecone',
+        wasReranked,
+      }
+    )
+    // Don't await - logging shouldn't slow down the response
+    logRetrievalEvent(retrievalEvent).catch(() => {
+      // Silently ignore logging errors
     })
 
     // 7. Combine relevant chunks into context

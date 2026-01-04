@@ -110,7 +110,6 @@ export async function rerankResults(
       query,
       documents: results.map(r => r.text),
       topN: Math.min(topN, results.length),
-      returnDocuments: false, // We already have the documents
     })
 
     const duration = Date.now() - startTime

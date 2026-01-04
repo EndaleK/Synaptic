@@ -101,10 +101,11 @@ export async function generateEmbeddingsParallel(
     }
   }
 
-  // Initialize OpenAI embeddings
+  // Initialize OpenAI embeddings with large model + Matryoshka truncation
   const embeddings = new OpenAIEmbeddings({
     openAIApiKey: process.env.OPENAI_API_KEY,
-    modelName: 'text-embedding-3-small',
+    modelName: 'text-embedding-3-large',
+    dimensions: 1536, // Matryoshka truncation to match Pinecone index
   })
 
   // Split chunks into batches
