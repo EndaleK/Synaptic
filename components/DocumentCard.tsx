@@ -272,17 +272,34 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
             </div>
           )}
 
-          {/* Processing Status Overlay */}
+          {/* Processing Status Overlay with Progress */}
           {document.processing_status === 'processing' && (
             <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-lg">
               <div className="flex items-center gap-2 mb-1">
                 <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
                 <p className="text-xs font-medium text-blue-700 dark:text-blue-400">
-                  Processing document...
+                  {(document.processing_progress as any)?.message || 'Processing document...'}
                 </p>
               </div>
+              {/* Progress bar */}
+              {(document.processing_progress as any)?.progress_percent && (
+                <div className="mb-2">
+                  <div className="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-1.5">
+                    <div
+                      className="bg-blue-500 h-1.5 rounded-full transition-all duration-500"
+                      style={{ width: `${(document.processing_progress as any).progress_percent}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-blue-500 dark:text-blue-400 mt-1">
+                    {(document.processing_progress as any).progress_percent}% complete
+                    {(document.processing_progress as any).step_name && ` - ${(document.processing_progress as any).step_name}`}
+                  </p>
+                </div>
+              )}
               <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
-                You can browse other documents while this processes
+                {document.file_size > 10 * 1024 * 1024
+                  ? 'Large files may take 2-3 minutes to process'
+                  : 'You can browse other documents while this processes'}
               </p>
             </div>
           )}

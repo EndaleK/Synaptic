@@ -3,10 +3,19 @@
 import { useState, useEffect, useRef } from 'react'
 import { Loader2, FileText, ChevronUp, ChevronDown, X, CheckCircle2 } from 'lucide-react'
 
+interface ProcessingProgress {
+  progress_percent?: number
+  message?: string
+  step_name?: string
+  current_step?: number
+  total_steps?: number
+}
+
 interface ProcessingDocument {
   id: string
   file_name: string
   processing_status: 'pending' | 'processing' | 'completed' | 'failed'
+  processing_progress?: ProcessingProgress
   file_size: number
   created_at: string
 }
@@ -29,7 +38,8 @@ export default function BackgroundProcessingIndicator() {
 
   useEffect(() => {
     let isMounted = true
-    let pollInterval = 15000 // Start with 15 second interval
+    // Poll every 5 seconds to show progress updates in real-time
+    const pollInterval = 5000
 
     const checkProcessing = async () => {
       try {
@@ -142,8 +152,22 @@ export default function BackgroundProcessingIndicator() {
                     {doc.file_name}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {formatFileSize(doc.file_size)} • {doc.processing_status === 'pending' ? 'Queued' : 'Processing...'}
+                    {formatFileSize(doc.file_size)} • {doc.processing_progress?.message || (doc.processing_status === 'pending' ? 'Queued' : 'Processing...')}
                   </p>
+                  {/* Progress bar for processing documents */}
+                  {doc.processing_progress?.progress_percent && (
+                    <div className="mt-1.5">
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
+                        <div
+                          className="bg-violet-500 h-1 rounded-full transition-all duration-500"
+                          style={{ width: `${doc.processing_progress.progress_percent}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-violet-500 dark:text-violet-400 mt-0.5">
+                        {doc.processing_progress.progress_percent}%
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
