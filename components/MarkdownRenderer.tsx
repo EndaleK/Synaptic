@@ -293,6 +293,9 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
   const sanitizeMermaidCode = (code: string): string => {
     let sanitized = code
 
+    // Detect if this is a mindmap (special handling needed)
+    const isMindmap = sanitized.trim().toLowerCase().startsWith('mindmap')
+
     // Remove emojis - they cause syntax errors in node labels
 
     sanitized = sanitized.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}]/gu, '')
@@ -311,6 +314,31 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     // Remove the parentheses and keep the text
     // ============================================================
     sanitized = sanitized.replace(/^(\s+)\(([^)]+)\)\s*$/gm, '$1$2')
+
+    // ============================================================
+    // FIX: Handle square brackets in mindmap content
+    // In mindmaps, [text] is NOT a node shape - it's just text that AI uses
+    // for references like [ER40] or [P47]. Convert to plain text.
+    // ============================================================
+    if (isMindmap) {
+      // For mindmaps, convert [text] to (text) or just text
+      // But preserve the root node syntax: root((text)) or root(text)
+      const lines = sanitized.split('\n')
+      sanitized = lines.map(line => {
+        // Don't modify the root line
+        if (line.includes('root(')) return line
+        // Replace [text] with text (removing brackets) in non-root lines
+        return line.replace(/\[([^\]]+)\]/g, '$1')
+      }).join('\n')
+
+      // Also remove parentheses from mindmap content (except root node)
+      // Pattern: match lines with (text) that aren't the root
+      sanitized = sanitized.split('\n').map(line => {
+        if (line.includes('root(')) return line
+        // Replace (text) with just text in content
+        return line.replace(/\(([^)]+)\)/g, '$1')
+      }).join('\n')
+    }
 
     // ============================================================
     // FIX: Handle < and > symbols in mindmap/flowchart content
