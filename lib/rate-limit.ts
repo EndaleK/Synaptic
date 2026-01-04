@@ -158,7 +158,7 @@ export const RateLimits = {
 
   // OpenAI endpoints (expensive)
   ai: {
-    maxRequests: 10,
+    maxRequests: 30,
     windowMs: 60 * 1000, // 1 minute
     message: 'AI request limit reached. Please wait before generating more content.',
   },
@@ -187,6 +187,11 @@ export async function applyRateLimit(
   config: RateLimitConfig,
   userId?: string
 ): Promise<NextResponse | null> {
+  // Skip rate limiting in development for better DX
+  if (process.env.NODE_ENV === 'development') {
+    return null
+  }
+
   // Use Redis if configured (production), otherwise use in-memory (development)
   if (isRedisConfigured()) {
     return applyRateLimitRedis(req, config, userId)
