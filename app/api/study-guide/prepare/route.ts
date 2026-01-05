@@ -10,6 +10,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase/server'
 import { validateUUIDParam } from '@/lib/validation/uuid'
 import type { StudyGuideTopic } from '@/lib/supabase/types'
+import { generateGuideDayQuiz, getGuideDayQuiz } from '@/lib/session-exam-generator'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 minutes for content generation
@@ -216,15 +217,73 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Start background content generation
-    // Note: In a full implementation, this would trigger an async job (e.g., Inngest)
-    // For now, we'll update the status after a simulated delay
-    // The actual generation would be handled by a background worker
-
     // Mark the guide day as having started generation
     await supabase
       .from('study_guide_days')
       .update({ generated_at: new Date().toISOString() })
+      .eq('id', guideDayId)
+
+    // Generate daily quiz synchronously (it's quick and important)
+    let dailyQuizGenerated = false
+    if (typesToGenerate.includes('daily_quiz')) {
+      try {
+        // Check if quiz already exists
+        const existingQuiz = await getGuideDayQuiz(guideDayId, profile.id.toString())
+
+        if (!existingQuiz) {
+          // Get document ID from sessions
+          const documentId = sessions.find(s => s.document_id)?.document_id
+
+          if (documentId) {
+            // Prepare topics array for quiz generation
+            const quizTopics = topics.map(t => ({
+              title: t.title,
+              pageRange: t.pageRange ? {
+                start: t.pageRange.start,
+                end: t.pageRange.end,
+              } : undefined,
+            }))
+
+            await generateGuideDayQuiz({
+              guideDayId,
+              planId,
+              userId: profile.id.toString(),
+              documentId,
+              topics: quizTopics,
+              questionCount: Math.min(topics.length * 3, 10), // 3 questions per topic, max 10
+            })
+
+            dailyQuizGenerated = true
+
+            // Update queue status
+            await supabase
+              .from('content_generation_queue')
+              .update({ status: 'completed', completed_at: new Date().toISOString() })
+              .eq('guide_day_id', guideDayId)
+              .eq('content_type', 'daily_quiz')
+          }
+        } else {
+          dailyQuizGenerated = true
+        }
+      } catch (quizError) {
+        console.error('[StudyGuide] Daily quiz generation failed:', quizError)
+        // Update queue status to failed
+        await supabase
+          .from('content_generation_queue')
+          .update({
+            status: 'failed',
+            error_message: quizError instanceof Error ? quizError.message : 'Unknown error'
+          })
+          .eq('guide_day_id', guideDayId)
+          .eq('content_type', 'daily_quiz')
+      }
+    }
+
+    // Update guide day status based on what was generated
+    const newStatus = dailyQuizGenerated ? 'partial' : 'generating'
+    await supabase
+      .from('study_guide_days')
+      .update({ status: newStatus })
       .eq('id', guideDayId)
 
     return NextResponse.json({
@@ -232,7 +291,10 @@ export async function POST(req: NextRequest) {
       guideDayId,
       date: targetDate,
       contentTypesQueued: typesToGenerate,
-      message: 'Content generation started',
+      dailyQuizGenerated,
+      message: dailyQuizGenerated
+        ? 'Daily quiz ready. Other content being prepared.'
+        : 'Content generation started',
     })
   } catch (error) {
     console.error('[StudyGuide] Prepare error:', error)
