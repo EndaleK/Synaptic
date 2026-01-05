@@ -102,18 +102,58 @@ export async function searchForSyllabus(
 function buildSearchQueries(input: CourseInput): string[] {
   const queries: string[] = []
 
+  // Detect if Canadian institution for domain-specific search
+  const isCanadian = isCanadianInstitution(input.university)
+  const domainHint = isCanadian ? 'site:.ca' : 'site:.edu'
+
   // Primary query: university + course code + syllabus
   if (input.courseCode) {
     queries.push(`${input.university} ${input.courseCode} syllabus ${input.semester} ${input.year}`)
   }
 
-  // Secondary: course name + university
-  queries.push(`${input.university} "${input.courseName}" syllabus`)
+  // Secondary: course name + university with domain hint
+  queries.push(`${input.university} "${input.courseName}" syllabus ${domainHint}`)
 
-  // Tertiary: just course name and syllabus (broader search)
-  queries.push(`${input.courseName} syllabus course outline`)
+  // Tertiary: course name + outline (broader search)
+  queries.push(`${input.courseName} syllabus course outline ${input.university}`)
+
+  // For Canadian colleges, also search for "course outline" which is commonly used
+  if (isCanadian) {
+    queries.push(`${input.university} ${input.courseCode || input.courseName} course outline`)
+  }
 
   return queries
+}
+
+/**
+ * Check if the institution is Canadian
+ */
+function isCanadianInstitution(university: string): boolean {
+  const canadianKeywords = [
+    // Province indicators
+    'canada', 'canadian', 'ontario', 'quebec', 'québec', 'british columbia', 'alberta',
+    'manitoba', 'saskatchewan', 'nova scotia', 'new brunswick', 'newfoundland',
+    // University keywords
+    'université', 'cégep', 'collégiale',
+    // Specific institutions
+    'toronto', 'mcgill', 'ubc', 'waterloo', 'western', 'queen\'s', 'mcmaster',
+    'calgary', 'ottawa', 'simon fraser', 'dalhousie', 'victoria', 'york',
+    'carleton', 'manitoba', 'saskatchewan', 'concordia', 'ryerson', 'metropolitan',
+    'montréal', 'laval', 'uqam',
+    // Colleges
+    'seneca', 'humber', 'george brown', 'sheridan', 'centennial', 'conestoga',
+    'algonquin', 'bcit', 'sait', 'nait', 'red river', 'fanshawe', 'mohawk',
+    'durham college', 'lambton', 'st. clair', 'georgian', 'niagara college',
+    'fleming', 'cambrian', 'canadore', 'confederation', 'loyalist', 'st. lawrence',
+    'la cité', 'dawson', 'vanier', 'john abbott', 'langara', 'douglas college',
+    'capilano', 'kwantlen', 'vancouver community', 'camosun', 'okanagan',
+    'bow valley', 'lethbridge college', 'medicine hat', 'olds college',
+    'lakeland', 'norquest', 'saskatchewan polytechnic', 'assiniboine',
+    'nscc', 'nbcc', 'holland college', 'north atlantic',
+  ]
+
+  const uniLower = university.toLowerCase()
+  return canadianKeywords.some((keyword) => uniLower.includes(keyword))
 }
 
 /**
@@ -127,8 +167,9 @@ function calculateConfidence(result: SearchResult, input: CourseInput): number {
   const contentLower = result.content.toLowerCase()
   const combinedText = `${titleLower} ${contentLower}`
 
-  // Boost for .edu domains
+  // Boost for educational domains (.edu for US, .ca for Canadian)
   if (urlLower.includes('.edu')) score += 0.2
+  if (urlLower.includes('.ca/') || urlLower.endsWith('.ca')) score += 0.2
 
   // Boost for university name match
   const uniWords = input.university.toLowerCase().split(' ')
@@ -140,8 +181,12 @@ function calculateConfidence(result: SearchResult, input: CourseInput): number {
     score += 0.25
   }
 
-  // Boost for syllabus keywords
-  const syllabusKeywords = ['syllabus', 'course outline', 'schedule', 'learning objectives', 'textbook']
+  // Boost for syllabus keywords (including Canadian-specific terms)
+  const syllabusKeywords = [
+    'syllabus', 'course outline', 'schedule', 'learning objectives', 'textbook',
+    'course description', 'learning outcomes', 'assessment', 'grading scheme',
+    'required readings', 'weekly schedule', 'course calendar'
+  ]
   const keywordMatches = syllabusKeywords.filter((k) => combinedText.includes(k)).length
   score += keywordMatches * 0.05
 
@@ -162,11 +207,86 @@ function calculateConfidence(result: SearchResult, input: CourseInput): number {
 function classifySource(url: string): SyllabusSearchResult['source'] {
   const urlLower = url.toLowerCase()
 
-  if (urlLower.includes('.edu/') || urlLower.includes('.ac.uk/')) {
-    if (urlLower.includes('/faculty/') || urlLower.includes('/~') || urlLower.includes('/professor')) {
+  // Check for educational institution domains (US, UK, and Canadian)
+  const isEducationalDomain =
+    urlLower.includes('.edu/') ||
+    urlLower.includes('.ac.uk/') ||
+    // Canadian university domains
+    urlLower.includes('.utoronto.ca') ||
+    urlLower.includes('.mcgill.ca') ||
+    urlLower.includes('.ubc.ca') ||
+    urlLower.includes('.uwaterloo.ca') ||
+    urlLower.includes('.uwo.ca') ||
+    urlLower.includes('.queensu.ca') ||
+    urlLower.includes('.mcmaster.ca') ||
+    urlLower.includes('.ucalgary.ca') ||
+    urlLower.includes('.uottawa.ca') ||
+    urlLower.includes('.sfu.ca') ||
+    urlLower.includes('.dal.ca') ||
+    urlLower.includes('.uvic.ca') ||
+    urlLower.includes('.yorku.ca') ||
+    urlLower.includes('.carleton.ca') ||
+    urlLower.includes('.umanitoba.ca') ||
+    urlLower.includes('.usask.ca') ||
+    urlLower.includes('.concordia.ca') ||
+    urlLower.includes('.torontomu.ca') ||
+    urlLower.includes('.umontreal.ca') ||
+    urlLower.includes('.ulaval.ca') ||
+    urlLower.includes('.uqam.ca') ||
+    // Canadian college domains
+    urlLower.includes('.senecacollege.ca') ||
+    urlLower.includes('.humber.ca') ||
+    urlLower.includes('.georgebrown.ca') ||
+    urlLower.includes('.sheridancollege.ca') ||
+    urlLower.includes('.centennialcollege.ca') ||
+    urlLower.includes('.conestogac.on.ca') ||
+    urlLower.includes('.algonquincollege.com') ||
+    urlLower.includes('.bcit.ca') ||
+    urlLower.includes('.sait.ca') ||
+    urlLower.includes('.nait.ca') ||
+    urlLower.includes('.rrc.ca') ||
+    urlLower.includes('.fanshawec.ca') ||
+    urlLower.includes('.mohawkcollege.ca') ||
+    urlLower.includes('.durhamcollege.ca') ||
+    urlLower.includes('.lambtoncollege.ca') ||
+    urlLower.includes('.stclaircollege.ca') ||
+    urlLower.includes('.georgiancollege.ca') ||
+    urlLower.includes('.niagaracollege.ca') ||
+    urlLower.includes('.flemingcollege.ca') ||
+    urlLower.includes('.cambriancollege.ca') ||
+    urlLower.includes('.canadorecollege.ca') ||
+    urlLower.includes('.confederationcollege.ca') ||
+    urlLower.includes('.loyalistcollege.com') ||
+    urlLower.includes('.stlawrencecollege.ca') ||
+    urlLower.includes('.collegelacite.ca') ||
+    urlLower.includes('.dawsoncollege.qc.ca') ||
+    urlLower.includes('.vaniercollege.qc.ca') ||
+    urlLower.includes('.johnabbott.qc.ca') ||
+    urlLower.includes('.langara.ca') ||
+    urlLower.includes('.douglascollege.ca') ||
+    urlLower.includes('.capilanou.ca') ||
+    urlLower.includes('.kpu.ca') ||
+    urlLower.includes('.vcc.ca') ||
+    urlLower.includes('.camosun.ca') ||
+    urlLower.includes('.okanagan.bc.ca') ||
+    urlLower.includes('.bowvalleycollege.ca') ||
+    urlLower.includes('.lethbridgecollege.ca') ||
+    urlLower.includes('.mhc.ab.ca') ||
+    urlLower.includes('.oldscollege.ca') ||
+    urlLower.includes('.lakelandcollege.ca') ||
+    urlLower.includes('.norquest.ca') ||
+    urlLower.includes('.saskpolytech.ca') ||
+    urlLower.includes('.assiniboine.net') ||
+    urlLower.includes('.nscc.ca') ||
+    urlLower.includes('.nbcc.ca') ||
+    urlLower.includes('.hollandcollege.com') ||
+    urlLower.includes('.cna.nl.ca')
+
+  if (isEducationalDomain) {
+    if (urlLower.includes('/faculty/') || urlLower.includes('/~') || urlLower.includes('/professor') || urlLower.includes('/instructor')) {
       return 'professor_page'
     }
-    if (urlLower.includes('/catalog/') || urlLower.includes('/courses/')) {
+    if (urlLower.includes('/catalog/') || urlLower.includes('/courses/') || urlLower.includes('/programs/')) {
       return 'course_catalog'
     }
     return 'university_site'

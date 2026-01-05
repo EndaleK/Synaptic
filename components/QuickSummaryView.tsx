@@ -401,11 +401,11 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-amber-950/30 dark:to-gray-900">
+    <div className="h-full flex flex-col bg-gradient-to-br from-cyan-50 via-teal-50 to-cyan-50 dark:from-gray-900 dark:via-cyan-950/30 dark:to-gray-900">
       {/* Header */}
-      <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm border-b border-amber-200 dark:border-amber-500/20 p-4 sm:p-6">
+      <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm border-b border-cyan-200 dark:border-cyan-500/20 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg shadow-lg shadow-amber-500/20">
+          <div className="p-2 bg-gradient-to-br from-cyan-400 to-teal-500 rounded-lg shadow-lg shadow-cyan-500/20">
             <Clock className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -421,9 +421,9 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
 
           {/* Input Type Selector */}
           {!summary && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-gray-700 shadow-lg shadow-amber-100/50 dark:shadow-none p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-cyan-200 dark:border-gray-700 shadow-lg shadow-cyan-100/50 dark:shadow-none p-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-500" />
+                <Sparkles className="w-5 h-5 text-cyan-500" />
                 Choose Your Source
               </h2>
 
@@ -433,7 +433,7 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                   onClick={() => setInputType('document')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                     inputType === 'document'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
+                      ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/30'
                       : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
                   }`}
                   aria-label="Select document input"
@@ -445,7 +445,7 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                   onClick={() => setInputType('url')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                     inputType === 'url'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
+                      ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/30'
                       : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
                   }`}
                   aria-label="Select URL input"
@@ -457,7 +457,7 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                   onClick={() => setInputType('youtube')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                     inputType === 'youtube'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
+                      ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/30'
                       : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
                   }`}
                   aria-label="Select YouTube input"
