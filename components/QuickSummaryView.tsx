@@ -1,10 +1,17 @@
 "use client"
 
-import { useState, useRef, ChangeEvent } from "react"
-import { Clock, FileText, Link as LinkIcon, Youtube, Loader2, AlertCircle, Upload, Sparkles, Download, Zap, CheckCircle, X, ListChecks, Save, FileDown, Settings2 } from "lucide-react"
+import { useState, useRef, ChangeEvent, useEffect } from "react"
+import { Clock, FileText, Link as LinkIcon, Youtube, Loader2, AlertCircle, Upload, Sparkles, Download, Zap, CheckCircle, X, ListChecks, Save, FileDown, Settings2, FolderOpen, ArrowRight } from "lucide-react"
 import { ELEVENLABS_VOICES, DEFAULT_VOICE_HOST_A, DEFAULT_VOICE_HOST_B } from "@/lib/tts-generator"
 import PodcastPlayer, { type TranscriptEntry } from "./PodcastPlayer"
 import { useToast } from "./ToastContainer"
+
+interface Document {
+  id: string
+  file_name: string
+  created_at: string
+  file_size?: number
+}
 
 interface QuickSummaryViewProps {
   // Optional: Pre-selected document
@@ -48,6 +55,11 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
 
   // Save to library state
   const [isSavingToLibrary, setIsSavingToLibrary] = useState(false)
+
+  // Document library state
+  const [showDocumentSelector, setShowDocumentSelector] = useState(false)
+  const [documents, setDocuments] = useState<Document[]>([])
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false)
 
   // Voice selection state
   const [showAdvanced, setShowAdvanced] = useState(false)
@@ -160,6 +172,37 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
       toast.error(err.message || 'Failed to upload document')
       setIsUploading(false)
     }
+  }
+
+  // Load documents from library
+  const loadDocuments = async () => {
+    try {
+      setIsLoadingDocuments(true)
+      const response = await fetch('/api/documents')
+      if (!response.ok) {
+        throw new Error('Failed to load documents')
+      }
+      const data = await response.json()
+      setDocuments(data.documents || [])
+    } catch (err) {
+      console.error('Error loading documents:', err)
+      toast.error('Failed to load documents')
+    } finally {
+      setIsLoadingDocuments(false)
+    }
+  }
+
+  // Open document selector
+  const handleSelectFromLibrary = async () => {
+    await loadDocuments()
+    setShowDocumentSelector(true)
+  }
+
+  // Handle document selection from library
+  const handleDocumentSelect = (doc: Document) => {
+    setSelectedDocumentId(doc.id)
+    setSelectedDocumentName(doc.file_name)
+    setShowDocumentSelector(false)
   }
 
   // Handle generate summary
@@ -509,25 +552,48 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
                       <p className="text-sm text-gray-500 dark:text-zinc-400 mt-2">{uploadProgress}% complete</p>
                     </div>
                   ) : (
-                    <div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".pdf,.docx,.txt,.md"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                        id="document-upload-input"
-                      />
-                      <label
-                        htmlFor="document-upload-input"
-                        className="flex flex-col items-center justify-center w-full p-8 bg-cyan-50/50 dark:bg-zinc-800/30 border-2 border-dashed border-cyan-300 dark:border-zinc-700 rounded-lg cursor-pointer hover:bg-cyan-100/50 dark:hover:bg-zinc-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/50 transition-all"
+                    <div className="space-y-4">
+                      {/* Select from Library Button */}
+                      <button
+                        onClick={handleSelectFromLibrary}
+                        className="flex items-center justify-center gap-3 w-full p-4 bg-white dark:bg-zinc-800 border-2 border-cyan-200 dark:border-cyan-700 rounded-lg hover:border-cyan-400 dark:hover:border-cyan-500 hover:bg-cyan-50 dark:hover:bg-zinc-700 transition-all"
                       >
-                        <Upload className="w-12 h-12 text-cyan-400 mb-3" />
-                        <p className="text-gray-900 dark:text-white font-medium mb-1">Click to upload document</p>
-                        <p className="text-sm text-gray-500 dark:text-zinc-400">PDF, DOCX, TXT, or MD (max 10MB)</p>
-                      </label>
+                        <FolderOpen className="w-6 h-6 text-cyan-500" />
+                        <div className="text-left">
+                          <p className="text-gray-900 dark:text-white font-medium">Select from Library</p>
+                          <p className="text-xs text-gray-500 dark:text-zinc-400">Choose from your uploaded documents</p>
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
+                      </button>
+
+                      {/* Divider */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-px bg-gray-200 dark:bg-zinc-700" />
+                        <span className="text-xs text-gray-400 dark:text-zinc-500">or upload new</span>
+                        <div className="flex-1 h-px bg-gray-200 dark:bg-zinc-700" />
+                      </div>
+
+                      {/* Upload New Document */}
+                      <div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".pdf,.docx,.txt,.md"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          id="document-upload-input"
+                        />
+                        <label
+                          htmlFor="document-upload-input"
+                          className="flex flex-col items-center justify-center w-full p-6 bg-cyan-50/50 dark:bg-zinc-800/30 border-2 border-dashed border-cyan-300 dark:border-zinc-700 rounded-lg cursor-pointer hover:bg-cyan-100/50 dark:hover:bg-zinc-800/50 hover:border-cyan-400 dark:hover:border-cyan-500/50 transition-all"
+                        >
+                          <Upload className="w-10 h-10 text-cyan-400 mb-2" />
+                          <p className="text-gray-900 dark:text-white font-medium mb-1">Upload new document</p>
+                          <p className="text-xs text-gray-500 dark:text-zinc-400">PDF, DOCX, TXT, or MD (max 10MB)</p>
+                        </label>
+                      </div>
                       {uploadError && (
-                        <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/50 rounded-lg flex items-start gap-2">
+                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/50 rounded-lg flex items-start gap-2">
                           <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                           <p className="text-sm text-red-600 dark:text-red-200">{uploadError}</p>
                         </div>
@@ -854,6 +920,65 @@ export default function QuickSummaryView({ documentId, documentName }: QuickSumm
 
         </div>
       </div>
+
+      {/* Document Selector Modal */}
+      {showDocumentSelector && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Select a Document</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Choose a document from your library to create a summary
+              </p>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1">
+              {isLoadingDocuments ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+                </div>
+              ) : documents.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-600 dark:text-gray-400">
+                    No documents found. Upload a document first.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {documents.map((doc) => (
+                    <button
+                      key={doc.id}
+                      onClick={() => handleDocumentSelect(doc)}
+                      className="flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-cyan-500 dark:hover:border-cyan-500 hover:bg-cyan-50 dark:hover:bg-gray-800 transition-all text-left"
+                    >
+                      <FileText className="w-10 h-10 text-cyan-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                          {doc.file_name}
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {new Date(doc.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-gray-400" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-200 dark:border-gray-800">
+              <button
+                onClick={() => setShowDocumentSelector(false)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
