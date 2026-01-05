@@ -663,3 +663,124 @@ export type StudyGuideDayInsert = Omit<StudyGuideDay, 'id' | 'created_at' | 'upd
 
 // Type for inserting content generation queue items
 export type ContentGenerationQueueInsert = Omit<ContentGenerationQueueItem, 'id' | 'created_at'>
+
+// ============================================================================
+// Course & Study Guide Generator Types
+// ============================================================================
+
+export type SyllabusSourceType = 'web_search' | 'ai_generated' | 'user_input'
+export type EducationalLevel = 'elementary' | 'middle_school' | 'high_school' | 'undergraduate' | 'graduate' | 'professional'
+export type ResourceSource = 'openlibrary' | 'google_books' | 'mit_ocw' | 'khan_academy' | 'coursera' | 'openstax'
+export type ResourceType = 'textbook' | 'video_course' | 'article' | 'practice' | 'lecture' | 'ebook' | 'open_course'
+export type StudyPlanType = 'document' | 'course' | 'self_study'
+
+export interface WeeklyScheduleItem {
+  week: number
+  topic: string
+  readings: string[]
+  assignments: string[]
+  learningObjectives: string[]
+}
+
+export interface SyllabusTextbook {
+  title: string
+  authors: string[]
+  isbn?: string
+  required: boolean
+  url?: string
+}
+
+export interface SyllabusResource {
+  title: string
+  url: string
+  type: ResourceType
+  source: ResourceSource
+}
+
+export interface CourseSyllabus {
+  id: string
+  user_id: number
+  university?: string
+  program?: string
+  course_code?: string
+  course_name: string
+  semester?: string
+  year?: number
+  source_type: SyllabusSourceType
+  source_urls: string[]
+  course_description?: string
+  learning_objectives: string[]
+  weekly_schedule: WeeklyScheduleItem[]
+  textbooks: SyllabusTextbook[]
+  additional_resources: SyllabusResource[]
+  grading_scheme: Record<string, number>
+  generation_model?: string
+  confidence_score?: number
+  created_at: string
+  updated_at: string
+}
+
+export type CourseSyllabusInsert = Omit<CourseSyllabus, 'id' | 'created_at' | 'updated_at'>
+
+export interface EducationalResource {
+  id: string
+  external_id: string
+  source: ResourceSource
+  title: string
+  authors: string[]
+  description?: string
+  url: string
+  thumbnail_url?: string
+  subject?: string
+  level?: EducationalLevel
+  topics: string[]
+  resource_type?: ResourceType
+  rating?: number
+  reviews_count?: number
+  fetched_at: string
+  expires_at: string
+}
+
+export type EducationalResourceInsert = Omit<EducationalResource, 'id' | 'fetched_at' | 'expires_at'>
+
+// Course input form data
+export interface CourseInput {
+  university: string
+  program?: string
+  courseCode: string
+  courseName: string
+  semester: string
+  year: number
+}
+
+// Self-study input form data
+export interface SelfStudyInput {
+  gradeLevel: EducationalLevel
+  subject: string
+  specificTopic?: string
+  learningGoals?: string
+  durationWeeks: number
+  hoursPerWeek: number
+}
+
+// Generated syllabus from web search
+export interface GeneratedSyllabus {
+  courseName: string
+  courseDescription: string
+  learningObjectives: string[]
+  weeklySchedule: WeeklyScheduleItem[]
+  textbooks: SyllabusTextbook[]
+  additionalResources: SyllabusResource[]
+  gradingScheme: Record<string, number>
+  sourceUrls: string[]
+  confidenceScore: number
+}
+
+// Syllabus search result from Tavily
+export interface SyllabusSearchResult {
+  url: string
+  title: string
+  snippet: string
+  confidence: number
+  source: 'university_site' | 'course_catalog' | 'professor_page' | 'third_party'
+}

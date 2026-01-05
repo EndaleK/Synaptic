@@ -25,6 +25,17 @@ import {
   Trash2,
 } from "lucide-react"
 import SyllabusUploader from "./SyllabusUploader"
+import CourseInputForm from "./CourseInputForm"
+import SelfStudyForm from "./SelfStudyForm"
+import SyllabusPreview from "./SyllabusPreview"
+import ResourceCard from "./ResourceCard"
+import type {
+  GeneratedSyllabus,
+  EducationalResource,
+  CourseInput,
+  SelfStudyInput,
+  LearningStyle,
+} from "@/lib/supabase/types"
 
 // ============================================
 // Types
@@ -94,8 +105,23 @@ interface StudyPlanPreview {
   }>
 }
 
-type InputMode = "syllabus" | "documents"
-type WizardStep = "input-mode" | "syllabus" | "documents" | "exam" | "topics" | "schedule" | "preview" | "complete"
+type InputMode = "syllabus" | "documents" | "course"
+type CourseType = "syllabus-search" | "self-study"
+type WizardStep =
+  | "input-mode"
+  | "syllabus"
+  | "documents"
+  | "exam"
+  | "topics"
+  | "schedule"
+  | "preview"
+  | "complete"
+  // Course mode steps
+  | "course-type"
+  | "course-input"
+  | "course-search"
+  | "syllabus-preview"
+  | "resources"
 
 // ============================================
 // Component
@@ -142,6 +168,17 @@ export default function StudyPlanWizard({
   // Preview state
   const [preview, setPreview] = useState<StudyPlanPreview | null>(null)
   const [createdPlanId, setCreatedPlanId] = useState<string | null>(null)
+
+  // Course mode state
+  const [courseType, setCourseType] = useState<CourseType | null>(null)
+  const [courseInput, setCourseInput] = useState<CourseInput | null>(null)
+  const [selfStudyInput, setSelfStudyInput] = useState<SelfStudyInput | null>(null)
+  const [generatedSyllabus, setGeneratedSyllabus] = useState<GeneratedSyllabus | null>(null)
+  const [availableResources, setAvailableResources] = useState<EducationalResource[]>([])
+  const [selectedResources, setSelectedResources] = useState<EducationalResource[]>([])
+  const [courseSearchProgress, setCourseSearchProgress] = useState(0)
+  const [courseSearchMessage, setCourseSearchMessage] = useState("")
+  const [isSearching, setIsSearching] = useState(false)
 
   // Fetch user's documents
   useEffect(() => {
@@ -231,6 +268,276 @@ export default function StudyPlanWizard({
       month: "short",
       day: "numeric",
     })
+  }
+
+  // Course syllabus search handler
+  const handleCourseInputSubmit = async (data: CourseInput) => {
+    setCourseInput(data)
+    setIsSearching(true)
+    setCourseSearchProgress(0)
+    setCourseSearchMessage("Starting search...")
+    setError(null)
+    setStep("course-search")
+
+    try {
+      const response = await fetch("/api/course-syllabus/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to start syllabus search")
+      }
+
+      // Handle SSE stream
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) {
+        throw new Error("No response stream")
+      }
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const text = decoder.decode(value)
+        const lines = text.split("\n")
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const eventData = JSON.parse(line.slice(6))
+
+              if (eventData.type === "progress") {
+                setCourseSearchProgress(eventData.progress)
+                setCourseSearchMessage(eventData.message)
+              } else if (eventData.type === "complete") {
+                setGeneratedSyllabus(eventData.data.syllabus)
+                setIsSearching(false)
+                setStep("syllabus-preview")
+              } else if (eventData.type === "error") {
+                throw new Error(eventData.error)
+              }
+            } catch (parseError) {
+              // Ignore parse errors for incomplete chunks
+            }
+          }
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to search for syllabus")
+      setIsSearching(false)
+      setStep("course-input")
+    }
+  }
+
+  // Self-study search handler
+  const handleSelfStudySubmit = async (data: SelfStudyInput) => {
+    setSelfStudyInput(data)
+    setIsSearching(true)
+    setCourseSearchProgress(0)
+    setCourseSearchMessage("Finding resources...")
+    setError(null)
+    setStep("course-search")
+
+    try {
+      const response = await fetch("/api/self-study/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ input: data }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to start resource search")
+      }
+
+      // Handle SSE stream
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) {
+        throw new Error("No response stream")
+      }
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const text = decoder.decode(value)
+        const lines = text.split("\n")
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const eventData = JSON.parse(line.slice(6))
+
+              if (eventData.type === "progress") {
+                setCourseSearchProgress(eventData.progress)
+                setCourseSearchMessage(eventData.message)
+              } else if (eventData.type === "complete") {
+                setAvailableResources(eventData.data.resources || [])
+                setIsSearching(false)
+                setStep("resources")
+              } else if (eventData.type === "error") {
+                throw new Error(eventData.error)
+              }
+            } catch (parseError) {
+              // Ignore parse errors for incomplete chunks
+            }
+          }
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to find resources")
+      setIsSearching(false)
+      setStep("course-input")
+    }
+  }
+
+  // Resource selection handlers
+  const handleSelectResource = (resource: EducationalResource) => {
+    setSelectedResources((prev) => [...prev, resource])
+  }
+
+  const handleRemoveResource = (resource: EducationalResource) => {
+    setSelectedResources((prev) =>
+      prev.filter((r) => r.external_id !== resource.external_id || r.source !== resource.source)
+    )
+  }
+
+  // Handle syllabus edit
+  const handleSyllabusEdit = (updated: GeneratedSyllabus) => {
+    setGeneratedSyllabus(updated)
+  }
+
+  // Create plan from course syllabus
+  const handleCreatePlanFromSyllabus = async () => {
+    if (!generatedSyllabus) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      // Calculate start and end dates based on syllabus weeks
+      const weeks = generatedSyllabus.weeklySchedule.length
+      const today = new Date()
+      const endDate = new Date(today)
+      endDate.setDate(endDate.getDate() + weeks * 7)
+
+      // First save the syllabus
+      const syllabusResponse = await fetch("/api/course-syllabus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          ...generatedSyllabus,
+          courseInput,
+          createPlan: true,
+          planOptions: {
+            startDate: startDate || today.toISOString().split("T")[0],
+            endDate: examDate || endDate.toISOString().split("T")[0],
+            dailyTargetMinutes: dailyHours * 60,
+            includeWeekends,
+          },
+        }),
+      })
+
+      if (!syllabusResponse.ok) {
+        const errorData = await syllabusResponse.json()
+        throw new Error(errorData.error || "Failed to save syllabus")
+      }
+
+      const data = await syllabusResponse.json()
+      setCreatedPlanId(data.planId)
+      setStep("complete")
+
+      if (onComplete && data.planId) {
+        onComplete(data.planId)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create plan")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Create plan from self-study resources
+  const handleCreateSelfStudyPlan = async () => {
+    if (!selfStudyInput || selectedResources.length === 0) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const today = new Date()
+      const endDate = new Date(today)
+      endDate.setDate(endDate.getDate() + selfStudyInput.durationWeeks * 7)
+
+      const response = await fetch("/api/self-study/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          input: selfStudyInput,
+          createPlan: true,
+          planOptions: {
+            startDate: startDate || today.toISOString().split("T")[0],
+            endDate: endDate.toISOString().split("T")[0],
+            dailyTargetMinutes: selfStudyInput.hoursPerWeek * 60 / 7,
+            includeWeekends,
+          },
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to create study plan")
+      }
+
+      // Handle SSE for plan creation
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) {
+        throw new Error("No response stream")
+      }
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const text = decoder.decode(value)
+        const lines = text.split("\n")
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const eventData = JSON.parse(line.slice(6))
+
+              if (eventData.type === "complete" && eventData.data.plan) {
+                setCreatedPlanId(eventData.data.plan.id)
+                setStep("complete")
+
+                if (onComplete && eventData.data.plan.id) {
+                  onComplete(eventData.data.plan.id)
+                }
+              } else if (eventData.type === "error") {
+                throw new Error(eventData.error)
+              }
+            } catch (parseError) {
+              // Ignore parse errors for incomplete chunks
+            }
+          }
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create plan")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Generate preview
@@ -423,6 +730,29 @@ export default function StudyPlanWizard({
                     </h4>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       Choose existing documents to study from
+                    </p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-violet-500 ml-auto" />
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setInputMode("course")
+                  setStep("course-type")
+                }}
+                className="w-full p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-violet-500 dark:hover:border-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-all text-left group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
+                    <GraduationCap className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400">
+                      Generate from Course/Topic
+                    </h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Search for syllabi or find learning resources
                     </p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-violet-500 ml-auto" />
@@ -898,6 +1228,206 @@ export default function StudyPlanWizard({
           </div>
         )
 
+      // Course mode steps
+      case "course-type":
+        return (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                What do you want to learn?
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Choose how you'd like to create your study plan
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setCourseType("syllabus-search")
+                  setStep("course-input")
+                }}
+                className="w-full p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-violet-500 dark:hover:border-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-all text-left group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                    <GraduationCap className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400">
+                      University Course
+                    </h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Search for a course syllabus and generate a study plan
+                    </p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-violet-500 ml-auto" />
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCourseType("self-study")
+                  setStep("course-input")
+                }}
+                className="w-full p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-violet-500 dark:hover:border-violet-500 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-all text-left group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
+                    <BookOpen className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400">
+                      Self-Study Topic
+                    </h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Learn any subject with curated resources
+                    </p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-violet-500 ml-auto" />
+                </div>
+              </button>
+            </div>
+          </div>
+        )
+
+      case "course-input":
+        return (
+          <div className="space-y-4">
+            {courseType === "syllabus-search" ? (
+              <CourseInputForm
+                onSubmit={handleCourseInputSubmit}
+                isLoading={isSearching}
+              />
+            ) : (
+              <SelfStudyForm
+                onSubmit={handleSelfStudySubmit}
+                isLoading={isSearching}
+              />
+            )}
+          </div>
+        )
+
+      case "course-search":
+        return (
+          <div className="space-y-6 py-8">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-violet-600 dark:text-violet-400 animate-spin" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                {courseType === "syllabus-search"
+                  ? "Searching for Syllabus..."
+                  : "Finding Resources..."}
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {courseSearchMessage}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all duration-300"
+                  style={{ width: `${courseSearchProgress}%` }}
+                />
+              </div>
+              <p className="text-xs text-center text-gray-400">
+                {courseSearchProgress}% complete
+              </p>
+            </div>
+          </div>
+        )
+
+      case "syllabus-preview":
+        return (
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {generatedSyllabus && (
+              <SyllabusPreview
+                syllabus={generatedSyllabus}
+                onEdit={handleSyllabusEdit}
+                onCreatePlan={handleCreatePlanFromSyllabus}
+                isCreatingPlan={isLoading}
+              />
+            )}
+          </div>
+        )
+
+      case "resources":
+        return (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Select Resources
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Choose the resources you want to study from
+              </p>
+            </div>
+
+            {availableResources.length === 0 ? (
+              <div className="p-6 text-center bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                <BookOpen className="w-10 h-10 mx-auto text-gray-400 mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No resources found. Try a different search.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {availableResources.map((resource) => {
+                  const isSelected = selectedResources.some(
+                    (r) =>
+                      r.external_id === resource.external_id &&
+                      r.source === resource.source
+                  )
+                  return (
+                    <ResourceCard
+                      key={`${resource.source}-${resource.external_id}`}
+                      resource={resource}
+                      isSelected={isSelected}
+                      onSelect={handleSelectResource}
+                      onRemove={handleRemoveResource}
+                      compact
+                    />
+                  )
+                })}
+              </div>
+            )}
+
+            {selectedResources.length > 0 && (
+              <div className="p-3 rounded-lg bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800">
+                <p className="text-sm text-violet-700 dark:text-violet-300">
+                  {selectedResources.length} resource
+                  {selectedResources.length > 1 ? "s" : ""} selected
+                </p>
+              </div>
+            )}
+
+            {selectedResources.length > 0 && (
+              <button
+                onClick={handleCreateSelfStudyPlan}
+                disabled={isLoading}
+                className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700
+                  text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/25
+                  transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+                  flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Creating Study Plan...
+                  </>
+                ) : (
+                  <>
+                    <Calendar className="w-5 h-5" />
+                    Create Study Plan
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )
+
       case "complete":
         return (
           <div className="text-center py-6">
@@ -948,6 +1478,13 @@ export default function StudyPlanWizard({
         return !!examDate && daysUntilExam > 0
       case "preview":
         return !!preview
+      // Course mode steps - navigation is handled by buttons within the step
+      case "course-type":
+      case "course-input":
+      case "course-search":
+      case "syllabus-preview":
+      case "resources":
+        return false // These steps use internal buttons for navigation
       default:
         return false
     }
@@ -989,6 +1526,22 @@ export default function StudyPlanWizard({
       } else if (step === "preview") {
         setStep("schedule")
       }
+    } else if (inputMode === "course") {
+      // Course flow
+      if (step === "course-type") {
+        setStep("input-mode")
+        setInputMode(null)
+        setCourseType(null)
+      } else if (step === "course-input") {
+        setStep("course-type")
+      } else if (step === "syllabus-preview") {
+        setStep("course-input")
+        setGeneratedSyllabus(null)
+      } else if (step === "resources") {
+        setStep("course-input")
+        setAvailableResources([])
+        setSelectedResources([])
+      }
     } else {
       // Documents flow
       if (step === "documents") {
@@ -1007,6 +1560,10 @@ export default function StudyPlanWizard({
       const syllabusSteps = ["syllabus", "exam", "topics", "schedule", "preview"]
       const idx = syllabusSteps.indexOf(step)
       return idx >= 0 ? idx + 1 : 1
+    } else if (inputMode === "course") {
+      const courseSteps = ["course-type", "course-input", "course-search", "syllabus-preview", "resources"]
+      const idx = courseSteps.indexOf(step)
+      return idx >= 0 ? idx + 1 : 1
     } else {
       const docSteps = ["documents", "schedule", "preview"]
       const idx = docSteps.indexOf(step)
@@ -1015,7 +1572,9 @@ export default function StudyPlanWizard({
   }
 
   const getTotalSteps = () => {
-    return inputMode === "syllabus" ? 5 : 3
+    if (inputMode === "syllabus") return 5
+    if (inputMode === "course") return courseType === "syllabus-search" ? 4 : 3
+    return 3
   }
 
   const currentStepNumber = getStepNumber()
@@ -1031,10 +1590,10 @@ export default function StudyPlanWizard({
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              {syllabusData?.courseName || "Create Study Plan"}
+              {generatedSyllabus?.courseName || syllabusData?.courseName || "Create Study Plan"}
             </h2>
             <p className="text-xs text-gray-500">
-              {step === "input-mode" ? "Getting started" : `Step ${currentStepNumber} of ${totalSteps}`}
+              {step === "input-mode" || step === "course-type" ? "Getting started" : `Step ${currentStepNumber} of ${totalSteps}`}
             </p>
           </div>
         </div>
@@ -1049,7 +1608,7 @@ export default function StudyPlanWizard({
       </div>
 
       {/* Progress bar */}
-      {step !== "complete" && step !== "input-mode" && (
+      {step !== "complete" && step !== "input-mode" && step !== "course-type" && step !== "course-search" && (
         <div className="px-4 pt-3">
           <div className="h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
             <div
@@ -1073,33 +1632,53 @@ export default function StudyPlanWizard({
         </div>
       )}
 
-      {/* Footer */}
-      {step !== "complete" && step !== "input-mode" && step !== "syllabus" && (
-        <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+      {/* Footer - only show for non-course mode steps that need navigation */}
+      {step !== "complete" &&
+        step !== "input-mode" &&
+        step !== "syllabus" &&
+        step !== "course-type" &&
+        step !== "course-input" &&
+        step !== "course-search" &&
+        step !== "syllabus-preview" &&
+        step !== "resources" && (
+          <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-1 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back
+            </button>
+
+            <button
+              onClick={handleNext}
+              disabled={!canGoNext() || isLoading}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 text-white font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {step === "schedule" ? "Generating..." : "Creating..."}
+                </>
+              ) : (
+                <>
+                  {step === "preview" ? "Create Plan" : "Next"}
+                  <ChevronRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+      {/* Course mode back button footer */}
+      {(step === "course-type" || step === "course-input" || step === "syllabus-preview" || step === "resources") && (
+        <div className="p-4 border-t border-gray-100 dark:border-gray-800">
           <button
             onClick={handleBack}
             className="flex items-center gap-1 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
             Back
-          </button>
-
-          <button
-            onClick={handleNext}
-            disabled={!canGoNext() || isLoading}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 text-white font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {step === "schedule" ? "Generating..." : "Creating..."}
-              </>
-            ) : (
-              <>
-                {step === "preview" ? "Create Plan" : "Next"}
-                <ChevronRight className="w-4 h-4" />
-              </>
-            )}
           </button>
         </div>
       )}
