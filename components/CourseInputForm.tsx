@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { GraduationCap, School, BookOpen, Calendar, Loader2 } from 'lucide-react'
+import { GraduationCap, School, BookOpen, Calendar, Loader2, ChevronDown } from 'lucide-react'
 import type { CourseInput } from '@/lib/supabase/types'
 
 interface CourseInputFormProps {
@@ -121,6 +121,278 @@ const TOP_UNIVERSITIES = [
   'University College London',
 ]
 
+// Programs / Departments
+const PROGRAMS = [
+  // Science & Technology
+  'Computer Science',
+  'Software Engineering',
+  'Information Technology',
+  'Data Science',
+  'Artificial Intelligence',
+  'Cybersecurity',
+  'Computer Engineering',
+  'Electrical Engineering',
+  'Mechanical Engineering',
+  'Civil Engineering',
+  'Chemical Engineering',
+  'Biomedical Engineering',
+  'Aerospace Engineering',
+  'Industrial Engineering',
+  // Sciences
+  'Mathematics',
+  'Statistics',
+  'Physics',
+  'Chemistry',
+  'Biology',
+  'Biochemistry',
+  'Environmental Science',
+  'Earth Science',
+  'Geology',
+  // Health & Medicine
+  'Nursing',
+  'Medicine',
+  'Pharmacy',
+  'Public Health',
+  'Health Sciences',
+  'Kinesiology',
+  'Nutrition',
+  'Dental Hygiene',
+  'Medical Laboratory',
+  'Paramedic',
+  'Personal Support Worker (PSW)',
+  // Business
+  'Business Administration',
+  'Accounting',
+  'Finance',
+  'Marketing',
+  'Management',
+  'Human Resources',
+  'International Business',
+  'Economics',
+  'Entrepreneurship',
+  'Supply Chain Management',
+  'Project Management',
+  // Arts & Humanities
+  'English',
+  'History',
+  'Philosophy',
+  'Psychology',
+  'Sociology',
+  'Political Science',
+  'Communications',
+  'Journalism',
+  'Media Studies',
+  'Film Studies',
+  'Music',
+  'Fine Arts',
+  'Graphic Design',
+  'Animation',
+  'Interior Design',
+  // Social Sciences
+  'Social Work',
+  'Criminal Justice',
+  'Law',
+  'Education',
+  'Early Childhood Education',
+  'Special Education',
+  // Trades & Applied
+  'Culinary Arts',
+  'Hospitality Management',
+  'Tourism',
+  'Automotive Technology',
+  'Welding',
+  'Electrical Technician',
+  'HVAC',
+  'Plumbing',
+  'Construction Management',
+  'Architecture',
+  // Other
+  'Other',
+]
+
+// Common Course Names by Category
+const COURSE_NAMES: Record<string, string[]> = {
+  'Computer Science': [
+    'Introduction to Computer Science',
+    'Programming Fundamentals',
+    'Data Structures and Algorithms',
+    'Object-Oriented Programming',
+    'Database Systems',
+    'Operating Systems',
+    'Computer Networks',
+    'Software Engineering',
+    'Web Development',
+    'Mobile Application Development',
+    'Artificial Intelligence',
+    'Machine Learning',
+    'Computer Graphics',
+    'Cybersecurity Fundamentals',
+    'Cloud Computing',
+    'Discrete Mathematics',
+  ],
+  'Software Engineering': [
+    'Software Development Fundamentals',
+    'Software Architecture',
+    'Agile Development',
+    'Software Testing',
+    'Requirements Engineering',
+    'DevOps Practices',
+    'Software Project Management',
+  ],
+  'Data Science': [
+    'Introduction to Data Science',
+    'Statistical Analysis',
+    'Data Mining',
+    'Big Data Analytics',
+    'Data Visualization',
+    'Predictive Modeling',
+  ],
+  'Mathematics': [
+    'Calculus I',
+    'Calculus II',
+    'Calculus III',
+    'Linear Algebra',
+    'Discrete Mathematics',
+    'Differential Equations',
+    'Real Analysis',
+    'Abstract Algebra',
+    'Probability Theory',
+    'Statistics',
+    'Number Theory',
+  ],
+  'Physics': [
+    'Physics I - Mechanics',
+    'Physics II - Electricity and Magnetism',
+    'Modern Physics',
+    'Thermodynamics',
+    'Quantum Mechanics',
+    'Classical Mechanics',
+    'Electromagnetism',
+    'Optics',
+  ],
+  'Chemistry': [
+    'General Chemistry I',
+    'General Chemistry II',
+    'Organic Chemistry I',
+    'Organic Chemistry II',
+    'Biochemistry',
+    'Physical Chemistry',
+    'Analytical Chemistry',
+    'Inorganic Chemistry',
+  ],
+  'Biology': [
+    'Introduction to Biology',
+    'Cell Biology',
+    'Genetics',
+    'Microbiology',
+    'Anatomy and Physiology',
+    'Ecology',
+    'Evolution',
+    'Molecular Biology',
+  ],
+  'Business Administration': [
+    'Introduction to Business',
+    'Business Communications',
+    'Organizational Behavior',
+    'Business Law',
+    'Strategic Management',
+    'Operations Management',
+    'Business Ethics',
+  ],
+  'Accounting': [
+    'Financial Accounting',
+    'Managerial Accounting',
+    'Cost Accounting',
+    'Auditing',
+    'Taxation',
+    'Intermediate Accounting',
+    'Advanced Accounting',
+  ],
+  'Finance': [
+    'Corporate Finance',
+    'Investment Analysis',
+    'Financial Markets',
+    'Portfolio Management',
+    'Risk Management',
+    'International Finance',
+    'Financial Planning',
+  ],
+  'Marketing': [
+    'Principles of Marketing',
+    'Consumer Behavior',
+    'Digital Marketing',
+    'Marketing Research',
+    'Brand Management',
+    'Advertising',
+    'Social Media Marketing',
+  ],
+  'Economics': [
+    'Microeconomics',
+    'Macroeconomics',
+    'Econometrics',
+    'International Economics',
+    'Development Economics',
+    'Labor Economics',
+  ],
+  'Psychology': [
+    'Introduction to Psychology',
+    'Developmental Psychology',
+    'Abnormal Psychology',
+    'Social Psychology',
+    'Cognitive Psychology',
+    'Research Methods in Psychology',
+    'Personality Psychology',
+  ],
+  'Nursing': [
+    'Fundamentals of Nursing',
+    'Medical-Surgical Nursing',
+    'Pharmacology',
+    'Health Assessment',
+    'Pediatric Nursing',
+    'Mental Health Nursing',
+    'Community Health Nursing',
+    'Nursing Ethics',
+  ],
+  'Engineering': [
+    'Engineering Mathematics',
+    'Engineering Physics',
+    'Engineering Graphics',
+    'Statics',
+    'Dynamics',
+    'Fluid Mechanics',
+    'Materials Science',
+    'Engineering Economics',
+  ],
+  'English': [
+    'English Composition',
+    'Academic Writing',
+    'Literature Survey',
+    'Creative Writing',
+    'Technical Writing',
+    'British Literature',
+    'American Literature',
+  ],
+  'History': [
+    'World History',
+    'Western Civilization',
+    'American History',
+    'Canadian History',
+    'European History',
+    'Ancient History',
+    'Modern History',
+  ],
+  // Default courses for unlisted programs
+  'default': [
+    'Introduction to the Field',
+    'Fundamentals',
+    'Research Methods',
+    'Professional Practice',
+    'Capstone Project',
+    'Industry Placement',
+    'Advanced Topics',
+  ],
+}
+
 const SEMESTERS = ['Fall', 'Spring', 'Summer', 'Winter']
 
 const currentYear = new Date().getFullYear()
@@ -134,6 +406,8 @@ export default function CourseInputForm({ onSubmit, isLoading }: CourseInputForm
   const [semester, setSemester] = useState('Fall')
   const [year, setYear] = useState(currentYear)
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [showProgramSuggestions, setShowProgramSuggestions] = useState(false)
+  const [showCourseNameSuggestions, setShowCourseNameSuggestions] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const filteredUniversities = university.length > 1
@@ -141,6 +415,43 @@ export default function CourseInputForm({ onSubmit, isLoading }: CourseInputForm
         u.toLowerCase().includes(university.toLowerCase())
       ).slice(0, 5)
     : []
+
+  const filteredPrograms = program.length > 0
+    ? PROGRAMS.filter((p) =>
+        p.toLowerCase().includes(program.toLowerCase())
+      ).slice(0, 6)
+    : PROGRAMS.slice(0, 6)
+
+  // Get course names based on selected program
+  const getCourseNamesForProgram = (): string[] => {
+    if (!program) return COURSE_NAMES['default'] || []
+
+    // Find matching program
+    const matchedProgram = Object.keys(COURSE_NAMES).find(
+      (p) => p.toLowerCase() === program.toLowerCase()
+    )
+
+    if (matchedProgram) {
+      return COURSE_NAMES[matchedProgram]
+    }
+
+    // Check for partial matches (e.g., "Electrical Engineering" matches "Engineering")
+    const partialMatch = Object.keys(COURSE_NAMES).find(
+      (p) => program.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(program.toLowerCase())
+    )
+
+    if (partialMatch) {
+      return COURSE_NAMES[partialMatch]
+    }
+
+    return COURSE_NAMES['default'] || []
+  }
+
+  const filteredCourseNames = courseName.length > 0
+    ? getCourseNamesForProgram().filter((c) =>
+        c.toLowerCase().includes(courseName.toLowerCase())
+      ).slice(0, 6)
+    : getCourseNamesForProgram().slice(0, 6)
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -231,19 +542,47 @@ export default function CourseInputForm({ onSubmit, isLoading }: CourseInputForm
         )}
       </div>
 
-      {/* Program (Optional) */}
-      <div>
+      {/* Program (Dropdown with search) */}
+      <div className="relative">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Program / Department (Optional)
+          Program / Department
         </label>
-        <input
-          type="text"
-          value={program}
-          onChange={(e) => setProgram(e.target.value)}
-          placeholder="e.g., Computer Science, Biology"
-          className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl
-            bg-white dark:bg-gray-800 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            value={program}
+            onChange={(e) => {
+              setProgram(e.target.value)
+              setShowProgramSuggestions(true)
+            }}
+            onFocus={() => setShowProgramSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowProgramSuggestions(false), 200)}
+            placeholder="Select or type program..."
+            className="w-full px-4 py-3 pr-10 border border-gray-200 dark:border-gray-700 rounded-xl
+              bg-white dark:bg-gray-800 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        </div>
+        {showProgramSuggestions && (
+          <ul className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+            {filteredPrograms.map((p) => (
+              <li
+                key={p}
+                onClick={() => {
+                  setProgram(p)
+                  setShowProgramSuggestions(false)
+                  // Clear course name when program changes to encourage re-selection
+                  if (courseName && !getCourseNamesForProgram().includes(courseName)) {
+                    setCourseName('')
+                  }
+                }}
+                className="px-4 py-2 hover:bg-violet-50 dark:hover:bg-violet-900/20 cursor-pointer text-sm"
+              >
+                {p}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Course Code & Name */}
@@ -262,7 +601,7 @@ export default function CourseInputForm({ onSubmit, isLoading }: CourseInputForm
           />
         </div>
 
-        <div>
+        <div className="relative">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Course Name *
           </label>
@@ -273,16 +612,36 @@ export default function CourseInputForm({ onSubmit, isLoading }: CourseInputForm
               value={courseName}
               onChange={(e) => {
                 setCourseName(e.target.value)
+                setShowCourseNameSuggestions(true)
                 if (errors.courseName) setErrors({ ...errors, courseName: '' })
               }}
-              placeholder="e.g., Introduction to Programming"
-              className={`w-full pl-10 pr-4 py-3 border rounded-xl bg-white dark:bg-gray-800
+              onFocus={() => setShowCourseNameSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowCourseNameSuggestions(false), 200)}
+              placeholder="Select or type course..."
+              className={`w-full pl-10 pr-10 py-3 border rounded-xl bg-white dark:bg-gray-800
                 ${errors.courseName ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'}
                 focus:ring-2 focus:ring-violet-500 focus:border-transparent`}
             />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
           </div>
           {errors.courseName && (
             <p className="text-sm text-red-500 mt-1">{errors.courseName}</p>
+          )}
+          {showCourseNameSuggestions && filteredCourseNames.length > 0 && (
+            <ul className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+              {filteredCourseNames.map((c) => (
+                <li
+                  key={c}
+                  onClick={() => {
+                    setCourseName(c)
+                    setShowCourseNameSuggestions(false)
+                  }}
+                  className="px-4 py-2 hover:bg-violet-50 dark:hover:bg-violet-900/20 cursor-pointer text-sm"
+                >
+                  {c}
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       </div>
