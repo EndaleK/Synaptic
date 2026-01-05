@@ -451,18 +451,63 @@ export async function generateSyllabusFromWeb(
  * Generate a syllabus from scratch when no web content is available
  */
 async function generateSyllabusFromScratch(courseInput: CourseInput): Promise<GeneratedSyllabus> {
-  const prompt = `Generate a realistic university course syllabus for the following course:
+  const prompt = `You are an expert curriculum designer. Generate a comprehensive and realistic university/college course syllabus.
 
-University: ${courseInput.university}
-Course Code: ${courseInput.courseCode}
-Course Name: ${courseInput.courseName}
-Program: ${courseInput.program || 'Not specified'}
-Semester: ${courseInput.semester} ${courseInput.year}
+COURSE INFORMATION:
+- Institution: ${courseInput.university}
+- Course Code: ${courseInput.courseCode || 'N/A'}
+- Course Name: ${courseInput.courseName}
+- Program/Department: ${courseInput.program || 'Not specified'}
+- Term: ${courseInput.semester} ${courseInput.year}
 
-Create a comprehensive 14-week course syllabus based on typical academic standards for this subject.
-Include realistic weekly topics, textbook recommendations, and learning objectives.
+TASK: Create a detailed 14-week course syllabus that would be used at a real institution for this subject.
 
-IMPORTANT: Since this is generated without real course data, set confidence score to 0.5 or lower.`
+REQUIREMENTS:
+1. Weekly topics should follow a logical progression from foundational to advanced concepts
+2. Include 2-3 widely-used, well-known textbooks for this subject (real books that exist)
+3. Learning objectives should be specific and measurable (use Bloom's taxonomy verbs)
+4. Readings should reference specific chapters/sections from the textbooks
+5. Include a mix of assignments: homework, projects, quizzes, exams
+
+OUTPUT FORMAT: Return a JSON object with this exact structure:
+{
+  "courseName": "${courseInput.courseName}",
+  "courseDescription": "string (2-3 sentences describing the course scope and goals)",
+  "learningObjectives": ["string array of 5-6 specific, measurable objectives"],
+  "weeklySchedule": [
+    {
+      "week": 1,
+      "topic": "string (specific topic name)",
+      "readings": ["Textbook Name Ch. X", "Additional reading"],
+      "assignments": ["string array"],
+      "learningObjectives": ["1-2 specific objectives for this week"]
+    }
+  ],
+  "textbooks": [
+    {
+      "title": "string (real textbook title)",
+      "authors": ["string array of real authors"],
+      "isbn": "string (real ISBN if known, or null)",
+      "required": true
+    }
+  ],
+  "gradingScheme": {
+    "Midterm Exam": 20,
+    "Final Exam": 30,
+    "Assignments": 25,
+    "Projects": 15,
+    "Participation": 10
+  },
+  "confidenceScore": 0.5
+}
+
+IMPORTANT:
+- Recommend REAL, well-known textbooks that are commonly used for this subject
+- For Statistics: recommend books like "Statistics" by Freedman, Pisani, Purves or "OpenIntro Statistics"
+- For Computer Science: recommend appropriate classics in the field
+- The confidence score should be 0.5 since this is AI-generated without real course data
+
+Return ONLY valid JSON, no markdown or explanation.`
 
   return callAIForSyllabus(prompt, courseInput, [])
 }
