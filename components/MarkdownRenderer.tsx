@@ -356,6 +356,22 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     sanitized = sanitized.replace(/<(\d+)/g, 'under $1')
 
     // ============================================================
+    // FIX: Handle < and > in edge labels (-- text --> syntax)
+    // AI generates patterns like "-- <20 weeks -->" or "-- >=20 weeks -->"
+    // These need to be sanitized to use text equivalents
+    // Pattern: -- <something --> or -- >=something -->
+    // IMPORTANT: Check <= and >= BEFORE < and > (longer patterns first)
+    // ============================================================
+    // Handle edge labels with <= comparison: -- <=20 weeks --> becomes -- 20 or under weeks -->
+    sanitized = sanitized.replace(/--\s*<=(\d+)/g, '-- $1 or under')
+    // Handle edge labels with >= comparison: -- >=20 weeks --> becomes -- 20 or more -->
+    sanitized = sanitized.replace(/--\s*>=(\d+)/g, '-- $1 or more')
+    // Handle edge labels with < comparison: -- <20 weeks --> becomes -- under 20 weeks -->
+    sanitized = sanitized.replace(/--\s*<(\d+)/g, '-- under $1')
+    // Handle edge labels with > comparison: -- >20 weeks --> becomes -- over 20 weeks -->
+    sanitized = sanitized.replace(/--\s*>(\d+)/g, '-- over $1')
+
+    // ============================================================
     // FIX: Handle <br> and <br/> tags - replace with space or hyphen
     // AI often uses <br> for line breaks in labels, but Mermaid doesn't support this
     // ============================================================
