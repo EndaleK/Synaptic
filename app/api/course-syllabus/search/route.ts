@@ -10,9 +10,9 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createSSEStream, createSSEHeaders, ProgressTracker } from '@/lib/sse-utils'
-import { searchAndGenerateSyllabus, searchForSyllabus, fetchSyllabusContent, generateSyllabusFromWeb } from '@/lib/syllabus-scraper'
+import { searchForSyllabus, fetchSyllabusContent, generateSyllabusFromWeb } from '@/lib/syllabus-scraper'
 import { getResourcesForSyllabus } from '@/lib/resource-apis'
-import type { CourseInput } from '@/lib/supabase/types'
+import type { CourseInput, SyllabusSearchResult } from '@/lib/supabase/types'
 
 export const maxDuration = 120 // 2 minutes for web search + AI generation
 export const runtime = 'nodejs'
@@ -68,32 +68,65 @@ export async function POST(req: NextRequest) {
         message: `Searching for ${courseInput.courseName} syllabi...`,
       })
 
-      const searchResults = await searchForSyllabus(courseInput)
+      console.log('[Course Syllabus Search] Starting search for:', courseInput.courseName)
+      let searchResults: SyllabusSearchResult[] = []
+      try {
+        searchResults = await searchForSyllabus(courseInput)
+        console.log('[Course Syllabus Search] Search completed, found:', searchResults.length, 'results')
+      } catch (searchError) {
+        console.error('[Course Syllabus Search] Search failed:', searchError)
+        // On search error, continue with empty results to allow AI generation
+        searchResults = []
+        send({
+          type: 'progress',
+          progress: 20,
+          message: 'Web search encountered issues, generating from course info...',
+        })
+      }
 
-      send({
-        type: 'progress',
-        progress: 25,
-        message: `Found ${searchResults.length} potential syllabi`,
-        data: { searchResults: searchResults.slice(0, 5) },
-      })
+      if (searchResults.length > 0) {
+        send({
+          type: 'progress',
+          progress: 25,
+          message: `Found ${searchResults.length} potential syllabi`,
+        })
+      } else {
+        send({
+          type: 'progress',
+          progress: 25,
+          message: 'No syllabi found online, will generate from course information',
+        })
+      }
 
-      // Step 2: Fetch content from top results
+      // Step 2: Fetch content from top results (skip if no results)
       tracker.completeStep()
-      send({
-        type: 'progress',
-        progress: 35,
-        message: 'Fetching course page content...',
-      })
 
-      const topUrls = searchResults.slice(0, 3).map((r) => r.url)
-      const webContent = await fetchSyllabusContent(topUrls)
+      let webContent: Awaited<ReturnType<typeof fetchSyllabusContent>> = []
+      let successfulFetches = 0
 
-      const successfulFetches = webContent.filter((c) => c.success).length
-      send({
-        type: 'progress',
-        progress: 50,
-        message: `Successfully fetched ${successfulFetches} pages`,
-      })
+      if (searchResults.length > 0) {
+        send({
+          type: 'progress',
+          progress: 35,
+          message: 'Fetching course page content...',
+        })
+
+        const topUrls = searchResults.slice(0, 3).map((r) => r.url)
+        webContent = await fetchSyllabusContent(topUrls)
+        successfulFetches = webContent.filter((c) => c.success).length
+
+        send({
+          type: 'progress',
+          progress: 50,
+          message: `Successfully fetched ${successfulFetches} pages`,
+        })
+      } else {
+        send({
+          type: 'progress',
+          progress: 50,
+          message: 'Preparing to generate syllabus...',
+        })
+      }
 
       // Step 3: Analyze content
       tracker.completeStep()
@@ -117,7 +150,7 @@ export async function POST(req: NextRequest) {
         type: 'progress',
         progress: 85,
         message: `Generated ${syllabus.weeklySchedule.length}-week syllabus`,
-        data: {
+        details: {
           weekCount: syllabus.weeklySchedule.length,
           confidenceScore: syllabus.confidenceScore,
         },

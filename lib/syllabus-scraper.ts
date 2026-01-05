@@ -50,10 +50,13 @@ export async function searchForSyllabus(
 
   // Search with the primary query first
   const primaryQuery = queries[0]
-  console.log(`[Syllabus Scraper] Searching: "${primaryQuery}"`)
+  console.log(`[Syllabus Scraper] Starting search for: "${primaryQuery}"`)
 
   try {
-    const searchResponse = await searchWeb(primaryQuery, maxResults)
+    console.log('[Syllabus Scraper] Calling searchWeb with primary query...')
+    const searchResponse = await searchWeb(primaryQuery, maxResults, 30000) // 30 second timeout
+
+    console.log(`[Syllabus Scraper] searchWeb returned ${searchResponse.results?.length || 0} results`)
 
     // Transform and score results
     const results: SyllabusSearchResult[] = searchResponse.results.map((result) => ({
@@ -71,7 +74,7 @@ export async function searchForSyllabus(
     if (results.length < 3 && queries.length > 1) {
       console.log(`[Syllabus Scraper] Trying secondary query: "${queries[1]}"`)
       try {
-        const secondaryResponse = await searchWeb(queries[1], maxResults)
+        const secondaryResponse = await searchWeb(queries[1], maxResults, 30000)
         const secondaryResults = secondaryResponse.results
           .filter((r) => !results.some((existing) => existing.url === r.url))
           .map((result) => ({
@@ -85,6 +88,7 @@ export async function searchForSyllabus(
         results.sort((a, b) => b.confidence - a.confidence)
       } catch (err) {
         console.warn('[Syllabus Scraper] Secondary search failed:', err)
+        // Continue with primary results, don't fail completely
       }
     }
 
@@ -92,6 +96,13 @@ export async function searchForSyllabus(
     return results.slice(0, maxResults)
   } catch (error) {
     console.error('[Syllabus Scraper] Search error:', error)
+
+    // Return empty results instead of throwing to allow AI generation fallback
+    if (error instanceof Error && error.message.includes('timed out')) {
+      console.warn('[Syllabus Scraper] Search timed out, will generate syllabus from scratch')
+      return []
+    }
+
     throw error
   }
 }
@@ -535,13 +546,16 @@ async function callAIForSyllabus(
   try {
     const provider = getProviderForFeature('syllabus')
 
-    const response = await provider.generateCompletion(prompt, {
-      temperature: 0.3, // Lower temperature for more structured output
-      maxTokens: 4000,
-    })
+    const response = await provider.complete(
+      [{ role: 'user', content: prompt }],
+      {
+        temperature: 0.3, // Lower temperature for more structured output
+        maxTokens: 4000,
+      }
+    )
 
     // Parse JSON response
-    const jsonMatch = response.match(/\{[\s\S]*\}/)
+    const jsonMatch = response.content.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       throw new Error('No JSON found in AI response')
     }

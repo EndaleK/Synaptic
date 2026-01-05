@@ -24,17 +24,28 @@ export interface SearchResponse {
  */
 export async function searchWeb(
   query: string,
-  maxResults: number = 5
+  maxResults: number = 5,
+  timeoutMs: number = 30000 // 30 second timeout
 ): Promise<SearchResponse> {
   const apiKey = process.env.TAVILY_API_KEY
 
   if (!apiKey) {
+    console.error('[WebSearch] TAVILY_API_KEY not found in environment')
     throw new Error('TAVILY_API_KEY not configured. Add it to your .env.local file.')
   }
 
   const startTime = Date.now()
 
+  // Create AbortController for timeout
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => {
+    controller.abort()
+    console.error(`[WebSearch] Request timed out after ${timeoutMs}ms for query: "${query}"`)
+  }, timeoutMs)
+
   try {
+    console.log(`[WebSearch] Starting search for: "${query}"`)
+
     const response = await fetch('https://api.tavily.com/search', {
       method: 'POST',
       headers: {
@@ -49,15 +60,27 @@ export async function searchWeb(
         include_raw_content: false, // Don't need full HTML
         include_images: false, // Text only for now
       }),
+      signal: controller.signal,
     })
 
+    clearTimeout(timeoutId)
+
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(`Tavily API error: ${error.message || response.statusText}`)
+      let errorMessage = response.statusText
+      try {
+        const error = await response.json()
+        errorMessage = error.message || error.detail || response.statusText
+      } catch {
+        // Ignore JSON parse error
+      }
+      console.error(`[WebSearch] API error (${response.status}): ${errorMessage}`)
+      throw new Error(`Tavily API error (${response.status}): ${errorMessage}`)
     }
 
     const data = await response.json()
     const searchTime = Date.now() - startTime
+
+    console.log(`[WebSearch] Search completed in ${searchTime}ms, found ${data.results?.length || 0} results`)
 
     // Transform Tavily results to our format
     const results: SearchResult[] = (data.results || []).map((result: any) => ({
@@ -73,6 +96,13 @@ export async function searchWeb(
       searchTime,
     }
   } catch (error) {
+    clearTimeout(timeoutId)
+
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error(`[WebSearch] Request aborted (timeout) for query: "${query}"`)
+      throw new Error(`Web search timed out after ${timeoutMs / 1000} seconds. Please try again.`)
+    }
+
     console.error('[WebSearch] Error:', error)
     throw error
   }
