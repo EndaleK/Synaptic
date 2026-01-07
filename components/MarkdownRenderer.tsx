@@ -297,8 +297,13 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     const isMindmap = sanitized.trim().toLowerCase().startsWith('mindmap')
 
     // Remove emojis - they cause syntax errors in node labels
-
     sanitized = sanitized.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}]/gu, '')
+
+    // ============================================================
+    // FIX: Remove apostrophes/single quotes - they break Mermaid syntax
+    // Example: [Class 7 (Learner's)] causes parsing errors
+    // ============================================================
+    sanitized = sanitized.replace(/'/g, '')
 
     // ============================================================
     // FIX: Handle mindmap nodes starting with colon ": text"
@@ -409,7 +414,7 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
       return '[' + cleaned + ']'
     })
 
-    // Also sanitize diamond/rhombus nodes {text} - handle % in diamond nodes too
+    // Also sanitize diamond/rhombus nodes {text} - handle % and / in diamond nodes too
     sanitized = sanitized.replace(/\{([^}]*)\}/g, (match, content) => {
       // Check if this looks like a node label (not CSS or other syntax)
       // Diamond nodes are typically A{label} format
@@ -422,12 +427,14 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
       cleaned = cleaned.replace(/>/g, 'greater than ')
       cleaned = cleaned.replace(/(\d+)%/g, '$1 percent')
       cleaned = cleaned.replace(/%/g, ' percent ')
+      // Replace / with "or" - slashes can break syntax in some contexts
+      cleaned = cleaned.replace(/\//g, ' or ')
       return '{' + cleaned + '}'
     })
 
-    // Fix double quotes inside labels - replace with single quotes
+    // Fix double quotes inside labels - remove them (single quotes already removed earlier)
     sanitized = sanitized.replace(/\[([^\]]*)\]/g, (match, content) => {
-      return '[' + content.replace(/"/g, "'") + ']'
+      return '[' + content.replace(/"/g, '') + ']'
     })
 
     // Remove stray backticks that might have leaked from markdown
