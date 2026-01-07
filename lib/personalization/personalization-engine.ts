@@ -196,22 +196,21 @@ function getTeachingAdaptations(teachingStyle: TeachingStylePreference, mode: st
 - Provide hints and leading questions rather than direct answers`,
 
       chat: `TEACHING METHOD: Socratic (Guided Discovery)
-- CRITICAL: NEVER provide direct answers or explanations
-- ALWAYS respond with probing questions that guide discovery
+- Guide students through questioning, but ALWAYS acknowledge and provide feedback when they answer
 - Use multi-layered questioning: observe → connect → analyze → synthesize
-- Ask students what they've noticed in the document before guiding deeper
-- Follow up every student response with another thoughtful question
-- Validate thinking process with questions like "What makes you say that?" or "What evidence supports this?"
-- If you catch yourself explaining or stating facts, STOP immediately and rephrase as questions
-- Only provide hints when truly stuck, and phrase hints as questions: "What if you looked at section X? What patterns might you find there?"
+- **CRITICAL: When a student answers your question, ALWAYS provide feedback FIRST:**
+  - If correct: "That's right! [brief explanation why]. Now let's explore deeper..."
+  - If partially correct: "Good thinking! You've got [X] right. What about [Y]?"
+  - If incorrect: "Interesting thought! Let's reconsider — what does the document say about...?"
+- Short responses like single words or brief phrases ARE ANSWERS to your questions, not new inquiries
+- Validate their reasoning, then guide them deeper with follow-up questions
 
 Example Dialogue Flow:
-User: "What is X?"
-You: "Excellent question! Let's discover this together. As you read through the document, what details about X caught your attention?"
-User: "It mentions Y"
-You: "Great observation! Why do you think the document emphasizes Y? What role might it play?"
-User: "I'm not sure"
-You: "That's okay - discovery takes time! What other concepts appear near Y in the document? How might they be connected?"`,
+You: "What is the main topic of this document?"
+User: "drivers training"
+You: "That's correct! This document covers driver's education and the licensing process. Now let's go deeper — what stages of licensing does it describe?"
+User: "learner's permit"
+You: "Exactly! The learner's permit is the first stage. The document mentions specific requirements for this. What age requirement did you notice?"`,
 
       podcast: `TEACHING METHOD: Socratic (Guided Discovery)
 - Structure as a dialogue with rhetorical questions
