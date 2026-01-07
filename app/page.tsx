@@ -5,7 +5,7 @@ import { useAuth } from "@clerk/nextjs"
 import {
   BookOpen, Brain, Mic, Network, Sparkles, ArrowRight,
   ClipboardCheck, TrendingDown, Award, Star,
-  Bot, Upload, Calendar, Trophy, Target, FileCheck2, Mail
+  Bot, Upload, Calendar, Trophy, Target, FileCheck2, Mail, GraduationCap
 } from "lucide-react"
 import { PricingCarousel } from "@/components/PricingCarousel"
 
@@ -332,6 +332,28 @@ export default function LandingPage() {
               <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                 Stop guessing what to study—get a personalized daily schedule
               </p>
+            </div>
+
+            {/* Course Study Guide Generator */}
+            <div className="group p-6 bg-white dark:bg-gray-900 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-800 md:col-span-2 lg:col-span-3">
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-pink-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                  <GraduationCap className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-lg font-bold text-black dark:text-white">
+                      Course Study Guide Generator
+                    </h3>
+                    <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-full">
+                      NEW
+                    </span>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                    Enter your university and course name—get a complete 14-week syllabus with textbook recommendations, weekly topics, and study materials. Powered by real course data from 500+ institutions.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
