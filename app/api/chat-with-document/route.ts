@@ -8,6 +8,7 @@ import { logger } from "@/lib/logger"
 import { estimateRequestCost, trackUsage } from "@/lib/cost-estimator"
 import { ChatMessageSchema, validateDocumentLength, validateContentSafety } from "@/lib/validation"
 import { getProviderForFeature } from "@/lib/ai"
+import { getLearningContextForPrompt } from "@/lib/learning-history"
 import { checkUsageLimit, incrementUsage } from "@/lib/usage-limits"
 import { withMonitoring, trackApiMetric, addApiContext, flagSlowOperation } from '@/lib/monitoring/api-monitor'
 import {
@@ -21,6 +22,7 @@ interface ChatRequest {
   message: string
   fileName?: string
   documentContent?: string
+  documentId?: string  // Optional: enables learning history context
   teachingMode?: 'socratic' | 'direct' | 'mixed'
 }
 
@@ -86,7 +88,7 @@ async function handleChatWithDocument(request: NextRequest) {
       )
     }
 
-    const { message, fileName, documentContent, teachingMode } = body
+    const { message, fileName, documentContent, documentId, teachingMode } = body
 
     if (!message) {
       return NextResponse.json(
@@ -210,12 +212,16 @@ Please try uploading a text-based document (TXT, DOCX) or a PDF with selectable 
 
     // Fetch user learning profile for personalization
     let learningProfile: LearningProfile | null = null
+    let userProfileId: string | null = null
+    let learningHistoryContext = ''
 
     try {
       // Get user profile
-      const { profile } = await getUserProfile(userId)
+      const { profile, supabase } = await getUserProfile(userId)
 
       if (profile?.id) {
+        userProfileId = profile.id
+
         // Get learning profile
         const { learningProfile: dbLearningProfile } = await getUserLearningProfile(profile.id)
 
@@ -241,6 +247,29 @@ Please try uploading a text-based document (TXT, DOCX) or a PDF with selectable 
             learningStyle: profile.learning_style,
             teachingMode: effectiveTeachingMode,
             override: !!teachingMode
+          })
+        }
+
+        // Fetch learning history context for AI awareness of weak areas
+        try {
+          learningHistoryContext = await getLearningContextForPrompt(
+            supabase,
+            profile.id,
+            documentId,
+            fileName
+          )
+          if (learningHistoryContext) {
+            logger.debug("Learning history context loaded", {
+              userId,
+              documentId,
+              contextLength: learningHistoryContext.length
+            })
+          }
+        } catch (historyError) {
+          // Non-blocking - continue without learning history if it fails
+          logger.warn("Could not fetch learning history context", {
+            userId,
+            error: historyError
           })
         }
       }
@@ -448,10 +477,18 @@ Key guidelines:
 ${visualContentInstructions}`
     }
 
+    // Inject learning history context if available (enables AI awareness of weak topics)
+    let promptWithHistory = baseSystemPrompt
+    if (learningHistoryContext) {
+      promptWithHistory = `${baseSystemPrompt}
+
+${learningHistoryContext}`
+    }
+
     // Apply personalization if profile exists (this adds learning style adaptations on top of teaching mode)
     const systemPrompt = learningProfile
-      ? personalizePrompt({ profile: learningProfile, mode: 'chat' }, baseSystemPrompt)
-      : baseSystemPrompt
+      ? personalizePrompt({ profile: learningProfile, mode: 'chat' }, promptWithHistory)
+      : promptWithHistory
 
     const userPrompt = `Document: "${fileName || 'Uploaded Document'}"
 

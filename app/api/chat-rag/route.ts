@@ -16,6 +16,7 @@ import { getUserProfile, getUserLearningProfile } from '@/lib/supabase/user-prof
 import { personalizePrompt, createLearningProfile, type LearningProfile } from '@/lib/personalization/personalization-engine'
 import type { LearningStyle, TeachingStylePreference } from '@/lib/supabase/types'
 import { getProviderForFeature } from '@/lib/ai'
+import { getLearningContextForPrompt } from '@/lib/learning-history'
 import { applyRateLimit, RateLimits } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
 import { estimateRequestCost, trackUsage } from '@/lib/cost-estimator'
@@ -429,20 +430,21 @@ export async function POST(request: NextRequest) {
 
     // 9. Fetch user learning profile for personalization
     let learningProfile: LearningProfile | null = null
+    let learningHistoryContext = ''
 
     try {
-      const { profile } = await getUserProfile(userId)
+      const { profile: userProfile } = await getUserProfile(userId)
 
-      if (profile?.id) {
-        const { learningProfile: dbLearningProfile } = await getUserLearningProfile(profile.id)
+      if (userProfile?.id) {
+        const { learningProfile: dbLearningProfile } = await getUserLearningProfile(userProfile.id)
 
-        if (dbLearningProfile && profile.learning_style) {
+        if (dbLearningProfile && userProfile.learning_style) {
           const effectiveTeachingMode =
             teachingMode ||
             (dbLearningProfile.teaching_style_preference || 'mixed') as TeachingStylePreference
 
           learningProfile = createLearningProfile(
-            profile.learning_style as LearningStyle,
+            userProfile.learning_style as LearningStyle,
             effectiveTeachingMode as TeachingStylePreference,
             {
               visual: dbLearningProfile.visual_score,
@@ -455,7 +457,7 @@ export async function POST(request: NextRequest) {
 
           logger.debug('Using personalized RAG chat', {
             userId,
-            learningStyle: profile.learning_style,
+            learningStyle: userProfile.learning_style,
             teachingMode: effectiveTeachingMode,
           })
         }
@@ -464,6 +466,29 @@ export async function POST(request: NextRequest) {
       logger.warn('Could not fetch user profile for RAG chat personalization', {
         userId,
         error: profileError,
+      })
+    }
+
+    // 9.5. Fetch learning history context for AI awareness of weak areas
+    try {
+      learningHistoryContext = await getLearningContextForPrompt(
+        supabase,
+        profile.id,
+        documentId,
+        document.file_name
+      )
+      if (learningHistoryContext) {
+        logger.debug('Learning history context loaded for RAG chat', {
+          userId,
+          documentId,
+          contextLength: learningHistoryContext.length
+        })
+      }
+    } catch (historyError) {
+      // Non-blocking - continue without learning history if it fails
+      logger.warn('Could not fetch learning history context for RAG chat', {
+        userId,
+        error: historyError,
       })
     }
 
@@ -568,10 +593,18 @@ Start with a brief, direct answer based on the document excerpts, then ask follo
 ${commonInstructions}`
     }
 
+    // Inject learning history context if available (enables AI awareness of weak topics)
+    let promptWithHistory = baseSystemPrompt
+    if (learningHistoryContext) {
+      promptWithHistory = `${baseSystemPrompt}
+
+${learningHistoryContext}`
+    }
+
     // Apply personalization if profile exists
     const systemPrompt = learningProfile
-      ? personalizePrompt({ profile: learningProfile, mode: 'chat' }, baseSystemPrompt)
-      : baseSystemPrompt
+      ? personalizePrompt({ profile: learningProfile, mode: 'chat' }, promptWithHistory)
+      : promptWithHistory
 
     const userPrompt = `Document: "${document.file_name}"
 

@@ -885,6 +885,7 @@ export default function ChatInterface() {
               message: inputMessage,
               fileName: chatDocument.file?.name,
               documentContent: chatDocument.content,
+              documentId: currentDocument?.id, // Optional: enables learning history context
               teachingMode: teachingMode,
               personalityMode: personalityMode,
               explainLevel: explainLevel
