@@ -703,11 +703,122 @@ function generateDefaultWeeklySchedule(courseName: string): WeeklyScheduleItem[]
 }
 
 // ============================================================================
+// Template Matching (Database-backed)
+// ============================================================================
+
+export interface SyllabusTemplate {
+  id: string
+  subject_category: string
+  course_name: string
+  course_description: string
+  learning_objectives: string[]
+  weekly_schedule: WeeklyScheduleItem[]
+  textbooks: SyllabusTextbook[]
+  grading_scheme: Record<string, number>
+  confidence_boost: number
+  is_verified: boolean
+}
+
+/**
+ * Search for matching templates in the database
+ */
+export async function findMatchingTemplate(
+  courseInput: CourseInput
+): Promise<{ template: SyllabusTemplate | null; matchScore: number }> {
+  try {
+    const { createClient } = await import('./supabase/server')
+    const supabase = await createClient()
+
+    // Use the database function to find matching templates
+    const { data, error } = await supabase.rpc('match_syllabus_template', {
+      p_course_name: courseInput.courseName,
+      p_subject: courseInput.program || null,
+      p_institution: courseInput.university || null,
+      p_level: 'introductory', // Default to introductory
+    })
+
+    if (error) {
+      console.warn('[Syllabus Scraper] Template matching error:', error)
+      return { template: null, matchScore: 0 }
+    }
+
+    if (!data || data.length === 0) {
+      console.log('[Syllabus Scraper] No matching templates found')
+      return { template: null, matchScore: 0 }
+    }
+
+    // Get the best match
+    const bestMatch = data[0]
+    console.log(`[Syllabus Scraper] Found template match: ${bestMatch.course_name} (score: ${bestMatch.match_score})`)
+
+    // Fetch the full template
+    const { data: templateData, error: templateError } = await supabase
+      .from('syllabus_templates')
+      .select('*')
+      .eq('id', bestMatch.template_id)
+      .single()
+
+    if (templateError || !templateData) {
+      console.warn('[Syllabus Scraper] Failed to fetch template:', templateError)
+      return { template: null, matchScore: 0 }
+    }
+
+    return {
+      template: {
+        id: templateData.id,
+        subject_category: templateData.subject_category,
+        course_name: templateData.course_name,
+        course_description: templateData.course_description,
+        learning_objectives: templateData.learning_objectives || [],
+        weekly_schedule: templateData.weekly_schedule || [],
+        textbooks: templateData.textbooks || [],
+        grading_scheme: templateData.grading_scheme || {},
+        confidence_boost: templateData.confidence_boost || 0.3,
+        is_verified: templateData.is_verified || false,
+      },
+      matchScore: bestMatch.match_score,
+    }
+  } catch (error) {
+    console.error('[Syllabus Scraper] Template search error:', error)
+    return { template: null, matchScore: 0 }
+  }
+}
+
+/**
+ * Generate syllabus from a matching template
+ */
+function generateSyllabusFromTemplate(
+  template: SyllabusTemplate,
+  courseInput: CourseInput,
+  matchScore: number
+): GeneratedSyllabus {
+  // Calculate confidence: base from match score + template boost
+  const baseConfidence = matchScore
+  const confidence = Math.min(1, baseConfidence + template.confidence_boost)
+
+  return {
+    courseName: courseInput.courseName, // Use user's course name
+    courseDescription: template.course_description.replace(
+      /This course/,
+      `This ${courseInput.courseName} course at ${courseInput.university}`
+    ),
+    learningObjectives: template.learning_objectives,
+    weeklySchedule: template.weekly_schedule,
+    textbooks: template.textbooks,
+    additionalResources: [],
+    gradingScheme: template.grading_scheme,
+    sourceUrls: [],
+    confidenceScore: confidence,
+  }
+}
+
+// ============================================================================
 // Main Search and Generate Function
 // ============================================================================
 
 /**
  * Complete syllabus search and generation pipeline
+ * Priority: 1) Web search, 2) Template match, 3) AI generation
  */
 export async function searchAndGenerateSyllabus(
   courseInput: CourseInput,
@@ -715,26 +826,43 @@ export async function searchAndGenerateSyllabus(
 ): Promise<GeneratedSyllabus> {
   onProgress?.('Searching for syllabi...', 10)
 
-  // Step 1: Search for syllabi
+  // Step 1: Search for syllabi on the web
   const searchResults = await searchForSyllabus(courseInput)
 
-  if (searchResults.length === 0) {
-    onProgress?.('No syllabi found, generating from course info...', 50)
-    return generateSyllabusFromScratch(courseInput)
+  if (searchResults.length > 0) {
+    onProgress?.(`Found ${searchResults.length} potential syllabi, fetching content...`, 30)
+
+    // Step 2: Fetch content from top results
+    const topUrls = searchResults.slice(0, 3).map((r) => r.url)
+    const webContent = await fetchSyllabusContent(topUrls)
+
+    onProgress?.('Analyzing content and generating syllabus...', 60)
+
+    // Step 3: Generate structured syllabus from web content
+    const syllabus = await generateSyllabusFromWeb(courseInput, webContent)
+
+    onProgress?.('Syllabus generated!', 100)
+    return syllabus
   }
 
-  onProgress?.(`Found ${searchResults.length} potential syllabi, fetching content...`, 30)
+  // Step 2 (fallback): Check for matching templates in database
+  onProgress?.('No online syllabi found, checking course templates...', 30)
 
-  // Step 2: Fetch content from top results
-  const topUrls = searchResults.slice(0, 3).map((r) => r.url)
-  const webContent = await fetchSyllabusContent(topUrls)
+  const { template, matchScore } = await findMatchingTemplate(courseInput)
 
-  onProgress?.('Analyzing content and generating syllabus...', 60)
+  if (template && matchScore >= 0.3) {
+    onProgress?.(`Found matching template for ${template.subject_category}...`, 60)
 
-  // Step 3: Generate structured syllabus
-  const syllabus = await generateSyllabusFromWeb(courseInput, webContent)
+    const syllabus = generateSyllabusFromTemplate(template, courseInput, matchScore)
+
+    onProgress?.('Syllabus generated from template!', 100)
+    return syllabus
+  }
+
+  // Step 3 (final fallback): Generate from scratch using AI
+  onProgress?.('Generating syllabus from course information...', 50)
+  const syllabus = await generateSyllabusFromScratch(courseInput)
 
   onProgress?.('Syllabus generated!', 100)
-
   return syllabus
 }

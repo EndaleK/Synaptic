@@ -10,9 +10,14 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createSSEStream, createSSEHeaders, ProgressTracker } from '@/lib/sse-utils'
-import { searchForSyllabus, fetchSyllabusContent, generateSyllabusFromWeb } from '@/lib/syllabus-scraper'
+import {
+  searchForSyllabus,
+  fetchSyllabusContent,
+  generateSyllabusFromWeb,
+  findMatchingTemplate,
+} from '@/lib/syllabus-scraper'
 import { getResourcesForSyllabus } from '@/lib/resource-apis'
-import type { CourseInput, SyllabusSearchResult } from '@/lib/supabase/types'
+import type { CourseInput, SyllabusSearchResult, GeneratedSyllabus } from '@/lib/supabase/types'
 
 export const maxDuration = 120 // 2 minutes for web search + AI generation
 export const runtime = 'nodejs'
@@ -98,11 +103,11 @@ export async function POST(req: NextRequest) {
         })
       }
 
-      // Step 2: Fetch content from top results (skip if no results)
+      // Step 2: Fetch content from top results OR use template fallback
       tracker.completeStep()
 
       let webContent: Awaited<ReturnType<typeof fetchSyllabusContent>> = []
-      let successfulFetches = 0
+      let syllabus: GeneratedSyllabus
 
       if (searchResults.length > 0) {
         send({
@@ -113,38 +118,105 @@ export async function POST(req: NextRequest) {
 
         const topUrls = searchResults.slice(0, 3).map((r) => r.url)
         webContent = await fetchSyllabusContent(topUrls)
-        successfulFetches = webContent.filter((c) => c.success).length
+        const successfulFetches = webContent.filter((c) => c.success).length
 
         send({
           type: 'progress',
           progress: 50,
           message: `Successfully fetched ${successfulFetches} pages`,
         })
-      } else {
+
+        // Step 3: Analyze content
+        tracker.completeStep()
         send({
           type: 'progress',
-          progress: 50,
-          message: 'Preparing to generate syllabus...',
+          progress: 60,
+          message: 'Analyzing syllabus content...',
         })
+
+        // Step 4: Generate structured syllabus from web content
+        tracker.completeStep()
+        send({
+          type: 'progress',
+          progress: 70,
+          message: 'Generating course syllabus...',
+        })
+
+        syllabus = await generateSyllabusFromWeb(courseInput, webContent)
+      } else {
+        // No web results - try template matching first
+        send({
+          type: 'progress',
+          progress: 35,
+          message: 'Checking course templates database...',
+        })
+
+        const { template, matchScore } = await findMatchingTemplate(courseInput)
+
+        if (template && matchScore >= 0.3) {
+          // Found a matching template!
+          send({
+            type: 'progress',
+            progress: 50,
+            message: `Found ${template.subject_category} course template!`,
+          })
+
+          tracker.completeStep()
+          send({
+            type: 'progress',
+            progress: 60,
+            message: 'Customizing template for your course...',
+          })
+
+          tracker.completeStep()
+          send({
+            type: 'progress',
+            progress: 70,
+            message: 'Generating syllabus from template...',
+          })
+
+          // Generate from template with boosted confidence
+          const confidence = Math.min(1, matchScore + (template.confidence_boost || 0.3))
+
+          syllabus = {
+            courseName: courseInput.courseName,
+            courseDescription: template.course_description.replace(
+              /This course/,
+              `This ${courseInput.courseName} course at ${courseInput.university}`
+            ),
+            learningObjectives: template.learning_objectives,
+            weeklySchedule: template.weekly_schedule,
+            textbooks: template.textbooks,
+            additionalResources: [],
+            gradingScheme: template.grading_scheme,
+            sourceUrls: [],
+            confidenceScore: confidence,
+          }
+        } else {
+          // No template match - fall back to AI generation
+          send({
+            type: 'progress',
+            progress: 50,
+            message: 'No matching templates, generating with AI...',
+          })
+
+          tracker.completeStep()
+          send({
+            type: 'progress',
+            progress: 60,
+            message: 'Analyzing course requirements...',
+          })
+
+          tracker.completeStep()
+          send({
+            type: 'progress',
+            progress: 70,
+            message: 'Generating comprehensive syllabus...',
+          })
+
+          syllabus = await generateSyllabusFromWeb(courseInput, [])
+        }
       }
-
-      // Step 3: Analyze content
-      tracker.completeStep()
-      send({
-        type: 'progress',
-        progress: 60,
-        message: 'Analyzing syllabus content...',
-      })
-
-      // Step 4: Generate structured syllabus
-      tracker.completeStep()
-      send({
-        type: 'progress',
-        progress: 70,
-        message: 'Generating course syllabus...',
-      })
-
-      const syllabus = await generateSyllabusFromWeb(courseInput, webContent)
 
       send({
         type: 'progress',
