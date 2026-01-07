@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { BookOpen, MessageSquare, Mic, Network, Clock, PenTool, Youtube, GraduationCap, FileText, Flame, Zap, BookMarked, Upload, Sparkles, ChevronDown, ArrowRight, Users } from "lucide-react"
+import { BookOpen, MessageSquare, Mic, Network, Clock, PenTool, Youtube, GraduationCap, FileText, Flame, Zap, BookMarked, Upload, Sparkles, ChevronDown, ArrowRight, Users, Target, Plus } from "lucide-react"
 import { useUIStore, useUserStore, useDocumentStore } from "@/lib/store/useStore"
 import { notificationManager } from "@/lib/notifications"
 import { analytics } from "@/lib/analytics"
@@ -29,11 +29,13 @@ const primaryModes = [
   { id: "flashcards", name: "Flashcards", icon: BookOpen, description: "Review cards due today", color: "from-indigo-500 to-indigo-600", bgColor: "bg-indigo-500/10", textColor: "text-indigo-600 dark:text-indigo-400" },
   { id: "exam", name: "Mock Exam", icon: GraduationCap, description: "Test yourself", color: "from-amber-500 to-amber-600", bgColor: "bg-amber-500/10", textColor: "text-amber-600 dark:text-amber-400" },
   { id: "chat", name: "Chat", icon: MessageSquare, description: "Ask your notes anything", color: "from-blue-500 to-blue-600", bgColor: "bg-blue-500/10", textColor: "text-blue-600 dark:text-blue-400" },
-  { id: "documents", name: "Documents", icon: FileText, description: "Manage your files", href: "/dashboard/documents", color: "from-slate-500 to-slate-600", bgColor: "bg-slate-500/10", textColor: "text-slate-600 dark:text-slate-400" },
+  { id: "course-setup", name: "Course Setup", icon: Plus, description: "Add a new course", href: "/dashboard/course-setup", color: "from-violet-500 to-purple-600", bgColor: "bg-violet-500/10", textColor: "text-violet-600 dark:text-violet-400" },
 ]
 
 // Secondary modes (hidden under "More tools")
 const secondaryModes = [
+  { id: "documents", name: "Documents", icon: FileText, description: "Manage your files", href: "/dashboard/documents", color: "from-slate-500 to-slate-600", bgColor: "bg-slate-500/10", textColor: "text-slate-600 dark:text-slate-400" },
+  { id: "knowledge-gaps", name: "Knowledge Gaps", icon: Target, description: "Find weak areas", href: "/dashboard/knowledge-gaps", color: "from-rose-500 to-rose-600", bgColor: "bg-rose-500/10", textColor: "text-rose-600 dark:text-rose-400" },
   { id: "mindmap", name: "Mind Map", icon: Network, description: "Visualize concepts", color: "from-emerald-500 to-emerald-600", bgColor: "bg-emerald-500/10", textColor: "text-emerald-600 dark:text-emerald-400" },
   { id: "podcast", name: "Podcast", icon: Mic, description: "Listen & learn", color: "from-violet-500 to-violet-600", bgColor: "bg-violet-500/10", textColor: "text-violet-600 dark:text-violet-400" },
   { id: "writer", name: "Writer", icon: PenTool, description: "Write essays", href: "/dashboard/writer", color: "from-rose-500 to-rose-600", bgColor: "bg-rose-500/10", textColor: "text-rose-600 dark:text-rose-400" },
@@ -259,7 +261,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
     return () => clearTimeout(timer)
   }, [currentStreak])
 
-  const handleModeClick = (mode: typeof learningModes[0]) => {
+  const handleModeClick = (mode: typeof primaryModes[0]) => {
     if (mode.href) {
       router.push(mode.href)
     } else {
@@ -294,7 +296,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
         }
         break
       case 'upload_first':
-        setActiveMode('flashcards')
+        router.push('/dashboard/course-setup')
         break
     }
   }
@@ -405,11 +407,11 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                   </button>
                 ) : (
                   <button
-                    onClick={() => router.push('/dashboard/documents')}
+                    onClick={() => router.push('/dashboard/course-setup')}
                     className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:scale-[1.02]"
                   >
-                    <Upload className="w-4 h-4" />
-                    Upload Your First Notes
+                    <Plus className="w-4 h-4" />
+                    Set Up Your First Course
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 )}
@@ -743,19 +745,19 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                 </div>
               ) : (
                 <div className="py-10 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-100 to-pink-100 dark:from-violet-500/10 dark:to-pink-500/10 flex items-center justify-center">
-                    <FileText className="w-8 h-8 text-violet-400 dark:text-violet-500" />
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-500/10 dark:to-purple-500/10 flex items-center justify-center">
+                    <GraduationCap className="w-8 h-8 text-violet-400 dark:text-violet-500" />
                   </div>
                   <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-1">No activity yet</h4>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 max-w-sm mx-auto">
-                    Your study activity will appear here. Upload your first document to get started!
+                    Set up your first course to start learning with AI-powered flashcards and study plans!
                   </p>
                   <button
-                    onClick={() => router.push('/dashboard/documents')}
+                    onClick={() => router.push('/dashboard/course-setup')}
                     className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/25"
                   >
-                    <Upload className="w-4 h-4" />
-                    Upload Your First Document
+                    <Plus className="w-4 h-4" />
+                    Set Up Your First Course
                   </button>
                 </div>
               )}

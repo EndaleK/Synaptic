@@ -11,8 +11,10 @@ import {
   ChevronRight,
   Zap,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  ArrowRight
 } from 'lucide-react'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
 interface WeakTopic {
@@ -320,10 +322,17 @@ export default function WeakTopicsPanel({
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800">
-        <p className="text-xs text-gray-500 text-center">
-          Focus on these topics to improve your exam readiness score
+      <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+        <p className="text-xs text-gray-500">
+          Focus on these topics to improve your exam readiness
         </p>
+        <Link
+          href="/dashboard/knowledge-gaps"
+          className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-1 group"
+        >
+          View all
+          <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+        </Link>
       </div>
     </div>
   )
