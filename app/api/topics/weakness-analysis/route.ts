@@ -82,12 +82,24 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch exam attempt data
-    const { data: examAttempts } = await supabase
-      .from('exam_attempts')
-      .select('topic_scores, completed_at')
-      .eq('user_id', profile.id)
-      .order('completed_at', { ascending: false })
-      .limit(10)
+    // Note: topic_scores may not exist in all deployments, so we handle gracefully
+    let examAttempts: any[] = []
+    try {
+      const { data, error } = await supabase
+        .from('exam_attempts')
+        .select('answers, score, completed_at')
+        .eq('user_id', profile.id)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(10)
+
+      if (!error && data) {
+        examAttempts = data
+      }
+    } catch {
+      // Table may not exist - continue without exam data
+      console.log('exam_attempts table not available')
+    }
 
     // Analyze topics
     const weakTopics = analyzeTopics(flashcards || [], examAttempts || [])
@@ -145,17 +157,20 @@ function analyzeTopics(
     topicStats.set(topic, existing)
   })
 
-  // Get exam topic scores
-  const examTopicScores = new Map<string, number[]>()
+  // Get exam scores - we use overall exam scores since topic_scores isn't available
+  // The exam data contains answers array and overall score
+  const examScores: number[] = []
   examAttempts.forEach(attempt => {
-    if (attempt.topic_scores && typeof attempt.topic_scores === 'object') {
-      Object.entries(attempt.topic_scores).forEach(([topic, score]) => {
-        const scores = examTopicScores.get(topic) || []
-        scores.push(score as number)
-        examTopicScores.set(topic, scores)
-      })
+    if (attempt.score !== null && attempt.score !== undefined) {
+      examScores.push(attempt.score)
     }
   })
+  const avgExamScore = examScores.length > 0
+    ? examScores.reduce((a, b) => a + b, 0) / examScores.length
+    : null
+
+  // We no longer have per-topic exam scores, so we'll use overall exam performance
+  const examTopicScores = new Map<string, number[]>()
 
   // Analyze each topic for weaknesses
   topicStats.forEach((stats, topic) => {

@@ -903,7 +903,8 @@ export default function StudyPlansPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            router.push(`/dashboard?mode=schedule`)
+                            // Expand this plan to show its schedule
+                            setSelectedPlan(plan.id)
                           }}
                           className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
                         >
