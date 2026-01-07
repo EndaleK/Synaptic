@@ -442,8 +442,9 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
 
     // Fix common AI mistake: using --> with text instead of -->|text|
     // Pattern: A --> text B  should be A -->|text| B
-    // But only if "text" is not a node identifier (doesn't have brackets)
-    sanitized = sanitized.replace(/-->\s+([^[\s|]+)\s+(\w)/g, '-->|$1| $2')
+    // But only if "text" is not a node identifier (doesn't have brackets or parentheses)
+    // IMPORTANT: Exclude ( and { to avoid breaking valid node syntax like B(text) or B{text}
+    sanitized = sanitized.replace(/-->\s+([^[\s|({}]+)\s+(\w)/g, '-->|$1| $2')
 
     // Normalize whitespace - multiple spaces to single
     sanitized = sanitized.replace(/  +/g, ' ')
