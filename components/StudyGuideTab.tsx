@@ -119,7 +119,9 @@ export default function StudyGuideTab({ plans, onNavigateToMode }: StudyGuideTab
       })
 
       if (!response.ok) {
-        throw new Error('Failed to start content preparation')
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error || 'Failed to start content preparation'
+        throw new Error(errorMessage)
       }
 
       // Poll for status

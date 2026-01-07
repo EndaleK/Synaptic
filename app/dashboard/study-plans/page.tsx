@@ -383,8 +383,9 @@ export default function StudyPlansPage() {
           {/* Main View Tabs: Schedule vs Study Guide */}
           <div className="flex gap-1 mt-4 p-1 bg-white/5 rounded-xl w-fit">
             <button
+              type="button"
               onClick={() => setMainView('schedule')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all cursor-pointer ${
                 mainView === 'schedule'
                   ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
                   : 'text-white/60 hover:text-white hover:bg-white/10'
@@ -394,8 +395,9 @@ export default function StudyPlansPage() {
               Schedule
             </button>
             <button
+              type="button"
               onClick={() => setMainView('study-guide')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all cursor-pointer ${
                 mainView === 'study-guide'
                   ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
                   : 'text-white/60 hover:text-white hover:bg-white/10'

@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
 
     if (!sessions || sessions.length === 0) {
       return NextResponse.json(
-        { error: 'No sessions scheduled for this date' },
+        { error: 'No study sessions are scheduled for today. Please check your study plan schedule or add sessions for this date.' },
         { status: 404 }
       )
     }
