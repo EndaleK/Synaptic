@@ -51,6 +51,7 @@ export default function StudyGuideTab({ plans, onNavigateToMode }: StudyGuideTab
   const [guideData, setGuideData] = useState<StudyGuideBreakdown | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [prepareError, setPrepareError] = useState<string | null>(null)
   const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(new Set())
   const [preparingContent, setPreparingContent] = useState(false)
   const [preparationProgress, setPreparationProgress] = useState(0)
@@ -110,6 +111,7 @@ export default function StudyGuideTab({ plans, onNavigateToMode }: StudyGuideTab
 
     setPreparingContent(true)
     setPreparationProgress(0)
+    setPrepareError(null) // Clear previous prepare errors
 
     try {
       const response = await fetch('/api/study-guide/prepare', {
@@ -136,7 +138,7 @@ export default function StudyGuideTab({ plans, onNavigateToMode }: StudyGuideTab
             fetchGuideData(selectedPlanId)
           } else if (status.status === 'failed') {
             setPreparingContent(false)
-            setError('Content preparation failed')
+            setPrepareError('Content preparation failed')
           } else {
             // Continue polling
             setTimeout(pollStatus, 3000)
@@ -148,7 +150,7 @@ export default function StudyGuideTab({ plans, onNavigateToMode }: StudyGuideTab
     } catch (err) {
       console.error('Error preparing content:', err)
       setPreparingContent(false)
-      setError(err instanceof Error ? err.message : 'Failed to prepare content')
+      setPrepareError(err instanceof Error ? err.message : 'Failed to prepare content')
     }
   }
 
@@ -212,16 +214,30 @@ export default function StudyGuideTab({ plans, onNavigateToMode }: StudyGuideTab
         </div>
       )}
 
-      {/* Error State */}
+      {/* Error State - for fetching guide data */}
       {error && (
         <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-400" />
+          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
           <span className="text-red-400">{error}</span>
           <button
             onClick={() => selectedPlanId && fetchGuideData(selectedPlanId)}
             className="ml-auto px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm"
           >
             Retry
+          </button>
+        </div>
+      )}
+
+      {/* Prepare Error State - shown but doesn't block guide view */}
+      {prepareError && (
+        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+          <span className="text-amber-400 flex-1">{prepareError}</span>
+          <button
+            onClick={() => setPrepareError(null)}
+            className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-lg text-sm"
+          >
+            Dismiss
           </button>
         </div>
       )}
@@ -302,18 +318,10 @@ export default function StudyGuideTab({ plans, onNavigateToMode }: StudyGuideTab
           <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-2xl flex items-center justify-center">
             <Calendar className="w-8 h-8 text-white/30" />
           </div>
-          <h3 className="text-lg font-medium text-white mb-2">No study guide available</h3>
+          <h3 className="text-lg font-medium text-white mb-2">No study sessions scheduled</h3>
           <p className="text-white/50 max-w-md mx-auto mb-6">
-            The study guide will be generated based on your study plan sessions.
+            Your study plan doesn&apos;t have any sessions yet. Go to the Schedule tab to see your plan, or create sessions to start generating your study guide.
           </p>
-          <button
-            onClick={handlePrepareContent}
-            disabled={preparingContent}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl font-medium transition-all"
-          >
-            <Sparkles className="w-4 h-4" />
-            Generate Study Guide
-          </button>
         </div>
       )}
     </div>
