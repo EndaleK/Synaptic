@@ -73,7 +73,7 @@ export async function POST(
     const { data: existingSessions } = await supabase
       .from('study_plan_sessions')
       .select('id')
-      .eq('plan_id', planId)
+      .eq('study_plan_id', planId)
       .limit(1)
 
     if (existingSessions && existingSessions.length > 0) {
@@ -118,16 +118,14 @@ export async function POST(
 
     // Generate sessions based on available days
     const sessions: Array<{
-      plan_id: string
+      study_plan_id: string
       user_id: string
       scheduled_date: string
       session_type: string
       estimated_minutes: number
-      topic: string | null
-      document_id: string | null
-      document_name: string | null
+      topics: Array<{ name: string; documentId?: string; documentName?: string }>
       status: string
-      week_number: number
+      is_buffer_day: boolean
     }> = []
 
     const dailyTargetMinutes = (plan.daily_target_hours || 2) * 60
@@ -162,16 +160,20 @@ export async function POST(
       else sessionType = 'mixed'
 
       sessions.push({
-        plan_id: planId,
+        study_plan_id: planId,
         user_id: profile.id,
         scheduled_date: currentDate.toISOString().split('T')[0],
         session_type: sessionType,
         estimated_minutes: dailyTargetMinutes,
-        topic: doc ? `Study: ${doc.name}` : plan.title || 'Study Session',
-        document_id: doc?.id || null,
-        document_name: doc?.name || null,
+        topics: doc ? [{
+          name: `Study: ${doc.name}`,
+          documentId: doc.id,
+          documentName: doc.name,
+        }] : [{
+          name: plan.title || 'Study Session',
+        }],
         status: 'scheduled',
-        week_number: weekNumber,
+        is_buffer_day: false,
       })
 
       currentDate.setDate(currentDate.getDate() + 1)
