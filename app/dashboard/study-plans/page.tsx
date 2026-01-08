@@ -130,6 +130,10 @@ export default function StudyPlansPage() {
   const [rescheduling, setRescheduling] = useState(false)
   // Main view tab: schedule (list) or study-guide (daily/weekly breakdown)
   const [mainView, setMainView] = useState<'schedule' | 'study-guide'>('schedule')
+  // Plan sessions view state
+  const [viewingSchedulePlanId, setViewingSchedulePlanId] = useState<string | null>(null)
+  const [planSessions, setPlanSessions] = useState<TodaySession[]>([])
+  const [loadingPlanSessions, setLoadingPlanSessions] = useState(false)
 
   const fetchPlans = useCallback(async () => {
     try {
@@ -245,6 +249,23 @@ export default function StudyPlansPage() {
       console.error('Error rescheduling sessions:', error)
     } finally {
       setRescheduling(false)
+    }
+  }
+
+  // Fetch all sessions for a specific plan
+  const handleViewSchedule = async (planId: string) => {
+    setViewingSchedulePlanId(planId)
+    setLoadingPlanSessions(true)
+    try {
+      const response = await fetch(`/api/study-plan-sessions?planId=${planId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setPlanSessions(data.sessions || [])
+      }
+    } catch (error) {
+      console.error('Error fetching plan sessions:', error)
+    } finally {
+      setLoadingPlanSessions(false)
     }
   }
 
@@ -905,8 +926,7 @@ export default function StudyPlansPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            // Expand this plan to show its schedule
-                            setSelectedPlan(plan.id)
+                            handleViewSchedule(plan.id)
                           }}
                           className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
                         >
@@ -980,6 +1000,123 @@ export default function StudyPlansPage() {
           onComplete={handleSessionComplete}
           onNavigateToMode={handleNavigateToMode}
         />
+      )}
+
+      {/* Plan Schedule Modal */}
+      {viewingSchedulePlanId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-white/10 rounded-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-purple-400" />
+                  Study Schedule
+                </h2>
+                <p className="text-white/50 text-sm mt-1">
+                  {plans.find(p => p.id === viewingSchedulePlanId)?.title || 'Study Plan'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setViewingSchedulePlanId(null)
+                  setPlanSessions([])
+                }}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/70 hover:text-white"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Sessions List */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingPlanSessions ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-500 border-t-transparent" />
+                </div>
+              ) : planSessions.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-2xl flex items-center justify-center">
+                    <Calendar className="w-8 h-8 text-white/30" />
+                  </div>
+                  <h3 className="text-lg font-medium text-white mb-2">No sessions scheduled</h3>
+                  <p className="text-white/50 max-w-md mx-auto">
+                    This study plan doesn&apos;t have any sessions yet. Sessions are created when you generate a study plan with documents.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Group sessions by date */}
+                  {Object.entries(
+                    planSessions.reduce((acc, session) => {
+                      const date = session.scheduledDate
+                      if (!acc[date]) acc[date] = []
+                      acc[date].push(session)
+                      return acc
+                    }, {} as Record<string, TodaySession[]>)
+                  ).map(([date, sessions]) => {
+                    const dateObj = new Date(date + 'T00:00:00')
+                    const isToday = date === new Date().toISOString().split('T')[0]
+                    const isPast = dateObj < new Date(new Date().toISOString().split('T')[0] + 'T00:00:00')
+
+                    return (
+                      <div key={date} className={`p-4 rounded-xl border ${
+                        isToday
+                          ? 'bg-purple-500/10 border-purple-500/30'
+                          : isPast
+                          ? 'bg-white/5 border-white/5'
+                          : 'bg-slate-800/50 border-white/10'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className={`text-sm font-medium ${isToday ? 'text-purple-400' : 'text-white/70'}`}>
+                            {dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                          </span>
+                          {isToday && (
+                            <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded-full">Today</span>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          {sessions.map((session) => {
+                            const mode = session.mode || 'flashcards'
+                            const modeConfig = STUDY_MODES[mode as keyof typeof STUDY_MODES] || STUDY_MODES.flashcards
+                            const ModeIcon = modeConfig.icon
+
+                            return (
+                              <div key={session.id} className="flex items-center gap-3 p-2 bg-white/5 rounded-lg">
+                                <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${modeConfig.color} flex items-center justify-center`}>
+                                  <ModeIcon className="w-4 h-4 text-white" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-white text-sm font-medium truncate">
+                                    {session.topic || 'Study Session'}
+                                  </p>
+                                  <p className="text-white/50 text-xs">
+                                    {session.estimatedMinutes} min • {modeConfig.label}
+                                  </p>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  session.status === 'completed'
+                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                    : session.status === 'in_progress'
+                                    ? 'bg-blue-500/20 text-blue-400'
+                                    : session.status === 'missed'
+                                    ? 'bg-red-500/20 text-red-400'
+                                    : 'bg-white/10 text-white/50'
+                                }`}>
+                                  {session.status === 'in_progress' ? 'In Progress' : session.status === 'completed' ? 'Done' : session.status === 'missed' ? 'Missed' : 'Scheduled'}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
