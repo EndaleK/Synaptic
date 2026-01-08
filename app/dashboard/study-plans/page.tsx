@@ -134,6 +134,7 @@ export default function StudyPlansPage() {
   const [viewingSchedulePlanId, setViewingSchedulePlanId] = useState<string | null>(null)
   const [planSessions, setPlanSessions] = useState<TodaySession[]>([])
   const [loadingPlanSessions, setLoadingPlanSessions] = useState(false)
+  const [generatingSchedule, setGeneratingSchedule] = useState(false)
 
   const fetchPlans = useCallback(async () => {
     try {
@@ -266,6 +267,32 @@ export default function StudyPlansPage() {
       console.error('Error fetching plan sessions:', error)
     } finally {
       setLoadingPlanSessions(false)
+    }
+  }
+
+  // Generate schedule for a plan that has no sessions
+  const handleGenerateSchedule = async (planId: string) => {
+    setGeneratingSchedule(true)
+    try {
+      const response = await fetch(`/api/study-plans/${planId}/generate-sessions`, {
+        method: 'POST',
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate schedule')
+      }
+
+      // Refresh the sessions list
+      await handleViewSchedule(planId)
+
+      // Also refresh the plans list to update session counts
+      fetchPlans()
+    } catch (error) {
+      console.error('Error generating schedule:', error)
+      alert(error instanceof Error ? error.message : 'Failed to generate schedule')
+    } finally {
+      setGeneratingSchedule(false)
     }
   }
 
@@ -1040,9 +1067,26 @@ export default function StudyPlansPage() {
                     <Calendar className="w-8 h-8 text-white/30" />
                   </div>
                   <h3 className="text-lg font-medium text-white mb-2">No sessions scheduled</h3>
-                  <p className="text-white/50 max-w-md mx-auto">
-                    This study plan doesn&apos;t have any sessions yet. Sessions are created when you generate a study plan with documents.
+                  <p className="text-white/50 max-w-md mx-auto mb-6">
+                    This study plan doesn&apos;t have any sessions yet. Generate a schedule based on your exam date and documents.
                   </p>
+                  <button
+                    onClick={() => handleGenerateSchedule(viewingSchedulePlanId!)}
+                    disabled={generatingSchedule}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {generatingSchedule ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                        Generating Schedule...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Generate Schedule
+                      </>
+                    )}
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-3">
