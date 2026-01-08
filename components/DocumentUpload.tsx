@@ -57,6 +57,7 @@ export default function DocumentUpload({
             console.log("Document JSON structure:", data.documentJSON)
           }
 
+          toast.success(`${data.flashcards.length} flashcards generated and saved to your library!`)
           onFlashcardsGenerated(data.flashcards)
         } catch (error) {
           console.error("Error generating flashcards:", error)
@@ -146,6 +147,7 @@ export default function DocumentUpload({
         console.log("Document JSON structure:", data.documentJSON)
       }
 
+      toast.success(`${data.flashcards.length} flashcards generated and saved to your library!`)
       onFlashcardsGenerated(data.flashcards)
     } catch (error) {
       console.error("Error generating flashcards:", error)
