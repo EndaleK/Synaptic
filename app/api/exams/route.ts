@@ -11,6 +11,8 @@ import { createClient } from '@/lib/supabase/server'
 import type { ExamInsert } from '@/lib/supabase/types'
 import { logger } from '@/lib/logger'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     // 1. Authenticate user
@@ -68,9 +70,8 @@ export async function GET(request: NextRequest) {
       query = query.contains('tags', tags)
     }
 
-    if (limit) {
-      query = query.limit(parseInt(limit))
-    }
+    // Apply default limit if not specified to prevent unbounded queries
+    query = query.limit(limit ? parseInt(limit) : 50)
 
     // 5. Fetch exams
     const { data: exams, error: examsError } = await query
@@ -91,18 +92,26 @@ export async function GET(request: NextRequest) {
     if (includeAttempts && exams && exams.length > 0) {
       const examIds = exams.map(e => e.id)
 
-      // Fetch all attempts for these exams
+      // Fetch all attempts for these exams (only needed fields, not full *)
       const { data: attempts } = await supabase
         .from('exam_attempts')
-        .select('*')
+        .select('id, exam_id, score, completed_at')
         .in('exam_id', examIds)
         .eq('user_id', profile.id)
         .eq('status', 'completed')
         .order('completed_at', { ascending: false })
 
-      // Calculate statistics for each exam
+      // Pre-group attempts by exam_id for O(1) lookup instead of O(n²)
+      const attemptsByExamId = new Map<string, typeof attempts>()
+      attempts?.forEach(attempt => {
+        const existing = attemptsByExamId.get(attempt.exam_id) || []
+        existing.push(attempt)
+        attemptsByExamId.set(attempt.exam_id, existing)
+      })
+
+      // Calculate statistics for each exam using pre-grouped data
       examsWithAttempts = exams.map(exam => {
-        const examAttempts = attempts?.filter(a => a.exam_id === exam.id) || []
+        const examAttempts = attemptsByExamId.get(exam.id) || []
 
         const attemptCount = examAttempts.length
         const bestScore = attemptCount > 0

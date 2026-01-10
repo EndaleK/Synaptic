@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/admin'
 import { createClient } from '@/lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/admin/users
  * List all users with statistics and subscription info
@@ -53,61 +55,111 @@ export async function GET(req: NextRequest) {
       throw usersError
     }
 
-    // Fetch aggregated statistics for each user
-    const usersWithStats = await Promise.all(
-      (users || []).map(async (user) => {
-        // Count documents
-        const { count: documentCount } = await supabase
-          .from('documents')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-
-        // Count flashcard sets
-        const { count: flashcardSetsCount } = await supabase
-          .from('flashcards')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-
-        // Count study sessions
-        const { count: sessionCount } = await supabase
-          .from('study_sessions')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-
-        // Get last activity (most recent study session or document upload)
-        const { data: lastSession } = await supabase
-          .from('study_sessions')
-          .select('created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-
-        const { data: lastDocument } = await supabase
-          .from('documents')
-          .select('created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-
-        // Determine most recent activity
-        const lastActivity = [lastSession?.created_at, lastDocument?.created_at]
-          .filter(Boolean)
-          .sort()
-          .reverse()[0] || user.created_at
-
-        return {
-          ...user,
-          stats: {
-            documentCount: documentCount || 0,
-            flashcardSetsCount: flashcardSetsCount || 0,
-            sessionCount: sessionCount || 0,
-            lastActivity,
-          },
-        }
+    if (!users || users.length === 0) {
+      return NextResponse.json({
+        success: true,
+        users: [],
+        pagination: {
+          total: 0,
+          limit,
+          offset,
+          hasMore: false,
+        },
       })
-    )
+    }
+
+    // Get all user IDs for batch queries
+    const userIds = users.map((u) => u.id)
+
+    // Batch fetch all statistics in parallel (5 queries total instead of 5 * N)
+    const [
+      documentsRes,
+      flashcardsRes,
+      sessionsRes,
+      lastSessionsRes,
+      lastDocumentsRes,
+    ] = await Promise.all([
+      // Count documents per user
+      supabase
+        .from('documents')
+        .select('user_id')
+        .in('user_id', userIds),
+      // Count flashcard sets per user
+      supabase
+        .from('flashcards')
+        .select('user_id')
+        .in('user_id', userIds),
+      // Count study sessions per user
+      supabase
+        .from('study_sessions')
+        .select('user_id')
+        .in('user_id', userIds),
+      // Get last session per user (using distinct on user_id with order)
+      supabase
+        .from('study_sessions')
+        .select('user_id, created_at')
+        .in('user_id', userIds)
+        .order('created_at', { ascending: false }),
+      // Get last document per user
+      supabase
+        .from('documents')
+        .select('user_id, created_at')
+        .in('user_id', userIds)
+        .order('created_at', { ascending: false }),
+    ])
+
+    // Aggregate counts by user_id
+    const documentCounts: Record<number, number> = {}
+    documentsRes.data?.forEach((d) => {
+      documentCounts[d.user_id] = (documentCounts[d.user_id] || 0) + 1
+    })
+
+    const flashcardCounts: Record<number, number> = {}
+    flashcardsRes.data?.forEach((f) => {
+      flashcardCounts[f.user_id] = (flashcardCounts[f.user_id] || 0) + 1
+    })
+
+    const sessionCounts: Record<number, number> = {}
+    sessionsRes.data?.forEach((s) => {
+      sessionCounts[s.user_id] = (sessionCounts[s.user_id] || 0) + 1
+    })
+
+    // Get most recent timestamps per user (first occurrence in descending order)
+    const lastSessionDates: Record<number, string> = {}
+    lastSessionsRes.data?.forEach((s) => {
+      if (!lastSessionDates[s.user_id]) {
+        lastSessionDates[s.user_id] = s.created_at
+      }
+    })
+
+    const lastDocumentDates: Record<number, string> = {}
+    lastDocumentsRes.data?.forEach((d) => {
+      if (!lastDocumentDates[d.user_id]) {
+        lastDocumentDates[d.user_id] = d.created_at
+      }
+    })
+
+    // Build user stats
+    const usersWithStats = users.map((user) => {
+      const lastSessionDate = lastSessionDates[user.id]
+      const lastDocumentDate = lastDocumentDates[user.id]
+
+      // Determine most recent activity
+      const lastActivity = [lastSessionDate, lastDocumentDate]
+        .filter(Boolean)
+        .sort()
+        .reverse()[0] || user.created_at
+
+      return {
+        ...user,
+        stats: {
+          documentCount: documentCounts[user.id] || 0,
+          flashcardSetsCount: flashcardCounts[user.id] || 0,
+          sessionCount: sessionCounts[user.id] || 0,
+          lastActivity,
+        },
+      }
+    })
 
     return NextResponse.json({
       success: true,

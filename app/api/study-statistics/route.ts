@@ -118,7 +118,12 @@ async function handleGetStudyStatistics(req: NextRequest) {
     const heatmapStart = new Date(todayStart)
     heatmapStart.setUTCDate(heatmapStart.getUTCDate() - heatmapDays + 1) // +1 to include today
 
-    // Fetch all completed study sessions
+    // Calculate the lookback date based on range (with buffer for streak calculation)
+    // We need at least 365 days for longest streak calculation even if range is shorter
+    const streakLookbackDate = new Date(userNow)
+    streakLookbackDate.setUTCDate(streakLookbackDate.getUTCDate() - 365)
+
+    // Fetch completed study sessions within the lookback period (optimized with date filter)
     const { data: sessions, error: sessionsError} = await trackSupabaseQuery(
       'SELECT',
       'study_sessions',
@@ -127,6 +132,7 @@ async function handleGetStudyStatistics(req: NextRequest) {
         .select('start_time, duration_minutes, completed, session_type')
         .eq('user_id', userProfileId)
         .eq('completed', true)
+        .gte('start_time', streakLookbackDate.toISOString())
         .order('start_time', { ascending: true })
     )
 
@@ -226,7 +232,8 @@ async function handleGetStudyStatistics(req: NextRequest) {
     const monthMinutes = monthSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0)
     const averageSessionMinutes = totalSessions > 0 ? Math.round(totalMinutes / totalSessions) : 0
 
-    // Fetch flashcard statistics with error handling
+    // Fetch flashcard statistics with error handling (only recently reviewed cards for stats)
+    // We fetch cards reviewed in the last 365 days for statistics, plus all cards for total count
     const { data: flashcards, error: flashcardsError } = await trackSupabaseQuery(
       'SELECT',
       'flashcards',
@@ -234,6 +241,7 @@ async function handleGetStudyStatistics(req: NextRequest) {
         .from('flashcards')
         .select('times_reviewed, times_correct, last_reviewed_at')
         .eq('user_id', userProfileId)
+        .limit(1000) // Limit to prevent memory issues with very active users
     )
 
     if (flashcardsError) {

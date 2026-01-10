@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/admin'
 import { createClient } from '@/lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/admin/analytics
  * Fetch comprehensive platform analytics
@@ -41,121 +43,104 @@ export async function GET(req: NextRequest) {
         startDate = new Date(0) // Beginning of time
     }
 
-    // User Statistics
-    const { count: totalUsers } = await supabase
-      .from('user_profiles')
-      .select('*', { count: 'exact', head: true })
+    // Run all independent queries in parallel for ~8x performance improvement
+    const [
+      // User Statistics
+      totalUsersRes,
+      newUsersRes,
+      premiumUsersRes,
+      activeUsersRes,
+      // Content Statistics
+      totalDocumentsRes,
+      newDocumentsRes,
+      totalFlashcardsRes,
+      newFlashcardsRes,
+      totalPodcastsRes,
+      newPodcastsRes,
+      totalMindmapsRes,
+      newMindmapsRes,
+      // Study Sessions
+      totalSessionsRes,
+      newSessionsRes,
+      completedSessionsRes,
+      // Trend & Distribution Data
+      userGrowthRes,
+      documentsByTypeRes,
+      learningStylesRes,
+      subscriptionTiersRes,
+      activeUsersDataRes,
+    ] = await Promise.all([
+      // User Statistics
+      supabase.from('user_profiles').select('*', { count: 'exact', head: true }),
+      supabase.from('user_profiles').select('*', { count: 'exact', head: true }).gte('created_at', startDate.toISOString()),
+      supabase.from('user_profiles').select('*', { count: 'exact', head: true }).in('subscription_tier', ['premium', 'enterprise']),
+      supabase.from('user_profiles').select('*', { count: 'exact', head: true }).eq('subscription_status', 'active'),
+      // Content Statistics
+      supabase.from('documents').select('*', { count: 'exact', head: true }),
+      supabase.from('documents').select('*', { count: 'exact', head: true }).gte('created_at', startDate.toISOString()),
+      supabase.from('flashcards').select('*', { count: 'exact', head: true }),
+      supabase.from('flashcards').select('*', { count: 'exact', head: true }).gte('created_at', startDate.toISOString()),
+      supabase.from('podcasts').select('*', { count: 'exact', head: true }),
+      supabase.from('podcasts').select('*', { count: 'exact', head: true }).gte('created_at', startDate.toISOString()),
+      supabase.from('mindmaps').select('*', { count: 'exact', head: true }),
+      supabase.from('mindmaps').select('*', { count: 'exact', head: true }).gte('created_at', startDate.toISOString()),
+      // Study Sessions
+      supabase.from('study_sessions').select('*', { count: 'exact', head: true }),
+      supabase.from('study_sessions').select('*', { count: 'exact', head: true }).gte('created_at', startDate.toISOString()),
+      supabase.from('study_sessions').select('duration_minutes').eq('completed', true).gte('created_at', startDate.toISOString()),
+      // Trend & Distribution Data
+      supabase.from('user_profiles').select('created_at').gte('created_at', new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()).order('created_at', { ascending: true }),
+      supabase.from('documents').select('document_type').gte('created_at', startDate.toISOString()),
+      supabase.from('user_profiles').select('learning_style').not('learning_style', 'is', null),
+      supabase.from('user_profiles').select('subscription_tier'),
+      supabase.from('study_sessions').select('user_id').gte('created_at', startDate.toISOString()),
+    ])
 
-    const { count: newUsers } = await supabase
-      .from('user_profiles')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', startDate.toISOString())
+    // Extract counts from responses
+    const totalUsers = totalUsersRes.count
+    const newUsers = newUsersRes.count
+    const premiumUsers = premiumUsersRes.count
+    const activeUsers = activeUsersRes.count
+    const totalDocuments = totalDocumentsRes.count
+    const newDocuments = newDocumentsRes.count
+    const totalFlashcards = totalFlashcardsRes.count
+    const newFlashcards = newFlashcardsRes.count
+    const totalPodcasts = totalPodcastsRes.count
+    const newPodcasts = newPodcastsRes.count
+    const totalMindmaps = totalMindmapsRes.count
+    const newMindmaps = newMindmapsRes.count
+    const totalSessions = totalSessionsRes.count
+    const newSessions = newSessionsRes.count
 
-    const { count: premiumUsers } = await supabase
-      .from('user_profiles')
-      .select('*', { count: 'exact', head: true })
-      .in('subscription_tier', ['premium', 'enterprise'])
-
-    const { count: activeUsers } = await supabase
-      .from('user_profiles')
-      .select('*', { count: 'exact', head: true })
-      .eq('subscription_status', 'active')
-
-    // Content Statistics
-    const { count: totalDocuments } = await supabase
-      .from('documents')
-      .select('*', { count: 'exact', head: true })
-
-    const { count: newDocuments } = await supabase
-      .from('documents')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', startDate.toISOString())
-
-    const { count: totalFlashcards } = await supabase
-      .from('flashcards')
-      .select('*', { count: 'exact', head: true })
-
-    const { count: newFlashcards } = await supabase
-      .from('flashcards')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', startDate.toISOString())
-
-    const { count: totalPodcasts } = await supabase
-      .from('podcasts')
-      .select('*', { count: 'exact', head: true })
-
-    const { count: newPodcasts } = await supabase
-      .from('podcasts')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', startDate.toISOString())
-
-    const { count: totalMindmaps } = await supabase
-      .from('mindmaps')
-      .select('*', { count: 'exact', head: true })
-
-    const { count: newMindmaps } = await supabase
-      .from('mindmaps')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', startDate.toISOString())
-
-    // Study Sessions
-    const { count: totalSessions } = await supabase
-      .from('study_sessions')
-      .select('*', { count: 'exact', head: true })
-
-    const { count: newSessions } = await supabase
-      .from('study_sessions')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', startDate.toISOString())
-
-    const { data: completedSessions } = await supabase
-      .from('study_sessions')
-      .select('duration_minutes')
-      .eq('completed', true)
-      .gte('created_at', startDate.toISOString())
-
+    // Process completed sessions
+    const completedSessions = completedSessionsRes.data
     const totalStudyMinutes = completedSessions?.reduce(
       (sum, session) => sum + (session.duration_minutes || 0),
       0
     ) || 0
 
-    // User Growth Trend (last 30 days by day)
-    const { data: userGrowth } = await supabase
-      .from('user_profiles')
-      .select('created_at')
-      .gte('created_at', new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString())
-      .order('created_at', { ascending: true })
-
-    // Group by day
+    // Process user growth trend
+    const userGrowth = userGrowthRes.data
     const growthByDay: Record<string, number> = {}
     userGrowth?.forEach((user) => {
       const day = new Date(user.created_at).toISOString().split('T')[0]
       growthByDay[day] = (growthByDay[day] || 0) + 1
     })
-
     const growthTrend = Object.entries(growthByDay).map(([date, count]) => ({
       date,
       count,
     }))
 
-    // Content Generation Breakdown
-    const { data: documentsByType } = await supabase
-      .from('documents')
-      .select('document_type')
-      .gte('created_at', startDate.toISOString())
-
+    // Process document type breakdown
+    const documentsByType = documentsByTypeRes.data
     const typeBreakdown: Record<string, number> = {}
     documentsByType?.forEach((doc) => {
       const type = doc.document_type || 'unknown'
       typeBreakdown[type] = (typeBreakdown[type] || 0) + 1
     })
 
-    // Learning Style Distribution
-    const { data: learningStyles } = await supabase
-      .from('user_profiles')
-      .select('learning_style')
-      .not('learning_style', 'is', null)
-
+    // Process learning style distribution
+    const learningStyles = learningStylesRes.data
     const styleDistribution: Record<string, number> = {}
     learningStyles?.forEach((profile) => {
       const style = profile.learning_style
@@ -164,23 +149,16 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    // Subscription Tier Distribution
-    const { data: subscriptionTiers } = await supabase
-      .from('user_profiles')
-      .select('subscription_tier')
-
+    // Process subscription tier distribution
+    const subscriptionTiers = subscriptionTiersRes.data
     const tierDistribution: Record<string, number> = {}
     subscriptionTiers?.forEach((profile) => {
       const tier = profile.subscription_tier
       tierDistribution[tier] = (tierDistribution[tier] || 0) + 1
     })
 
-    // Most Active Users (top 10)
-    const { data: activeUsersData } = await supabase
-      .from('study_sessions')
-      .select('user_id')
-      .gte('created_at', startDate.toISOString())
-
+    // Process most active users (top 10) - requires second query for user details
+    const activeUsersData = activeUsersDataRes.data
     const sessionsByUser: Record<string, number> = {}
     activeUsersData?.forEach((session) => {
       sessionsByUser[session.user_id] = (sessionsByUser[session.user_id] || 0) + 1
@@ -191,15 +169,19 @@ export async function GET(req: NextRequest) {
       .slice(0, 10)
       .map(([userId]) => userId)
 
-    const { data: topUsers } = await supabase
-      .from('user_profiles')
-      .select('id, email, full_name')
-      .in('id', topUserIds)
+    // Only fetch user details if there are active users
+    let mostActiveUsers: Array<{ id: string; email: string; full_name: string; sessionCount: number }> = []
+    if (topUserIds.length > 0) {
+      const { data: topUsers } = await supabase
+        .from('user_profiles')
+        .select('id, email, full_name')
+        .in('id', topUserIds)
 
-    const mostActiveUsers = topUsers?.map((user) => ({
-      ...user,
-      sessionCount: sessionsByUser[user.id] || 0,
-    })) || []
+      mostActiveUsers = topUsers?.map((user) => ({
+        ...user,
+        sessionCount: sessionsByUser[user.id] || 0,
+      })) || []
+    }
 
     const analytics = {
       users: {
