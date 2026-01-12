@@ -206,13 +206,44 @@ function DashboardContent() {
   useEffect(() => {
     const mode = searchParams.get('mode')
     const documentId = searchParams.get('documentId')
+    const sessionId = searchParams.get('sessionId')
 
     // Handle modes that don't require a document
-    if (mode && !documentId) {
+    if (mode && !documentId && !sessionId) {
       // Chat mode can work without a document (Study Buddy mode)
       if (mode === 'chat') {
         setActiveModeDocuments(prev => ({ ...prev, chat: true }))
         setActiveMode('chat')
+      }
+      // Flashcards mode with sessionId (from Library)
+      return
+    }
+
+    // Handle flashcards with sessionId (from Library - clicking "Study" on a session)
+    if (mode === 'flashcards' && sessionId && !documentId) {
+      if (!isLoading) {
+        console.log('📥 Loading flashcards for session:', sessionId)
+        setIsLoading(true)
+
+        fetch(`/api/flashcards?sessionId=${sessionId}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.flashcards && data.flashcards.length > 0) {
+              console.log(`✅ Loaded ${data.flashcards.length} flashcards from session`)
+              setFlashcards(data.flashcards)
+              setActiveMode('flashcards')
+            } else {
+              console.log('ℹ️ No flashcards found for this session')
+              setActiveMode('flashcards')
+            }
+          })
+          .catch(error => {
+            console.error('Error loading flashcards:', error)
+            setActiveMode('flashcards')
+          })
+          .finally(() => {
+            setIsLoading(false)
+          })
       }
       return
     }

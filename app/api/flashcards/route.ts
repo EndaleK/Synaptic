@@ -2,6 +2,7 @@
  * API Route: Fetch Flashcards
  *
  * GET /api/flashcards?documentId={id} - Fetch flashcards for specific document
+ * GET /api/flashcards?sessionId={id} - Fetch flashcards for a specific generation session
  * GET /api/flashcards - Fetch all flashcards for user (for Content Library)
  * DELETE /api/flashcards?documentId={id} - Delete all flashcards for a document
  */
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest) {
     // 2. Get query params
     const { searchParams } = new URL(request.url)
     const documentId = searchParams.get('documentId')
+    const sessionId = searchParams.get('sessionId')
     const limit = searchParams.get('limit')
 
     // 3. Initialize Supabase client
@@ -54,8 +56,27 @@ export async function GET(request: NextRequest) {
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
 
+    // Filter by generation session if provided
+    if (sessionId) {
+      // Verify session ownership first
+      const { data: session, error: sessionError } = await supabase
+        .from('flashcard_generation_sessions')
+        .select('id, user_id')
+        .eq('id', sessionId)
+        .eq('user_id', profile.id)
+        .single()
+
+      if (sessionError || !session) {
+        return NextResponse.json(
+          { error: 'Session not found or access denied' },
+          { status: 404 }
+        )
+      }
+
+      query = query.eq('generation_session_id', sessionId)
+    }
     // Filter by document if provided
-    if (documentId) {
+    else if (documentId) {
       // Verify document ownership first
       const { data: document, error: docError } = await supabase
         .from('documents')
@@ -91,7 +112,11 @@ export async function GET(request: NextRequest) {
     }
 
     // 6. Return flashcards
-    const context = documentId ? `for document ${documentId}` : 'for user (all documents)'
+    const context = sessionId
+      ? `for session ${sessionId}`
+      : documentId
+        ? `for document ${documentId}`
+        : 'for user (all documents)'
     console.log(`📋 Returning ${flashcards?.length || 0} flashcards ${context}`)
 
     return NextResponse.json({
