@@ -382,6 +382,21 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     // ============================================================
     sanitized = sanitized.replace(/<br\s*\/?>/gi, ' - ')
 
+    // ============================================================
+    // FIX: Convert "-- text -->" edge labels to "|text|" format
+    // The "-- text -->" syntax can be problematic with hyphens in the text
+    // Example: "J -- Audio-Video Cross-Attn --> K" becomes "J -->|Audio-Video Cross-Attn| K"
+    // This is more reliable across different Mermaid versions
+    // ============================================================
+    sanitized = sanitized.replace(/(\w+)\s+--\s+([^-][^>]*?)\s*-->\s*(\w+)/g, (match, source, label, target) => {
+      // Clean the label - remove any problematic characters
+      const cleanLabel = label.trim()
+        .replace(/'/g, '')
+        .replace(/"/g, '')
+        .replace(/[#]/g, '')
+      return `${source} -->|${cleanLabel}| ${target}`
+    })
+
     // Replace ampersands with "and" - & breaks Mermaid syntax
     sanitized = sanitized.replace(/&/g, 'and')
 
@@ -415,13 +430,16 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
     })
 
     // Also sanitize diamond/rhombus nodes {text} - handle % and / in diamond nodes too
-    sanitized = sanitized.replace(/\{([^}]*)\}/g, (match, content) => {
-      // Check if this looks like a node label (not CSS or other syntax)
-      // Diamond nodes are typically A{label} format
-      if (content.includes(':') || content.includes(';')) {
+    // CRITICAL FIX: Many AI models incorrectly use {} for regular nodes instead of []
+    // Only keep {} if it looks like a decision (contains "?" or is very short like "Yes/No")
+    sanitized = sanitized.replace(/(\w)\{([^}]+)\}/g, (match, nodeId, content) => {
+      // Check if this looks like CSS styling (has : for property values)
+      if (content.includes(':') && content.includes('#')) {
         // Likely CSS or other syntax, don't modify
         return match
       }
+
+      // Sanitize the content first
       let cleaned = content.replace(/[#]/g, '')
       cleaned = cleaned.replace(/</g, 'less than ')
       cleaned = cleaned.replace(/>/g, 'greater than ')
@@ -429,7 +447,22 @@ export default function MarkdownRenderer({ content, className = '', disableDiagr
       cleaned = cleaned.replace(/%/g, ' percent ')
       // Replace / with "or" - slashes can break syntax in some contexts
       cleaned = cleaned.replace(/\//g, ' or ')
-      return '{' + cleaned + '}'
+
+      // CRITICAL: Check if this is actually a decision node
+      // Decision nodes typically have: "?", "Yes/No", "True/False", comparison operators
+      const isLikelyDecision =
+        content.includes('?') ||
+        /^(yes|no|true|false|ok|cancel|accept|reject)$/i.test(content.trim()) ||
+        content.length < 10 // Very short content is more likely a decision
+
+      if (isLikelyDecision) {
+        // Keep as diamond node
+        return nodeId + '{' + cleaned + '}'
+      } else {
+        // Convert to rectangle node - AI probably meant [] not {}
+        // This fixes nodes like B{Video VAE Encoder} -> B[Video VAE Encoder]
+        return nodeId + '[' + cleaned + ']'
+      }
     })
 
     // Fix double quotes inside labels - remove them (single quotes already removed earlier)
