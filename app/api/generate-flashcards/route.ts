@@ -70,6 +70,7 @@ async function handleGenerateFlashcards(request: NextRequest) {
     let textContent = ""
     let variation = 0
     let documentId: string | null = null
+    let documentName: string | null = null // Track document name for session title
     let mode: string | null = null
     let uploadedFile: File | null = null
     let requestedCount: number | undefined = undefined
@@ -164,6 +165,9 @@ async function handleGenerateFlashcards(request: NextRequest) {
           { status: 404 }
         )
       }
+
+      // Store document name for session tracking
+      documentName = doc.file_name || null
 
       // Use selected text or full document
       if (selection?.type === 'topic' && selection.topic?.pageRange && doc.extracted_text) {
@@ -335,6 +339,9 @@ async function handleGenerateFlashcards(request: NextRequest) {
           file_size: file.size,
           request_type: 'formdata_file'
         })
+
+        // Store file name for session tracking
+        documentName = file.name
 
         logger.debug("Processing file upload", {
           userId,
@@ -603,23 +610,69 @@ async function handleGenerateFlashcards(request: NextRequest) {
         // Determine source section info for display
         let sourceSectionTitle: string | undefined = undefined
         let sourcePageNumber: number | undefined = undefined
+        let generationType = 'full'
 
         if (selection?.type === 'topic' && selection.topic) {
           sourceSectionTitle = selection.topic.title
           sourcePageNumber = selection.topic.pageRange?.start
+          generationType = 'topic'
         } else if (selection?.type === 'pages' && selection.pageRange) {
           sourceSectionTitle = `Pages ${selection.pageRange.start}-${selection.pageRange.end}`
           sourcePageNumber = selection.pageRange.start
+          generationType = 'pages'
         } else if (selection?.type === 'chapters' && selection.chapters && selection.chapterIds) {
           const selectedChapters = selection.chapters.filter((c: any) => selection.chapterIds.includes(c.id))
           sourceSectionTitle = selectedChapters.map((c: any) => c.title).join(', ').slice(0, 100)
           sourcePageNumber = selectedChapters[0]?.pageRange?.start
+          generationType = 'chapters'
+        }
+
+        // Create a session title for easy identification
+        const sessionTitle = sourceSectionTitle
+          ? `${documentName || 'Document'} - ${sourceSectionTitle}`
+          : documentName || 'Flashcards'
+
+        // Create generation session record for tracking
+        let generationSessionId: string | undefined = undefined
+        try {
+          const { data: sessionData, error: sessionError } = await supabase
+            .from('flashcard_generation_sessions')
+            .insert({
+              user_id: userProfileId,
+              document_id: documentId || null,
+              title: sessionTitle.slice(0, 200), // Limit title length
+              generation_type: generationType,
+              selection_info: selection ? {
+                type: selection.type,
+                topic: selection.topic?.title,
+                pageRange: selection.pageRange,
+                chapterIds: selection.chapterIds,
+              } : null,
+              source_text_preview: textToProcess.slice(0, 200),
+              cards_count: flashcards.length,
+            })
+            .select('id')
+            .single()
+
+          if (!sessionError && sessionData) {
+            generationSessionId = sessionData.id
+            logger.info('✅ Created flashcard generation session', {
+              sessionId: generationSessionId,
+              title: sessionTitle,
+              cardsCount: flashcards.length
+            })
+          } else {
+            logger.warn('Could not create generation session', { error: sessionError?.message })
+          }
+        } catch (sessionErr) {
+          logger.warn('Session creation failed, continuing without session tracking', { error: sessionErr })
         }
 
         // Save each flashcard to database
         const flashcardsToInsert = flashcards.map(card => ({
           user_id: userProfileId,
           document_id: documentId, // Link to document if generated from uploaded document
+          generation_session_id: generationSessionId, // Link to session for grouping
           front: card.front,
           back: card.back,
           mastery_level: 'learning' as const,
