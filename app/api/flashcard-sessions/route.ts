@@ -79,13 +79,27 @@ export async function GET() {
 
     // If table doesn't exist (migration not run), fall back to document-grouped flashcards
     if (error) {
-      console.error('[FlashcardSessions] Error fetching sessions:', error)
+      console.error('[FlashcardSessions] Error fetching sessions:', error, 'Code:', error.code, 'Message:', error.message)
 
       // Check if error is because table doesn't exist
-      if (error.code === '42P01' || error.message?.includes('does not exist') || error.message?.includes('relation')) {
-        console.log('[FlashcardSessions] Sessions table not found, falling back to document-grouped flashcards')
+      // Common error codes/messages:
+      // - 42P01: relation does not exist (PostgreSQL)
+      // - PGRST200: relation not found (PostgREST)
+      // - Various message patterns for table not found
+      const isTableMissing =
+        error.code === '42P01' ||
+        error.code === 'PGRST200' ||
+        error.code === '42703' ||
+        error.message?.toLowerCase().includes('does not exist') ||
+        error.message?.toLowerCase().includes('relation') ||
+        error.message?.toLowerCase().includes('not found') ||
+        error.hint?.toLowerCase().includes('does not exist')
 
-        // Fall back: Get flashcards grouped by document
+      // Always fall back for any session table error (table likely doesn't exist)
+      // This is safer than only checking specific error codes
+      console.log('[FlashcardSessions] Falling back to document-grouped flashcards. Table missing:', isTableMissing)
+
+      // Fall back: Get flashcards grouped by document
         const { data: flashcards, error: flashcardsError } = await supabase
           .from('flashcards')
           .select(`
@@ -154,9 +168,6 @@ export async function GET() {
           sessions: fallbackSessions,
           fallback: true // Indicate this is fallback data
         })
-      }
-
-      return NextResponse.json({ error: 'Failed to fetch sessions' }, { status: 500 })
     }
 
     return NextResponse.json({ sessions: sessions || [] })
