@@ -608,22 +608,36 @@ async function handleGenerateFlashcards(request: NextRequest) {
         const userProfileId = profile.id
 
         // Determine source section info for display
+        // Note: We store section title for context, but page numbers are only accurate
+        // for page-range selections (topic/chapter selections may span multiple pages)
         let sourceSectionTitle: string | undefined = undefined
-        let sourcePageNumber: number | undefined = undefined
+        let sourcePageInfo: string | undefined = undefined // Human-readable page info
         let generationType = 'full'
 
         if (selection?.type === 'topic' && selection.topic) {
           sourceSectionTitle = selection.topic.title
-          sourcePageNumber = selection.topic.pageRange?.start
+          // For topics, show page range if available (e.g., "pp. 50-75")
+          if (selection.topic.pageRange?.start && selection.topic.pageRange?.end) {
+            sourcePageInfo = `pp. ${selection.topic.pageRange.start}-${selection.topic.pageRange.end}`
+          } else if (selection.topic.pageRange?.start) {
+            sourcePageInfo = `p. ${selection.topic.pageRange.start}+`
+          }
           generationType = 'topic'
         } else if (selection?.type === 'pages' && selection.pageRange) {
           sourceSectionTitle = `Pages ${selection.pageRange.start}-${selection.pageRange.end}`
-          sourcePageNumber = selection.pageRange.start
+          sourcePageInfo = `pp. ${selection.pageRange.start}-${selection.pageRange.end}`
           generationType = 'pages'
         } else if (selection?.type === 'chapters' && selection.chapters && selection.chapterIds) {
           const selectedChapters = selection.chapters.filter((c: any) => selection.chapterIds.includes(c.id))
           sourceSectionTitle = selectedChapters.map((c: any) => c.title).join(', ').slice(0, 100)
-          sourcePageNumber = selectedChapters[0]?.pageRange?.start
+          // Show page range for chapters
+          const firstPage = selectedChapters[0]?.pageRange?.start
+          const lastPage = selectedChapters[selectedChapters.length - 1]?.pageRange?.end
+          if (firstPage && lastPage) {
+            sourcePageInfo = `pp. ${firstPage}-${lastPage}`
+          } else if (firstPage) {
+            sourcePageInfo = `p. ${firstPage}+`
+          }
           generationType = 'chapters'
         }
 
@@ -647,6 +661,7 @@ async function handleGenerateFlashcards(request: NextRequest) {
                 topic: selection.topic?.title,
                 pageRange: selection.pageRange,
                 chapterIds: selection.chapterIds,
+                pageInfo: sourcePageInfo, // Human-readable page range (e.g., "pp. 50-75")
               } : null,
               source_text_preview: textToProcess.slice(0, 200),
               cards_count: flashcards.length,
@@ -669,6 +684,9 @@ async function handleGenerateFlashcards(request: NextRequest) {
         }
 
         // Save each flashcard to database
+        // Store source context for reference - excerpt helps with chat navigation
+        const sourceExcerpt = textToProcess.slice(0, 300).replace(/\n+/g, ' ').trim()
+
         const flashcardsToInsert = flashcards.map(card => ({
           user_id: userProfileId,
           document_id: documentId, // Link to document if generated from uploaded document
@@ -680,7 +698,10 @@ async function handleGenerateFlashcards(request: NextRequest) {
           times_reviewed: 0,
           times_correct: 0,
           source_section: sourceSectionTitle,
-          source_page: sourcePageNumber,
+          // Don't store single page number - it's the start of the range, not specific to each card
+          // The section name provides better context
+          source_page: null,
+          source_excerpt: sourceExcerpt, // Context for chat reference
         }))
 
         const { data: insertedCards, error: insertError } = await trackBatchQuery(
