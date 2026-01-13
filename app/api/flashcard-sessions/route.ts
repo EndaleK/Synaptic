@@ -83,19 +83,14 @@ export async function GET() {
       console.log('[FlashcardSessions] Falling back to document-grouped flashcards')
 
       // Fall back: Get flashcards grouped by document
+      // Only select columns that definitely exist in all environments
       const { data: flashcards, error: flashcardsError } = await supabase
         .from('flashcards')
         .select(`
           id,
           document_id,
           created_at,
-          maturity_level,
-          times_reviewed,
-          documents (
-            id,
-            name,
-            file_name
-          )
+          times_reviewed
         `)
         .eq('user_id', profile.id)
         .order('created_at', { ascending: false })
@@ -103,6 +98,21 @@ export async function GET() {
       if (flashcardsError) {
         console.error('[FlashcardSessions] Error fetching flashcards fallback:', flashcardsError)
         return NextResponse.json({ error: 'Failed to fetch flashcards' }, { status: 500 })
+      }
+
+      // Get document info separately to avoid join issues
+      const documentIds = [...new Set((flashcards || []).map(c => c.document_id).filter(Boolean))]
+      let documentMap = new Map<string, { name: string; file_name: string }>()
+
+      if (documentIds.length > 0) {
+        const { data: docs } = await supabase
+          .from('documents')
+          .select('id, name, file_name')
+          .in('id', documentIds)
+
+        for (const doc of docs || []) {
+          documentMap.set(doc.id, { name: doc.name, file_name: doc.file_name })
+        }
       }
 
       // Group flashcards by document
@@ -116,11 +126,12 @@ export async function GET() {
 
       for (const card of flashcards || []) {
         const docId = card.document_id || 'no-document'
+        const docInfo = card.document_id ? documentMap.get(card.document_id) : null
         if (!documentGroups.has(docId)) {
           documentGroups.set(docId, {
             documentId: card.document_id,
-            documentName: card.documents?.name || 'Untitled',
-            fileName: card.documents?.file_name || '',
+            documentName: docInfo?.name || 'Untitled',
+            fileName: docInfo?.file_name || '',
             cards: [],
             createdAt: card.created_at
           })
@@ -137,7 +148,7 @@ export async function GET() {
         selection_info: null,
         cards_count: group.cards.length,
         cards_reviewed: group.cards.filter(c => (c.times_reviewed || 0) > 0).length,
-        cards_mastered: group.cards.filter(c => c.maturity_level === 'mature').length,
+        cards_mastered: 0, // Can't determine without maturity_level column
         created_at: group.createdAt,
         last_studied_at: null,
         document_id: group.documentId,
