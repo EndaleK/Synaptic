@@ -80,94 +80,77 @@ export async function GET() {
     // If table doesn't exist (migration not run), fall back to document-grouped flashcards
     if (error) {
       console.error('[FlashcardSessions] Error fetching sessions:', error, 'Code:', error.code, 'Message:', error.message)
-
-      // Check if error is because table doesn't exist
-      // Common error codes/messages:
-      // - 42P01: relation does not exist (PostgreSQL)
-      // - PGRST200: relation not found (PostgREST)
-      // - Various message patterns for table not found
-      const isTableMissing =
-        error.code === '42P01' ||
-        error.code === 'PGRST200' ||
-        error.code === '42703' ||
-        error.message?.toLowerCase().includes('does not exist') ||
-        error.message?.toLowerCase().includes('relation') ||
-        error.message?.toLowerCase().includes('not found') ||
-        error.hint?.toLowerCase().includes('does not exist')
-
-      // Always fall back for any session table error (table likely doesn't exist)
-      // This is safer than only checking specific error codes
-      console.log('[FlashcardSessions] Falling back to document-grouped flashcards. Table missing:', isTableMissing)
+      console.log('[FlashcardSessions] Falling back to document-grouped flashcards')
 
       // Fall back: Get flashcards grouped by document
-        const { data: flashcards, error: flashcardsError } = await supabase
-          .from('flashcards')
-          .select(`
+      const { data: flashcards, error: flashcardsError } = await supabase
+        .from('flashcards')
+        .select(`
+          id,
+          document_id,
+          created_at,
+          maturity_level,
+          times_reviewed,
+          documents (
             id,
-            document_id,
-            created_at,
-            maturity_level,
-            times_reviewed,
-            documents (
-              id,
-              name,
-              file_name
-            )
-          `)
-          .eq('user_id', profile.id)
-          .order('created_at', { ascending: false })
+            name,
+            file_name
+          )
+        `)
+        .eq('user_id', profile.id)
+        .order('created_at', { ascending: false })
 
-        if (flashcardsError) {
-          console.error('[FlashcardSessions] Error fetching flashcards fallback:', flashcardsError)
-          return NextResponse.json({ error: 'Failed to fetch flashcards' }, { status: 500 })
+      if (flashcardsError) {
+        console.error('[FlashcardSessions] Error fetching flashcards fallback:', flashcardsError)
+        return NextResponse.json({ error: 'Failed to fetch flashcards' }, { status: 500 })
+      }
+
+      // Group flashcards by document
+      const documentGroups = new Map<string, {
+        documentId: string | null
+        documentName: string
+        fileName: string
+        cards: typeof flashcards
+        createdAt: string
+      }>()
+
+      for (const card of flashcards || []) {
+        const docId = card.document_id || 'no-document'
+        if (!documentGroups.has(docId)) {
+          documentGroups.set(docId, {
+            documentId: card.document_id,
+            documentName: card.documents?.name || 'Untitled',
+            fileName: card.documents?.file_name || '',
+            cards: [],
+            createdAt: card.created_at
+          })
         }
+        documentGroups.get(docId)!.cards.push(card)
+      }
 
-        // Group flashcards by document
-        const documentGroups = new Map<string, {
-          documentId: string | null
-          documentName: string
-          fileName: string
-          cards: typeof flashcards
-          createdAt: string
-        }>()
+      // Convert to sessions format
+      const fallbackSessions: FlashcardSession[] = Array.from(documentGroups.entries()).map(([docId, group]) => ({
+        id: `fallback-${docId}`, // Temporary ID
+        title: group.documentName,
+        description: null,
+        generation_type: 'full',
+        selection_info: null,
+        cards_count: group.cards.length,
+        cards_reviewed: group.cards.filter(c => (c.times_reviewed || 0) > 0).length,
+        cards_mastered: group.cards.filter(c => c.maturity_level === 'mature').length,
+        created_at: group.createdAt,
+        last_studied_at: null,
+        document_id: group.documentId,
+        documents: group.documentId ? {
+          name: group.documentName,
+          file_name: group.fileName
+        } : null
+      }))
 
-        for (const card of flashcards || []) {
-          const docId = card.document_id || 'no-document'
-          if (!documentGroups.has(docId)) {
-            documentGroups.set(docId, {
-              documentId: card.document_id,
-              documentName: card.documents?.name || 'Untitled',
-              fileName: card.documents?.file_name || '',
-              cards: [],
-              createdAt: card.created_at
-            })
-          }
-          documentGroups.get(docId)!.cards.push(card)
-        }
-
-        // Convert to sessions format
-        const fallbackSessions: FlashcardSession[] = Array.from(documentGroups.entries()).map(([docId, group]) => ({
-          id: `fallback-${docId}`, // Temporary ID
-          title: group.documentName,
-          description: null,
-          generation_type: 'full',
-          selection_info: null,
-          cards_count: group.cards.length,
-          cards_reviewed: group.cards.filter(c => (c.times_reviewed || 0) > 0).length,
-          cards_mastered: group.cards.filter(c => c.maturity_level === 'mature').length,
-          created_at: group.createdAt,
-          last_studied_at: null,
-          document_id: group.documentId,
-          documents: group.documentId ? {
-            name: group.documentName,
-            file_name: group.fileName
-          } : null
-        }))
-
-        return NextResponse.json({
-          sessions: fallbackSessions,
-          fallback: true // Indicate this is fallback data
-        })
+      return NextResponse.json({
+        sessions: fallbackSessions,
+        fallback: true // Indicate this is fallback data
+      })
     }
 
     return NextResponse.json({ sessions: sessions || [] })
