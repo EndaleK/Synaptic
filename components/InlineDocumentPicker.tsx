@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { FileText, Image as ImageIcon, File, Globe, Loader2, Upload, ChevronRight, FolderIcon, LayoutGrid, List as ListIcon, ArrowUpDown, Star } from "lucide-react"
+import { FileText, Image as ImageIcon, File, Globe, Loader2, Upload, ChevronRight, FolderIcon, LayoutGrid, List as ListIcon, ArrowUpDown, Star, Sparkles } from "lucide-react"
 import { Document } from "@/lib/supabase/types"
 import { cn, formatFileSize, formatRelativeTime } from "@/lib/utils"
 
@@ -16,8 +16,14 @@ interface Folder {
   children: Folder[]
 }
 
+interface FlashcardCount {
+  document_id: string
+  count: number
+}
+
 interface InlineDocumentPickerProps {
   onDocumentSelect: (document: Document) => void
+  onExistingFlashcardsSelect?: (documentId: string, count: number) => void
   mode: string
 }
 
@@ -27,11 +33,13 @@ type SortDirection = 'asc' | 'desc'
 
 export default function InlineDocumentPicker({
   onDocumentSelect,
+  onExistingFlashcardsSelect,
   mode
 }: InlineDocumentPickerProps) {
   const router = useRouter()
   const [documents, setDocuments] = useState<Document[]>([])
   const [folders, setFolders] = useState<Folder[]>([])
+  const [flashcardCounts, setFlashcardCounts] = useState<Map<string, number>>(new Map())
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [breadcrumbs, setBreadcrumbs] = useState<{ id: string | null; name: string }[]>([
     { id: null, name: 'All Documents' }
@@ -49,12 +57,21 @@ export default function InlineDocumentPicker({
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [documentsRes, foldersRes] = await Promise.all([
+      const fetchPromises: Promise<Response | null>[] = [
         fetch('/api/documents', { credentials: 'include' }),
         fetch('/api/folders', { credentials: 'include' }).catch(() => null)
-      ])
+      ]
 
-      if (!documentsRes.ok) {
+      // Fetch flashcard counts when in flashcards mode
+      if (mode === 'flashcards') {
+        fetchPromises.push(
+          fetch('/api/flashcards/counts-by-document', { credentials: 'include' }).catch(() => null)
+        )
+      }
+
+      const [documentsRes, foldersRes, flashcardCountsRes] = await Promise.all(fetchPromises)
+
+      if (!documentsRes || !documentsRes.ok) {
         throw new Error('Failed to fetch documents')
       }
 
@@ -63,6 +80,18 @@ export default function InlineDocumentPicker({
       let foldersData = { folders: [] }
       if (foldersRes && foldersRes.ok) {
         foldersData = await foldersRes.json()
+      }
+
+      // Process flashcard counts
+      if (flashcardCountsRes && flashcardCountsRes.ok) {
+        const countsData = await flashcardCountsRes.json()
+        const countsMap = new Map<string, number>()
+        for (const item of countsData.counts || []) {
+          if (item.document_id) {
+            countsMap.set(item.document_id, item.count)
+          }
+        }
+        setFlashcardCounts(countsMap)
       }
 
       setDocuments(documentsData.documents || [])
@@ -385,11 +414,17 @@ export default function InlineDocumentPicker({
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                         Status
                       </th>
+                      {mode === 'flashcards' && (
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                          Flashcards
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {currentDocuments.map((document) => {
                       const isProcessing = document.processing_status !== 'completed'
+                      const existingCount = flashcardCounts.get(document.id) || 0
 
                       return (
                         <tr
@@ -432,6 +467,30 @@ export default function InlineDocumentPicker({
                               <span className="text-xs text-red-600 dark:text-red-400">✗ Failed</span>
                             )}
                           </td>
+                          {mode === 'flashcards' && (
+                            <td className="px-4 py-3">
+                              {existingCount > 0 ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (onExistingFlashcardsSelect) {
+                                      onExistingFlashcardsSelect(document.id, existingCount)
+                                    } else {
+                                      // Default: navigate to flashcards with this document
+                                      router.push(`/dashboard?mode=flashcards&documentId=${document.id}`)
+                                    }
+                                  }}
+                                  className="flex items-center gap-1.5 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-medium transition-colors"
+                                  title={`View ${existingCount} existing flashcards`}
+                                >
+                                  <Sparkles className="w-3 h-3" />
+                                  {existingCount} cards
+                                </button>
+                              ) : (
+                                <span className="text-xs text-gray-400 dark:text-gray-600">—</span>
+                              )}
+                            </td>
+                          )}
                         </tr>
                       )
                     })}
@@ -445,17 +504,17 @@ export default function InlineDocumentPicker({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {currentDocuments.map((document) => {
                   const isProcessing = document.processing_status !== 'completed'
+                  const existingCount = flashcardCounts.get(document.id) || 0
 
                   return (
-                    <button
+                    <div
                       key={document.id}
-                      onClick={() => !isProcessing && onDocumentSelect(document)}
-                      disabled={isProcessing}
                       className={`group relative p-5 border rounded-xl text-left transition-all ${
                         isProcessing
                           ? 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 opacity-60 cursor-not-allowed'
                           : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-accent-primary dark:hover:border-accent-primary hover:shadow-lg cursor-pointer'
                       }`}
+                      onClick={() => !isProcessing && onDocumentSelect(document)}
                     >
                       <div className="flex items-start gap-3 mb-3">
                         <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -471,16 +530,37 @@ export default function InlineDocumentPicker({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
-                        {document.metadata?.page_count && (
-                          <span className="flex items-center gap-1">
-                            <FileText className="w-3 h-3" />
-                            {document.metadata.page_count} pages
+                      <div className="flex items-center justify-between gap-3 text-xs text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-3">
+                          {document.metadata?.page_count && (
+                            <span className="flex items-center gap-1">
+                              <FileText className="w-3 h-3" />
+                              {document.metadata.page_count} pages
+                            </span>
+                          )}
+                          <span>
+                            {formatRelativeTime(document.updated_at)}
                           </span>
+                        </div>
+
+                        {/* Existing flashcards badge */}
+                        {mode === 'flashcards' && existingCount > 0 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (onExistingFlashcardsSelect) {
+                                onExistingFlashcardsSelect(document.id, existingCount)
+                              } else {
+                                router.push(`/dashboard?mode=flashcards&documentId=${document.id}`)
+                              }
+                            }}
+                            className="flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-medium transition-colors"
+                            title={`View ${existingCount} existing flashcards`}
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            {existingCount}
+                          </button>
                         )}
-                        <span>
-                          {formatRelativeTime(document.updated_at)}
-                        </span>
                       </div>
 
                       {isProcessing && (
@@ -494,7 +574,7 @@ export default function InlineDocumentPicker({
                       {!isProcessing && (
                         <div className="absolute inset-0 bg-gradient-to-br from-accent-primary/5 to-accent-secondary/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                       )}
-                    </button>
+                    </div>
                   )
                 })}
               </div>
