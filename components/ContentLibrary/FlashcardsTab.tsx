@@ -87,8 +87,19 @@ export default function FlashcardsTab() {
   })
 
   const handleStartReview = (session: FlashcardSession) => {
-    // Navigate to flashcards mode with session ID
-    router.push(`/dashboard?mode=flashcards&sessionId=${session.id}`)
+    // Check if this is a fallback session (document-grouped, not real session)
+    if (session.id.startsWith('fallback-')) {
+      // Use document ID for fallback sessions
+      if (session.document_id) {
+        router.push(`/dashboard?mode=flashcards&documentId=${session.document_id}`)
+      } else {
+        // No document - just go to flashcards mode
+        router.push('/dashboard?mode=flashcards')
+      }
+    } else {
+      // Real session - use session ID
+      router.push(`/dashboard?mode=flashcards&sessionId=${session.id}`)
+    }
   }
 
   const handleDelete = async (session: FlashcardSession, e: React.MouseEvent) => {
@@ -101,13 +112,29 @@ export default function FlashcardsTab() {
     setDeletingId(session.id)
 
     try {
-      const response = await fetch(`/api/flashcard-sessions?sessionId=${session.id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      })
+      // Check if this is a fallback session (document-grouped)
+      if (session.id.startsWith('fallback-')) {
+        // Delete by document ID
+        if (session.document_id) {
+          const response = await fetch(`/api/flashcards?documentId=${session.document_id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+          })
 
-      if (!response.ok) {
-        throw new Error('Failed to delete session')
+          if (!response.ok) {
+            throw new Error('Failed to delete flashcards')
+          }
+        }
+      } else {
+        // Delete by session ID
+        const response = await fetch(`/api/flashcard-sessions?sessionId=${session.id}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to delete session')
+        }
       }
 
       // Remove session from state

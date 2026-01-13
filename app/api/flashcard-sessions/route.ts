@@ -32,6 +32,7 @@ interface FlashcardSession {
 /**
  * GET /api/flashcard-sessions
  * Fetch all flashcard generation sessions for the current user
+ * Falls back to document-grouped flashcards if sessions table doesn't exist
  */
 export async function GET() {
   try {
@@ -53,7 +54,7 @@ export async function GET() {
       return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
     }
 
-    // Fetch sessions with document info
+    // Try to fetch sessions with document info
     const { data: sessions, error } = await supabase
       .from('flashcard_generation_sessions')
       .select(`
@@ -76,8 +77,85 @@ export async function GET() {
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
 
+    // If table doesn't exist (migration not run), fall back to document-grouped flashcards
     if (error) {
       console.error('[FlashcardSessions] Error fetching sessions:', error)
+
+      // Check if error is because table doesn't exist
+      if (error.code === '42P01' || error.message?.includes('does not exist') || error.message?.includes('relation')) {
+        console.log('[FlashcardSessions] Sessions table not found, falling back to document-grouped flashcards')
+
+        // Fall back: Get flashcards grouped by document
+        const { data: flashcards, error: flashcardsError } = await supabase
+          .from('flashcards')
+          .select(`
+            id,
+            document_id,
+            created_at,
+            maturity_level,
+            times_reviewed,
+            documents (
+              id,
+              name,
+              file_name
+            )
+          `)
+          .eq('user_id', profile.id)
+          .order('created_at', { ascending: false })
+
+        if (flashcardsError) {
+          console.error('[FlashcardSessions] Error fetching flashcards fallback:', flashcardsError)
+          return NextResponse.json({ error: 'Failed to fetch flashcards' }, { status: 500 })
+        }
+
+        // Group flashcards by document
+        const documentGroups = new Map<string, {
+          documentId: string | null
+          documentName: string
+          fileName: string
+          cards: typeof flashcards
+          createdAt: string
+        }>()
+
+        for (const card of flashcards || []) {
+          const docId = card.document_id || 'no-document'
+          if (!documentGroups.has(docId)) {
+            documentGroups.set(docId, {
+              documentId: card.document_id,
+              documentName: card.documents?.name || 'Untitled',
+              fileName: card.documents?.file_name || '',
+              cards: [],
+              createdAt: card.created_at
+            })
+          }
+          documentGroups.get(docId)!.cards.push(card)
+        }
+
+        // Convert to sessions format
+        const fallbackSessions: FlashcardSession[] = Array.from(documentGroups.entries()).map(([docId, group]) => ({
+          id: `fallback-${docId}`, // Temporary ID
+          title: group.documentName,
+          description: null,
+          generation_type: 'full',
+          selection_info: null,
+          cards_count: group.cards.length,
+          cards_reviewed: group.cards.filter(c => (c.times_reviewed || 0) > 0).length,
+          cards_mastered: group.cards.filter(c => c.maturity_level === 'mature').length,
+          created_at: group.createdAt,
+          last_studied_at: null,
+          document_id: group.documentId,
+          documents: group.documentId ? {
+            name: group.documentName,
+            file_name: group.fileName
+          } : null
+        }))
+
+        return NextResponse.json({
+          sessions: fallbackSessions,
+          fallback: true // Indicate this is fallback data
+        })
+      }
+
       return NextResponse.json({ error: 'Failed to fetch sessions' }, { status: 500 })
     }
 
