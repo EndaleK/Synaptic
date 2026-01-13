@@ -48,6 +48,12 @@ CREATE INDEX IF NOT EXISTS idx_flashcards_generation_session_id ON flashcards(ge
 -- ============================================================
 ALTER TABLE flashcard_generation_sessions ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (for idempotent migrations)
+DROP POLICY IF EXISTS "Users can view own flashcard sessions" ON flashcard_generation_sessions;
+DROP POLICY IF EXISTS "Users can insert own flashcard sessions" ON flashcard_generation_sessions;
+DROP POLICY IF EXISTS "Users can update own flashcard sessions" ON flashcard_generation_sessions;
+DROP POLICY IF EXISTS "Users can delete own flashcard sessions" ON flashcard_generation_sessions;
+
 -- Users can only see their own sessions
 CREATE POLICY "Users can view own flashcard sessions"
   ON flashcard_generation_sessions FOR SELECT
