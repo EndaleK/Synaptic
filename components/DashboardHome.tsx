@@ -805,6 +805,12 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
           </div>
         </section>
 
+        {/* Footer */}
+        <footer className="mt-8 pb-6 text-center">
+          <p className="text-xs text-gray-400 dark:text-gray-600">
+            © 2025 Synaptic. ካንአ All rights reserved.
+          </p>
+        </footer>
 
       </div>
 
