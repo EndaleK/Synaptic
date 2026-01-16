@@ -44,7 +44,7 @@ function TransformationVisual() {
       <div className="w-36 h-44 md:w-52 md:h-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-3 md:p-4 space-y-2 md:space-y-3">
         {/* Header bar */}
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+          <div className="w-6 h-6 md:w-8 md:h-8 bg-[#7B3FF2] rounded-lg flex items-center justify-center">
             <Brain className="w-3 h-3 md:w-4 md:h-4 text-white" />
           </div>
           <div className="flex-1">
@@ -59,7 +59,7 @@ function TransformationVisual() {
             <span>75%</span>
           </div>
           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-2 w-3/4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" />
+            <div className="h-2 w-3/4 bg-[#7B3FF2] rounded-full" />
           </div>
         </div>
 
@@ -96,11 +96,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section - Student-First Design */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-purple-50/80 via-white to-white dark:from-purple-950/50 dark:via-black dark:to-black">
-        {/* Subtle background decoration */}
-        <div className="absolute inset-0 bg-grid-purple/[0.02] dark:bg-grid-white/[0.01]" />
-        <div className="absolute top-20 right-10 w-72 h-72 bg-purple-200/30 dark:bg-purple-800/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 left-10 w-72 h-72 bg-pink-200/30 dark:bg-pink-800/20 rounded-full blur-3xl" />
+      <section className="relative overflow-hidden bg-white dark:bg-gray-950">
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -126,7 +122,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
                 <Link
                   href={isSignedIn ? "/dashboard" : "/sign-up"}
-                  className="group relative px-8 py-4 bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2"
+                  className="group relative px-8 py-4 bg-[#7B3FF2] hover:bg-[#6727E2] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2"
                 >
                   <span>{isSignedIn ? "Go to Dashboard" : "Start free"}</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -149,19 +145,6 @@ export default function LandingPage() {
                 No credit card required. Cancel anytime.
               </p>
 
-              {/* Trust Band - Stats */}
-              <div className="flex flex-wrap justify-center lg:justify-start gap-4 sm:gap-6 mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
-                <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
-                  <span className="font-bold text-gray-900 dark:text-white">10,000+</span> students
-                </div>
-                <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
-                  <span className="font-bold text-gray-900 dark:text-white">1M+</span> flashcards
-                </div>
-                <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-bold text-gray-900 dark:text-white">4.8</span> rating
-                </div>
-              </div>
             </div>
 
             {/* Right Column: Transformation Visual */}
@@ -188,14 +171,14 @@ export default function LandingPage() {
           {/* 3-Step Process */}
           <div className="grid md:grid-cols-3 gap-8 md:gap-4 relative">
             {/* Connecting line (desktop only) */}
-            <div className="hidden md:block absolute top-16 left-1/4 right-1/4 h-0.5 bg-gradient-to-r from-purple-300 via-pink-300 to-orange-300 dark:from-purple-700 dark:via-pink-700 dark:to-orange-700" />
+            <div className="hidden md:block absolute top-16 left-1/4 right-1/4 h-0.5 bg-gray-200 dark:bg-gray-700" />
 
             {/* Step 1 */}
             <div className="relative text-center">
-              <div className="relative z-10 w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="relative z-10 w-16 h-16 mx-auto mb-6 bg-[#7B3FF2] rounded-2xl flex items-center justify-center shadow-lg">
                 <Upload className="w-8 h-8 text-white" />
               </div>
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-6 h-6 bg-white dark:bg-gray-900 rounded-full border-2 border-purple-500 flex items-center justify-center text-xs font-bold text-purple-600 dark:text-purple-400 z-20">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-6 h-6 bg-white dark:bg-gray-900 rounded-full border-2 border-[#7B3FF2] flex items-center justify-center text-xs font-bold text-[#7B3FF2] dark:text-purple-400 z-20">
                 1
               </div>
               <h3 className="text-xl font-bold text-black dark:text-white mb-3">
@@ -208,10 +191,10 @@ export default function LandingPage() {
 
             {/* Step 2 */}
             <div className="relative text-center">
-              <div className="relative z-10 w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-pink-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="relative z-10 w-16 h-16 mx-auto mb-6 bg-[#7B3FF2] rounded-2xl flex items-center justify-center shadow-lg">
                 <Calendar className="w-8 h-8 text-white" />
               </div>
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-6 h-6 bg-white dark:bg-gray-900 rounded-full border-2 border-pink-500 flex items-center justify-center text-xs font-bold text-pink-600 dark:text-pink-400 z-20">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-6 h-6 bg-white dark:bg-gray-900 rounded-full border-2 border-[#7B3FF2] flex items-center justify-center text-xs font-bold text-[#7B3FF2] dark:text-purple-400 z-20">
                 2
               </div>
               <h3 className="text-xl font-bold text-black dark:text-white mb-3">
@@ -224,10 +207,10 @@ export default function LandingPage() {
 
             {/* Step 3 */}
             <div className="relative text-center">
-              <div className="relative z-10 w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="relative z-10 w-16 h-16 mx-auto mb-6 bg-[#7B3FF2] rounded-2xl flex items-center justify-center shadow-lg">
                 <Trophy className="w-8 h-8 text-white" />
               </div>
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-6 h-6 bg-white dark:bg-gray-900 rounded-full border-2 border-orange-500 flex items-center justify-center text-xs font-bold text-orange-600 dark:text-orange-400 z-20">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-6 h-6 bg-white dark:bg-gray-900 rounded-full border-2 border-[#7B3FF2] flex items-center justify-center text-xs font-bold text-[#7B3FF2] dark:text-purple-400 z-20">
                 3
               </div>
               <h3 className="text-xl font-bold text-black dark:text-white mb-3">
@@ -242,7 +225,7 @@ export default function LandingPage() {
       </section>
 
       {/* What You Get - Tools + Benefits Combined */}
-      <section id="features" className="py-20 bg-gradient-to-b from-white via-purple-50/30 to-white dark:from-black dark:via-purple-950/30 dark:to-black">
+      <section id="features" className="py-20 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-16">
@@ -257,8 +240,8 @@ export default function LandingPage() {
           {/* 6-Tool Grid with Emotional Descriptions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
             {/* Smart Flashcards */}
-            <div className="group p-6 bg-white dark:bg-gray-900 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700">
+              <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-bold text-black dark:text-white mb-2">
@@ -270,8 +253,8 @@ export default function LandingPage() {
             </div>
 
             {/* Mock Exams */}
-            <div className="group p-6 bg-white dark:bg-gray-900 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700">
+              <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <ClipboardCheck className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-bold text-black dark:text-white mb-2">
@@ -283,8 +266,8 @@ export default function LandingPage() {
             </div>
 
             {/* Study Buddy */}
-            <div className="group p-6 bg-white dark:bg-gray-900 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700">
+              <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Bot className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-bold text-black dark:text-white mb-2">
@@ -296,8 +279,8 @@ export default function LandingPage() {
             </div>
 
             {/* Audio Summaries */}
-            <div className="group p-6 bg-white dark:bg-gray-900 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700">
+              <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Mic className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-bold text-black dark:text-white mb-2">
@@ -309,8 +292,8 @@ export default function LandingPage() {
             </div>
 
             {/* Mind Maps */}
-            <div className="group p-6 bg-white dark:bg-gray-900 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700">
+              <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Network className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-bold text-black dark:text-white mb-2">
@@ -322,8 +305,8 @@ export default function LandingPage() {
             </div>
 
             {/* Study Planner */}
-            <div className="group p-6 bg-white dark:bg-gray-900 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-800">
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700">
+              <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-bold text-black dark:text-white mb-2">
@@ -335,9 +318,9 @@ export default function LandingPage() {
             </div>
 
             {/* Course Study Guide Generator */}
-            <div className="group p-6 bg-white dark:bg-gray-900 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-800 md:col-span-2 lg:col-span-3">
+            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 md:col-span-2 lg:col-span-3">
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-pink-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
                   <GraduationCap className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
@@ -345,7 +328,7 @@ export default function LandingPage() {
                     <h3 className="text-lg font-bold text-black dark:text-white">
                       Course Study Guide Generator
                     </h3>
-                    <span className="px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-full">
+                    <span className="px-2 py-0.5 text-xs font-medium bg-[#E91E8C] text-white rounded-full">
                       NEW
                     </span>
                   </div>
@@ -364,9 +347,9 @@ export default function LandingPage() {
             </h3>
             <div className="grid md:grid-cols-3 gap-6">
               {/* Benefit 1 */}
-              <div className="flex items-start gap-4 p-4 bg-purple-50/50 dark:bg-purple-900/20 rounded-xl">
-                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Brain className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                <div className="w-10 h-10 bg-[#7B3FF2]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Brain className="w-5 h-5 text-[#7B3FF2]" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-black dark:text-white mb-1">Spaced repetition</h4>
@@ -377,9 +360,9 @@ export default function LandingPage() {
               </div>
 
               {/* Benefit 2 */}
-              <div className="flex items-start gap-4 p-4 bg-blue-50/50 dark:bg-blue-900/20 rounded-xl">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                <div className="w-10 h-10 bg-[#7B3FF2]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Target className="w-5 h-5 text-[#7B3FF2]" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-black dark:text-white mb-1">AI prioritization</h4>
@@ -390,9 +373,9 @@ export default function LandingPage() {
               </div>
 
               {/* Benefit 3 */}
-              <div className="flex items-start gap-4 p-4 bg-green-50/50 dark:bg-green-900/20 rounded-xl">
-                <div className="w-10 h-10 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <FileCheck2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                <div className="w-10 h-10 bg-[#7B3FF2]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <FileCheck2 className="w-5 h-5 text-[#7B3FF2]" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-black dark:text-white mb-1">Your notes, cited</h4>
@@ -407,7 +390,7 @@ export default function LandingPage() {
           {/* See all tools link */}
           <div className="text-center mt-10">
             <Link
-              href="/pricing"
+              href="#features"
               className="inline-flex items-center gap-2 text-purple-600 dark:text-purple-400 font-medium hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
             >
               See all 12 tools included
@@ -430,7 +413,7 @@ export default function LandingPage() {
           {/* Testimonials Grid */}
           <div className="grid md:grid-cols-3 gap-6 mb-10">
             {/* Testimonial 1 */}
-            <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl border border-purple-100 dark:border-purple-800">
+            <div className="p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-1 mb-3">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -440,7 +423,7 @@ export default function LandingPage() {
                 "Went from a 68% to 86% in biology in one month. The mock exams are scary accurate."
               </p>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-200 dark:bg-purple-800 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-300 font-bold text-sm">
+                <div className="w-10 h-10 bg-[#7B3FF2]/20 rounded-full flex items-center justify-center text-[#7B3FF2] font-bold text-sm">
                   SM
                 </div>
                 <div>
@@ -451,7 +434,7 @@ export default function LandingPage() {
             </div>
 
             {/* Testimonial 2 */}
-            <div className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-2xl border border-blue-100 dark:border-blue-800">
+            <div className="p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-1 mb-3">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -461,7 +444,7 @@ export default function LandingPage() {
                 "My 600-page biochemistry textbook became flashcards in 5 minutes. Game changer."
               </p>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-200 dark:bg-blue-800 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold text-sm">
+                <div className="w-10 h-10 bg-[#7B3FF2]/20 rounded-full flex items-center justify-center text-[#7B3FF2] font-bold text-sm">
                   JK
                 </div>
                 <div>
@@ -472,7 +455,7 @@ export default function LandingPage() {
             </div>
 
             {/* Testimonial 3 */}
-            <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-100 dark:border-green-800">
+            <div className="p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-1 mb-3">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -482,7 +465,7 @@ export default function LandingPage() {
                 "Passed AWS certification on my first try. Listened to podcasts during my commute."
               </p>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-200 dark:bg-green-800 rounded-full flex items-center justify-center text-green-600 dark:text-green-300 font-bold text-sm">
+                <div className="w-10 h-10 bg-[#7B3FF2]/20 rounded-full flex items-center justify-center text-[#7B3FF2] font-bold text-sm">
                   GK
                 </div>
                 <div>
@@ -512,7 +495,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-24 bg-gradient-to-b from-purple-50/20 to-pink-50/30 dark:from-purple-950/20 dark:to-pink-950/30">
+      <section id="pricing" className="py-24 bg-white dark:bg-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-16">
@@ -530,13 +513,8 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA Section - Student-Focused */}
-      <section className="relative py-20 overflow-hidden bg-gradient-to-b from-purple-50 to-white dark:from-purple-950/50 dark:to-black border-y border-purple-100 dark:border-purple-900">
-        {/* Background decoration */}
-        <div className="absolute inset-0 bg-grid-purple/[0.02] dark:bg-grid-white/[0.01]" />
-        <div className="absolute top-0 left-1/4 w-72 h-72 bg-purple-200/30 dark:bg-purple-800/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-pink-200/20 dark:bg-pink-800/10 rounded-full blur-3xl" />
-
-        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="relative py-20 overflow-hidden bg-gray-50 dark:bg-gray-900 border-y border-gray-200 dark:border-gray-800">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Headline - Student-focused */}
           <h2 className="text-3xl md:text-4xl font-bold text-black dark:text-white mb-4">
             Ready to actually enjoy studying?
@@ -551,7 +529,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
               href={isSignedIn ? "/dashboard" : "/sign-up"}
-              className="group inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl"
+              className="group inline-flex items-center gap-2 px-8 py-4 bg-[#7B3FF2] hover:bg-[#6727E2] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl"
             >
               <span>{isSignedIn ? "Go to Dashboard" : "Start free — no credit card"}</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -568,40 +546,65 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer with Integrity Statement */}
-      <footer className="py-10 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          {/* Integrity Statement */}
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 max-w-lg mx-auto">
-            Your notes stay yours. Synaptic supports honest studying, not shortcuts.
-          </p>
+      {/* Footer with Contact Info */}
+      <footer className="py-12 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
+            {/* Brand & Integrity */}
+            <div className="text-center md:text-left">
+              <h3 className="font-bold text-black dark:text-white mb-2">Synaptic</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Your notes stay yours. We support honest studying, not shortcuts.
+              </p>
+            </div>
 
-          {/* Links */}
-          <div className="flex flex-wrap justify-center gap-6 mb-6">
-            <Link
-              href="/privacy"
-              className="text-sm text-gray-500 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-            >
-              Privacy
-            </Link>
-            <Link
-              href="/terms"
-              className="text-sm text-gray-500 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-            >
-              Terms
-            </Link>
-            <a
-              href="mailto:support@synaptic.study"
-              className="text-sm text-gray-500 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-            >
-              Support
-            </a>
+            {/* Contact Information */}
+            <div className="text-center">
+              <h3 className="font-bold text-black dark:text-white mb-2">Contact Us</h3>
+              <div className="space-y-2">
+                <a
+                  href="mailto:support@synaptic.study"
+                  className="flex items-center justify-center md:justify-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-[#7B3FF2] dark:hover:text-purple-400 transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                  support@synaptic.study
+                </a>
+                <a
+                  href="mailto:hello@synaptic.study"
+                  className="flex items-center justify-center md:justify-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-[#7B3FF2] dark:hover:text-purple-400 transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                  hello@synaptic.study
+                </a>
+              </div>
+            </div>
+
+            {/* Links */}
+            <div className="text-center md:text-right">
+              <h3 className="font-bold text-black dark:text-white mb-2">Legal</h3>
+              <div className="space-y-2">
+                <Link
+                  href="/privacy"
+                  className="block text-sm text-gray-600 dark:text-gray-400 hover:text-[#7B3FF2] dark:hover:text-purple-400 transition-colors"
+                >
+                  Privacy Policy
+                </Link>
+                <Link
+                  href="/terms"
+                  className="block text-sm text-gray-600 dark:text-gray-400 hover:text-[#7B3FF2] dark:hover:text-purple-400 transition-colors"
+                >
+                  Terms of Service
+                </Link>
+              </div>
+            </div>
           </div>
 
           {/* Copyright */}
-          <p className="text-xs text-gray-400 dark:text-gray-600">
-            © 2025 Synaptic. All rights reserved.
-          </p>
+          <div className="pt-6 border-t border-gray-200 dark:border-gray-800 text-center">
+            <p className="text-xs text-gray-400 dark:text-gray-600">
+              © 2025 Synaptic. ካንአ All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

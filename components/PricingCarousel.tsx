@@ -152,7 +152,7 @@ export function PricingCarousel() {
               onClick={() => setCurrentSlide(index)}
               className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all ${
                 currentSlide === index
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105'
+                  ? 'bg-[#7B3FF2] text-white shadow-lg scale-105'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
