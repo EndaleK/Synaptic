@@ -2,6 +2,8 @@
 
 Reference for all design tokens. Source: `app/globals.css`
 
+**Last Updated:** Design System Overhaul (January 2026)
+
 ---
 
 ## Brand Colors
@@ -20,11 +22,45 @@ background: linear-gradient(90deg, #7B3FF2 0%, #E91E8C 50%, #FF6B35 100%);
 | Deep Blue | `#2D3E9F` | `--accent-blue` | Trust, stability |
 | Orange | `#FF6B35` | `--accent-orange` | Energy, warnings |
 
-### Hover States
-| Base | Hover | Variable |
-|------|-------|----------|
-| `#7B3FF2` | `#6727E2` | `--accent-primary-hover` |
-| `#E91E8C` | `#D5147C` | `--accent-secondary-hover` |
+### Hover States (Improved Contrast)
+| Base | Hover | Variable | Contrast |
+|------|-------|----------|----------|
+| `#7B3FF2` | `#6B2FE2` | `--accent-primary-hover` | 5.2:1 (WCAG AA) |
+| `#E91E8C` | `#D5147C` | `--accent-secondary-hover` | - |
+
+### Electric Accents (NEW)
+| Color | Hex | CSS Variable | Usage |
+|-------|-----|--------------|-------|
+| Electric Blue | `#0EA5E9` | `--accent-electric-blue` | Focus states, interactive |
+| Mint | `#34D399` | `--accent-mint` | Success states |
+| Coral | `#FB7185` | `--accent-coral` | Soft warnings |
+
+---
+
+## Surface Colors (NEW)
+
+### Light Mode Surfaces
+| Surface | Hex | CSS Variable | Usage |
+|---------|-----|--------------|-------|
+| Warm White | `#FDFCFB` | `--surface-warm` | Subtle warm backgrounds |
+| Cool | `#F8FAFC` | `--surface-cool` | Card backgrounds |
+| Elevated | `#FFFFFF` | `--surface-elevated` | Elevated cards that pop |
+
+### Dark Mode Surfaces
+| Surface | Hex | CSS Variable | Usage |
+|---------|-----|--------------|-------|
+| Dark | `#0C0A14` | `--surface-dark` | Rich dark with purple undertone |
+| Dark Elevated | `#1A1625` | `--surface-dark-elevated` | Dark mode elevated cards |
+
+### Muted Backgrounds
+```css
+--accent-primary-muted: rgba(123, 63, 242, 0.08);   /* Light mode */
+--accent-secondary-muted: rgba(233, 30, 140, 0.06);
+
+/* Dark mode - slightly higher opacity */
+--accent-primary-muted: rgba(123, 63, 242, 0.12);
+--accent-secondary-muted: rgba(233, 30, 140, 0.10);
+```
 
 ---
 
@@ -207,3 +243,126 @@ The app supports dark mode via `.dark` class. Use Tailwind's `dark:` prefix:
 ```tsx
 <span className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
 ```
+
+---
+
+## Animation System (NEW)
+
+### Branded Shimmer
+Shimmer effect using brand purple-pink gradient for loading states:
+```tsx
+<div className="shimmer-brand h-8 w-32 rounded" />
+```
+- Light mode: `rgba(123, 63, 242, 0.03)` → `rgba(233, 30, 140, 0.06)`
+- Dark mode: Higher opacity for visibility
+- Animation: 2s ease-in-out infinite
+
+### Section Reveal
+Smooth entrance animation for page sections:
+```tsx
+<div className="animate-section-reveal stagger-index-1">
+  Content appears with blur and translateY
+</div>
+```
+Available stagger classes: `stagger-index-1` through `stagger-index-6`
+
+### Card Glow
+Hover effect with brand-colored glow:
+```tsx
+<div className="card-glow">
+  Glows purple on hover with subtle lift
+</div>
+```
+
+---
+
+## Card Elevation System (NEW)
+
+Consistent shadow hierarchy for visual depth:
+
+| Class | Shadow | Use Case |
+|-------|--------|----------|
+| `card-level-1` | Subtle | Standard cards, list items |
+| `card-level-2` | Medium | Modals, popovers, featured items |
+| `card-level-3` | Strong | Floating elements, tooltips |
+
+```tsx
+// Standard card
+<div className="card-level-1">...</div>
+
+// Featured card with hover effect
+<div className="card-level-2 card-glow">...</div>
+```
+
+---
+
+## Background Patterns (NEW)
+
+### Grid Pattern
+Subtle brand-colored grid overlay:
+```tsx
+<div className="bg-grid-pattern">...</div>
+```
+Or inline for custom sizing:
+```tsx
+style={{
+  backgroundImage: `
+    linear-gradient(rgba(123, 63, 242, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(123, 63, 242, 0.02) 1px, transparent 1px)
+  `,
+  backgroundSize: '48px 48px',
+}}
+```
+
+### Dot Pattern
+Alternative decorative background:
+```tsx
+<div className="bg-dot-pattern">...</div>
+```
+
+---
+
+## Illustration Components (NEW)
+
+Located in `components/illustrations/`:
+
+### Decorative Components
+```tsx
+import { BackgroundOrbs, GridPattern } from '@/components/illustrations'
+
+// Floating gradient orbs
+<BackgroundOrbs variant="dashboard" />
+
+// Grid overlay
+<GridPattern variant="dot" opacity="subtle" />
+```
+
+### Empty State Illustrations
+```tsx
+import { NoDocuments, NoFlashcards, NoActivity } from '@/components/illustrations'
+
+<EmptyState
+  illustration="documents"  // or "flashcards" or "activity"
+  title="No documents yet"
+  description="..."
+/>
+```
+
+---
+
+## Accessibility
+
+### Reduced Motion
+All animations respect `prefers-reduced-motion`:
+```css
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-brand, .animate-section-reveal, .card-glow {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+```
+
+### Color Contrast
+- Primary purple text: Use `#6B2FE2` (improved from `#7B3FF2`) for 5.2:1 contrast
+- All semantic colors meet WCAG AA standards

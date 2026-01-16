@@ -2,9 +2,12 @@
 
 import { LucideIcon, Upload, FileText, MessageSquare, BookOpen, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { NoDocuments, NoFlashcards, NoActivity } from "@/components/illustrations"
+import { ReactNode } from "react"
 
 export interface EmptyStateProps {
   icon?: LucideIcon
+  illustration?: 'documents' | 'flashcards' | 'activity' | ReactNode
   title: string
   description: string
   action?: {
@@ -22,6 +25,7 @@ export interface EmptyStateProps {
 
 export default function EmptyState({
   icon: Icon = FileText,
+  illustration,
   title,
   description,
   action,
@@ -30,18 +34,44 @@ export default function EmptyState({
   variant = 'default'
 }: EmptyStateProps) {
   const containerClass = variant === 'card'
-    ? "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-12"
+    ? "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-12 card-level-2"
     : ""
+
+  // Render illustration based on type
+  const renderIllustration = () => {
+    if (!illustration) {
+      // Fall back to icon
+      return (
+        <div className="relative mb-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-accent-primary to-accent-secondary rounded-3xl blur-2xl opacity-20 animate-pulse" />
+          <div className="relative w-24 h-24 bg-gradient-to-br from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-3xl flex items-center justify-center border-2 border-accent-primary/30 dark:border-accent-primary/50">
+            <Icon className="w-12 h-12 text-accent-primary" />
+          </div>
+        </div>
+      )
+    }
+
+    if (typeof illustration === 'string') {
+      switch (illustration) {
+        case 'documents':
+          return <NoDocuments size="lg" className="mb-4" />
+        case 'flashcards':
+          return <NoFlashcards size="lg" className="mb-4" />
+        case 'activity':
+          return <NoActivity size="lg" className="mb-4" />
+        default:
+          return null
+      }
+    }
+
+    // Custom ReactNode illustration
+    return <div className="mb-6">{illustration}</div>
+  }
 
   return (
     <div className={cn("flex flex-col items-center justify-center text-center", containerClass, className)}>
-      {/* Icon with gradient background */}
-      <div className="relative mb-6">
-        <div className="absolute inset-0 bg-gradient-to-r from-accent-primary to-accent-secondary rounded-3xl blur-2xl opacity-20 animate-pulse" />
-        <div className="relative w-24 h-24 bg-gradient-to-br from-accent-primary/10 to-accent-secondary/10 dark:from-accent-primary/20 dark:to-accent-secondary/20 rounded-3xl flex items-center justify-center border-2 border-accent-primary/30 dark:border-accent-primary/50">
-          <Icon className="w-12 h-12 text-accent-primary" />
-        </div>
-      </div>
+      {/* Illustration or Icon */}
+      {renderIllustration()}
 
       {/* Title */}
       <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
@@ -84,11 +114,11 @@ export default function EmptyState({
   )
 }
 
-// Pre-configured empty states
+// Pre-configured empty states with custom illustrations
 export function NoDocumentsEmptyState({ onUpload }: { onUpload: () => void }) {
   return (
     <EmptyState
-      icon={Upload}
+      illustration="documents"
       title="No documents yet"
       description="Upload your first document to start generating flashcards and chatting with your content. We support PDF, DOCX, TXT, and more."
       action={{
@@ -103,7 +133,7 @@ export function NoDocumentsEmptyState({ onUpload }: { onUpload: () => void }) {
 export function NoFlashcardsEmptyState({ onGenerate }: { onGenerate: () => void }) {
   return (
     <EmptyState
-      icon={BookOpen}
+      illustration="flashcards"
       title="No flashcards yet"
       description="Generate your first set of flashcards from a document. Synaptic will automatically create study cards from your content."
       action={{

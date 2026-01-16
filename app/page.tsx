@@ -95,18 +95,36 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section - Student-First Design */}
+      {/* Hero Section - Student-First Design with Enhanced Background */}
       <section className="relative overflow-hidden bg-white dark:bg-gray-950">
+        {/* Decorative background elements */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Grid pattern */}
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `
+                linear-gradient(rgba(123, 63, 242, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(123, 63, 242, 0.02) 1px, transparent 1px)
+              `,
+              backgroundSize: '48px 48px',
+            }}
+          />
+
+          {/* Gradient orbs */}
+          <div className="absolute -top-[20%] -right-[10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-violet-400/10 via-purple-300/5 to-transparent dark:from-violet-600/8 dark:via-purple-500/4 blur-3xl" />
+          <div className="absolute -bottom-[30%] -left-[10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-pink-400/8 via-rose-300/4 to-transparent dark:from-pink-600/6 dark:via-rose-500/3 blur-3xl" />
+        </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left Column: Text Content */}
+            {/* Left Column: Text Content with reveal animations */}
             <div className="text-center lg:text-left">
-              {/* Headline - Clear, outcome-focused */}
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-black dark:text-white mb-6 leading-[1.1] tracking-tight">
+              {/* Headline - Clear, outcome-focused with staggered reveal */}
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-black dark:text-white mb-6 leading-[1.1] tracking-tight animate-section-reveal">
                 Study less.
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35]">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35] animate-gradient-border bg-[length:200%_200%]">
                   Remember more.
                 </span>
                 <br />
@@ -114,15 +132,15 @@ export default function LandingPage() {
               </h1>
 
               {/* Subheadline - Emotional, outcome-focused */}
-              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed animate-section-reveal stagger-index-1">
                 Upload your notes once. Get flashcards, practice exams, and a study schedule—so you walk into exams confident, not cramming.
               </p>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
+              {/* CTA Buttons with reveal animation */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center animate-section-reveal stagger-index-2">
                 <Link
                   href={isSignedIn ? "/dashboard" : "/sign-up"}
-                  className="group relative px-8 py-4 bg-[#7B3FF2] hover:bg-[#6727E2] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2"
+                  className="group relative px-8 py-4 bg-[#7B3FF2] hover:bg-[#6B2FE2] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2 card-glow"
                 >
                   <span>{isSignedIn ? "Go to Dashboard" : "Start free"}</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -147,8 +165,8 @@ export default function LandingPage() {
 
             </div>
 
-            {/* Right Column: Transformation Visual */}
-            <div className="flex justify-center lg:justify-end">
+            {/* Right Column: Transformation Visual with reveal animation */}
+            <div className="flex justify-center lg:justify-end animate-section-reveal stagger-index-3">
               <TransformationVisual />
             </div>
           </div>
@@ -237,10 +255,10 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* 6-Tool Grid with Emotional Descriptions */}
+          {/* 6-Tool Grid with Emotional Descriptions and enhanced cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
             {/* Smart Flashcards */}
-            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700">
+            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
               <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
@@ -253,7 +271,7 @@ export default function LandingPage() {
             </div>
 
             {/* Mock Exams */}
-            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700">
+            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
               <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <ClipboardCheck className="w-6 h-6 text-white" />
               </div>
@@ -266,7 +284,7 @@ export default function LandingPage() {
             </div>
 
             {/* Study Buddy */}
-            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700">
+            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
               <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Bot className="w-6 h-6 text-white" />
               </div>
@@ -279,7 +297,7 @@ export default function LandingPage() {
             </div>
 
             {/* Audio Summaries */}
-            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700">
+            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
               <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Mic className="w-6 h-6 text-white" />
               </div>
@@ -292,7 +310,7 @@ export default function LandingPage() {
             </div>
 
             {/* Mind Maps */}
-            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700">
+            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
               <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Network className="w-6 h-6 text-white" />
               </div>
@@ -305,7 +323,7 @@ export default function LandingPage() {
             </div>
 
             {/* Study Planner */}
-            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700">
+            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
               <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
@@ -318,7 +336,7 @@ export default function LandingPage() {
             </div>
 
             {/* Course Study Guide Generator */}
-            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 md:col-span-2 lg:col-span-3">
+            <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1 md:col-span-2 lg:col-span-3">
               <div className="flex flex-col md:flex-row md:items-center gap-4">
                 <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
                   <GraduationCap className="w-6 h-6 text-white" />

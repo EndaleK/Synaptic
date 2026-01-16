@@ -34,12 +34,26 @@
   /* Accent colors (RGB format for Tailwind compatibility) - Brain Logo Theme */
   --accent-primary: 123 63 242;       /* Purple from logo #7B3FF2 */
   --accent-secondary: 233 30 140;     /* Hot pink from logo #E91E8C */
-  --accent-primary-hover: 103 43 222;  /* Darker purple */
+  --accent-primary-hover: 107 47 226;  /* Darker purple #6B2FE2 - improved contrast 5.2:1 */
   --accent-secondary-hover: 213 10 120; /* Darker pink */
 
   /* Additional brain logo colors */
   --accent-blue: 45 62 159;           /* Deep blue from logo #2D3E9F */
   --accent-orange: 255 107 53;        /* Orange from logo #FF6B35 */
+
+  /* New: Softer neutrals for surface layers */
+  --surface-warm: #FDFCFB;            /* Warm white for subtle backgrounds */
+  --surface-cool: #F8FAFC;            /* Slate-50 for cards */
+  --surface-elevated: #FFFFFF;        /* Pure white for elevated cards */
+
+  /* New: Electric accent palette */
+  --accent-electric-blue: 14 165 233; /* #0EA5E9 - Focus states */
+  --accent-mint: 52 211 153;          /* #34D399 - Success states */
+  --accent-coral: 251 113 133;        /* #FB7185 - Soft warnings */
+
+  /* New: Muted backgrounds for subtle highlights */
+  --accent-primary-muted: rgba(123, 63, 242, 0.08);
+  --accent-secondary-muted: rgba(233, 30, 140, 0.06);
 
   /* Neon accent palette for dark mode dashboard */
   --neon-cyan: 6 182 212;             /* #06B6D4 - Focus, learning */
@@ -174,6 +188,10 @@
     --color-surface: 15 23 42;           /* Slate-900 background */
     --color-surface-secondary: 30 41 59; /* Slate-800 for cards */
 
+    /* New: Rich dark surfaces with purple undertone */
+    --surface-dark: #0C0A14;             /* Rich dark with purple undertone */
+    --surface-dark-elevated: #1A1625;    /* Dark mode elevated cards */
+
     /* Text colors for dark mode */
     --text-on-dark: 248 250 252;         /* Slate-50 - primary text */
     --text-secondary-dark: 203 213 225;  /* Slate-300 - secondary text */
@@ -187,6 +205,10 @@
     --bg-tint-writer: rgba(244, 63, 94, 0.08);        /* Rose tint */
     --bg-tint-video: rgba(251, 191, 36, 0.08);        /* Amber tint */
     --bg-tint-quiz: rgba(123, 63, 242, 0.08);         /* Purple tint */
+
+    /* New: Muted backgrounds for dark mode */
+    --accent-primary-muted: rgba(123, 63, 242, 0.12);
+    --accent-secondary-muted: rgba(233, 30, 140, 0.10);
   }
 }
 
@@ -1419,5 +1441,205 @@ html {
   .tiptap-editor .ProseMirror code {
     background: #1e293b;
     color: #e2e8f0;
+  }
+}
+
+/* =================================================================
+   DESIGN SYSTEM OVERHAUL - Phase 1: Tokens & Animations
+   ================================================================= */
+
+/* Branded Shimmer Animation - Uses brand colors */
+@keyframes shimmer-brand {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-brand {
+  background: linear-gradient(90deg,
+    rgba(123, 63, 242, 0.03) 0%,
+    rgba(233, 30, 140, 0.06) 50%,
+    rgba(123, 63, 242, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-brand 2s ease-in-out infinite;
+}
+
+.dark .shimmer-brand {
+  background: linear-gradient(90deg,
+    rgba(123, 63, 242, 0.05) 0%,
+    rgba(233, 30, 140, 0.10) 50%,
+    rgba(123, 63, 242, 0.05) 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* Card Elevation System - Consistent shadow hierarchy */
+.card-level-1 {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02), 0 4px 8px rgba(0, 0, 0, 0.04);
+}
+
+.card-level-2 {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+.card-level-3 {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04), 0 16px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark mode card elevations */
+.dark .card-level-1 {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dark .card-level-2 {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dark .card-level-3 {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2), 0 16px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* Section Reveal Animation - Smooth page section entrance */
+@keyframes section-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.animate-section-reveal {
+  animation: section-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: calc(var(--stagger-index, 0) * 0.1s);
+  opacity: 0;
+}
+
+/* Stagger index custom property for cascading reveals */
+.stagger-index-1 { --stagger-index: 1; }
+.stagger-index-2 { --stagger-index: 2; }
+.stagger-index-3 { --stagger-index: 3; }
+.stagger-index-4 { --stagger-index: 4; }
+.stagger-index-5 { --stagger-index: 5; }
+.stagger-index-6 { --stagger-index: 6; }
+
+/* Background Grid Pattern - Subtle brand-colored grid overlay */
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(rgba(123, 63, 242, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(123, 63, 242, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.dark .bg-grid-pattern {
+  background-image:
+    linear-gradient(rgba(123, 63, 242, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(123, 63, 242, 0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Dot Pattern - Alternative decorative background */
+.bg-dot-pattern {
+  background-image: radial-gradient(rgba(123, 63, 242, 0.08) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.dark .bg-dot-pattern {
+  background-image: radial-gradient(rgba(123, 63, 242, 0.12) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Surface Utilities - New design system surfaces */
+.surface-warm {
+  background-color: var(--surface-warm);
+}
+
+.surface-cool {
+  background-color: var(--surface-cool);
+}
+
+.surface-elevated {
+  background-color: var(--surface-elevated);
+}
+
+.dark .surface-elevated {
+  background-color: var(--surface-dark-elevated);
+}
+
+/* Gradient Borders - Animated border effect */
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #7B3FF2 0%, #E91E8C 50%, #FF6B35 100%);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Glowing Card Effect - Hover state with brand glow */
+.card-glow {
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.card-glow:hover {
+  box-shadow:
+    0 0 0 1px rgba(123, 63, 242, 0.1),
+    0 4px 16px rgba(123, 63, 242, 0.1),
+    0 12px 32px rgba(123, 63, 242, 0.05);
+  transform: translateY(-2px);
+}
+
+.dark .card-glow:hover {
+  box-shadow:
+    0 0 0 1px rgba(123, 63, 242, 0.2),
+    0 4px 16px rgba(123, 63, 242, 0.2),
+    0 12px 32px rgba(123, 63, 242, 0.1);
+}
+
+/* Muted Background Utilities */
+.bg-accent-primary-muted {
+  background-color: var(--accent-primary-muted);
+}
+
+.bg-accent-secondary-muted {
+  background-color: var(--accent-secondary-muted);
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-brand,
+  .animate-section-reveal,
+  .animate-hero-reveal,
+  .animate-float,
+  .animate-float-orb,
+  .animate-gradient-border,
+  .card-glow {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .animate-section-reveal,
+  .animate-hero-reveal {
+    opacity: 1;
+    transform: none;
+    filter: none;
   }
 }

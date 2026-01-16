@@ -340,13 +340,31 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
 
   return (
     <div className="min-h-full bg-[#fafbfc] dark:bg-[#0a0a0f] font-body relative overflow-hidden">
-      {/* Subtle atmospheric background */}
+      {/* Enhanced atmospheric background with grid pattern */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* Base gradient - more subtle */}
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-50/30 via-white to-pink-50/20 dark:from-violet-950/10 dark:via-[#0a0a0f] dark:to-pink-950/5" />
+        {/* Base gradient - warm and inviting */}
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-50/40 via-white to-pink-50/30 dark:from-violet-950/15 dark:via-[#0a0a0f] dark:to-pink-950/10" />
 
-        {/* Single subtle orb for depth */}
-        <div className="absolute top-[20%] right-[20%] w-[400px] h-[400px] rounded-full bg-gradient-to-br from-violet-300/10 via-purple-200/5 to-transparent dark:from-violet-600/5 dark:via-purple-500/3 blur-3xl" />
+        {/* Subtle grid pattern overlay */}
+        <div
+          className="absolute inset-0 bg-grid-pattern opacity-50"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(123, 63, 242, 0.02) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(123, 63, 242, 0.02) 1px, transparent 1px)
+            `,
+            backgroundSize: '48px 48px',
+          }}
+        />
+
+        {/* Primary orb - Purple (top right) */}
+        <div className="absolute top-[10%] right-[15%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-violet-400/8 via-purple-300/4 to-transparent dark:from-violet-600/6 dark:via-purple-500/3 blur-3xl" />
+
+        {/* Secondary orb - Pink (bottom left) */}
+        <div className="absolute bottom-[20%] left-[5%] w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-pink-400/6 via-rose-300/3 to-transparent dark:from-pink-600/4 dark:via-rose-500/2 blur-3xl" />
+
+        {/* Tertiary orb - Orange accent (center right) */}
+        <div className="absolute top-[50%] right-[5%] w-[300px] h-[300px] rounded-full bg-gradient-to-bl from-orange-400/5 via-amber-300/2 to-transparent dark:from-orange-600/3 dark:via-amber-500/1 blur-3xl" />
       </div>
 
       {/* Main container */}
@@ -425,8 +443,8 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
               </div>
             </div>
 
-            {/* Stats Card - Glass morphism */}
-            <div className="animate-hero-reveal stagger-2 flex items-center gap-6 p-5 bg-white/80 dark:bg-white/[0.03] backdrop-blur-2xl rounded-2xl border border-white/50 dark:border-white/10 shadow-2xl shadow-violet-500/5 dark:shadow-none">
+            {/* Stats Card - Glass morphism with card elevation */}
+            <div className="animate-hero-reveal stagger-2 flex items-center gap-6 p-5 bg-white/80 dark:bg-white/[0.03] backdrop-blur-2xl rounded-2xl border border-white/50 dark:border-white/10 card-level-2 card-glow">
               {/* Streak */}
               <div className="flex items-center gap-3">
                 <div className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 ${
@@ -489,8 +507,8 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
             {/* Smart Recommendations - AI-powered "What to study next" */}
             <SmartRecommendations maxItems={3} showStats={true} />
 
-            {/* Weekly Progress - Enhanced card */}
-            <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl shadow-gray-200/20 dark:shadow-none">
+            {/* Weekly Progress - Enhanced card with elevation */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 card-level-1 card-glow">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
                 <h3 className="text-lg font-display font-bold text-gray-900 dark:text-white">This Week</h3>
                 <div className="flex items-center gap-2">
@@ -550,9 +568,9 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
 
         {/* Exam Readiness Section - Hero Feature */}
         <section className="mb-12 animate-hero-reveal stagger-4">
-          {/* Create Study Plan Card - Simplified */}
+          {/* Create Study Plan Card - Simplified with card elevation */}
           <div className="mb-5">
-            <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl shadow-gray-200/20 dark:shadow-none">
+            <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 card-level-1 card-glow">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-500/10 flex items-center justify-center">
@@ -647,7 +665,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
             </button>
           </div>
 
-          {/* Primary Modes - 4 horizontal cards */}
+          {/* Primary Modes - 4 horizontal cards with enhanced styling */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {primaryModes.map((mode, index) => {
               const Icon = mode.icon
@@ -655,11 +673,20 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                 <button
                   key={mode.id}
                   onClick={() => handleModeClick(mode)}
-                  className="group relative p-5 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 hover:border-transparent hover:shadow-2xl hover:shadow-violet-500/10 dark:hover:shadow-none transition-all duration-500 text-left overflow-hidden hover:scale-[1.02]"
+                  className="group relative p-5 rounded-2xl bg-white/90 dark:bg-white/[0.04] backdrop-blur-xl border border-gray-100 dark:border-white/10 hover:border-transparent transition-all duration-500 text-left overflow-hidden hover:scale-[1.02] card-level-1"
                   style={{ animationDelay: `${index * 60}ms` }}
                 >
                   {/* Animated gradient overlay on hover */}
                   <div className={`absolute inset-0 bg-gradient-to-br ${mode.color} opacity-0 group-hover:opacity-100 transition-all duration-500 rounded-2xl`} />
+
+                  {/* Subtle grid pattern background */}
+                  <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-500 rounded-2xl"
+                    style={{
+                      backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+                      backgroundSize: '20px 20px',
+                    }}
+                  />
 
                   <div className="relative z-10">
                     <div className={`w-12 h-12 rounded-xl ${mode.bgColor} flex items-center justify-center mb-3 group-hover:bg-white/20 group-hover:scale-110 transition-all duration-500 shadow-lg group-hover:shadow-xl`}>
@@ -673,9 +700,9 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
             })}
           </div>
 
-          {/* Secondary Modes - Expandable */}
+          {/* Secondary Modes - Expandable with enhanced styling */}
           {showMoreTools && (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">More study tools</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 {secondaryModes.map((mode, index) => {
@@ -684,10 +711,10 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                     <button
                       key={mode.id}
                       onClick={() => handleModeClick(mode)}
-                      className="group flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] border border-gray-200 dark:border-gray-800 hover:border-violet-200 dark:hover:border-violet-500/30 transition-all duration-300"
+                      className="group flex items-center gap-3 p-3 rounded-xl bg-white/70 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] border border-gray-100 dark:border-white/10 hover:border-violet-200 dark:hover:border-violet-500/30 transition-all duration-300 card-glow"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
-                      <div className={`w-9 h-9 rounded-lg ${mode.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                      <div className={`w-9 h-9 rounded-lg ${mode.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm`}>
                         <Icon className={`w-4 h-4 ${mode.textColor}`} />
                       </div>
                       <div className="text-left">
@@ -705,8 +732,8 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
         {/* Recent Activity & Usage Widget - Side by Side */}
         <section className="mb-12 animate-hero-reveal stagger-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-            {/* Recent Activity */}
-            <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl shadow-gray-200/20 dark:shadow-none">
+            {/* Recent Activity with card elevation */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl border border-white/50 dark:border-white/10 card-level-1 card-glow">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/30">

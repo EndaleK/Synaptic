@@ -4,9 +4,25 @@ import { cn } from "@/lib/utils"
 
 interface SkeletonProps {
   className?: string
+  variant?: 'default' | 'brand'
 }
 
-export function Skeleton({ className }: SkeletonProps) {
+/**
+ * Skeleton - Loading placeholder with shimmer animation
+ * @param variant - 'default' for neutral gray, 'brand' for purple-pink gradient
+ */
+export function Skeleton({ className, variant = 'default' }: SkeletonProps) {
+  if (variant === 'brand') {
+    return (
+      <div
+        className={cn(
+          "rounded-md shimmer-brand",
+          className
+        )}
+      />
+    )
+  }
+
   return (
     <div
       className={cn(
@@ -18,6 +34,14 @@ export function Skeleton({ className }: SkeletonProps) {
       }}
     />
   )
+}
+
+/**
+ * BrandedSkeleton - Skeleton with brand-colored shimmer effect
+ * Uses purple-pink gradient for loading states
+ */
+export function BrandedSkeleton({ className }: { className?: string }) {
+  return <Skeleton className={className} variant="brand" />
 }
 
 // Document Card Skeleton
@@ -113,21 +137,26 @@ export function LearningModeCardSkeleton() {
   )
 }
 
-// Dashboard Home Skeleton
+// Dashboard Home Skeleton - With branded shimmer
 export function DashboardHomeSkeleton() {
   return (
-    <div className="h-screen overflow-y-auto bg-gray-50 dark:bg-gray-950">
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-8">
-          <Skeleton className="h-10 w-1/2 mb-2 bg-white/20" />
-          <Skeleton className="h-6 w-1/3 mb-4 bg-white/20" />
-          <Skeleton className="h-4 w-1/4 bg-white/20" />
+    <div className="h-screen overflow-y-auto bg-gray-50 dark:bg-gray-950 relative">
+      {/* Subtle background decoration */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[20%] right-[20%] w-[400px] h-[400px] rounded-full bg-gradient-to-br from-violet-300/5 via-purple-200/3 to-transparent blur-3xl" />
+      </div>
+
+      <div className="relative max-w-7xl mx-auto p-6 space-y-6">
+        {/* Welcome Section - Branded shimmer */}
+        <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 rounded-2xl p-8 border border-purple-200/30 dark:border-purple-500/20">
+          <BrandedSkeleton className="h-10 w-1/2 mb-2" />
+          <BrandedSkeleton className="h-6 w-1/3 mb-4" />
+          <BrandedSkeleton className="h-4 w-1/4" />
         </div>
 
         {/* Learning Modes */}
         <div>
-          <Skeleton className="h-8 w-48 mb-4 rounded" />
+          <BrandedSkeleton className="h-8 w-48 mb-4 rounded" />
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <LearningModeCardSkeleton key={i} />
@@ -138,7 +167,7 @@ export function DashboardHomeSkeleton() {
         {/* Recent Documents */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <Skeleton className="h-8 w-48 rounded" />
+            <BrandedSkeleton className="h-8 w-48 rounded" />
             <Skeleton className="h-6 w-32 rounded" />
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -99,14 +99,16 @@ export default function UsageWidget() {
 
   if (loading) {
     return (
-      <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 h-full flex flex-col">
+      <div className="bg-white/90 dark:bg-white/[0.04] backdrop-blur-xl rounded-2xl p-6 border border-gray-100 dark:border-white/10 h-full flex flex-col card-level-1">
         <div className="flex items-center gap-3 mb-4">
-          <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400 animate-pulse" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <TrendingUp className="w-5 h-5 text-white animate-pulse" />
+          </div>
           <h3 className="font-semibold text-gray-900 dark:text-white">Loading usage...</h3>
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-12 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
+            <div key={i} className="h-12 shimmer-brand rounded-lg" />
           ))}
         </div>
       </div>
@@ -141,21 +143,21 @@ export default function UsageWidget() {
   )
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm h-full flex flex-col overflow-hidden">
+    <div className="bg-white/90 dark:bg-white/[0.04] backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-white/10 h-full flex flex-col overflow-hidden card-level-1 card-glow">
       {/* Header - Always Visible */}
       <button
         onClick={toggleWidgetExpanded}
-        className="w-full p-6 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+        className="w-full p-6 flex items-center justify-between hover:bg-violet-50/50 dark:hover:bg-white/[0.02] transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/25">
             <TrendingUp className="w-5 h-5 text-white" />
           </div>
           <div className="text-left">
             <h3 className="font-semibold text-gray-900 dark:text-white">
               {isPremium ? 'Premium Usage' : 'Monthly Usage'}
             </h3>
-            <p className="text-xs text-gray-600 dark:text-gray-400">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               {isPremium ? 'Unlimited access' : 'Resets on the 1st'}
             </p>
           </div>
@@ -166,7 +168,7 @@ export default function UsageWidget() {
             <Link
               href="/pricing"
               onClick={(e) => e.stopPropagation()}
-              className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline"
+              className="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
             >
               Upgrade
             </Link>
@@ -181,13 +183,13 @@ export default function UsageWidget() {
 
       {/* Expanded Content */}
       {isWidgetExpanded && (
-        <div className="px-6 pb-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="px-6 pb-6 border-t border-gray-100 dark:border-white/10">
           <div className="pt-4">
             {/* Premium status */}
             {isPremium ? (
-              <div className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
-                <p className="text-sm font-medium text-purple-900 dark:text-purple-100 text-center">
-                  ✨ You have unlimited access to all features
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-500/10 dark:to-pink-500/10 rounded-xl p-4 border border-purple-100 dark:border-purple-500/20">
+                <p className="text-sm font-medium text-purple-800 dark:text-purple-200 text-center">
+                  You have unlimited access to all features
                 </p>
               </div>
             ) : (
@@ -224,11 +226,11 @@ export default function UsageWidget() {
                       {item.used}/{item.limit === Infinity ? '∞' : item.limit}
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div className="w-full bg-gray-100 dark:bg-white/10 rounded-full h-2 overflow-hidden">
                     <div
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        percentage >= 95 ? 'bg-red-500' :
-                        percentage >= 80 ? 'bg-orange-500' :
+                      className={`h-2 rounded-full transition-all duration-500 ${
+                        percentage >= 95 ? 'bg-gradient-to-r from-red-500 to-red-400' :
+                        percentage >= 80 ? 'bg-gradient-to-r from-orange-500 to-amber-400' :
                         colorClasses[item.color as keyof typeof colorClasses]
                       }`}
                       style={{ width: `${Math.min(percentage, 100)}%` }}
@@ -261,11 +263,11 @@ export default function UsageWidget() {
 
                 {/* Upgrade CTA if approaching any limit */}
                 {hasWarning && (
-                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
                     <Link
                       href="/pricing"
                       onClick={(e) => e.stopPropagation()}
-                      className="block w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-semibold rounded-xl text-center transition-all hover:scale-[1.02]"
+                      className="block w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm font-semibold rounded-xl text-center transition-all hover:scale-[1.02] shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30"
                     >
                       Upgrade to Premium for Unlimited
                     </Link>
