@@ -146,6 +146,18 @@ const StudyPlanWizard = dynamic(() => import("@/components/StudyPlanWizard"), {
   )
 })
 
+const UnifiedStudyPlanner = dynamic(() => import("@/components/UnifiedStudyPlanner"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Loading Study Planner...</p>
+      </div>
+    </div>
+  )
+})
+
 // StudyBuddyInterface is now merged into ChatInterface - removed separate import
 
 function DashboardContent() {
@@ -623,6 +635,7 @@ function DashboardContent() {
       video: 'bg-[var(--bg-tint-video)]',
       exam: 'bg-[var(--bg-tint-quiz)]',
       'study-plan': 'bg-[var(--bg-tint-quiz)]', // Same as exam (planning)
+      'study-planner': 'bg-[var(--bg-tint-quiz)]', // Same as exam (planning/scheduling)
       home: 'bg-transparent' // No tint on home page
     }
     return tints[activeMode] || 'bg-transparent'
@@ -778,6 +791,43 @@ function DashboardContent() {
                 onClose={() => setActiveMode('home')}
                 onComplete={(planId) => {
                   router.push('/dashboard/study-plans')
+                }}
+              />
+            </div>
+          </DynamicComponentErrorBoundary>
+        )
+
+      case "study-planner":
+        return (
+          <DynamicComponentErrorBoundary componentName="Study Planner">
+            <div className="h-full">
+              <UnifiedStudyPlanner
+                onNavigateToMode={(mode, documentId, sessionTopic, topicPages) => {
+                  // Set document if provided
+                  if (documentId) {
+                    fetch(`/api/documents/${documentId}`)
+                      .then(res => res.json())
+                      .then(data => {
+                        if (data.document) {
+                          setCurrentDocument({
+                            id: data.document.id,
+                            name: data.document.file_name,
+                            content: data.document.extracted_text || '',
+                            fileType: data.document.file_type,
+                            storagePath: data.document.storage_path,
+                            fileSize: data.document.file_size,
+                          })
+                        }
+                      })
+                  }
+                  // Navigate to the mode
+                  const params = new URLSearchParams()
+                  params.set('mode', mode)
+                  if (documentId) params.set('documentId', documentId)
+                  if (sessionTopic) params.set('sessionTopic', sessionTopic)
+                  if (topicPages?.startPage) params.set('startPage', topicPages.startPage.toString())
+                  if (topicPages?.endPage) params.set('endPage', topicPages.endPage.toString())
+                  router.push(`/dashboard?${params.toString()}`)
                 }}
               />
             </div>
