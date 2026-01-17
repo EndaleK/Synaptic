@@ -318,8 +318,8 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
 
           {/* Right Column - Sidebar (1/3 width) */}
           <div className="space-y-6">
-            {/* Weekly Heat Map with Streak */}
-            <WeeklyCalendar activeDays={activeDays} streak={currentStreak} />
+            {/* Weekly Heat Map with Streak - aligned with Recommended cards */}
+            <WeeklyCalendar activeDays={activeDays} streak={currentStreak} className="lg:mt-10" />
 
             {/* Quick Actions */}
             <div className="p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
