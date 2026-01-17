@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useTheme } from "next-themes"
-import { User, Bell, Palette, Database, Shield, Download, Trash2, Moon, Sun, Save, Loader2, MapPin, RotateCcw } from "lucide-react"
+import { User, Bell, Palette, Database, Shield, Download, Trash2, Moon, Sun, Save, Loader2, MapPin, RotateCcw, Users, GraduationCap, School, Building2, CheckCircle, ArrowRight } from "lucide-react"
 import JurisdictionSelector from "@/components/JurisdictionSelector"
 import Breadcrumb, { settingsBreadcrumb } from "@/components/Breadcrumb"
 import { useToast } from "@/components/ToastContainer"
@@ -11,8 +11,58 @@ import { cn } from "@/lib/utils"
 import { type AccentColor, applyAccentColor, saveAccentColor, getSavedAccentColor } from "@/lib/accent-color-utils"
 import { useTour } from "@/components/Tour/TourProvider"
 import { useRouter } from "next/navigation"
+import type { UserRole } from "@/lib/supabase/types"
 
 type FontSize = 'small' | 'medium' | 'large'
+
+interface RoleOption {
+  id: UserRole
+  title: string
+  description: string
+  icon: React.ComponentType<{ className?: string }>
+  features: string[]
+  accentColor: string
+  borderColor: string
+}
+
+const roleOptions: RoleOption[] = [
+  {
+    id: 'learner',
+    title: 'Individual Learner',
+    description: 'Study and learn on your own',
+    icon: GraduationCap,
+    features: ['Upload documents and generate flashcards', 'AI-powered podcasts and mind maps', 'Spaced repetition learning', 'Track your study progress'],
+    accentColor: 'from-purple-500 to-pink-500',
+    borderColor: 'border-purple-300 dark:border-purple-700',
+  },
+  {
+    id: 'parent',
+    title: 'Homeschool Parent',
+    description: 'Educate your children at home',
+    icon: Users,
+    features: ['Manage multiple children', 'Track learning progress for each child', 'Generate compliance reports', 'Access shared curriculum resources'],
+    accentColor: 'from-rose-500 to-pink-500',
+    borderColor: 'border-rose-300 dark:border-rose-700',
+  },
+  {
+    id: 'educator',
+    title: 'Educator / Tutor',
+    description: 'Teach students in a school or tutoring',
+    icon: School,
+    features: ['Create and manage classes', 'Assign content to students', 'Track student performance', 'Grade assignments and provide feedback'],
+    accentColor: 'from-blue-500 to-cyan-500',
+    borderColor: 'border-blue-300 dark:border-blue-700',
+  },
+  {
+    id: 'institution',
+    title: 'Institution Admin',
+    description: 'Manage a school, co-op, or organization',
+    icon: Building2,
+    features: ['Create and manage your organization', 'Invite teachers and administrators', 'Share curriculum across all members', 'Generate aggregate analytics'],
+    accentColor: 'from-amber-500 to-orange-500',
+    borderColor: 'border-amber-300 dark:border-amber-700',
+  },
+]
 
 interface NotificationPreferences {
   studyReminders: boolean
@@ -28,7 +78,7 @@ export default function SettingsPage() {
   const router = useRouter()
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'notifications' | 'data'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'notifications' | 'data' | 'role'>('profile')
   const [isSaving, setIsSaving] = useState(false)
   const [fontSize, setFontSize] = useState<FontSize>('medium')
   const [accentColor, setAccentColor] = useState<AccentColor>('default')
@@ -43,6 +93,9 @@ export default function SettingsPage() {
     country: "CA"
   })
   const [jurisdictionLoading, setJurisdictionLoading] = useState(true)
+  const [currentRole, setCurrentRole] = useState<UserRole>('learner')
+  const [isRoleLoading, setIsRoleLoading] = useState(true)
+  const [isRoleSaving, setIsRoleSaving] = useState(false)
 
   // Initialize all settings from localStorage
   useEffect(() => {
@@ -68,7 +121,7 @@ export default function SettingsPage() {
       setNotifications(JSON.parse(savedNotifications))
     }
 
-    // Fetch user profile to get jurisdiction
+    // Fetch user profile to get jurisdiction and role
     const fetchProfile = async () => {
       try {
         const res = await fetch('/api/user/profile', { credentials: 'include' })
@@ -80,11 +133,15 @@ export default function SettingsPage() {
               country: data.profile.jurisdiction_country
             })
           }
+          if (data.profile?.primary_role) {
+            setCurrentRole(data.profile.primary_role as UserRole)
+          }
         }
       } catch (err) {
         console.error('Failed to fetch profile:', err)
       } finally {
         setJurisdictionLoading(false)
+        setIsRoleLoading(false)
       }
     }
     fetchProfile()
@@ -173,8 +230,48 @@ export default function SettingsPage() {
     }
   }
 
+  const handleRoleChange = async (newRole: UserRole) => {
+    if (newRole === currentRole) return
+
+    setIsRoleSaving(true)
+    try {
+      const res = await fetch('/api/user/role', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          primary_role: newRole,
+          roles: [newRole],
+        }),
+      })
+
+      if (res.ok) {
+        setCurrentRole(newRole)
+        toast.success(`Role changed to ${roleOptions.find(r => r.id === newRole)?.title}`)
+
+        // Redirect to appropriate dashboard based on role
+        if (newRole === 'parent') {
+          router.push('/onboarding/parent')
+        } else if (newRole === 'educator') {
+          router.push('/onboarding/educator')
+        } else if (newRole === 'institution') {
+          router.push('/onboarding/institution')
+        } else {
+          router.push('/dashboard')
+        }
+      } else {
+        toast.error('Failed to update role')
+      }
+    } catch (err) {
+      toast.error('Failed to update role')
+    } finally {
+      setIsRoleSaving(false)
+    }
+  }
+
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'role', label: 'Role', icon: Users },
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'data', label: 'Data & Privacy', icon: Database }
@@ -335,6 +432,133 @@ export default function SettingsPage() {
                       </>
                     )}
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* Role Settings */}
+            {activeTab === 'role' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    Your Role
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Choose how you use Synaptic. Different roles unlock different features.
+                  </p>
+                </div>
+
+                {isRoleLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="animate-pulse p-5 rounded-xl border-2 border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700" />
+                          <div className="flex-1">
+                            <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-1" />
+                            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-48" />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {roleOptions.map((role) => {
+                      const Icon = role.icon
+                      const isSelected = currentRole === role.id
+
+                      return (
+                        <button
+                          key={role.id}
+                          onClick={() => handleRoleChange(role.id)}
+                          disabled={isRoleSaving}
+                          className={cn(
+                            "group relative p-5 rounded-xl text-left transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed",
+                            isSelected
+                              ? `bg-white dark:bg-gray-800 border-2 ${role.borderColor} shadow-xl`
+                              : "bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-lg"
+                          )}
+                        >
+                          {/* Selection indicator */}
+                          {isSelected && (
+                            <div className="absolute top-4 right-4">
+                              <CheckCircle className="h-6 w-6 text-green-500" />
+                            </div>
+                          )}
+
+                          {/* Icon and title */}
+                          <div className="flex items-start gap-3 mb-3">
+                            <div
+                              className={cn(
+                                "p-2.5 rounded-lg transition-all duration-300",
+                                isSelected
+                                  ? `bg-gradient-to-br ${role.accentColor} shadow-lg`
+                                  : "bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-700"
+                              )}
+                            >
+                              <Icon className={cn("h-5 w-5", isSelected ? "text-white" : "text-gray-700 dark:text-gray-300")} />
+                            </div>
+                            <div className="flex-1 pr-8">
+                              <h3 className="text-base font-bold text-gray-900 dark:text-white mb-0.5">
+                                {role.title}
+                              </h3>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                {role.description}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Features */}
+                          <ul className="space-y-1.5 ml-1">
+                            {role.features.map((feature, idx) => (
+                              <li
+                                key={idx}
+                                className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300"
+                              >
+                                <span
+                                  className={cn(
+                                    "mt-1 w-1 h-1 rounded-full flex-shrink-0",
+                                    isSelected
+                                      ? `bg-gradient-to-r ${role.accentColor}`
+                                      : "bg-gray-400 dark:bg-gray-600"
+                                  )}
+                                />
+                                <span>{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
+
+                          {/* Change role button for non-selected roles */}
+                          {!isSelected && (
+                            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+                              <span className="inline-flex items-center gap-1 text-xs font-medium text-accent-primary group-hover:gap-2 transition-all">
+                                Switch to this role
+                                <ArrowRight className="w-3 h-3" />
+                              </span>
+                            </div>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {isRoleSaving && (
+                  <div className="flex items-center justify-center gap-2 py-4 text-accent-primary">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span className="font-medium">Updating your role...</span>
+                  </div>
+                )}
+
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <strong>Note:</strong> Changing your role will redirect you to complete any additional setup required for that role. Your existing data and progress will be preserved.
+                  </p>
                 </div>
               </div>
             )}
