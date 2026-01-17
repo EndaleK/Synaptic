@@ -260,7 +260,7 @@ export function TargetIcon({ className, size = 'md' }: IconProps) {
 }
 
 /**
- * Hand-drawn document/file icon
+ * Hand-drawn document/file icon - colorful theme
  */
 export function DocumentIcon({ className, size = 'md' }: IconProps) {
   return (
@@ -270,17 +270,19 @@ export function DocumentIcon({ className, size = 'md' }: IconProps) {
       fill="none"
       aria-hidden="true"
     >
-      {/* Paper */}
-      <path d="M12 6H30L38 14V42H12V6Z" fill="white" stroke="#1a1a1a" strokeWidth="2" strokeLinejoin="round"/>
-      {/* Folded corner */}
-      <path d="M30 6V14H38" stroke="#1a1a1a" strokeWidth="2" strokeLinejoin="round"/>
-      <path d="M30 6L38 14H30V6Z" fill="#E5E7EB"/>
+      {/* Paper - light purple fill */}
+      <path d="M12 6H30L38 14V42H12V6Z" fill={LIGHT_PURPLE} stroke={INK} strokeWidth="2" strokeLinejoin="round"/>
+      {/* Folded corner - purple */}
+      <path d="M30 6V14H38" stroke={INK} strokeWidth="2" strokeLinejoin="round"/>
+      <path d="M30 6L38 14H30V6Z" fill={PURPLE}/>
       {/* Text lines */}
-      <path d="M16 22H32" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round"/>
-      <path d="M16 28H28" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round"/>
-      <path d="M16 34H30" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round"/>
-      {/* Highlight mark */}
-      <rect x="16" y="20" width="10" height="4" fill="#FBBF24" opacity="0.4" rx="1"/>
+      <path d="M16 22H32" stroke={INK} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M16 28H28" stroke={INK} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M16 34H30" stroke={INK} strokeWidth="1.5" strokeLinecap="round"/>
+      {/* Highlight mark - pink */}
+      <rect x="16" y="20" width="10" height="4" fill={PINK} opacity="0.6" rx="1"/>
+      {/* Sparkle */}
+      <circle cx="8" cy="10" r="1.5" fill="#FBBF24"/>
     </svg>
   )
 }
