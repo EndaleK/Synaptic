@@ -452,6 +452,93 @@ export function SummaryIcon({ className, size = 'md' }: IconProps) {
 }
 
 /**
+ * Hand-drawn library/bookshelf icon
+ */
+export function LibraryIcon({ className, size = 'md' }: IconProps) {
+  return (
+    <svg
+      className={cn(sizeClasses[size], className)}
+      viewBox="0 0 48 48"
+      fill="none"
+      aria-hidden="true"
+    >
+      {/* Bookshelf back */}
+      <rect x="6" y="8" width="36" height="32" rx="2" fill={LIGHT_PURPLE} stroke={INK} strokeWidth="2"/>
+      {/* Shelf divider */}
+      <path d="M6 24H42" stroke={INK} strokeWidth="2"/>
+      {/* Top shelf books */}
+      <rect x="10" y="11" width="6" height="11" rx="1" fill={PURPLE} stroke={INK} strokeWidth="1.5"/>
+      <rect x="17" y="13" width="5" height="9" rx="1" fill="#FBBF24" stroke={INK} strokeWidth="1.5"/>
+      <rect x="23" y="11" width="6" height="11" rx="1" fill={PINK} stroke={INK} strokeWidth="1.5"/>
+      <rect x="30" y="12" width="5" height="10" rx="1" fill="#22C55E" stroke={INK} strokeWidth="1.5"/>
+      {/* Bottom shelf books */}
+      <rect x="10" y="27" width="7" height="10" rx="1" fill="#3B82F6" stroke={INK} strokeWidth="1.5"/>
+      <rect x="18" y="28" width="5" height="9" rx="1" fill={PURPLE} stroke={INK} strokeWidth="1.5"/>
+      <rect x="24" y="26" width="6" height="11" rx="1" fill="#F59E0B" stroke={INK} strokeWidth="1.5"/>
+      <rect x="31" y="28" width="5" height="9" rx="1" fill={PINK} stroke={INK} strokeWidth="1.5"/>
+      {/* Sparkle */}
+      <circle cx="42" cy="10" r="2" fill={PINK}/>
+    </svg>
+  )
+}
+
+/**
+ * Hand-drawn study guide/book with bookmark icon
+ */
+export function StudyGuideIcon({ className, size = 'md' }: IconProps) {
+  return (
+    <svg
+      className={cn(sizeClasses[size], className)}
+      viewBox="0 0 48 48"
+      fill="none"
+      aria-hidden="true"
+    >
+      {/* Book cover */}
+      <path d="M8 8H36C38 8 40 10 40 12V40C40 42 38 44 36 44H8V8Z" fill={LIGHT_PURPLE} stroke={INK} strokeWidth="2"/>
+      {/* Book spine */}
+      <path d="M8 8V44" stroke={INK} strokeWidth="3"/>
+      {/* Pages */}
+      <rect x="12" y="12" width="24" height="28" rx="1" fill="white" stroke={INK} strokeWidth="1.5"/>
+      {/* Bookmark */}
+      <path d="M28 8V20L32 16L36 20V8" fill={PINK} stroke={INK} strokeWidth="1.5"/>
+      {/* Text lines */}
+      <path d="M16 18H28" stroke={PURPLE} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M16 24H26" stroke={INK} strokeWidth="1" strokeLinecap="round" opacity="0.5"/>
+      <path d="M16 30H24" stroke={INK} strokeWidth="1" strokeLinecap="round" opacity="0.5"/>
+      {/* Checkmark */}
+      <circle cx="20" cy="36" r="4" fill="#DCFCE7" stroke="#22C55E" strokeWidth="1.5"/>
+      <path d="M18 36L19.5 37.5L22.5 34.5" stroke="#22C55E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+/**
+ * Hand-drawn chat/conversation icon
+ */
+export function ChatIcon({ className, size = 'md' }: IconProps) {
+  return (
+    <svg
+      className={cn(sizeClasses[size], className)}
+      viewBox="0 0 48 48"
+      fill="none"
+      aria-hidden="true"
+    >
+      {/* Main chat bubble */}
+      <path d="M8 12C8 10 10 8 12 8H36C38 8 40 10 40 12V28C40 30 38 32 36 32H20L12 40V32H12C10 32 8 30 8 28V12Z" fill={LIGHT_PURPLE} stroke={INK} strokeWidth="2"/>
+      {/* Chat dots */}
+      <circle cx="18" cy="20" r="2.5" fill={PURPLE}/>
+      <circle cx="24" cy="20" r="2.5" fill={PURPLE}/>
+      <circle cx="30" cy="20" r="2.5" fill={PURPLE}/>
+      {/* Small response bubble */}
+      <path d="M32 36C32 34 34 32 36 32H42C44 32 46 34 46 36V40C46 42 44 44 42 44H38L36 46V44H36C34 44 32 42 32 40V36Z" fill={PINK} stroke={INK} strokeWidth="1.5"/>
+      {/* Sparkle */}
+      <circle cx="6" cy="6" r="2" fill="#FBBF24"/>
+      <path d="M6 2V4M6 8V10M2 6H4M8 6H10" stroke="#FBBF24" strokeWidth="1" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+/**
  * Hand-drawn brain icon for learning/memory
  */
 export function BrainIcon({ className, size = 'md' }: IconProps) {
@@ -510,5 +597,8 @@ export default {
   VideoIcon,
   WriterIcon,
   SummaryIcon,
+  LibraryIcon,
+  StudyGuideIcon,
+  ChatIcon,
   BrainIcon,
 }

@@ -17,6 +17,8 @@ import {
   VideoIcon,
   ExamIcon,
   PlannerIcon,
+  UploadIcon,
+  ChatIcon,
 } from "@/components/illustrations"
 
 interface DashboardHomeProps {
@@ -27,10 +29,11 @@ interface DashboardHomeProps {
 // Study modes with hand-drawn icons
 const studyModes = [
   { id: "flashcards", icon: FlashcardIcon, title: "Flashcards", description: "Review with AI-powered cards" },
+  { id: "chat", icon: ChatIcon, title: "Chat", description: "Ask questions & learn" },
   { id: "study-plans", icon: PlannerIcon, title: "Study Planner", description: "Plan your study schedule", href: "/dashboard/study-plans" },
   { id: "podcast", icon: PodcastIcon, title: "Podcast", description: "Listen & learn on the go" },
+  { id: "quick-summary", icon: SummaryIcon, title: "Quick Summary", description: "5-minute audio overviews" },
   { id: "mindmap", icon: MindMapIcon, title: "Mind Map", description: "See the big picture" },
-  { id: "quick-summary", icon: SummaryIcon, title: "Summary", description: "Get concise overviews" },
   { id: "writer", icon: WriterIcon, title: "Writer", description: "Generate practice content" },
   { id: "video", icon: VideoIcon, title: "Video", description: "Watch to understand" },
   { id: "exam", icon: ExamIcon, title: "Exam", description: "Practice with mock tests" },
@@ -183,7 +186,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
   }
 
   return (
-    <div className="min-h-full bg-[#FAFBFC] dark:bg-[#0A0A0F] font-body">
+    <div className="min-h-full bg-gradient-to-b from-[#EDE5FF] via-[#F3EDFF] to-[#E8E0F0] dark:from-[#1E1230] dark:via-[#16102A] dark:to-[#1A1525] font-body">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Hero Section - Full width with streak on right */}
@@ -226,7 +229,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
               <div className="grid sm:grid-cols-2 gap-4">
                 {recentDocument && (
                   <RecommendedCard
-                    icon="🎙️"
+                    icon={PodcastIcon}
                     title="Listen to Podcast"
                     description={`Turn "${recentDocument.name.length > 25 ? recentDocument.name.slice(0, 25) + '...' : recentDocument.name}" into an audio lesson. Perfect for your morning commute.`}
                     actionLabel="Start Listening"
@@ -239,7 +242,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                 )}
                 {flashcardsDue > 0 ? (
                   <RecommendedCard
-                    icon="📋"
+                    icon={FlashcardIcon}
                     title="Review Flashcards"
                     description={`You have ${flashcardsDue} cards ready for review. Keep your ${currentStreak > 0 ? `${currentStreak}-day` : ''} streak going!`}
                     actionLabel="Review Now"
@@ -248,7 +251,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                   />
                 ) : (
                   <RecommendedCard
-                    icon="📚"
+                    icon={UploadIcon}
                     title="Upload a Document"
                     description="Start your learning journey by uploading study materials. We'll help you turn them into flashcards, podcasts, and more."
                     actionLabel="Get Started"
@@ -372,7 +375,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
         {/* Footer */}
         <footer className="text-center pt-8 pb-4">
           <p className="text-xs text-gray-400 dark:text-gray-600">
-            © 2025 Synaptic. All rights reserved.
+            © 2025 Synaptic. ካንአ All rights reserved.
           </p>
         </footer>
       </div>

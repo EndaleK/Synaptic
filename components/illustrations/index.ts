@@ -31,5 +31,8 @@ export {
   VideoIcon,
   WriterIcon,
   SummaryIcon,
+  LibraryIcon,
+  StudyGuideIcon,
+  ChatIcon,
   BrainIcon,
 } from './HandDrawnIcons'

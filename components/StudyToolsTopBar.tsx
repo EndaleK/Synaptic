@@ -22,6 +22,8 @@ import {
   PlannerIcon,
   TargetIcon,
   GraduationIcon,
+  LibraryIcon,
+  StudyGuideIcon,
 } from "@/components/illustrations"
 
 const DURATION_OPTIONS = [5, 10, 15, 20, 25, 30, 45, 60]
@@ -155,6 +157,32 @@ export default function StudyToolsTopBar() {
         >
           <TargetIcon size="sm" />
           <span>Statistics</span>
+        </Link>
+
+        {/* Library link */}
+        <Link
+          href="/dashboard/library"
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+            pathname === '/dashboard/library'
+              ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+          }`}
+        >
+          <LibraryIcon size="sm" />
+          <span>Library</span>
+        </Link>
+
+        {/* Study Guide link */}
+        <Link
+          href="/dashboard/study-guide"
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+            pathname === '/dashboard/study-guide'
+              ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+          }`}
+        >
+          <StudyGuideIcon size="sm" />
+          <span>Study Guide</span>
         </Link>
       </nav>
 

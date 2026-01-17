@@ -2,9 +2,15 @@
 
 import { ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { ComponentType, ReactNode } from "react"
+
+interface IconProps {
+  className?: string
+  size?: 'sm' | 'md' | 'lg'
+}
 
 interface RecommendedCardProps {
-  icon: string
+  icon: ComponentType<IconProps> | ReactNode
   title: string
   description: string
   actionLabel: string
@@ -24,7 +30,7 @@ const gradientStyles = {
  * Used in "Recommended for you right now" section
  */
 export function RecommendedCard({
-  icon,
+  icon: Icon,
   title,
   description,
   actionLabel,
@@ -32,6 +38,9 @@ export function RecommendedCard({
   onClick,
   className
 }: RecommendedCardProps) {
+  // Check if icon is a component or a ReactNode (like a string/emoji)
+  const isComponent = typeof Icon === 'function'
+
   return (
     <div
       className={cn(
@@ -45,8 +54,8 @@ export function RecommendedCard({
       <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10" />
 
       {/* Icon */}
-      <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl mb-4">
-        {icon}
+      <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4">
+        {isComponent ? <Icon size="lg" /> : Icon}
       </div>
 
       {/* Content */}
