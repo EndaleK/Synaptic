@@ -12,31 +12,12 @@ const UserButton = dynamic(
   { ssr: false, loading: () => <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" /> }
 )
 import {
-  BookOpen, MessageSquare, Mic, Network, Clock, PenTool, Youtube, GraduationCap, FileText,
-  Library, BookOpenCheck, Calendar, BarChart3, Bell,
+  FileText, Library, BookOpenCheck, Calendar, BarChart3,
   Play, Pause, Square, ChevronDown, RotateCcw, Coffee, Brain, Zap,
-  Settings, MoreHorizontal, CalendarDays
+  Settings
 } from "lucide-react"
 import { usePomodoroStore } from "@/lib/store/usePomodoroStore"
 import { useUIStore } from "@/lib/store/useStore"
-
-// Main learning modes (Home accessible via logo click)
-const learningModes = [
-  { id: "documents", name: "Docs", icon: FileText, description: "Manage files", href: "/dashboard/documents" },
-  { id: "study-plans", name: "Plans", icon: CalendarDays, description: "Study plans", href: "/dashboard/study-plans" },
-  { id: "chat", name: "Chat", icon: MessageSquare, description: "Ask & learn" },
-  { id: "flashcards", name: "Cards", icon: BookOpen, description: "Review" },
-  { id: "exam", name: "Exam", icon: GraduationCap, description: "Test" },
-]
-
-// Secondary modes (in More dropdown)
-const moreModes = [
-  { id: "podcast", name: "Podcast", icon: Mic, description: "Listen & learn" },
-  { id: "mindmap", name: "Mind Map", icon: Network, description: "Visualize concepts" },
-  { id: "writer", name: "Writer", icon: PenTool, description: "Write essays", href: "/dashboard/writer" },
-  { id: "video", name: "Video", icon: Youtube, description: "YouTube" },
-  { id: "quick-summary", name: "Summary", icon: Clock, description: "Quick 5min" },
-]
 
 // Study tools (in Tools dropdown)
 const studyTools = [
@@ -44,7 +25,6 @@ const studyTools = [
   { name: "Study Guide", href: "/dashboard/study-guide", icon: BookOpenCheck },
   { name: "Calendar", href: "/dashboard/study/calendar", icon: Calendar },
   { name: "Statistics", href: "/dashboard/study/statistics", icon: BarChart3 },
-  { name: "Notifications", href: "/dashboard/study/settings", icon: Bell },
 ]
 
 const DURATION_OPTIONS = [5, 10, 15, 20, 25, 30, 45, 60]
@@ -52,13 +32,11 @@ const DURATION_OPTIONS = [5, 10, 15, 20, 25, 30, 45, 60]
 export default function StudyToolsTopBar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { activeMode, setActiveMode } = useUIStore()
+  const { setActiveMode } = useUIStore()
   const [showSettings, setShowSettings] = useState(false)
   const [showToolsMenu, setShowToolsMenu] = useState(false)
-  const [showMoreMenu, setShowMoreMenu] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
   const toolsMenuRef = useRef<HTMLDivElement>(null)
-  const moreMenuRef = useRef<HTMLDivElement>(null)
 
   const {
     status,
@@ -86,9 +64,6 @@ export default function StudyToolsTopBar() {
       }
       if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) {
         setShowToolsMenu(false)
-      }
-      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
-        setShowMoreMenu(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -122,125 +97,37 @@ export default function StudyToolsTopBar() {
   // Check if any study tool is active
   const activeStudyTool = studyTools.find(tool => pathname === tool.href)
 
-  // Handle mode click
-  const handleModeClick = (mode: typeof learningModes[0]) => {
-    if (mode.href) {
-      router.push(mode.href)
-    } else if (mode.id === 'home') {
-      setActiveMode('home')
-      if (pathname !== '/dashboard') {
-        router.push('/dashboard')
-      }
-    } else {
-      setActiveMode(mode.id as any)
-      if (pathname !== '/dashboard') {
-        router.push('/dashboard')
-      }
+  // Handle logo click - go to dashboard home
+  const handleLogoClick = () => {
+    setActiveMode('home')
+    if (pathname !== '/dashboard') {
+      router.push('/dashboard')
     }
   }
-
-  // Check if mode is active
-  const isModeActive = (mode: typeof learningModes[0]) => {
-    if (mode.href) {
-      return pathname === mode.href
-    }
-    return pathname === '/dashboard' && activeMode === mode.id
-  }
-
-  // Check if any "more" mode is active
-  const activeMoreMode = moreModes.find(mode => {
-    if (mode.href) return pathname === mode.href
-    return pathname === '/dashboard' && activeMode === mode.id
-  })
 
   return (
     <header className="hidden lg:flex sticky top-0 z-30 h-[56px] items-center justify-between px-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/30 dark:border-gray-800/30">
-      {/* Left: Logo */}
-      <div onClick={() => setActiveMode('home')} className="flex-shrink-0">
-        <SynapticLogo size="sm" />
+      {/* Left: Logo + Docs */}
+      <div className="flex items-center gap-6">
+        <div onClick={handleLogoClick} className="flex-shrink-0 cursor-pointer">
+          <SynapticLogo size="sm" />
+        </div>
+
+        {/* Docs link */}
+        <Link
+          href="/dashboard/documents"
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+            pathname === '/dashboard/documents'
+              ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>Docs</span>
+        </Link>
       </div>
 
-      {/* Center: Learning Modes Navigation */}
-      <nav className="flex items-center gap-1">
-        {learningModes.map((mode) => {
-          const Icon = mode.icon
-          const isActive = isModeActive(mode)
-          return (
-            <button
-              key={mode.id}
-              onClick={() => handleModeClick(mode)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                isActive
-                  ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="hidden xl:inline">{mode.name}</span>
-            </button>
-          )
-        })}
-
-        {/* More dropdown */}
-        <div className="relative" ref={moreMenuRef}>
-          <button
-            onClick={() => setShowMoreMenu(!showMoreMenu)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeMoreMode
-                ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
-                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-            }`}
-          >
-            {activeMoreMode ? (
-              <>
-                <activeMoreMode.icon className="w-4 h-4" />
-                <span className="hidden xl:inline">{activeMoreMode.name}</span>
-              </>
-            ) : (
-              <>
-                <MoreHorizontal className="w-4 h-4" />
-                <span className="hidden xl:inline">More</span>
-              </>
-            )}
-            <ChevronDown className={`w-3 h-3 transition-transform ${showMoreMenu ? 'rotate-180' : ''}`} />
-          </button>
-
-          {showMoreMenu && (
-            <div className="absolute left-0 top-full mt-2 w-48 bg-white dark:bg-[#1A1A1A] rounded-xl border border-gray-200 dark:border-gray-800 shadow-xl py-2 z-50">
-              {moreModes.map((mode) => {
-                const Icon = mode.icon
-                const isActive = mode.href ? pathname === mode.href : pathname === '/dashboard' && activeMode === mode.id
-                return (
-                  <button
-                    key={mode.id}
-                    onClick={() => {
-                      if (mode.href) {
-                        router.push(mode.href)
-                      } else {
-                        setActiveMode(mode.id as any)
-                        if (pathname !== '/dashboard') {
-                          router.push('/dashboard')
-                        }
-                      }
-                      setShowMoreMenu(false)
-                    }}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/15 text-[#7B3FF2] dark:text-purple-300"
-                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{mode.name}</span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </nav>
-
-      {/* Right: Tools, Settings, Pomodoro */}
+      {/* Right: Tools, Settings, Profile, Pomodoro */}
       <div className="flex items-center gap-2">
         {/* Study Tools Dropdown */}
         <div className="relative" ref={toolsMenuRef}>
