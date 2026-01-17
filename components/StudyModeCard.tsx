@@ -1,9 +1,15 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { ComponentType } from "react"
+
+interface IconProps {
+  className?: string
+  size?: 'sm' | 'md' | 'lg'
+}
 
 interface StudyModeCardProps {
-  icon: string
+  icon: ComponentType<IconProps>
   title: string
   description: string
   badge?: number
@@ -14,10 +20,10 @@ interface StudyModeCardProps {
 
 /**
  * StudyModeCard - Compact cards for the "Choose your study mode" grid
- * Shows emoji icon, title, description, and optional badge for counts
+ * Shows hand-drawn icon, title, description, and optional badge for counts
  */
 export function StudyModeCard({
-  icon,
+  icon: Icon,
   title,
   description,
   badge,
@@ -43,8 +49,10 @@ export function StudyModeCard({
         </div>
       )}
 
-      {/* Emoji Icon */}
-      <div className="text-4xl mb-3">{icon}</div>
+      {/* Hand-drawn Icon */}
+      <div className="mb-3">
+        <Icon size="lg" />
+      </div>
 
       {/* Title */}
       <h3 className={cn(

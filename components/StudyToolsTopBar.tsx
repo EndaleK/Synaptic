@@ -12,20 +12,17 @@ const UserButton = dynamic(
   { ssr: false, loading: () => <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" /> }
 )
 import {
-  FileText, Library, BookOpenCheck, Calendar, BarChart3,
   Play, Pause, Square, ChevronDown, RotateCcw, Coffee, Brain, Zap,
   Settings
 } from "lucide-react"
 import { usePomodoroStore } from "@/lib/store/usePomodoroStore"
 import { useUIStore } from "@/lib/store/useStore"
-
-// Study tools (in Tools dropdown)
-const studyTools = [
-  { name: "Library", href: "/dashboard/library", icon: Library },
-  { name: "Study Guide", href: "/dashboard/study-guide", icon: BookOpenCheck },
-  { name: "Calendar", href: "/dashboard/study/calendar", icon: Calendar },
-  { name: "Statistics", href: "/dashboard/study/statistics", icon: BarChart3 },
-]
+import {
+  DocumentIcon,
+  PlannerIcon,
+  TargetIcon,
+  GraduationIcon,
+} from "@/components/illustrations"
 
 const DURATION_OPTIONS = [5, 10, 15, 20, 25, 30, 45, 60]
 
@@ -34,9 +31,7 @@ export default function StudyToolsTopBar() {
   const router = useRouter()
   const { setActiveMode } = useUIStore()
   const [showSettings, setShowSettings] = useState(false)
-  const [showToolsMenu, setShowToolsMenu] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
-  const toolsMenuRef = useRef<HTMLDivElement>(null)
 
   const {
     status,
@@ -61,9 +56,6 @@ export default function StudyToolsTopBar() {
     const handleClickOutside = (event: MouseEvent) => {
       if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
         setShowSettings(false)
-      }
-      if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) {
-        setShowToolsMenu(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -94,9 +86,6 @@ export default function StudyToolsTopBar() {
   const timerConfig = getTimerConfig()
   const TimerIcon = timerConfig.icon
 
-  // Check if any study tool is active
-  const activeStudyTool = studyTools.find(tool => pathname === tool.href)
-
   // Handle logo click - go to dashboard home
   const handleLogoClick = () => {
     setActiveMode('home')
@@ -106,72 +95,71 @@ export default function StudyToolsTopBar() {
   }
 
   return (
-    <header className="hidden lg:flex sticky top-0 z-30 h-[56px] items-center justify-between px-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/30 dark:border-gray-800/30">
-      {/* Left: Logo + Docs */}
-      <div className="flex items-center gap-6">
-        <div onClick={handleLogoClick} className="flex-shrink-0 cursor-pointer">
+    <header className="hidden lg:flex sticky top-0 z-30 h-[56px] items-center px-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/30 dark:border-gray-800/30">
+      {/* Left: Logo */}
+      <div className="flex-shrink-0">
+        <div onClick={handleLogoClick} className="cursor-pointer">
           <SynapticLogo size="sm" />
         </div>
+      </div>
 
+      {/* Center: Docs and Tools */}
+      <nav className="flex-1 flex items-center justify-center gap-2">
         {/* Docs link */}
         <Link
           href="/dashboard/documents"
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
             pathname === '/dashboard/documents'
               ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
               : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
           }`}
         >
-          <FileText className="w-4 h-4" />
-          <span>Docs</span>
+          <DocumentIcon size="sm" />
+          <span>Documents</span>
         </Link>
-      </div>
 
-      {/* Right: Tools, Settings, Profile, Pomodoro */}
+        {/* Study Planner link */}
+        <Link
+          href="/dashboard/study-plans"
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+            pathname === '/dashboard/study-plans'
+              ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+          }`}
+        >
+          <GraduationIcon size="sm" />
+          <span>Study Planner</span>
+        </Link>
+
+        {/* Calendar link */}
+        <Link
+          href="/dashboard/study/calendar"
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+            pathname === '/dashboard/study/calendar'
+              ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+          }`}
+        >
+          <PlannerIcon size="sm" />
+          <span>Calendar</span>
+        </Link>
+
+        {/* Statistics link */}
+        <Link
+          href="/dashboard/study/statistics"
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+            pathname === '/dashboard/study/statistics'
+              ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+          }`}
+        >
+          <TargetIcon size="sm" />
+          <span>Statistics</span>
+        </Link>
+      </nav>
+
+      {/* Right: Settings, Profile, Pomodoro */}
       <div className="flex items-center gap-2">
-        {/* Study Tools Dropdown */}
-        <div className="relative" ref={toolsMenuRef}>
-          <button
-            onClick={() => setShowToolsMenu(!showToolsMenu)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeStudyTool
-                ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-            }`}
-          >
-            {activeStudyTool ? (
-              <activeStudyTool.icon className="w-4 h-4" />
-            ) : (
-              <Library className="w-4 h-4" />
-            )}
-            <span className="hidden xl:inline">{activeStudyTool?.name || 'Tools'}</span>
-            <ChevronDown className={`w-3 h-3 transition-transform ${showToolsMenu ? 'rotate-180' : ''}`} />
-          </button>
-
-          {showToolsMenu && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-[#1A1A1A] rounded-xl border border-gray-200 dark:border-gray-800 shadow-xl py-2 z-50">
-              {studyTools.map((tool) => {
-                const isActive = pathname === tool.href
-                const Icon = tool.icon
-                return (
-                  <Link
-                    key={tool.href}
-                    href={tool.href}
-                    onClick={() => setShowToolsMenu(false)}
-                    className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{tool.name}</span>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
-        </div>
 
         {/* Settings */}
         <Link

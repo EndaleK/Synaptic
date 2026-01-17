@@ -28,5 +28,8 @@ export {
   VerifyIcon,
   TrophyIcon,
   UploadIcon,
+  VideoIcon,
+  WriterIcon,
+  SummaryIcon,
   BrainIcon,
 } from './HandDrawnIcons'

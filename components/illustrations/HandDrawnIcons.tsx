@@ -361,6 +361,97 @@ export function UploadIcon({ className, size = 'md' }: IconProps) {
 }
 
 /**
+ * Hand-drawn video/play icon for YouTube learning
+ */
+export function VideoIcon({ className, size = 'md' }: IconProps) {
+  return (
+    <svg
+      className={cn(sizeClasses[size], className)}
+      viewBox="0 0 48 48"
+      fill="none"
+      aria-hidden="true"
+    >
+      {/* Video screen */}
+      <rect x="6" y="10" width="36" height="24" rx="3" fill="white" stroke={INK} strokeWidth="2"/>
+      {/* Screen inner */}
+      <rect x="9" y="13" width="30" height="18" rx="2" fill={LIGHT_PURPLE}/>
+      {/* Play button */}
+      <path d="M21 17L31 22L21 27V17Z" fill={PURPLE} stroke={INK} strokeWidth="1.5" strokeLinejoin="round"/>
+      {/* Stand */}
+      <path d="M20 34V38" stroke={INK} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M28 34V38" stroke={INK} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M16 38H32" stroke={INK} strokeWidth="2" strokeLinecap="round"/>
+      {/* Video waves */}
+      <path d="M38 6C40 8 42 8 44 6" stroke={PINK} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M40 10C41 11 43 11 44 10" stroke={PINK} strokeWidth="1" strokeLinecap="round" opacity="0.6"/>
+    </svg>
+  )
+}
+
+/**
+ * Hand-drawn pen/writer icon for writing assistant
+ */
+export function WriterIcon({ className, size = 'md' }: IconProps) {
+  return (
+    <svg
+      className={cn(sizeClasses[size], className)}
+      viewBox="0 0 48 48"
+      fill="none"
+      aria-hidden="true"
+    >
+      {/* Paper */}
+      <rect x="8" y="6" width="28" height="36" rx="2" fill="white" stroke={INK} strokeWidth="2"/>
+      {/* Text lines */}
+      <path d="M14 14H28" stroke={INK} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M14 20H26" stroke={INK} strokeWidth="1" strokeLinecap="round" opacity="0.5"/>
+      <path d="M14 26H24" stroke={INK} strokeWidth="1" strokeLinecap="round" opacity="0.5"/>
+      {/* Pen */}
+      <path d="M38 12L44 6" stroke={PURPLE} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M32 18L42 8" stroke={PURPLE} strokeWidth="3" strokeLinecap="round"/>
+      <path d="M30 20L32 18" stroke={INK} strokeWidth="2" strokeLinecap="round"/>
+      {/* Pen tip */}
+      <circle cx="30" cy="20" r="2" fill={PINK}/>
+      {/* Highlight on paper */}
+      <rect x="14" y="12" width="8" height="4" fill="#FBBF24" opacity="0.3" rx="1"/>
+      {/* Sparkle */}
+      <circle cx="44" cy="4" r="1.5" fill={PINK}/>
+    </svg>
+  )
+}
+
+/**
+ * Hand-drawn summary/clock icon for quick summaries
+ */
+export function SummaryIcon({ className, size = 'md' }: IconProps) {
+  return (
+    <svg
+      className={cn(sizeClasses[size], className)}
+      viewBox="0 0 48 48"
+      fill="none"
+      aria-hidden="true"
+    >
+      {/* Clock circle */}
+      <circle cx="24" cy="24" r="18" fill={LIGHT_PURPLE} stroke={INK} strokeWidth="2"/>
+      {/* Clock inner */}
+      <circle cx="24" cy="24" r="14" fill="white" stroke={PURPLE} strokeWidth="1.5"/>
+      {/* Clock hands */}
+      <path d="M24 14V24L30 28" stroke={PURPLE} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Hour marks */}
+      <circle cx="24" cy="12" r="1.5" fill={INK}/>
+      <circle cx="36" cy="24" r="1.5" fill={INK}/>
+      <circle cx="24" cy="36" r="1.5" fill={INK}/>
+      <circle cx="12" cy="24" r="1.5" fill={INK}/>
+      {/* Speed lines */}
+      <path d="M40 10L44 6" stroke={PINK} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M42 14L46 12" stroke={PINK} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M44 18L48 17" stroke={PINK} strokeWidth="1" strokeLinecap="round" opacity="0.6"/>
+      {/* 5 minute label */}
+      <text x="20" y="30" fontFamily="sans-serif" fontSize="6" fill={PURPLE} fontWeight="bold">5m</text>
+    </svg>
+  )
+}
+
+/**
  * Hand-drawn brain icon for learning/memory
  */
 export function BrainIcon({ className, size = 'md' }: IconProps) {
@@ -416,5 +507,8 @@ export default {
   VerifyIcon,
   TrophyIcon,
   UploadIcon,
+  VideoIcon,
+  WriterIcon,
+  SummaryIcon,
   BrainIcon,
 }

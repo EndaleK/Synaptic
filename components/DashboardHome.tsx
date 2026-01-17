@@ -8,21 +8,32 @@ import { useUIStore, useDocumentStore } from "@/lib/store/useStore"
 import { RecommendedCard } from "@/components/RecommendedCard"
 import { StudyModeCard } from "@/components/StudyModeCard"
 import { WeeklyCalendar } from "@/components/WeeklyCalendar"
+import {
+  FlashcardIcon,
+  PodcastIcon,
+  MindMapIcon,
+  SummaryIcon,
+  WriterIcon,
+  VideoIcon,
+  ExamIcon,
+  PlannerIcon,
+} from "@/components/illustrations"
 
 interface DashboardHomeProps {
   onModeSelect: (mode: string) => void
   onOpenAssessment?: () => void
 }
 
-// Study modes with emoji icons
+// Study modes with hand-drawn icons
 const studyModes = [
-  { id: "flashcards", icon: "📋", title: "Flashcards", description: "Review with AI-powered cards" },
-  { id: "podcast", icon: "🎙️", title: "Podcast", description: "Listen & learn on the go" },
-  { id: "mindmap", icon: "🧠", title: "Mind Map", description: "See the big picture" },
-  { id: "quick-summary", icon: "📝", title: "Summary", description: "Get concise overviews" },
-  { id: "writer", icon: "✍️", title: "Writer", description: "Generate practice content" },
-  { id: "video", icon: "🎬", title: "Video", description: "Watch to understand" },
-  { id: "exam", icon: "📊", title: "Exam", description: "Practice with mock tests" },
+  { id: "flashcards", icon: FlashcardIcon, title: "Flashcards", description: "Review with AI-powered cards" },
+  { id: "study-plans", icon: PlannerIcon, title: "Study Planner", description: "Plan your study schedule", href: "/dashboard/study-plans" },
+  { id: "podcast", icon: PodcastIcon, title: "Podcast", description: "Listen & learn on the go" },
+  { id: "mindmap", icon: MindMapIcon, title: "Mind Map", description: "See the big picture" },
+  { id: "quick-summary", icon: SummaryIcon, title: "Summary", description: "Get concise overviews" },
+  { id: "writer", icon: WriterIcon, title: "Writer", description: "Generate practice content" },
+  { id: "video", icon: VideoIcon, title: "Video", description: "Watch to understand" },
+  { id: "exam", icon: ExamIcon, title: "Exam", description: "Practice with mock tests" },
 ]
 
 export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
@@ -137,11 +148,13 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
     }).toUpperCase()
   }
 
-  const handleModeClick = (modeId: string) => {
-    if (modeId === 'writer') {
+  const handleModeClick = (mode: typeof studyModes[0]) => {
+    if (mode.href) {
+      router.push(mode.href)
+    } else if (mode.id === 'writer') {
       router.push('/dashboard/writer')
     } else {
-      onModeSelect(modeId)
+      onModeSelect(mode.id)
     }
   }
 
@@ -171,143 +184,190 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
 
   return (
     <div className="min-h-full bg-[#FAFBFC] dark:bg-[#0A0A0F] font-body">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* Hero Section */}
-        <section className="mb-10">
-          <p className="text-sm font-semibold tracking-widest text-[#7B3FF2] mb-2">
-            {formatDate()}
-          </p>
-          <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight mb-2">
-            <span className="text-gray-900 dark:text-white">{getGreeting()}, </span>
-            <span className="text-[#7B3FF2]">
-              {isClient && isUserLoaded ? (user?.firstName || user?.username || 'there') : 'there'}
-            </span>
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400">
-            What would you like to study today?
-          </p>
-        </section>
-
-        {/* Recommended for you */}
-        <section className="mb-10">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            <span>💡</span> Recommended for you right now
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {recentDocument && (
-              <RecommendedCard
-                icon="🎙️"
-                title="Listen to Podcast"
-                description={`Turn "${recentDocument.name.length > 25 ? recentDocument.name.slice(0, 25) + '...' : recentDocument.name}" into an audio lesson. Perfect for your morning commute - about 20 minutes.`}
-                actionLabel="Start Listening"
-                gradient="purple"
-                onClick={() => {
-                  handleContinueDocument()
-                  setTimeout(() => onModeSelect('podcast'), 100)
-                }}
-              />
-            )}
-            {flashcardsDue > 0 ? (
-              <RecommendedCard
-                icon="📋"
-                title="Review Flashcards"
-                description={`You have ${flashcardsDue} cards ready for review. Keep your ${currentStreak > 0 ? `${currentStreak}-day` : ''} streak going!`}
-                actionLabel="Review Now"
-                gradient="pink"
-                onClick={() => onModeSelect('flashcards')}
-              />
-            ) : (
-              <RecommendedCard
-                icon="📚"
-                title="Upload a Document"
-                description="Start your learning journey by uploading study materials. We'll help you turn them into flashcards, podcasts, and more."
-                actionLabel="Get Started"
-                gradient="pink"
-                onClick={() => router.push('/dashboard/documents')}
-              />
-            )}
+        {/* Hero Section - Full width with streak on right */}
+        <section className="mb-10 flex items-start justify-between">
+          <div>
+            <p className="text-sm font-semibold tracking-widest text-[#7B3FF2] mb-2">
+              {formatDate()}
+            </p>
+            <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight mb-2">
+              <span className="text-gray-900 dark:text-white">{getGreeting()}, </span>
+              <span className="text-[#7B3FF2]">
+                {isClient && isUserLoaded ? (user?.firstName || user?.username || 'there') : 'there'}
+              </span>
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400">
+              What would you like to study today?
+            </p>
           </div>
-        </section>
-
-        {/* Choose your study mode */}
-        <section className="mb-10">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            <span>🎯</span> Choose your study mode
-          </h2>
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-            {studyModes.map((mode) => (
-              <StudyModeCard
-                key={mode.id}
-                icon={mode.icon}
-                title={mode.title}
-                description={mode.description}
-                badge={mode.id === 'flashcards' ? flashcardsDue : undefined}
-                onClick={() => handleModeClick(mode.id)}
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* What to study next */}
-        <section className="mb-10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
-              <span>✨</span> What to study next
-            </h2>
-            {currentStreak > 0 && (
-              <div className="flex items-center gap-1.5 text-orange-500">
-                <Flame className="w-5 h-5" />
-                <span className="font-bold">{currentStreak}d streak</span>
+          {/* Streak badge on right */}
+          {currentStreak > 0 && (
+            <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
+              <Flame className="w-6 h-6 text-orange-500" />
+              <div>
+                <span className="text-2xl font-bold text-orange-500">{currentStreak}</span>
+                <span className="text-sm text-orange-600 dark:text-orange-400 ml-1">day streak</span>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+        </section>
 
-          <div className="p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
-            {recentDocument ? (
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    Continue with {recentDocument.name}
+        {/* Main Content Grid - Two columns on large screens */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column - Main content (2/3 width) */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Recommended for you */}
+            <section>
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <span>💡</span> Recommended for you right now
+              </h2>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {recentDocument && (
+                  <RecommendedCard
+                    icon="🎙️"
+                    title="Listen to Podcast"
+                    description={`Turn "${recentDocument.name.length > 25 ? recentDocument.name.slice(0, 25) + '...' : recentDocument.name}" into an audio lesson. Perfect for your morning commute.`}
+                    actionLabel="Start Listening"
+                    gradient="purple"
+                    onClick={() => {
+                      handleContinueDocument()
+                      setTimeout(() => onModeSelect('podcast'), 100)
+                    }}
+                  />
+                )}
+                {flashcardsDue > 0 ? (
+                  <RecommendedCard
+                    icon="📋"
+                    title="Review Flashcards"
+                    description={`You have ${flashcardsDue} cards ready for review. Keep your ${currentStreak > 0 ? `${currentStreak}-day` : ''} streak going!`}
+                    actionLabel="Review Now"
+                    gradient="pink"
+                    onClick={() => onModeSelect('flashcards')}
+                  />
+                ) : (
+                  <RecommendedCard
+                    icon="📚"
+                    title="Upload a Document"
+                    description="Start your learning journey by uploading study materials. We'll help you turn them into flashcards, podcasts, and more."
+                    actionLabel="Get Started"
+                    gradient="pink"
+                    onClick={() => router.push('/dashboard/documents')}
+                  />
+                )}
+              </div>
+            </section>
+
+            {/* Choose your study mode */}
+            <section>
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <span>🎯</span> Choose your study mode
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {studyModes.map((mode) => (
+                  <StudyModeCard
+                    key={mode.id}
+                    icon={mode.icon}
+                    title={mode.title}
+                    description={mode.description}
+                    badge={mode.id === 'flashcards' ? flashcardsDue : undefined}
+                    onClick={() => handleModeClick(mode)}
+                  />
+                ))}
+              </div>
+            </section>
+
+            {/* What to study next */}
+            <section>
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <span>✨</span> What to study next
+              </h2>
+
+              <div className="p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+                {recentDocument ? (
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        Continue with {recentDocument.name}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {recentDocument.name} • 20m left
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">
+                    No documents yet. Upload your first study material to get started!
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {recentDocument.name} • 20m left
-                  </p>
+                )}
+
+                <div className="flex flex-wrap gap-3">
+                  {flashcardsDue > 0 && (
+                    <button
+                      onClick={() => onModeSelect('flashcards')}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#7B3FF2] hover:bg-[#6B2FE2] text-white rounded-xl font-semibold text-sm transition-all"
+                    >
+                      <span>📋</span> Review {flashcardsDue} cards
+                    </button>
+                  )}
+                  <button
+                    onClick={() => router.push('/dashboard/documents')}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Browse Documents
+                  </button>
                 </div>
               </div>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                No documents yet. Upload your first study material to get started!
-              </p>
-            )}
+            </section>
+          </div>
 
-            <div className="flex flex-wrap gap-3">
-              {flashcardsDue > 0 && (
+          {/* Right Column - Sidebar (1/3 width) */}
+          <div className="space-y-6">
+            {/* Weekly Calendar */}
+            <WeeklyCalendar activeDays={activeDays} />
+
+            {/* Quick Actions */}
+            <div className="p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+              <div className="space-y-2">
+                <button
+                  onClick={() => router.push('/dashboard/documents')}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  <FileText className="w-5 h-5 text-[#7B3FF2]" />
+                  Upload New Document
+                </button>
+                <button
+                  onClick={() => router.push('/dashboard/study-plans')}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  <PlannerIcon size="sm" />
+                  Create Study Plan
+                </button>
                 <button
                   onClick={() => onModeSelect('flashcards')}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#7B3FF2] hover:bg-[#6B2FE2] text-white rounded-xl font-semibold text-sm transition-all"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
-                  <span>📋</span> Review {flashcardsDue} cards
+                  <FlashcardIcon size="sm" />
+                  Generate Flashcards
                 </button>
-              )}
-              <button
-                onClick={() => router.push('/dashboard/documents')}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all"
-              >
-                <FileText className="w-4 h-4" />
-                Browse Documents
-              </button>
+              </div>
+            </div>
+
+            {/* Study Tips */}
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-[#7B3FF2]/5 to-[#E91E8C]/5 border border-[#7B3FF2]/10 dark:border-[#7B3FF2]/20">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Study Tip</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                Break your study sessions into 25-minute focused blocks with 5-minute breaks. This technique, called Pomodoro, helps maintain concentration and prevents burnout.
+              </p>
             </div>
           </div>
-        </section>
-
-        {/* Weekly Calendar */}
-        <section className="mb-10">
-          <WeeklyCalendar activeDays={activeDays} />
-        </section>
+        </div>
 
         {/* Footer */}
         <footer className="text-center pt-8 pb-4">
