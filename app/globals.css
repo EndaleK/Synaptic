@@ -560,6 +560,26 @@ html.font-size-large {
   animation: float-gentle 3s ease-in-out infinite;
 }
 
+/* Gentle bounce animation for Study Buddy */
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  25% {
+    transform: translateY(-6px) scale(1.02);
+  }
+  50% {
+    transform: translateY(0) scale(1);
+  }
+  75% {
+    transform: translateY(-3px) scale(1.01);
+  }
+}
+
+.animate-bounce-gentle {
+  animation: bounce-gentle 2s ease-in-out infinite;
+}
+
 /* Ring pulse animation */
 @keyframes ring-pulse {
   0% {

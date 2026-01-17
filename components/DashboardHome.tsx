@@ -3,11 +3,15 @@
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { FileText, ArrowRight } from "lucide-react"
+import { FileText, Users, School, Building2, ChevronRight } from "lucide-react"
+import Link from "next/link"
+import type { UserRole } from "@/lib/supabase/types"
 import { useUIStore, useDocumentStore } from "@/lib/store/useStore"
 import { RecommendedCard } from "@/components/RecommendedCard"
 import { StudyModeCard } from "@/components/StudyModeCard"
 import { WeeklyCalendar } from "@/components/WeeklyCalendar"
+import ExamReadinessWidget from "@/components/ExamReadinessWidget"
+import UsageWidget from "@/components/UsageWidget"
 import {
   FlashcardIcon,
   PodcastIcon,
@@ -16,20 +20,75 @@ import {
   WriterIcon,
   VideoIcon,
   ExamIcon,
-  PlannerIcon,
   UploadIcon,
   ChatIcon,
+  PlannerIcon,
+  StudyBuddyIcon,
 } from "@/components/illustrations"
+import { useStudyBuddyStore } from "@/lib/store/useStudyBuddyStore"
 
 interface DashboardHomeProps {
   onModeSelect: (mode: string) => void
   onOpenAssessment?: () => void
 }
 
+// Role dashboard configuration
+const roleDashboards: Record<string, { title: string; subtitle: string; href: string; icon: typeof Users; gradient: string }> = {
+  parent: {
+    title: 'Parent Dashboard',
+    subtitle: 'Manage your children\'s learning',
+    href: '/dashboard/parent',
+    icon: Users,
+    gradient: 'from-blue-500/10 to-cyan-500/10'
+  },
+  educator: {
+    title: 'Teacher Dashboard',
+    subtitle: 'Manage your classes & students',
+    href: '/dashboard/teacher',
+    icon: School,
+    gradient: 'from-green-500/10 to-emerald-500/10'
+  },
+  institution: {
+    title: 'Admin Dashboard',
+    subtitle: 'Manage your organization',
+    href: '/dashboard/admin',
+    icon: Building2,
+    gradient: 'from-orange-500/10 to-amber-500/10'
+  },
+}
+
+function RoleDashboardCard({ role }: { role: UserRole }) {
+  const config = roleDashboards[role]
+  if (!config) return null
+
+  const IconComponent = config.icon
+
+  return (
+    <Link href={config.href}>
+      <div className={`p-5 rounded-2xl bg-gradient-to-br ${config.gradient} border border-gray-200/50 dark:border-gray-700/50 shadow-md hover:shadow-lg transition-all group cursor-pointer`}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
+            <IconComponent className="w-5 h-5 text-[#7B3FF2]" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{config.title}</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{config.subtitle}</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-end text-xs text-[#7B3FF2] font-medium group-hover:translate-x-1 transition-transform">
+          Go to dashboard <ChevronRight className="w-4 h-4 ml-1" />
+        </div>
+      </div>
+    </Link>
+  )
+}
+
 // Study modes with hand-drawn icons
 const studyModes = [
   { id: "flashcards", icon: FlashcardIcon, title: "Flashcards", description: "Review with AI-powered cards" },
   { id: "chat", icon: ChatIcon, title: "Chat", description: "Ask questions & learn" },
+  { id: "study-buddy", icon: StudyBuddyIcon, title: "Study Buddy", description: "Your AI learning companion" },
+  { id: "study-planner", icon: PlannerIcon, title: "Study Planner", description: "Plan & track your study" },
   { id: "podcast", icon: PodcastIcon, title: "Podcast", description: "Listen & learn on the go" },
   { id: "quick-summary", icon: SummaryIcon, title: "Quick Summary", description: "5-minute audio overviews" },
   { id: "mindmap", icon: MindMapIcon, title: "Mind Map", description: "See the big picture" },
@@ -43,6 +102,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
   const router = useRouter()
   const { setActiveMode } = useUIStore()
   const { setCurrentDocument } = useDocumentStore()
+  const { setViewMode: setStudyBuddyViewMode } = useStudyBuddyStore()
 
   const [currentStreak, setCurrentStreak] = useState<number>(0)
   const [isLoadingStreak, setIsLoadingStreak] = useState(true)
@@ -50,9 +110,28 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
   const [recentDocument, setRecentDocument] = useState<{ id: string; name: string } | null>(null)
   const [activeDays, setActiveDays] = useState<number[]>([])
   const [isClient, setIsClient] = useState(false)
+  const [userRole, setUserRole] = useState<UserRole | null>(null)
 
   useEffect(() => {
     setIsClient(true)
+  }, [])
+
+  // Fetch user role
+  useEffect(() => {
+    const fetchRole = async () => {
+      try {
+        const response = await fetch('/api/user/role', {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setUserRole(data.primary_role)
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error)
+      }
+    }
+    fetchRole()
   }, [])
 
   // Fetch streak
@@ -151,10 +230,13 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
   }
 
   const handleModeClick = (mode: typeof studyModes[0]) => {
-    if (mode.href) {
-      router.push(mode.href)
-    } else if (mode.id === 'writer') {
+    if (mode.id === 'writer') {
       router.push('/dashboard/writer')
+    } else if (mode.id === 'study-planner') {
+      router.push('/dashboard/study-plans')
+    } else if (mode.id === 'study-buddy') {
+      // Open the floating Study Buddy panel
+      setStudyBuddyViewMode('floating')
     } else {
       onModeSelect(mode.id)
     }
@@ -321,33 +403,16 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
             {/* Weekly Heat Map with Streak - aligned with Recommended cards */}
             <WeeklyCalendar activeDays={activeDays} streak={currentStreak} className="lg:mt-10" />
 
-            {/* Quick Actions */}
-            <div className="p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 shadow-md">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={() => router.push('/dashboard/documents')}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                >
-                  <FileText className="w-5 h-5 text-[#7B3FF2]" />
-                  Upload New Document
-                </button>
-                <button
-                  onClick={() => router.push('/dashboard/study-plans')}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                >
-                  <PlannerIcon size="sm" />
-                  Create Study Plan
-                </button>
-                <button
-                  onClick={() => onModeSelect('flashcards')}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                >
-                  <FlashcardIcon size="sm" />
-                  Generate Flashcards
-                </button>
-              </div>
-            </div>
+            {/* Role Dashboard Link - only for non-learner roles */}
+            {userRole && userRole !== 'learner' && (
+              <RoleDashboardCard role={userRole} />
+            )}
+
+            {/* Exam Readiness */}
+            <ExamReadinessWidget compact onViewDetails={() => onModeSelect('exam')} />
+
+            {/* Monthly Usage */}
+            <UsageWidget />
 
             {/* Study Tips */}
             <div className="p-5 rounded-2xl bg-gradient-to-br from-[#7B3FF2]/5 to-[#E91E8C]/5 border border-[#7B3FF2]/10 dark:border-[#7B3FF2]/20 shadow-md">

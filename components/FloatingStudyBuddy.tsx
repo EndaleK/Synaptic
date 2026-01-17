@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Send, Loader2, MessageCircle, X, History, Copy, Check, Bot, Maximize2, Minimize2, PanelRightClose } from "lucide-react"
+import { Send, Loader2, X, History, Copy, Check, Maximize2, Minimize2, PanelRightClose } from "lucide-react"
+import { StudyBuddyIcon } from "@/components/illustrations"
 import { useStudyBuddyStore } from "@/lib/store/useStudyBuddyStore"
 import { useDocumentStore, useUIStore } from "@/lib/store/useStore"
 import { useToast } from "./ToastContainer"
@@ -612,19 +613,40 @@ export default function FloatingStudyBuddy() {
     )
   }
 
-  // Desktop minimized state - Circular icon
+  // Get contextual tooltip message based on current mode
+  const getTooltipMessage = () => {
+    switch (activeMode) {
+      case 'flashcards': return "Need help with flashcards?"
+      case 'podcast': return "Questions about the podcast?"
+      case 'mindmap': return "Let me explain the concepts!"
+      case 'exam': return "Practice questions? I can help!"
+      case 'quick-summary': return "Want me to explain something?"
+      case 'video': return "Questions about the video?"
+      default: return "Hey! Need any help?"
+    }
+  }
+
+  // Desktop minimized state - Circular icon with animation
   if (isMinimized) {
     return (
       <div className="fixed bottom-20 right-4 z-50" data-tour="study-buddy">
         <div className="relative group">
-          {/* Main button */}
+          {/* Contextual tooltip on hover */}
+          <div className="absolute bottom-full right-0 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none translate-y-2 group-hover:translate-y-0">
+            <div className="bg-gray-900 dark:bg-gray-800 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap shadow-lg">
+              {getTooltipMessage()}
+              <div className="absolute -bottom-1 right-5 w-2 h-2 bg-gray-900 dark:bg-gray-800 rotate-45" />
+            </div>
+          </div>
+
+          {/* Main button with idle animation */}
           <button
             onClick={() => setViewMode('floating')}
-            className="w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shadow-lg hover:shadow-2xl transition-all hover:scale-110 active:scale-95 flex items-center justify-center"
-            title="Open Study Buddy"
+            className="w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-lg hover:shadow-2xl transition-all hover:scale-110 active:scale-95 flex items-center justify-center animate-[bounce-gentle_3s_ease-in-out_infinite_30s]"
+            aria-label="Open Study Buddy"
           >
             <div className="relative">
-              <MessageCircle className="w-6 h-6" />
+              <StudyBuddyIcon size="sm" className="w-8 h-8" />
               {mounted && messages.length > 0 && (
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white animate-pulse" />
               )}
@@ -652,7 +674,7 @@ export default function FloatingStudyBuddy() {
       <div className="flex-shrink-0 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Bot className="w-5 h-5" />
+            <StudyBuddyIcon size="sm" className="w-6 h-6" />
             <div>
               <h3 className="font-bold text-sm">Study Buddy</h3>
               {currentDocument && (
