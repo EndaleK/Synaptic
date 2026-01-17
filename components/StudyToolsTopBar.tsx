@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
+import { SynapticLogo } from "@/components/SynapticLogo"
 import dynamic from "next/dynamic"
 
 // Dynamically import UserButton to avoid hydration mismatch
@@ -154,25 +154,11 @@ export default function StudyToolsTopBar() {
   })
 
   return (
-    <header className="hidden lg:flex sticky top-0 z-30 h-[56px] items-center justify-between px-4 bg-white dark:bg-[#0F0F0F] border-b border-gray-200 dark:border-gray-800">
+    <header className="hidden lg:flex sticky top-0 z-30 h-[56px] items-center justify-between px-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/30 dark:border-gray-800/30">
       {/* Left: Logo */}
-      <Link
-        href="/dashboard"
-        onClick={() => setActiveMode('home')}
-        className="flex items-center gap-2 group flex-shrink-0"
-      >
-        <Image
-          src="/logo-brain-transparent.png"
-          alt="Synaptic"
-          width={36}
-          height={36}
-          className="w-9 h-9"
-          priority
-        />
-        <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-pink-600 dark:from-violet-400 dark:to-pink-400">
-          Synaptic
-        </span>
-      </Link>
+      <div onClick={() => setActiveMode('home')} className="flex-shrink-0">
+        <SynapticLogo size="sm" />
+      </div>
 
       {/* Center: Learning Modes Navigation */}
       <nav className="flex items-center gap-1">
@@ -185,7 +171,7 @@ export default function StudyToolsTopBar() {
               onClick={() => handleModeClick(mode)}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                 isActive
-                  ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                  ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
                   : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
@@ -201,7 +187,7 @@ export default function StudyToolsTopBar() {
             onClick={() => setShowMoreMenu(!showMoreMenu)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
               activeMoreMode
-                ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
             }`}
           >
@@ -240,7 +226,7 @@ export default function StudyToolsTopBar() {
                     }}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
                       isActive
-                        ? "bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300"
+                        ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/15 text-[#7B3FF2] dark:text-purple-300"
                         : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
                     }`}
                   >
@@ -305,7 +291,7 @@ export default function StudyToolsTopBar() {
           href="/dashboard/settings"
           className={`p-2 rounded-lg transition-colors ${
             pathname === '/dashboard/settings'
-              ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+              ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
               : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
           }`}
           title="Settings"

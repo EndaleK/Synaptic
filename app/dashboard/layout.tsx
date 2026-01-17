@@ -3,6 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
+import { SynapticLogo } from "@/components/SynapticLogo"
 import { UserButton, useUser } from "@clerk/nextjs"
 import { BookOpen, FileText, Menu, X, MessageSquare, Mic, Network, Moon, Sun, LogOut, Clock, PenTool, Youtube, GraduationCap } from "lucide-react"
 import { useState, useEffect } from "react"
@@ -196,31 +197,16 @@ export default function DashboardLayout({
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="px-4 py-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
-            <Link
-              href="/dashboard"
+            <div
               onClick={() => {
                 setSidebarOpen(false)
                 setActiveMode("home")
+                router.push("/dashboard")
               }}
-              className="flex items-center gap-3"
+              className="cursor-pointer"
             >
-              <Image
-                src="/logo-brain-transparent.png"
-                alt="Synaptic Logo"
-                width={40}
-                height={40}
-                className="w-10 h-10"
-                priority
-              />
-              <div className="flex flex-col">
-                <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-pink-600 dark:from-violet-400 dark:to-pink-400">
-                  Synaptic
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  Study Smarter
-                </span>
-              </div>
-            </Link>
+              <SynapticLogo size="md" showTagline={true} />
+            </div>
             <button
               onClick={() => setSidebarOpen(false)}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
@@ -246,7 +232,7 @@ export default function DashboardLayout({
                       onClick={() => setSidebarOpen(false)}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                         isActive
-                          ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                          ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
                           : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                       }`}
                     >
@@ -262,7 +248,7 @@ export default function DashboardLayout({
                     onClick={() => handleModeClick(mode.id!, mode.comingSoon)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left ${
                       isActive
-                        ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                        ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
                         : mode.comingSoon
                         ? "text-gray-400 dark:text-gray-500"
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -305,7 +291,7 @@ export default function DashboardLayout({
             </div>
 
             {/* User Info */}
-            <div className="flex items-center gap-3 px-3 py-2 bg-violet-50 dark:bg-violet-900/20 rounded-xl">
+            <div className="flex items-center gap-3 px-3 py-2 bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/15 rounded-xl">
               {isMounted && <UserButton />}
               {isMounted && (
                 <div className="flex-1 min-w-0">
@@ -341,19 +327,9 @@ export default function DashboardLayout({
               )}
             </button>
 
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <Image
-                src="/logo-brain-transparent.png"
-                alt="Synaptic"
-                width={32}
-                height={32}
-                className="w-8 h-8"
-                priority
-              />
-              <span className="font-bold text-black dark:text-white">
-                Synaptic
-              </span>
-            </Link>
+            <div onClick={() => { setActiveMode("home"); router.push("/dashboard") }} className="cursor-pointer">
+              <SynapticLogo size="sm" />
+            </div>
 
             <div className="flex items-center gap-2">
               <button

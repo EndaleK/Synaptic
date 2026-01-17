@@ -80,10 +80,6 @@ export default function LandingPage() {
                 </button>
               </div>
 
-              {/* CTA Microcopy */}
-              <p className="text-xs text-gray-500 dark:text-gray-500 mt-3 text-center lg:text-left">
-                No credit card required. Cancel anytime.
-              </p>
 
             </div>
 
