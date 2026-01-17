@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { FileText, Clock } from "lucide-react"
+import { FileText, Clock, ChevronRight } from "lucide-react"
 import { useUIStore, useDocumentStore } from "@/lib/store/useStore"
 import { RecommendedCard } from "@/components/RecommendedCard"
 import { StudyModeCard } from "@/components/StudyModeCard"
