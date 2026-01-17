@@ -44,7 +44,7 @@ export function RecommendedCard({
   return (
     <div
       className={cn(
-        "relative rounded-2xl p-6 min-h-[180px] flex flex-col justify-between overflow-hidden cursor-pointer group transition-transform hover:scale-[1.02]",
+        "relative rounded-2xl p-6 min-h-[180px] flex flex-col justify-between overflow-hidden cursor-pointer group transition-all hover:scale-[1.02] shadow-lg hover:shadow-xl",
         gradientStyles[gradient],
         className
       )}

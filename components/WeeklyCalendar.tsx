@@ -61,7 +61,7 @@ export function WeeklyCalendar({
   }
 
   return (
-    <div className={cn("p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700", className)}>
+    <div className={cn("p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 shadow-md", className)}>
       {/* Header with streak */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-gray-900 dark:text-white">This Week</h3>

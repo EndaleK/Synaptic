@@ -274,7 +274,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                 <span>✨</span> What to study next
               </h2>
 
-              <div className="p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+              <div className="p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 shadow-md">
                 {recentDocument ? (
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -322,7 +322,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
             <WeeklyCalendar activeDays={activeDays} streak={currentStreak} className="lg:mt-10" />
 
             {/* Quick Actions */}
-            <div className="p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+            <div className="p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 shadow-md">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
               <div className="space-y-2">
                 <button
@@ -350,7 +350,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
             </div>
 
             {/* Study Tips */}
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-[#7B3FF2]/5 to-[#E91E8C]/5 border border-[#7B3FF2]/10 dark:border-[#7B3FF2]/20">
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-[#7B3FF2]/5 to-[#E91E8C]/5 border border-[#7B3FF2]/10 dark:border-[#7B3FF2]/20 shadow-md">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Study Tip</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                 Break your study sessions into 25-minute focused blocks with 5-minute breaks. This technique, called Pomodoro, helps maintain concentration and prevents burnout.

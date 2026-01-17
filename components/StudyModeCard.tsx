@@ -37,8 +37,8 @@ export function StudyModeCard({
       className={cn(
         "relative flex flex-col items-center text-center p-4 rounded-2xl border-2 transition-all min-w-[140px] hover:scale-[1.02]",
         isActive
-          ? "border-[#7B3FF2] bg-[#7B3FF2]/5 shadow-lg shadow-[#7B3FF2]/10"
-          : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:border-[#7B3FF2]/50 hover:shadow-md",
+          ? "border-[#7B3FF2] bg-[#7B3FF2]/5 shadow-lg shadow-[#7B3FF2]/20"
+          : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 shadow-md hover:border-[#7B3FF2]/50 hover:shadow-lg",
         className
       )}
     >
