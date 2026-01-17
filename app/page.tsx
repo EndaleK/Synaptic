@@ -643,10 +643,10 @@ export default function LandingPage() {
                 You&apos;ve got 300 pages to review and no time to waste. Upload your notes, get flashcards in minutes, and focus on what you don&apos;t know yet.
               </p>
               <Link
-                href="/sign-up"
+                href="/sign-up?role=learner"
                 className="mt-5 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-xl transition-colors"
               >
-                Start Free
+                Upload your notes
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -668,10 +668,10 @@ export default function LandingPage() {
                 No classroom. No deadlines. Just you and your curiosity. Turn any book, video, or article into study materials that stick.
               </p>
               <Link
-                href="/sign-up"
+                href="/sign-up?role=learner"
                 className="mt-5 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-xl transition-colors"
               >
-                Start Free
+                Start learning now
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -693,25 +693,20 @@ export default function LandingPage() {
                 Homeschooling is a superpower, but it&apos;s exhausting. Let AI handle the flashcards while you focus on being the teacher your kids need.
               </p>
               <Link
-                href="/sign-up"
+                href="/sign-up?role=parent"
                 className="mt-5 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-600 hover:bg-pink-700 text-white text-sm font-medium rounded-xl transition-colors"
               >
-                Start Free
+                Create your first lesson
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
 
-          {/* Full-width Coming Soon card for Schools & Educators */}
-          <div className="relative p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-            {/* Coming Soon badge */}
-            <span className="absolute top-4 right-4 px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
-              Coming Soon
-            </span>
-
+          {/* Full-width card for Schools & Educators */}
+          <div className="group p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-600 transition-all">
             <div className="flex flex-col md:flex-row md:items-center gap-6">
               <div className="flex items-center gap-3">
-                <div className="flex-shrink-0 w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                <div className="flex-shrink-0 w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                   <GraduationCap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <h3 className="text-xl font-bold text-black dark:text-white">
@@ -724,16 +719,17 @@ export default function LandingPage() {
                   &ldquo;30 students, 30 different learning speeds&rdquo;
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                  You can&apos;t clone yourself, but you can give every student personalized study materials. Class management, assignments, and progress tracking—coming soon.
+                  You can&apos;t clone yourself, but you can give every student personalized study materials. Class management, assignments, and progress tracking included.
                 </p>
               </div>
 
-              <button
-                className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl cursor-default"
+              <Link
+                href="/sign-up?role=educator"
+                className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
               >
-                <Mail className="w-4 h-4" />
-                Join Waitlist
-              </button>
+                Try it with your class
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         </div>
