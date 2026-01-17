@@ -205,7 +205,7 @@ export default function DashboardLayout({
               }}
               className="cursor-pointer"
             >
-              <SynapticLogo size="md" showTagline={true} />
+              <SynapticLogo size="md" showTagline={true} disableLink />
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -328,7 +328,7 @@ export default function DashboardLayout({
             </button>
 
             <div onClick={() => { setActiveMode("home"); router.push("/dashboard") }} className="cursor-pointer">
-              <SynapticLogo size="sm" />
+              <SynapticLogo size="sm" disableLink />
             </div>
 
             <div className="flex items-center gap-2">

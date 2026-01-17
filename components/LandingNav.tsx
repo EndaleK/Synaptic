@@ -35,7 +35,7 @@ export function LandingNav() {
             {isSignedIn ? (
               <Link
                 href="/dashboard"
-                className="px-4 py-2 bg-[#7B3FF2] hover:bg-[#6B2FE2] text-white rounded-xl font-semibold text-sm transition-all"
+                className="px-4 py-2 bg-[#C4B5FD] hover:bg-[#B794F4] text-[#5B21B6] rounded-xl font-semibold text-sm transition-all"
               >
                 Dashboard
               </Link>

@@ -98,10 +98,10 @@ export default function StudyToolsTopBar() {
 
   return (
     <header className="hidden lg:flex sticky top-0 z-30 h-[56px] items-center px-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/30 dark:border-gray-800/30">
-      {/* Left: Logo */}
+      {/* Left: Logo - stays in dashboard */}
       <div className="flex-shrink-0">
         <div onClick={handleLogoClick} className="cursor-pointer">
-          <SynapticLogo size="sm" />
+          <SynapticLogo size="sm" disableLink />
         </div>
       </div>
 

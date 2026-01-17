@@ -8,6 +8,8 @@ interface SynapticLogoProps {
   className?: string
   size?: 'sm' | 'md' | 'lg'
   showTagline?: boolean
+  href?: string
+  disableLink?: boolean
 }
 
 /**
@@ -17,7 +19,9 @@ interface SynapticLogoProps {
 export function SynapticLogo({
   className,
   size = 'md',
-  showTagline = false
+  showTagline = false,
+  href = "/",
+  disableLink = false
 }: SynapticLogoProps) {
   const iconSizes = {
     sm: 32,
@@ -25,8 +29,8 @@ export function SynapticLogo({
     lg: 48
   }
 
-  return (
-    <Link href="/" className={cn("flex items-center gap-2", className)}>
+  const logoContent = (
+    <>
       {/* Brain Icon */}
       <Image
         src="/logo-brain-transparent.png"
@@ -58,6 +62,20 @@ export function SynapticLogo({
           </span>
         )}
       </div>
+    </>
+  )
+
+  if (disableLink) {
+    return (
+      <div className={cn("flex items-center gap-2", className)}>
+        {logoContent}
+      </div>
+    )
+  }
+
+  return (
+    <Link href={href} className={cn("flex items-center gap-2", className)}>
+      {logoContent}
     </Link>
   )
 }

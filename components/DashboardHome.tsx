@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { FileText, Flame, ArrowRight } from "lucide-react"
+import { FileText, ArrowRight } from "lucide-react"
 import { useUIStore, useDocumentStore } from "@/lib/store/useStore"
 import { RecommendedCard } from "@/components/RecommendedCard"
 import { StudyModeCard } from "@/components/StudyModeCard"
@@ -30,7 +30,6 @@ interface DashboardHomeProps {
 const studyModes = [
   { id: "flashcards", icon: FlashcardIcon, title: "Flashcards", description: "Review with AI-powered cards" },
   { id: "chat", icon: ChatIcon, title: "Chat", description: "Ask questions & learn" },
-  { id: "study-plans", icon: PlannerIcon, title: "Study Planner", description: "Plan your study schedule", href: "/dashboard/study-plans" },
   { id: "podcast", icon: PodcastIcon, title: "Podcast", description: "Listen & learn on the go" },
   { id: "quick-summary", icon: SummaryIcon, title: "Quick Summary", description: "5-minute audio overviews" },
   { id: "mindmap", icon: MindMapIcon, title: "Mind Map", description: "See the big picture" },
@@ -189,32 +188,20 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
     <div className="min-h-full bg-gradient-to-b from-[#EDE5FF] via-[#F3EDFF] to-[#E8E0F0] dark:from-[#1E1230] dark:via-[#16102A] dark:to-[#1A1525] font-body">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* Hero Section - Full width with streak on right */}
-        <section className="mb-10 flex items-start justify-between">
-          <div>
-            <p className="text-sm font-semibold tracking-widest text-[#7B3FF2] mb-2">
-              {formatDate()}
-            </p>
-            <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight mb-2">
-              <span className="text-gray-900 dark:text-white">{getGreeting()}, </span>
-              <span className="text-[#7B3FF2]">
-                {isClient && isUserLoaded ? (user?.firstName || user?.username || 'there') : 'there'}
-              </span>
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400">
-              What would you like to study today?
-            </p>
-          </div>
-          {/* Streak badge on right */}
-          {currentStreak > 0 && (
-            <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
-              <Flame className="w-6 h-6 text-orange-500" />
-              <div>
-                <span className="text-2xl font-bold text-orange-500">{currentStreak}</span>
-                <span className="text-sm text-orange-600 dark:text-orange-400 ml-1">day streak</span>
-              </div>
-            </div>
-          )}
+        {/* Hero Section */}
+        <section className="mb-10">
+          <p className="text-sm font-semibold tracking-widest text-[#7B3FF2] mb-2">
+            {formatDate()}
+          </p>
+          <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight mb-2">
+            <span className="text-gray-900 dark:text-white">{getGreeting()}, </span>
+            <span className="text-[#7B3FF2]">
+              {isClient && isUserLoaded ? (user?.firstName || user?.username || 'there') : 'there'}
+            </span>
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400">
+            What would you like to study today?
+          </p>
         </section>
 
         {/* Main Content Grid - Two columns on large screens */}
@@ -331,8 +318,8 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
 
           {/* Right Column - Sidebar (1/3 width) */}
           <div className="space-y-6">
-            {/* Weekly Calendar */}
-            <WeeklyCalendar activeDays={activeDays} />
+            {/* Weekly Heat Map with Streak */}
+            <WeeklyCalendar activeDays={activeDays} streak={currentStreak} />
 
             {/* Quick Actions */}
             <div className="p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">

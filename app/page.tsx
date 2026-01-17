@@ -62,7 +62,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center animate-section-reveal stagger-index-2">
                 <Link
                   href={isSignedIn ? "/dashboard" : "/sign-up"}
-                  className="group relative px-8 py-4 bg-[#7B3FF2] hover:bg-[#6B2FE2] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2"
+                  className="group relative px-8 py-4 bg-[#C4B5FD] hover:bg-[#B794F4] text-[#5B21B6] rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2"
                 >
                   <span>{isSignedIn ? "Go to Dashboard" : "Start free"}</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -547,7 +547,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
                 <Link
                   href={isSignedIn ? "/dashboard" : "/sign-up"}
-                  className="group inline-flex items-center gap-2 px-8 py-4 bg-[#7B3FF2] hover:bg-[#6B2FE2] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl"
+                  className="group inline-flex items-center gap-2 px-8 py-4 bg-[#C4B5FD] hover:bg-[#B794F4] text-[#5B21B6] rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl"
                 >
                   <span>{isSignedIn ? "Go to Dashboard" : "Start free — no credit card"}</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
