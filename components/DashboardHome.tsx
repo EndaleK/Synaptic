@@ -401,8 +401,8 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
 
           {/* Right Column - Sidebar (3/10 width = 30%) */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Weekly Heat Map with Streak - aligned with Recommended cards */}
-            <WeeklyCalendar activeDays={activeDays} streak={currentStreak} className="lg:mt-10" />
+            {/* Weekly Heat Map with Streak */}
+            <WeeklyCalendar activeDays={activeDays} streak={currentStreak} />
 
             {/* Exam Readiness */}
             <ExamReadinessWidget compact onViewDetails={() => onModeSelect('exam')} />
