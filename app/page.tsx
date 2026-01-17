@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useAuth } from "@clerk/nextjs"
 import {
   Sparkles, ArrowRight, ChevronDown, ChevronUp,
@@ -16,6 +17,7 @@ import {
   GraduationIcon, TargetIcon, VerifyIcon, TrophyIcon, UploadIcon, BrainIcon
 } from "@/components/illustrations"
 import { WaveDivider } from "@/components/backgrounds"
+import { LandingNav } from "@/components/LandingNav"
 
 export default function LandingPage() {
   const { isSignedIn } = useAuth()
@@ -23,6 +25,9 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen">
+      {/* Sticky Navigation */}
+      <LandingNav />
+
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-hero-dawn">
         {/* Decorative background elements */}
@@ -84,7 +89,7 @@ export default function LandingPage() {
 
             {/* Right Column: Studying Student Illustration with reveal animation */}
             <div className="flex justify-center lg:justify-end animate-section-reveal stagger-index-3">
-              <StudyingStudent size="lg" className="w-[400px] h-[400px] md:w-[480px] md:h-[480px]" />
+              <StudyingStudent size="lg" className="w-[460px] h-[460px] md:w-[552px] md:h-[552px]" />
             </div>
           </div>
         </div>
