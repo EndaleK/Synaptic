@@ -45,6 +45,7 @@ export interface UserProfile {
   roles?: UserRole[]
   onboarding_completed?: boolean
   onboarding_step?: string
+  has_seen_welcome_modal?: boolean  // Tracks if user has seen the welcome modal
   managed_by?: number        // ID of parent who created this account
   is_managed_account?: boolean
   created_at: string

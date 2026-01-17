@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { FileText, Users, School, Building2, ChevronRight } from "lucide-react"
+import { FileText, Users, School, Building2, ChevronRight, ChevronDown, Clock } from "lucide-react"
 import Link from "next/link"
 import type { UserRole } from "@/lib/supabase/types"
 import { useUIStore, useDocumentStore } from "@/lib/store/useStore"
@@ -22,10 +22,9 @@ import {
   ExamIcon,
   UploadIcon,
   ChatIcon,
-  PlannerIcon,
-  StudyBuddyIcon,
 } from "@/components/illustrations"
 import { useStudyBuddyStore } from "@/lib/store/useStudyBuddyStore"
+import WelcomeModal from "@/components/WelcomeModal"
 
 interface DashboardHomeProps {
   onModeSelect: (mode: string) => void
@@ -83,18 +82,19 @@ function RoleDashboardCard({ role }: { role: UserRole }) {
   )
 }
 
-// Study modes with hand-drawn icons
-const studyModes = [
-  { id: "flashcards", icon: FlashcardIcon, title: "Flashcards", description: "Review with AI-powered cards" },
-  { id: "chat", icon: ChatIcon, title: "Chat", description: "Ask questions & learn" },
-  { id: "study-buddy", icon: StudyBuddyIcon, title: "Study Buddy", description: "Your AI learning companion" },
-  { id: "pathway", icon: PlannerIcon, title: "Pathway", description: "Your learning journey" },
-  { id: "podcast", icon: PodcastIcon, title: "Podcast", description: "Listen & learn on the go" },
-  { id: "quick-summary", icon: SummaryIcon, title: "Quick Summary", description: "5-minute audio overviews" },
-  { id: "mindmap", icon: MindMapIcon, title: "Mind Map", description: "See the big picture" },
+// Study modes grouped by purpose with clearer descriptions
+const primaryModes = [
+  { id: "flashcards", icon: FlashcardIcon, title: "Flashcards", description: "Spaced repetition review" },
+  { id: "chat", icon: ChatIcon, title: "Chat", description: "Q&A about your docs" },
+  { id: "podcast", icon: PodcastIcon, title: "Podcast", description: "Full audio lesson (10-20 min)" },
+  { id: "quick-summary", icon: SummaryIcon, title: "Quick Summary", description: "5-min audio highlights" },
+  { id: "exam", icon: ExamIcon, title: "Mock Exam", description: "Test your knowledge" },
+]
+
+const moreModes = [
+  { id: "mindmap", icon: MindMapIcon, title: "Mind Map", description: "Visualize concepts" },
   { id: "writer", icon: WriterIcon, title: "Writer", description: "Generate practice content" },
-  { id: "video", icon: VideoIcon, title: "Video", description: "Watch to understand" },
-  { id: "exam", icon: ExamIcon, title: "Exam", description: "Practice with mock tests" },
+  { id: "video", icon: VideoIcon, title: "Video", description: "Learn from YouTube" },
 ]
 
 export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
@@ -107,14 +107,50 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
   const [currentStreak, setCurrentStreak] = useState<number>(0)
   const [isLoadingStreak, setIsLoadingStreak] = useState(true)
   const [flashcardsDue, setFlashcardsDue] = useState(0)
-  const [recentDocument, setRecentDocument] = useState<{ id: string; name: string } | null>(null)
+  const [recentDocuments, setRecentDocuments] = useState<Array<{ id: string; name: string; flashcardCount?: number; lastStudied?: string }>>([])
   const [activeDays, setActiveDays] = useState<number[]>([])
   const [isClient, setIsClient] = useState(false)
   const [userRole, setUserRole] = useState<UserRole | null>(null)
+  const [showMoreTools, setShowMoreTools] = useState(false)
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  // Check if should show welcome modal for first-time users
+  useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem('hasSeenWelcomeModal')
+    if (!hasSeenWelcome && isClient) {
+      // Small delay to let the dashboard load first
+      const timer = setTimeout(() => {
+        setShowWelcomeModal(true)
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [isClient])
+
+  const handleWelcomeClose = async () => {
+    setShowWelcomeModal(false)
+    localStorage.setItem('hasSeenWelcomeModal', 'true')
+    // Persist to database (optional, for cross-device sync)
+    try {
+      await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ has_seen_welcome_modal: true })
+      })
+    } catch (error) {
+      // Silent fail - localStorage is the primary source
+      console.error('Error persisting welcome modal state:', error)
+    }
+  }
+
+  const handleWelcomeUpload = () => {
+    handleWelcomeClose()
+    onModeSelect('flashcards') // Go to flashcards mode which has the upload UI
+  }
 
   // Fetch user role
   useEffect(() => {
@@ -155,7 +191,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
     updateStreak()
   }, [])
 
-  // Fetch flashcards due and recent document
+  // Fetch flashcards due and recent documents
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -168,17 +204,19 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
           setFlashcardsDue(data.stats?.totalDue || 0)
         }
 
-        // Fetch recent documents
-        const docsResponse = await fetch('/api/documents?limit=1', {
+        // Fetch recent documents (3 most recent)
+        const docsResponse = await fetch('/api/documents?limit=3', {
           credentials: 'include'
         })
         if (docsResponse.ok) {
           const data = await docsResponse.json()
           if (data.documents && data.documents.length > 0) {
-            setRecentDocument({
-              id: data.documents[0].id,
-              name: data.documents[0].file_name
-            })
+            setRecentDocuments(data.documents.map((doc: any) => ({
+              id: doc.id,
+              name: doc.file_name,
+              flashcardCount: doc.flashcard_count || 0,
+              lastStudied: doc.updated_at
+            })))
           }
         }
       } catch (error) {
@@ -229,7 +267,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
     }).toUpperCase()
   }
 
-  const handleModeClick = (mode: typeof studyModes[0]) => {
+  const handleModeClick = (mode: typeof primaryModes[0]) => {
     if (mode.id === 'writer') {
       router.push('/dashboard/writer')
     } else if (mode.id === 'pathway') {
@@ -242,10 +280,27 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
     }
   }
 
-  const handleContinueDocument = async () => {
-    if (!recentDocument) return
+  // Format time ago for recent documents
+  const formatTimeAgo = (dateString?: string) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffDays < 7) return `${diffDays}d ago`
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  const handleContinueDocument = async (docId?: string) => {
+    const documentId = docId || recentDocuments[0]?.id
+    if (!documentId) return
     try {
-      const response = await fetch(`/api/documents/${recentDocument.id}`)
+      const response = await fetch(`/api/documents/${documentId}`)
       if (response.ok) {
         const data = await response.json()
         if (data.document) {
@@ -268,6 +323,14 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
 
   return (
     <div className="min-h-full bg-gradient-to-b from-[#EDE5FF] via-[#F3EDFF] to-[#E8E0F0] dark:from-[#1E1230] dark:via-[#16102A] dark:to-[#1A1525] font-body">
+      {/* Welcome Modal for first-time users */}
+      <WelcomeModal
+        isOpen={showWelcomeModal}
+        onClose={handleWelcomeClose}
+        userName={user?.firstName || user?.username}
+        onUploadClick={handleWelcomeUpload}
+      />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Hero Section */}
@@ -292,15 +355,15 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
           <div className="lg:col-span-2 space-y-8">
             {/* Recommended for you */}
             <section>
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                <span>💡</span> Recommended for you right now
+              <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white mb-3">
+                <span>💡</span> Recommended for you
               </h2>
-              <div className="grid sm:grid-cols-2 gap-4">
-                {recentDocument && (
+              <div className="grid sm:grid-cols-2 gap-3">
+                {recentDocuments[0] && (
                   <RecommendedCard
                     icon={PodcastIcon}
                     title="Listen to Podcast"
-                    description={`Turn "${recentDocument.name.length > 25 ? recentDocument.name.slice(0, 25) + '...' : recentDocument.name}" into an audio lesson. Perfect for your morning commute.`}
+                    description={`Turn "${recentDocuments[0].name.length > 25 ? recentDocuments[0].name.slice(0, 25) + '...' : recentDocuments[0].name}" into audio.`}
                     actionLabel="Start Listening"
                     gradient="purple"
                     onClick={() => {
@@ -313,7 +376,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                   <RecommendedCard
                     icon={FlashcardIcon}
                     title="Review Flashcards"
-                    description={`You have ${flashcardsDue} cards ready for review. Keep your ${currentStreak > 0 ? `${currentStreak}-day` : ''} streak going!`}
+                    description={`${flashcardsDue} cards due${currentStreak > 0 ? ` • ${currentStreak}-day streak` : ''}`}
                     actionLabel="Review Now"
                     gradient="pink"
                     onClick={() => onModeSelect('flashcards')}
@@ -322,7 +385,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                   <RecommendedCard
                     icon={UploadIcon}
                     title="Upload a Document"
-                    description="Start your learning journey by uploading study materials. We'll help you turn them into flashcards, podcasts, and more."
+                    description="Upload study materials to generate flashcards, podcasts, and more."
                     actionLabel="Get Started"
                     gradient="pink"
                     onClick={() => router.push('/dashboard/documents')}
@@ -332,12 +395,12 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
             </section>
 
             {/* Choose your study mode */}
-            <section>
+            <section className="p-5 rounded-2xl bg-white/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50">
               <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                <span>🎯</span> Choose your study mode
+                <span>🎯</span> Study Tools
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {studyModes.map((mode) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {primaryModes.map((mode) => (
                   <StudyModeCard
                     key={mode.id}
                     icon={mode.icon}
@@ -348,28 +411,69 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                   />
                 ))}
               </div>
+
+              {/* More Tools - Collapsible */}
+              {showMoreTools && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {moreModes.map((mode) => (
+                      <StudyModeCard
+                        key={mode.id}
+                        icon={mode.icon}
+                        title={mode.title}
+                        description={mode.description}
+                        onClick={() => handleModeClick(mode)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowMoreTools(!showMoreTools)}
+                className="mt-4 w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                <ChevronDown className={`w-4 h-4 transition-transform ${showMoreTools ? 'rotate-180' : ''}`} />
+                {showMoreTools ? 'Show less' : `More tools (${moreModes.length})`}
+              </button>
             </section>
 
-            {/* What to study next */}
+            {/* Recently Studied */}
             <section>
               <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                <span>✨</span> What to study next
+                <span>📚</span> Recently Studied
               </h2>
 
               <div className="p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 shadow-md">
-                {recentDocument ? (
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">
-                        Continue with {recentDocument.name}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {recentDocument.name} • 20m left
-                      </p>
-                    </div>
+                {recentDocuments.length > 0 ? (
+                  <div className="space-y-3 mb-4">
+                    {recentDocuments.map((doc) => (
+                      <div
+                        key={doc.id}
+                        onClick={() => handleContinueDocument(doc.id)}
+                        className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors group"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                          <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 dark:text-white truncate">
+                            {doc.name.replace(/\.[^/.]+$/, '')}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                            {doc.flashcardCount ? `${doc.flashcardCount} cards` : 'No cards yet'}
+                            {doc.lastStudied && (
+                              <>
+                                <span>•</span>
+                                <Clock className="w-3 h-3" />
+                                {formatTimeAgo(doc.lastStudied)}
+                              </>
+                            )}
+                          </p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <p className="text-gray-500 dark:text-gray-400 mb-4">
@@ -381,17 +485,17 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                   {flashcardsDue > 0 && (
                     <button
                       onClick={() => onModeSelect('flashcards')}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#7B3FF2] hover:bg-[#6B2FE2] text-white rounded-xl font-semibold text-sm transition-all"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#7B3FF2] hover:bg-[#6B2FE2] text-white rounded-xl font-semibold text-sm transition-all"
                     >
                       <span>📋</span> Review {flashcardsDue} cards
                     </button>
                   )}
                   <button
                     onClick={() => router.push('/dashboard/documents')}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all"
                   >
                     <FileText className="w-4 h-4" />
-                    Browse Documents
+                    All Documents
                   </button>
                 </div>
               </div>
@@ -411,25 +515,12 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
             {/* Exam Readiness */}
             <ExamReadinessWidget compact onViewDetails={() => onModeSelect('exam')} />
 
-            {/* Monthly Usage */}
-            <UsageWidget />
-
-            {/* Study Tips */}
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-[#7B3FF2]/5 to-[#E91E8C]/5 border border-[#7B3FF2]/10 dark:border-[#7B3FF2]/20 shadow-md">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Study Tip</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                Break your study sessions into 25-minute focused blocks with 5-minute breaks. This technique, called Pomodoro, helps maintain concentration and prevents burnout.
-              </p>
+            {/* Monthly Usage - Hidden on mobile */}
+            <div className="hidden sm:block">
+              <UsageWidget />
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <footer className="text-center pt-8 pb-4">
-          <p className="text-xs text-gray-400 dark:text-gray-600">
-            © 2025 Synaptic. ካንአ All rights reserved.
-          </p>
-        </footer>
       </div>
     </div>
   )

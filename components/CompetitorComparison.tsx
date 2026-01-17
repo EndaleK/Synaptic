@@ -6,34 +6,34 @@ interface ComparisonFeature {
   name: string
   synaptic: boolean | string
   quizlet: boolean | string
+  knowt: boolean | string
   notebookLM: boolean | string
   anki: boolean | string
-  notesXP: boolean | string
 }
 
 const comparisonFeatures: ComparisonFeature[] = [
-  { name: "AI-Generated Flashcards", synaptic: true, quizlet: true, notebookLM: false, anki: false, notesXP: true },
-  { name: "Spaced Repetition (SM-2)", synaptic: true, quizlet: "Basic", notebookLM: false, anki: true, notesXP: false },
-  { name: "Mock Exam Generator", synaptic: true, quizlet: false, notebookLM: false, anki: false, notesXP: true },
-  { name: "Adaptive Difficulty Exams", synaptic: true, quizlet: false, notebookLM: false, anki: false, notesXP: false },
-  { name: "AI Audio Podcasts", synaptic: true, quizlet: false, notebookLM: true, anki: false, notesXP: false },
-  { name: "Interactive Mind Maps", synaptic: true, quizlet: false, notebookLM: false, anki: false, notesXP: false },
-  { name: "Document Chat (RAG)", synaptic: true, quizlet: false, notebookLM: true, anki: false, notesXP: true },
-  { name: "YouTube Integration", synaptic: true, quizlet: false, notebookLM: true, anki: false, notesXP: false },
-  { name: "Writing Assistant", synaptic: true, quizlet: false, notebookLM: false, anki: false, notesXP: false },
-  { name: "Study Scheduling", synaptic: true, quizlet: false, notebookLM: false, anki: "Manual", notesXP: false },
-  { name: "Exam Readiness Score", synaptic: true, quizlet: false, notebookLM: false, anki: false, notesXP: false },
-  { name: "Learning Style Adaptation", synaptic: true, quizlet: false, notebookLM: false, anki: false, notesXP: false },
-  { name: "Large Documents (80MB+)", synaptic: "80MB+", quizlet: "N/A", notebookLM: "50MB", anki: "N/A", notesXP: "25MB" },
-  { name: "Offline Access (PWA)", synaptic: true, quizlet: true, notebookLM: false, anki: true, notesXP: false },
+  { name: "AI-Generated Flashcards", synaptic: true, quizlet: true, knowt: true, notebookLM: false, anki: false },
+  { name: "Spaced Repetition (SM-2)", synaptic: true, quizlet: "Basic", knowt: true, notebookLM: false, anki: true },
+  { name: "Mock Exam Generator", synaptic: true, quizlet: false, knowt: true, notebookLM: false, anki: false },
+  { name: "Adaptive Difficulty Exams", synaptic: true, quizlet: false, knowt: false, notebookLM: false, anki: false },
+  { name: "AI Audio Podcasts", synaptic: true, quizlet: false, knowt: false, notebookLM: true, anki: false },
+  { name: "Interactive Mind Maps", synaptic: true, quizlet: false, knowt: false, notebookLM: false, anki: false },
+  { name: "Document Chat (RAG)", synaptic: true, quizlet: false, knowt: false, notebookLM: true, anki: false },
+  { name: "YouTube Integration", synaptic: true, quizlet: false, knowt: true, notebookLM: true, anki: false },
+  { name: "Writing Assistant", synaptic: true, quizlet: false, knowt: false, notebookLM: false, anki: false },
+  { name: "Study Scheduling", synaptic: true, quizlet: false, knowt: false, notebookLM: false, anki: "Manual" },
+  { name: "Exam Readiness Score", synaptic: true, quizlet: false, knowt: false, notebookLM: false, anki: false },
+  { name: "Learning Style Adaptation", synaptic: true, quizlet: false, knowt: false, notebookLM: false, anki: false },
+  { name: "Large Documents (250MB+)", synaptic: "250MB+", quizlet: "N/A", knowt: "N/A", notebookLM: "50MB", anki: "N/A" },
+  { name: "Offline Access (PWA)", synaptic: true, quizlet: true, knowt: false, notebookLM: false, anki: true },
 ]
 
 const pricingComparison = [
   { name: "Synaptic", price: "$6.99/mo", yearlyPrice: "$83.88/yr", features: "12 tools, all-in-one", highlight: true },
   { name: "Quizlet Plus", price: "$7.99/mo", yearlyPrice: "$47.88/yr", features: "Flashcards only" },
+  { name: "Knowt", price: "Freemium", yearlyPrice: "~$60/yr", features: "Flashcards + Quizzes" },
   { name: "NotebookLM", price: "Free*", yearlyPrice: "Google One $120/yr", features: "Audio + Chat only" },
   { name: "Anki", price: "Free", yearlyPrice: "$25 iOS", features: "Flashcards, complex setup" },
-  { name: "NotesXP", price: "$9.99/mo", yearlyPrice: "$119.88/yr", features: "Limited features" },
 ]
 
 export function CompetitorComparison() {
@@ -62,6 +62,12 @@ export function CompetitorComparison() {
               </th>
               <th className="text-center p-4 md:p-6 font-semibold text-gray-600 dark:text-gray-400">
                 <div className="flex flex-col items-center gap-1">
+                  <span>Knowt</span>
+                  <span className="text-xs font-normal">Freemium</span>
+                </div>
+              </th>
+              <th className="text-center p-4 md:p-6 font-semibold text-gray-600 dark:text-gray-400">
+                <div className="flex flex-col items-center gap-1">
                   <span>NotebookLM</span>
                   <span className="text-xs font-normal">Free*</span>
                 </div>
@@ -70,12 +76,6 @@ export function CompetitorComparison() {
                 <div className="flex flex-col items-center gap-1">
                   <span>Anki</span>
                   <span className="text-xs font-normal">Free/$25</span>
-                </div>
-              </th>
-              <th className="text-center p-4 md:p-6 font-semibold text-gray-600 dark:text-gray-400">
-                <div className="flex flex-col items-center gap-1">
-                  <span>NotesXP</span>
-                  <span className="text-xs font-normal">$9.99/mo</span>
                 </div>
               </th>
             </tr>
@@ -93,13 +93,13 @@ export function CompetitorComparison() {
                   <FeatureStatus value={feature.quizlet} />
                 </td>
                 <td className="p-4 text-center">
+                  <FeatureStatus value={feature.knowt} />
+                </td>
+                <td className="p-4 text-center">
                   <FeatureStatus value={feature.notebookLM} />
                 </td>
                 <td className="p-4 text-center">
                   <FeatureStatus value={feature.anki} />
-                </td>
-                <td className="p-4 text-center">
-                  <FeatureStatus value={feature.notesXP} />
                 </td>
               </tr>
             ))}

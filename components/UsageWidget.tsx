@@ -142,6 +142,12 @@ export default function UsageWidget() {
     item.limit !== Infinity && (item.used / item.limit) * 100 >= 80
   )
 
+  // Check if any feature is over limit
+  const overLimitItems = usageItems.filter(item =>
+    item.limit !== Infinity && item.used > item.limit
+  )
+  const isOverLimit = overLimitItems.length > 0
+
   return (
     <div className="bg-white/90 dark:bg-white/[0.04] backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-white/10 overflow-hidden card-level-1 card-glow">
       {/* Header - Always Visible */}
@@ -261,15 +267,27 @@ export default function UsageWidget() {
             </button>
           )}
 
-                {/* Upgrade CTA if approaching any limit */}
-                {hasWarning && (
-                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
+                {/* Over-limit contextual message */}
+                {isOverLimit && (
+                  <div className="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                    <p className="text-sm font-medium text-red-800 dark:text-red-200 mb-1">
+                      You&apos;ve reached your monthly limit
+                    </p>
+                    <p className="text-xs text-red-600 dark:text-red-300">
+                      You can still view existing content. Upgrade to continue creating.
+                    </p>
+                  </div>
+                )}
+
+                {/* Upgrade CTA if approaching or over limit */}
+                {(hasWarning || isOverLimit) && (
+                  <div className={`${isOverLimit ? 'mt-3' : 'mt-4 pt-4 border-t border-gray-100 dark:border-white/10'}`}>
                     <Link
                       href="/pricing"
                       onClick={(e) => e.stopPropagation()}
                       className="block w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm font-semibold rounded-xl text-center transition-all hover:scale-[1.02] shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30"
                     >
-                      Upgrade to Premium for Unlimited
+                      {isOverLimit ? 'Upgrade Now' : 'Upgrade to Premium for Unlimited'}
                     </Link>
                   </div>
                 )}

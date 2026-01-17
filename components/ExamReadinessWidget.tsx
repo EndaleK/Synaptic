@@ -306,6 +306,19 @@ export default function ExamReadinessWidget({
           <ChevronRight className="w-5 h-5 text-gray-400" />
         </div>
 
+        {/* Actionable tip based on lowest factor */}
+        {score < 70 && factors && (
+          <div className="mt-3 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+            <p className="text-xs text-amber-800 dark:text-amber-200">
+              {factors.mockExamPerformance < factors.masteryLevel && factors.mockExamPerformance < factors.topicCoverage
+                ? '💡 Take a practice exam to improve your score'
+                : factors.masteryLevel < factors.topicCoverage
+                ? '💡 Review your flashcards to boost mastery'
+                : '💡 Generate more flashcards to increase coverage'}
+            </p>
+          </div>
+        )}
+
         {/* Subjects breakdown */}
         {subjects.length > 0 && (
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">

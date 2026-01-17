@@ -1,13 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@clerk/nextjs"
 import {
   Sparkles, ArrowRight, ChevronDown, ChevronUp,
   TrendingDown, Award, Star,
-  Mail, FileText, Youtube, Search, BookOpen, PenTool
+  Mail, FileText, Youtube, Search, BookOpen, PenTool,
+  Menu, X,
+  Home, GraduationCap, Target
 } from "lucide-react"
 import { PricingCarousel } from "@/components/PricingCarousel"
 import {
@@ -22,9 +24,184 @@ import { SynapticLogo } from "@/components/SynapticLogo"
 export default function LandingPage() {
   const { isSignedIn } = useAuth()
   const [showAllTools, setShowAllTools] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+    setMobileMenuOpen(false)
+  }
 
   return (
     <div className="min-h-screen">
+      {/* Sticky Navigation Bar */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm border-b border-gray-200/50 dark:border-gray-800/50'
+          : 'bg-transparent'
+      }`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="flex items-center"
+            >
+              <SynapticLogo size="sm" />
+            </button>
+
+            {/* Desktop Nav Links */}
+            <div className="hidden md:flex items-center gap-6">
+              <button
+                onClick={() => scrollToSection('how-it-works')}
+                className={`font-medium transition-colors ${
+                  isScrolled
+                    ? 'text-gray-600 dark:text-gray-300 hover:text-[#7B3FF2] dark:hover:text-purple-400'
+                    : 'text-gray-700 dark:text-gray-200 hover:text-[#7B3FF2] dark:hover:text-purple-400'
+                }`}
+              >
+                How It Works
+              </button>
+              <button
+                onClick={() => scrollToSection('features')}
+                className={`font-medium transition-colors ${
+                  isScrolled
+                    ? 'text-gray-600 dark:text-gray-300 hover:text-[#7B3FF2] dark:hover:text-purple-400'
+                    : 'text-gray-700 dark:text-gray-200 hover:text-[#7B3FF2] dark:hover:text-purple-400'
+                }`}
+              >
+                Features
+              </button>
+              <button
+                onClick={() => scrollToSection('for-you')}
+                className={`font-medium transition-colors ${
+                  isScrolled
+                    ? 'text-gray-600 dark:text-gray-300 hover:text-[#7B3FF2] dark:hover:text-purple-400'
+                    : 'text-gray-700 dark:text-gray-200 hover:text-[#7B3FF2] dark:hover:text-purple-400'
+                }`}
+              >
+                For You
+              </button>
+              <button
+                onClick={() => scrollToSection('testimonials')}
+                className={`font-medium transition-colors ${
+                  isScrolled
+                    ? 'text-gray-600 dark:text-gray-300 hover:text-[#7B3FF2] dark:hover:text-purple-400'
+                    : 'text-gray-700 dark:text-gray-200 hover:text-[#7B3FF2] dark:hover:text-purple-400'
+                }`}
+              >
+                Testimonials
+              </button>
+              <button
+                onClick={() => scrollToSection('pricing')}
+                className={`font-medium transition-colors ${
+                  isScrolled
+                    ? 'text-gray-600 dark:text-gray-300 hover:text-[#7B3FF2] dark:hover:text-purple-400'
+                    : 'text-gray-700 dark:text-gray-200 hover:text-[#7B3FF2] dark:hover:text-purple-400'
+                }`}
+              >
+                Pricing
+              </button>
+            </div>
+
+            {/* Desktop Auth Buttons */}
+            <div className="hidden md:flex items-center gap-4">
+              <Link
+                href="/sign-in"
+                className={`font-medium transition-colors ${
+                  isScrolled
+                    ? 'text-gray-600 dark:text-gray-300 hover:text-[#7B3FF2] dark:hover:text-purple-400'
+                    : 'text-gray-700 dark:text-gray-200 hover:text-[#7B3FF2] dark:hover:text-purple-400'
+                }`}
+              >
+                Sign In
+              </Link>
+              <Link
+                href={isSignedIn ? "/dashboard" : "/sign-up"}
+                className="px-5 py-2 bg-[#C4B5FD] hover:bg-[#B794F4] text-[#5B21B6] rounded-xl font-semibold text-sm hover:scale-105 transition-all shadow-md"
+              >
+                {isSignedIn ? "Dashboard" : "Start Free"}
+              </Link>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              {mobileMenuOpen ? (
+                <X className={`w-6 h-6 ${isScrolled ? 'text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-100'}`} />
+              ) : (
+                <Menu className={`w-6 h-6 ${isScrolled ? 'text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-100'}`} />
+              )}
+            </button>
+          </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden py-4 border-t border-gray-200/50 dark:border-gray-800/50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md">
+              <div className="flex flex-col gap-4">
+                <button
+                  onClick={() => scrollToSection('how-it-works')}
+                  className="text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:text-[#7B3FF2] dark:hover:text-purple-400 font-medium transition-colors"
+                >
+                  How It Works
+                </button>
+                <button
+                  onClick={() => scrollToSection('features')}
+                  className="text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:text-[#7B3FF2] dark:hover:text-purple-400 font-medium transition-colors"
+                >
+                  Features
+                </button>
+                <button
+                  onClick={() => scrollToSection('for-you')}
+                  className="text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:text-[#7B3FF2] dark:hover:text-purple-400 font-medium transition-colors"
+                >
+                  For You
+                </button>
+                <button
+                  onClick={() => scrollToSection('testimonials')}
+                  className="text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:text-[#7B3FF2] dark:hover:text-purple-400 font-medium transition-colors"
+                >
+                  Testimonials
+                </button>
+                <button
+                  onClick={() => scrollToSection('pricing')}
+                  className="text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:text-[#7B3FF2] dark:hover:text-purple-400 font-medium transition-colors"
+                >
+                  Pricing
+                </button>
+                <div className="px-4 pt-4 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-3">
+                  <Link
+                    href="/sign-in"
+                    className="text-gray-700 dark:text-gray-200 hover:text-[#7B3FF2] dark:hover:text-purple-400 font-medium transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href={isSignedIn ? "/dashboard" : "/sign-up"}
+                    className="inline-flex justify-center px-5 py-3 bg-[#C4B5FD] hover:bg-[#B794F4] text-[#5B21B6] rounded-xl font-semibold text-sm transition-all shadow-md"
+                  >
+                    {isSignedIn ? "Go to Dashboard" : "Start Free"}
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </nav>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-hero-dawn">
         {/* Decorative background elements */}
@@ -35,12 +212,7 @@ export default function LandingPage() {
           <div className="absolute top-[40%] right-[20%] w-[300px] h-[300px] rounded-full bg-orange-200/10 dark:bg-orange-500/8 blur-3xl animate-float-orb" style={{ animationDelay: '14s' }} />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 md:pt-12 md:pb-24">
-          {/* Logo at top of hero */}
-          <div className="flex justify-center lg:justify-start mb-12 animate-section-reveal">
-            <SynapticLogo size="lg" showTagline />
-          </div>
-
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 md:pt-24 md:pb-24">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Left Column: Text Content with reveal animations */}
             <div className="text-center lg:text-left">
@@ -57,7 +229,7 @@ export default function LandingPage() {
 
               {/* Subheadline - Emotional, outcome-focused */}
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed animate-section-reveal stagger-index-1">
-                Upload your notes once. Get flashcards, practice exams, and a study schedule—so you walk into exams confident, not cramming.
+                Upload anything from lecture slides to 800-page textbooks. Get flashcards, practice exams, and a study schedule—so you walk into exams confident, not cramming.
               </p>
 
               {/* CTA Buttons with reveal animation */}
@@ -66,7 +238,7 @@ export default function LandingPage() {
                   href={isSignedIn ? "/dashboard" : "/sign-up"}
                   className="group relative px-8 py-4 bg-[#C4B5FD] hover:bg-[#B794F4] text-[#5B21B6] rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2"
                 >
-                  <span>{isSignedIn ? "Go to Dashboard" : "Start free"}</span>
+                  <span>{isSignedIn ? "Go to Dashboard" : "Start free — no credit card"}</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <button
@@ -82,7 +254,15 @@ export default function LandingPage() {
                 </button>
               </div>
 
-
+              {/* Trust Badge */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4 mt-6 text-sm text-gray-500 dark:text-gray-400 animate-section-reveal stagger-index-3">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-purple-500" />
+                  1M+ flashcards generated
+                </span>
+                <span className="hidden sm:inline">•</span>
+                <span>Free forever plan available</span>
+              </div>
             </div>
 
             {/* Right Column: Studying Student Illustration with reveal animation */}
@@ -126,7 +306,7 @@ export default function LandingPage() {
                 Upload your class stuff
               </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                PDFs, slides, YouTube lectures, or textbook chapters
+                PDFs up to 250MB, slides, YouTube lectures, or entire textbooks—no splitting required
               </p>
             </div>
 
@@ -323,6 +503,31 @@ export default function LandingPage() {
             </div>
           </div>
 
+          {/* Why Synaptic - Key Differentiators */}
+          <div className="border-t border-gray-200 dark:border-gray-800 pt-12 mt-8">
+            <h3 className="text-xl font-bold text-center text-black dark:text-white mb-8">
+              Why students choose Synaptic
+            </h3>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800">
+                <p className="text-sm text-purple-800 dark:text-purple-200 font-medium mb-1">&ldquo;I use 5 different study apps&rdquo;</p>
+                <p className="text-xs text-purple-600 dark:text-purple-300">12 tools in one place</p>
+              </div>
+              <div className="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-xl border border-pink-100 dark:border-pink-800">
+                <p className="text-sm text-pink-800 dark:text-pink-200 font-medium mb-1">&ldquo;My textbook is too large&rdquo;</p>
+                <p className="text-xs text-pink-600 dark:text-pink-300">250MB+ support, no splitting</p>
+              </div>
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800">
+                <p className="text-sm text-orange-800 dark:text-orange-200 font-medium mb-1">&ldquo;Flashcard apps just quiz me&rdquo;</p>
+                <p className="text-xs text-orange-600 dark:text-orange-300">AI that actually teaches</p>
+              </div>
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-1">&ldquo;I learn better by listening&rdquo;</p>
+                <p className="text-xs text-blue-600 dark:text-blue-300">Auto-generated podcasts</p>
+              </div>
+            </div>
+          </div>
+
           {/* Additional Tools - Hidden by default */}
           {showAllTools && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8 animate-fade-up">
@@ -335,7 +540,7 @@ export default function LandingPage() {
                   Document Import
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-                  Upload PDFs, DOCX, or paste text—we handle the rest
+                  Upload entire textbooks (up to 250MB)—no more splitting PDFs
                 </p>
               </div>
 
@@ -406,11 +611,139 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* For You - Empathetic Multi-Audience Section */}
+      <section id="for-you" className="scroll-mt-20 py-20 bg-white dark:bg-gray-900">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-black dark:text-white mb-4">
+              We get it. Learning is <HighlightedText color="purple">personal</HighlightedText>.
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Whether you&apos;re pulling an all-nighter or teaching your kids at 7am
+            </p>
+          </div>
+
+          {/* 3-column grid for current audiences */}
+          <div className="grid md:grid-cols-3 gap-6 mb-6">
+            {/* Students */}
+            <div className="group p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-purple-300 dark:hover:border-purple-600 transition-all flex flex-col">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-shrink-0 w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <h3 className="text-lg font-bold text-black dark:text-white">
+                  Students
+                </h3>
+              </div>
+              <p className="text-base font-medium text-gray-800 dark:text-gray-200 mb-3">
+                &ldquo;It&apos;s 2am and the exam is tomorrow&rdquo;
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed flex-1">
+                You&apos;ve got 300 pages to review and no time to waste. Upload your notes, get flashcards in minutes, and focus on what you don&apos;t know yet.
+              </p>
+              <Link
+                href="/sign-up"
+                className="mt-5 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-xl transition-colors"
+              >
+                Start Free
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {/* Self-Learners */}
+            <div className="group p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-orange-300 dark:hover:border-orange-600 transition-all flex flex-col">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-shrink-0 w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Target className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <h3 className="text-lg font-bold text-black dark:text-white">
+                  Self-Learners
+                </h3>
+              </div>
+              <p className="text-base font-medium text-gray-800 dark:text-gray-200 mb-3">
+                &ldquo;Learning on your own schedule&rdquo;
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed flex-1">
+                No classroom. No deadlines. Just you and your curiosity. Turn any book, video, or article into study materials that stick.
+              </p>
+              <Link
+                href="/sign-up"
+                className="mt-5 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-xl transition-colors"
+              >
+                Start Free
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {/* Homeschool Parents */}
+            <div className="group p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-pink-300 dark:hover:border-pink-600 transition-all flex flex-col">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-shrink-0 w-10 h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Home className="w-5 h-5 text-pink-600 dark:text-pink-400" />
+                </div>
+                <h3 className="text-lg font-bold text-black dark:text-white">
+                  Homeschool Parents
+                </h3>
+              </div>
+              <p className="text-base font-medium text-gray-800 dark:text-gray-200 mb-3">
+                &ldquo;Teaching 3 subjects before lunch&rdquo;
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed flex-1">
+                Homeschooling is a superpower, but it&apos;s exhausting. Let AI handle the flashcards while you focus on being the teacher your kids need.
+              </p>
+              <Link
+                href="/sign-up"
+                className="mt-5 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-600 hover:bg-pink-700 text-white text-sm font-medium rounded-xl transition-colors"
+              >
+                Start Free
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Full-width Coming Soon card for Schools & Educators */}
+          <div className="relative p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
+            {/* Coming Soon badge */}
+            <span className="absolute top-4 right-4 px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
+              Coming Soon
+            </span>
+
+            <div className="flex flex-col md:flex-row md:items-center gap-6">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                  <GraduationCap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-xl font-bold text-black dark:text-white">
+                  Schools & Educators
+                </h3>
+              </div>
+
+              <div className="flex-1">
+                <p className="text-base font-medium text-gray-800 dark:text-gray-200 mb-2">
+                  &ldquo;30 students, 30 different learning speeds&rdquo;
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                  You can&apos;t clone yourself, but you can give every student personalized study materials. Class management, assignments, and progress tracking—coming soon.
+                </p>
+              </div>
+
+              <button
+                className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl cursor-default"
+              >
+                <Mail className="w-4 h-4" />
+                Join Waitlist
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Wave divider - Features to Testimonials */}
       <WaveDivider variant="flow" className="text-[#FEFDFB] dark:text-[#0B0A0A] -mt-1" />
 
       {/* Proof It Works - Testimonials Section */}
-      <section className="py-16 bg-trust bg-vignette">
+      <section id="testimonials" className="scroll-mt-20 py-16 bg-trust bg-vignette">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-12">

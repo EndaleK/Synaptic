@@ -145,7 +145,8 @@ export async function PATCH(request: NextRequest) {
       preferred_mode: body.preferred_mode as PreferredMode | undefined,
       full_name: body.full_name as string | undefined,
       jurisdiction_code: body.jurisdiction_code as string | undefined,
-      jurisdiction_country: body.jurisdiction_country as string | undefined
+      jurisdiction_country: body.jurisdiction_country as string | undefined,
+      has_seen_welcome_modal: body.has_seen_welcome_modal as boolean | undefined
     }
 
     // Remove undefined fields

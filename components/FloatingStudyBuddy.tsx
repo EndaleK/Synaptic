@@ -660,7 +660,7 @@ export default function FloatingStudyBuddy() {
   // Desktop expanded state - Opens above the circular button OR as panel
   const containerClass = isPanel
     ? "fixed top-0 right-0 z-50 h-full bg-white dark:bg-gray-900 shadow-2xl border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden transition-all duration-300"
-    : "fixed z-50 w-[400px] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
+    : "fixed z-50 w-[600px] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
 
   return (
     <div

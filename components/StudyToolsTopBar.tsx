@@ -248,6 +248,7 @@ export default function StudyToolsTopBar() {
             <button
               onClick={() => setShowSettings(!showSettings)}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              title="Pomodoro Timer - Focus sessions with breaks"
             >
               <TimerIcon className={`w-4 h-4 ${
                 status === 'running' ? 'text-green-600 dark:text-green-400' :
