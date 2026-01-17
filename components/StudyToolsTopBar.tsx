@@ -120,17 +120,17 @@ export default function StudyToolsTopBar() {
           <span>Documents</span>
         </Link>
 
-        {/* Study Planner link */}
+        {/* Library link */}
         <Link
-          href="/dashboard/study-plans"
+          href="/dashboard/library"
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-            pathname === '/dashboard/study-plans'
+            pathname === '/dashboard/library'
               ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
               : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
           }`}
         >
-          <GraduationIcon size="sm" />
-          <span>Study Planner</span>
+          <LibraryIcon size="sm" />
+          <span>Library</span>
         </Link>
 
         {/* Calendar link */}
@@ -159,17 +159,17 @@ export default function StudyToolsTopBar() {
           <span>Statistics</span>
         </Link>
 
-        {/* Library link */}
+        {/* Study Planner link */}
         <Link
-          href="/dashboard/library"
+          href="/dashboard/study-plans"
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-            pathname === '/dashboard/library'
+            pathname === '/dashboard/study-plans'
               ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
               : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
           }`}
         >
-          <LibraryIcon size="sm" />
-          <span>Library</span>
+          <GraduationIcon size="sm" />
+          <span>Study Planner</span>
         </Link>
 
         {/* Study Guide link */}

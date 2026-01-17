@@ -201,7 +201,7 @@ export function PlannerIcon({ className, size = 'md' }: IconProps) {
 }
 
 /**
- * Hand-drawn graduation cap icon
+ * Hand-drawn graduation cap icon - colorful theme
  */
 export function GraduationIcon({ className, size = 'md' }: IconProps) {
   return (
@@ -211,19 +211,21 @@ export function GraduationIcon({ className, size = 'md' }: IconProps) {
       fill="none"
       aria-hidden="true"
     >
-      {/* Cap top */}
-      <path d="M24 8L4 18L24 28L44 18L24 8Z" fill="#1a1a1a" stroke="#1a1a1a" strokeWidth="2" strokeLinejoin="round"/>
-      {/* Cap underside */}
-      <path d="M12 22V32C12 32 18 38 24 38C30 38 36 32 36 32V22" stroke="#1a1a1a" strokeWidth="2" fill="#2D2D2D"/>
+      {/* Cap top - purple */}
+      <path d="M24 8L4 18L24 28L44 18L24 8Z" fill={PURPLE} stroke={INK} strokeWidth="2" strokeLinejoin="round"/>
+      {/* Cap underside - light purple */}
+      <path d="M12 22V32C12 32 18 38 24 38C30 38 36 32 36 32V22" stroke={INK} strokeWidth="2" fill={LIGHT_PURPLE}/>
+      {/* Decorative band on cap */}
+      <path d="M10 17L24 24L38 17" stroke={PINK} strokeWidth="2" strokeLinecap="round"/>
       {/* Tassel string */}
-      <path d="M44 18V30" stroke="#E91E8C" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M44 18V30" stroke={PINK} strokeWidth="2" strokeLinecap="round"/>
       {/* Tassel */}
-      <circle cx="44" cy="32" r="3" fill="#E91E8C" stroke="#1a1a1a" strokeWidth="1"/>
-      <path d="M42 35C42 38 44 42 44 42C44 42 46 38 46 35" stroke="#E91E8C" strokeWidth="2" strokeLinecap="round"/>
+      <circle cx="44" cy="32" r="3" fill={PINK} stroke={INK} strokeWidth="1"/>
+      <path d="M42 35C42 38 44 42 44 42C44 42 46 38 46 35" stroke={PINK} strokeWidth="2" strokeLinecap="round"/>
       {/* Sparkles */}
       <circle cx="10" cy="10" r="1.5" fill="#FBBF24"/>
       <circle cx="38" cy="8" r="1" fill="#FBBF24"/>
-      <circle cx="6" cy="24" r="1" fill="#E91E8C"/>
+      <circle cx="6" cy="24" r="1" fill={PINK}/>
     </svg>
   )
 }
