@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { FileText, Users, School, Building2, ChevronRight, ChevronDown, Clock } from "lucide-react"
-import Link from "next/link"
-import type { UserRole } from "@/lib/supabase/types"
+import { FileText, Clock } from "lucide-react"
 import { useUIStore, useDocumentStore } from "@/lib/store/useStore"
 import { RecommendedCard } from "@/components/RecommendedCard"
 import { StudyModeCard } from "@/components/StudyModeCard"
@@ -31,67 +29,13 @@ interface DashboardHomeProps {
   onOpenAssessment?: () => void
 }
 
-// Role dashboard configuration
-const roleDashboards: Record<string, { title: string; subtitle: string; href: string; icon: typeof Users; gradient: string }> = {
-  parent: {
-    title: 'Parent Dashboard',
-    subtitle: 'Manage your children\'s learning',
-    href: '/dashboard/parent',
-    icon: Users,
-    gradient: 'from-blue-500/10 to-cyan-500/10'
-  },
-  educator: {
-    title: 'Teacher Dashboard',
-    subtitle: 'Manage your classes & students',
-    href: '/dashboard/teacher',
-    icon: School,
-    gradient: 'from-green-500/10 to-emerald-500/10'
-  },
-  institution: {
-    title: 'Admin Dashboard',
-    subtitle: 'Manage your organization',
-    href: '/dashboard/admin',
-    icon: Building2,
-    gradient: 'from-orange-500/10 to-amber-500/10'
-  },
-}
-
-function RoleDashboardCard({ role }: { role: UserRole }) {
-  const config = roleDashboards[role]
-  if (!config) return null
-
-  const IconComponent = config.icon
-
-  return (
-    <Link href={config.href}>
-      <div className={`p-5 rounded-2xl bg-gradient-to-br ${config.gradient} border border-gray-200/50 dark:border-gray-700/50 shadow-md hover:shadow-lg transition-all group cursor-pointer`}>
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
-            <IconComponent className="w-5 h-5 text-[#7B3FF2]" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{config.title}</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{config.subtitle}</p>
-          </div>
-        </div>
-        <div className="flex items-center justify-end text-xs text-[#7B3FF2] font-medium group-hover:translate-x-1 transition-transform">
-          Go to dashboard <ChevronRight className="w-4 h-4 ml-1" />
-        </div>
-      </div>
-    </Link>
-  )
-}
-
-// Study modes grouped by purpose with clearer descriptions
-const primaryModes = [
+// All study modes in a single array for 2x4 grid display
+const studyModes = [
   { id: "flashcards", icon: FlashcardIcon, title: "Flashcards", description: "Spaced repetition review" },
   { id: "chat", icon: ChatIcon, title: "Chat", description: "Q&A about your docs" },
   { id: "podcast", icon: PodcastIcon, title: "Podcast", description: "Full audio lesson (10-20 min)" },
   { id: "quick-summary", icon: SummaryIcon, title: "Quick Summary", description: "5-min audio highlights" },
   { id: "exam", icon: ExamIcon, title: "Mock Exam", description: "Test your knowledge" },
-]
-
-const moreModes = [
   { id: "mindmap", icon: MindMapIcon, title: "Mind Map", description: "Visualize concepts" },
   { id: "writer", icon: WriterIcon, title: "Writer", description: "Generate practice content" },
   { id: "video", icon: VideoIcon, title: "Video", description: "Learn from YouTube" },
@@ -110,8 +54,6 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
   const [recentDocuments, setRecentDocuments] = useState<Array<{ id: string; name: string; flashcardCount?: number; lastStudied?: string }>>([])
   const [activeDays, setActiveDays] = useState<number[]>([])
   const [isClient, setIsClient] = useState(false)
-  const [userRole, setUserRole] = useState<UserRole | null>(null)
-  const [showMoreTools, setShowMoreTools] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
 
   useEffect(() => {
@@ -151,24 +93,6 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
     handleWelcomeClose()
     onModeSelect('flashcards') // Go to flashcards mode which has the upload UI
   }
-
-  // Fetch user role
-  useEffect(() => {
-    const fetchRole = async () => {
-      try {
-        const response = await fetch('/api/user/role', {
-          credentials: 'include'
-        })
-        if (response.ok) {
-          const data = await response.json()
-          setUserRole(data.primary_role)
-        }
-      } catch (error) {
-        console.error('Error fetching user role:', error)
-      }
-    }
-    fetchRole()
-  }, [])
 
   // Fetch streak
   useEffect(() => {
@@ -349,13 +273,13 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
           </p>
         </section>
 
-        {/* Main Content Grid - Two columns on large screens */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Main content (2/3 width) */}
-          <div className="lg:col-span-2 space-y-8">
+        {/* Main Content Grid - Two columns on large screens (70/30 split) */}
+        <div className="grid lg:grid-cols-10 gap-8">
+          {/* Left Column - Main content (7/10 width = 70%) */}
+          <div className="lg:col-span-7 space-y-8">
             {/* Recommended for you */}
-            <section>
-              <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white mb-3">
+            <section className="p-5 rounded-2xl bg-white/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50">
+              <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white mb-4">
                 <span>💡</span> Recommended for you
               </h2>
               <div className="grid sm:grid-cols-2 gap-3">
@@ -394,13 +318,13 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
               </div>
             </section>
 
-            {/* Choose your study mode */}
+            {/* Choose your study mode - All 8 tools in 2 rows of 4 */}
             <section className="p-5 rounded-2xl bg-white/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50">
               <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 <span>🎯</span> Study Tools
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {primaryModes.map((mode) => (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {studyModes.map((mode) => (
                   <StudyModeCard
                     key={mode.id}
                     icon={mode.icon}
@@ -411,42 +335,16 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                   />
                 ))}
               </div>
-
-              {/* More Tools - Collapsible */}
-              {showMoreTools && (
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {moreModes.map((mode) => (
-                      <StudyModeCard
-                        key={mode.id}
-                        icon={mode.icon}
-                        title={mode.title}
-                        description={mode.description}
-                        onClick={() => handleModeClick(mode)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <button
-                onClick={() => setShowMoreTools(!showMoreTools)}
-                className="mt-4 w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                <ChevronDown className={`w-4 h-4 transition-transform ${showMoreTools ? 'rotate-180' : ''}`} />
-                {showMoreTools ? 'Show less' : `More tools (${moreModes.length})`}
-              </button>
             </section>
 
             {/* Recently Studied */}
-            <section>
+            <section className="p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 shadow-md">
               <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 <span>📚</span> Recently Studied
               </h2>
 
-              <div className="p-5 rounded-2xl bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 shadow-md">
-                {recentDocuments.length > 0 ? (
-                  <div className="space-y-3 mb-4">
+              {recentDocuments.length > 0 ? (
+                <div className="space-y-3 mb-4">
                     {recentDocuments.map((doc) => (
                       <div
                         key={doc.id}
@@ -498,19 +396,13 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                     All Documents
                   </button>
                 </div>
-              </div>
             </section>
           </div>
 
-          {/* Right Column - Sidebar (1/3 width) */}
-          <div className="space-y-6">
+          {/* Right Column - Sidebar (3/10 width = 30%) */}
+          <div className="lg:col-span-3 space-y-6">
             {/* Weekly Heat Map with Streak - aligned with Recommended cards */}
             <WeeklyCalendar activeDays={activeDays} streak={currentStreak} className="lg:mt-10" />
-
-            {/* Role Dashboard Link - only for non-learner roles */}
-            {userRole && userRole !== 'learner' && (
-              <RoleDashboardCard role={userRole} />
-            )}
 
             {/* Exam Readiness */}
             <ExamReadinessWidget compact onViewDetails={() => onModeSelect('exam')} />
