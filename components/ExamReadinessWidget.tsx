@@ -40,6 +40,16 @@ interface ReadinessData {
   lastCalculated: string
 }
 
+interface SubjectReadiness {
+  documentId: string
+  documentName: string
+  score: number
+  flashcardCount: number
+  masteredCount: number
+  dueCount: number
+  lastStudied: string | null
+}
+
 interface ExamReadinessWidgetProps {
   examId?: string
   documentId?: string
@@ -55,8 +65,10 @@ export default function ExamReadinessWidget({
 }: ExamReadinessWidgetProps) {
   const { isLoaded, isSignedIn } = useUser()
   const [data, setData] = useState<ReadinessData | null>(null)
+  const [subjects, setSubjects] = useState<SubjectReadiness[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showAllSubjects, setShowAllSubjects] = useState(false)
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return
@@ -68,17 +80,23 @@ export default function ExamReadinessWidget({
         if (examId) params.set('examId', examId)
         if (documentId) params.set('documentId', documentId)
 
-        const response = await fetch(`/api/exam-readiness?${params}`)
+        // Fetch overall readiness and per-subject readiness in parallel
+        const [readinessResponse, subjectsResponse] = await Promise.all([
+          fetch(`/api/exam-readiness?${params}`),
+          fetch('/api/exam-readiness/by-subject')
+        ])
 
-        if (!response.ok) {
-          if (response.status === 401) return
-          // Don't throw - just set null data (table may not exist yet)
+        if (readinessResponse.ok) {
+          const result = await readinessResponse.json()
+          setData(result)
+        } else if (readinessResponse.status !== 401) {
           setData(null)
-          return
         }
 
-        const result = await response.json()
-        setData(result)
+        if (subjectsResponse.ok) {
+          const subjectsData = await subjectsResponse.json()
+          setSubjects(subjectsData.subjects || [])
+        }
       } catch (err) {
         // Silently fail - exam readiness feature may not be set up yet
         console.debug('Exam readiness not available:', err)
@@ -218,16 +236,30 @@ export default function ExamReadinessWidget({
     { key: 'consistencyBonus', label: 'Streak', icon: Flame, value: factors.consistencyBonus }
   ]
 
+  // Helper to get score color
+  const getSubjectScoreColor = (s: number) => {
+    if (s < 50) return 'text-red-600 dark:text-red-400'
+    if (s < 75) return 'text-amber-600 dark:text-amber-400'
+    return 'text-emerald-600 dark:text-emerald-400'
+  }
+
+  const getSubjectBgColor = (s: number) => {
+    if (s < 50) return 'bg-red-500'
+    if (s < 75) return 'bg-amber-500'
+    return 'bg-emerald-500'
+  }
+
+  // Display subjects - show 3 by default in compact mode
+  const displaySubjects = showAllSubjects ? subjects : subjects.slice(0, 3)
+
   if (compact) {
     return (
-      <div
-        onClick={onViewDetails}
-        className={cn(
-          "bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4",
-          "hover:border-violet-300 dark:hover:border-violet-700 transition-colors cursor-pointer"
-        )}
-      >
-        <div className="flex items-center gap-4">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+        {/* Header */}
+        <div
+          onClick={onViewDetails}
+          className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           {/* Compact Progress Ring */}
           <div className="relative w-14 h-14 flex-shrink-0">
             <svg className="w-14 h-14 -rotate-90">
@@ -273,6 +305,58 @@ export default function ExamReadinessWidget({
 
           <ChevronRight className="w-5 h-5 text-gray-400" />
         </div>
+
+        {/* Subjects breakdown */}
+        {subjects.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3">
+              By Subject
+            </p>
+            <div className="space-y-2">
+              {displaySubjects.map((subject) => (
+                <div key={subject.documentId} className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                      {subject.documentName.replace(/\.[^/.]+$/, '')}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full transition-all", getSubjectBgColor(subject.score))}
+                          style={{ width: `${subject.score}%` }}
+                        />
+                      </div>
+                      <span className={cn("text-xs font-medium w-8 text-right", getSubjectScoreColor(subject.score))}>
+                        {subject.score}%
+                      </span>
+                    </div>
+                  </div>
+                  {subject.dueCount > 0 && (
+                    <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">
+                      {subject.dueCount} due
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {subjects.length > 3 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowAllSubjects(!showAllSubjects)
+                }}
+                className="mt-3 w-full flex items-center justify-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                {showAllSubjects ? (
+                  <>Show less</>
+                ) : (
+                  <>Show all ({subjects.length - 3} more)</>
+                )}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     )
   }

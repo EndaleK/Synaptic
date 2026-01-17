@@ -152,7 +152,7 @@ const UnifiedStudyPlanner = dynamic(() => import("@/components/UnifiedStudyPlann
     <div className="h-full flex items-center justify-center">
       <div className="text-center">
         <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-        <p className="text-sm text-gray-600 dark:text-gray-400">Loading Study Planner...</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Loading Pathway...</p>
       </div>
     </div>
   )
@@ -635,7 +635,7 @@ function DashboardContent() {
       video: 'bg-[var(--bg-tint-video)]',
       exam: 'bg-[var(--bg-tint-quiz)]',
       'study-plan': 'bg-[var(--bg-tint-quiz)]', // Same as exam (planning)
-      'study-planner': 'bg-[var(--bg-tint-quiz)]', // Same as exam (planning/scheduling)
+      pathway: 'bg-[var(--bg-tint-quiz)]', // Same as exam (planning/scheduling)
       home: 'bg-transparent' // No tint on home page
     }
     return tints[activeMode] || 'bg-transparent'
@@ -797,9 +797,9 @@ function DashboardContent() {
           </DynamicComponentErrorBoundary>
         )
 
-      case "study-planner":
+      case "pathway":
         return (
-          <DynamicComponentErrorBoundary componentName="Study Planner">
+          <DynamicComponentErrorBoundary componentName="Pathway">
             <div className="h-full">
               <UnifiedStudyPlanner
                 onNavigateToMode={(mode, documentId, sessionTopic, topicPages) => {

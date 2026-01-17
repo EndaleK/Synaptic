@@ -88,7 +88,7 @@ const studyModes = [
   { id: "flashcards", icon: FlashcardIcon, title: "Flashcards", description: "Review with AI-powered cards" },
   { id: "chat", icon: ChatIcon, title: "Chat", description: "Ask questions & learn" },
   { id: "study-buddy", icon: StudyBuddyIcon, title: "Study Buddy", description: "Your AI learning companion" },
-  { id: "study-planner", icon: PlannerIcon, title: "Study Planner", description: "Plan & track your study" },
+  { id: "pathway", icon: PlannerIcon, title: "Pathway", description: "Your learning journey" },
   { id: "podcast", icon: PodcastIcon, title: "Podcast", description: "Listen & learn on the go" },
   { id: "quick-summary", icon: SummaryIcon, title: "Quick Summary", description: "5-minute audio overviews" },
   { id: "mindmap", icon: MindMapIcon, title: "Mind Map", description: "See the big picture" },
@@ -232,7 +232,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
   const handleModeClick = (mode: typeof studyModes[0]) => {
     if (mode.id === 'writer') {
       router.push('/dashboard/writer')
-    } else if (mode.id === 'study-planner') {
+    } else if (mode.id === 'pathway') {
       router.push('/dashboard/study-plans')
     } else if (mode.id === 'study-buddy') {
       // Open the floating Study Buddy panel

@@ -13,8 +13,9 @@ const UserButton = dynamic(
 )
 import {
   Play, Pause, Square, ChevronDown, RotateCcw, Coffee, Brain, Zap,
-  Settings
+  Settings, Sun, Moon
 } from "lucide-react"
+import { useTheme } from "next-themes"
 import { usePomodoroStore } from "@/lib/store/usePomodoroStore"
 import { useUIStore } from "@/lib/store/useStore"
 import {
@@ -32,8 +33,15 @@ export default function StudyToolsTopBar() {
   const pathname = usePathname()
   const router = useRouter()
   const { setActiveMode } = useUIStore()
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
+
+  // Avoid hydration mismatch for theme
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const {
     status,
@@ -159,7 +167,7 @@ export default function StudyToolsTopBar() {
           <span>Statistics</span>
         </Link>
 
-        {/* Study Planner link */}
+        {/* Pathway link */}
         <Link
           href="/dashboard/study-plans"
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
@@ -169,7 +177,7 @@ export default function StudyToolsTopBar() {
           }`}
         >
           <GraduationIcon size="sm" />
-          <span>Study Planner</span>
+          <span>Pathway</span>
         </Link>
 
         {/* Study Guide link */}
@@ -186,8 +194,21 @@ export default function StudyToolsTopBar() {
         </Link>
       </nav>
 
-      {/* Right: Settings, Profile, Pomodoro */}
+      {/* Right: Theme, Settings, Profile, Pomodoro */}
       <div className="flex items-center gap-2">
+
+        {/* Theme Toggle */}
+        <button
+          onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+          className="p-2 rounded-lg transition-colors text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+          title={mounted && resolvedTheme === 'dark' ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          {mounted && resolvedTheme === 'dark' ? (
+            <Sun className="w-4 h-4" />
+          ) : (
+            <Moon className="w-4 h-4" />
+          )}
+        </button>
 
         {/* Settings */}
         <Link

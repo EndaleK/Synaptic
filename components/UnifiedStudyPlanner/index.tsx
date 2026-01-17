@@ -230,8 +230,8 @@ export default function UnifiedStudyPlanner({ onNavigateToMode }: UnifiedStudyPl
                 <Calendar className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">Study Planner</h1>
-                <p className="text-white/50 text-sm">Plan, track, and master your learning</p>
+                <h1 className="text-2xl font-bold text-white">Pathway</h1>
+                <p className="text-white/50 text-sm">Your learning journey</p>
               </div>
             </div>
 
