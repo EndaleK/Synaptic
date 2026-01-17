@@ -17,7 +17,7 @@ import {
   GraduationIcon, TargetIcon, VerifyIcon, TrophyIcon, UploadIcon, BrainIcon
 } from "@/components/illustrations"
 import { WaveDivider } from "@/components/backgrounds"
-import { LandingNav } from "@/components/LandingNav"
+import { SynapticLogo } from "@/components/SynapticLogo"
 
 export default function LandingPage() {
   const { isSignedIn } = useAuth()
@@ -25,9 +25,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Sticky Navigation */}
-      <LandingNav />
-
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-hero-dawn">
         {/* Decorative background elements */}
@@ -38,7 +35,12 @@ export default function LandingPage() {
           <div className="absolute top-[40%] right-[20%] w-[300px] h-[300px] rounded-full bg-orange-200/10 dark:bg-orange-500/8 blur-3xl animate-float-orb" style={{ animationDelay: '14s' }} />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 md:pt-12 md:pb-24">
+          {/* Logo at top of hero */}
+          <div className="flex justify-center lg:justify-start mb-12 animate-section-reveal">
+            <SynapticLogo size="lg" showTagline />
+          </div>
+
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Left Column: Text Content with reveal animations */}
             <div className="text-center lg:text-left">
