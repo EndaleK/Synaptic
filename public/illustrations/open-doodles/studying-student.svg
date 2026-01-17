@@ -1,0 +1,96 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Student sitting and studying - Open Doodles style -->
+
+  <!-- Body/Torso -->
+  <path d="M180 280C180 280 160 320 170 350C175 365 200 370 220 365C240 360 250 340 245 310C240 280 230 260 230 260" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" fill="#F5F5F5"/>
+
+  <!-- Legs crossed -->
+  <path d="M170 350C170 350 140 370 130 390" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M220 365C220 365 250 380 270 390" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Left arm holding book -->
+  <path d="M160 260C150 270 130 280 120 290C110 300 115 310 125 305C135 300 155 285 165 275" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" fill="#FFECD2"/>
+
+  <!-- Right arm on book -->
+  <path d="M245 265C255 275 270 285 280 290C290 295 295 285 290 275C285 265 265 255 255 250" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" fill="#FFECD2"/>
+
+  <!-- Book/Notebook -->
+  <rect x="120" y="285" width="80" height="55" rx="3" fill="white" stroke="#1a1a1a" stroke-width="2"/>
+  <path d="M160 285V340" stroke="#1a1a1a" stroke-width="1.5"/>
+  <path d="M130 300H150" stroke="#1a1a1a" stroke-width="1" opacity="0.5"/>
+  <path d="M130 310H155" stroke="#1a1a1a" stroke-width="1" opacity="0.5"/>
+  <path d="M130 320H145" stroke="#1a1a1a" stroke-width="1" opacity="0.5"/>
+  <path d="M170 300H190" stroke="#1a1a1a" stroke-width="1" opacity="0.5"/>
+  <path d="M170 310H185" stroke="#1a1a1a" stroke-width="1" opacity="0.5"/>
+  <path d="M170 320H195" stroke="#1a1a1a" stroke-width="1" opacity="0.5"/>
+
+  <!-- Head -->
+  <circle cx="200" cy="200" r="55" fill="#FFECD2" stroke="#1a1a1a" stroke-width="2.5"/>
+
+  <!-- Hair - Curly/wavy style -->
+  <path d="M150 180C145 160 155 130 185 120C215 110 250 120 260 150C270 180 260 190 255 195" stroke="#1a1a1a" stroke-width="2" fill="#4A3728"/>
+  <circle cx="155" cy="165" r="12" fill="#4A3728"/>
+  <circle cx="170" cy="145" r="14" fill="#4A3728"/>
+  <circle cx="195" cy="130" r="16" fill="#4A3728"/>
+  <circle cx="220" cy="135" r="14" fill="#4A3728"/>
+  <circle cx="240" cy="150" r="12" fill="#4A3728"/>
+  <circle cx="250" cy="170" r="10" fill="#4A3728"/>
+
+  <!-- Eyes - focused/reading -->
+  <ellipse cx="180" cy="200" rx="5" ry="6" fill="#1a1a1a"/>
+  <ellipse cx="220" cy="200" rx="5" ry="6" fill="#1a1a1a"/>
+  <circle cx="182" cy="198" r="1.5" fill="white"/>
+  <circle cx="222" cy="198" r="1.5" fill="white"/>
+
+  <!-- Eyebrows - concentrated -->
+  <path d="M168 188C172 185 180 184 188 187" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M212 187C220 184 228 185 232 188" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Nose -->
+  <path d="M200 205C198 210 199 218 202 220" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Slight smile - content -->
+  <path d="M188 232C195 238 205 238 212 232" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+  <!-- Glasses -->
+  <circle cx="180" cy="200" r="18" stroke="#1a1a1a" stroke-width="2" fill="none"/>
+  <circle cx="220" cy="200" r="18" stroke="#1a1a1a" stroke-width="2" fill="none"/>
+  <path d="M198 200H202" stroke="#1a1a1a" stroke-width="2"/>
+  <path d="M162 195L150 190" stroke="#1a1a1a" stroke-width="2"/>
+  <path d="M238 195L250 190" stroke="#1a1a1a" stroke-width="2"/>
+
+  <!-- Laptop/Screen to the side -->
+  <rect x="260" y="280" width="90" height="60" rx="4" fill="#F0F0F0" stroke="#1a1a1a" stroke-width="2"/>
+  <rect x="265" y="285" width="80" height="45" rx="2" fill="white" stroke="#1a1a1a" stroke-width="1"/>
+  <rect x="260" y="340" width="90" height="8" rx="2" fill="#E0E0E0" stroke="#1a1a1a" stroke-width="1.5"/>
+
+  <!-- Screen content - flashcard preview -->
+  <rect x="275" y="295" width="25" height="30" rx="2" fill="#7B3FF2" opacity="0.2" stroke="#7B3FF2" stroke-width="1"/>
+  <rect x="305" y="295" width="25" height="30" rx="2" fill="#E91E8C" opacity="0.2" stroke="#E91E8C" stroke-width="1"/>
+
+  <!-- Light bulb/idea floating -->
+  <g transform="translate(280, 140)">
+    <path d="M20 0C10 0 0 10 0 22C0 32 8 38 12 45C14 50 14 55 20 55C26 55 26 50 28 45C32 38 40 32 40 22C40 10 30 0 20 0Z" fill="#FBBF24" stroke="#1a1a1a" stroke-width="2"/>
+    <path d="M15 55H25V60H15V55Z" fill="#E0E0E0" stroke="#1a1a1a" stroke-width="1.5"/>
+    <path d="M14 62H26" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+    <!-- Light rays -->
+    <path d="M20 -10V-5" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"/>
+    <path d="M35 -5L32 0" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"/>
+    <path d="M5 -5L8 0" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"/>
+    <path d="M45 15H50" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"/>
+    <path d="M-5 15H-10" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <!-- Small floating cards/notes -->
+  <g transform="translate(80, 160) rotate(-15)">
+    <rect width="35" height="25" rx="2" fill="white" stroke="#7B3FF2" stroke-width="1.5"/>
+    <path d="M5 8H25" stroke="#7B3FF2" stroke-width="1" opacity="0.5"/>
+    <path d="M5 14H20" stroke="#7B3FF2" stroke-width="1" opacity="0.5"/>
+  </g>
+
+  <g transform="translate(60, 200) rotate(-5)">
+    <rect width="30" height="22" rx="2" fill="white" stroke="#E91E8C" stroke-width="1.5"/>
+    <path d="M4 7H22" stroke="#E91E8C" stroke-width="1" opacity="0.5"/>
+    <path d="M4 12H18" stroke="#E91E8C" stroke-width="1" opacity="0.5"/>
+  </g>
+</svg>

@@ -1,119 +1,36 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { useAuth } from "@clerk/nextjs"
 import {
-  BookOpen, Brain, Mic, Network, Sparkles, ArrowRight,
-  ClipboardCheck, TrendingDown, Award, Star,
-  Bot, Upload, Calendar, Trophy, Target, FileCheck2, Mail, GraduationCap
+  Sparkles, ArrowRight, ChevronDown, ChevronUp,
+  TrendingDown, Award, Star,
+  Mail, FileText, Youtube, Search, BookOpen, PenTool
 } from "lucide-react"
 import { PricingCarousel } from "@/components/PricingCarousel"
-
-// Transformation Visual Component - Static before/after illustration
-function TransformationVisual() {
-  return (
-    <div className="flex items-center justify-center gap-6 md:gap-10">
-      {/* Before: Messy stack of documents */}
-      <div className="relative w-28 h-36 md:w-40 md:h-48">
-        {/* Stacked, rotated document shapes */}
-        <div className="absolute w-full h-28 md:h-36 bg-gray-200 dark:bg-gray-700 rounded-lg rotate-[-8deg] shadow-md border border-gray-300 dark:border-gray-600" />
-        <div className="absolute w-full h-28 md:h-36 bg-gray-100 dark:bg-gray-600 rounded-lg rotate-[4deg] shadow-md top-2 border border-gray-200 dark:border-gray-500" />
-        <div className="absolute w-full h-28 md:h-36 bg-white dark:bg-gray-800 rounded-lg rotate-[-2deg] shadow-lg top-4 border border-gray-200 dark:border-gray-700 p-2">
-          {/* Fake text lines */}
-          <div className="space-y-1.5">
-            <div className="h-2 bg-gray-300 dark:bg-gray-600 rounded w-4/5" />
-            <div className="h-2 bg-gray-300 dark:bg-gray-600 rounded w-full" />
-            <div className="h-2 bg-gray-300 dark:bg-gray-600 rounded w-3/4" />
-            <div className="h-2 bg-gray-300 dark:bg-gray-600 rounded w-full" />
-            <div className="h-2 bg-gray-300 dark:bg-gray-600 rounded w-2/3" />
-          </div>
-        </div>
-        {/* Label */}
-        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">
-          Your notes
-        </div>
-      </div>
-
-      {/* Arrow */}
-      <div className="flex flex-col items-center gap-1">
-        <ArrowRight className="w-8 h-8 md:w-10 md:h-10 text-purple-500 dark:text-purple-400" />
-        <span className="text-xs text-gray-400 dark:text-gray-500">Synaptic</span>
-      </div>
-
-      {/* After: Clean organized dashboard */}
-      <div className="w-36 h-44 md:w-52 md:h-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-3 md:p-4 space-y-2 md:space-y-3">
-        {/* Header bar */}
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 md:w-8 md:h-8 bg-[#7B3FF2] rounded-lg flex items-center justify-center">
-            <Brain className="w-3 h-3 md:w-4 md:h-4 text-white" />
-          </div>
-          <div className="flex-1">
-            <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-16 md:w-20" />
-          </div>
-        </div>
-
-        {/* Progress bar */}
-        <div>
-          <div className="flex justify-between text-[8px] md:text-[10px] text-gray-500 dark:text-gray-400 mb-1">
-            <span>Progress</span>
-            <span>75%</span>
-          </div>
-          <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-2 w-3/4 bg-[#7B3FF2] rounded-full" />
-          </div>
-        </div>
-
-        {/* Mini flashcard */}
-        <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-2 border border-indigo-100 dark:border-indigo-800">
-          <div className="h-1.5 bg-indigo-200 dark:bg-indigo-700 rounded w-full mb-1" />
-          <div className="h-1.5 bg-indigo-200 dark:bg-indigo-700 rounded w-2/3" />
-        </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-          <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-1.5 md:p-2 text-center border border-green-100 dark:border-green-800">
-            <div className="text-[10px] md:text-xs font-bold text-green-600 dark:text-green-400">24</div>
-            <div className="text-[8px] text-green-500 dark:text-green-500">Cards</div>
-          </div>
-          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-1.5 md:p-2 text-center border border-blue-100 dark:border-blue-800">
-            <div className="text-[10px] md:text-xs font-bold text-blue-600 dark:text-blue-400">A+</div>
-            <div className="text-[8px] text-blue-500 dark:text-blue-500">Ready</div>
-          </div>
-        </div>
-
-        {/* Label */}
-        <div className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pt-1">
-          Exam-ready
-        </div>
-      </div>
-    </div>
-  );
-}
+import {
+  CircleHighlight, HighlightedText, InlineAvatar1, InlineAvatar2, InlineAvatar3,
+  StudyingStudent,
+  FlashcardIcon, ExamIcon, StudyBuddyIcon, PodcastIcon, MindMapIcon, PlannerIcon,
+  GraduationIcon, TargetIcon, VerifyIcon, TrophyIcon, UploadIcon, BrainIcon
+} from "@/components/illustrations"
+import { WaveDivider } from "@/components/backgrounds"
 
 export default function LandingPage() {
   const { isSignedIn } = useAuth()
+  const [showAllTools, setShowAllTools] = useState(false)
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section - Student-First Design with Enhanced Background */}
-      <section className="relative overflow-hidden bg-white dark:bg-gray-950">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-hero-dawn">
         {/* Decorative background elements */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {/* Grid pattern */}
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: `
-                linear-gradient(rgba(123, 63, 242, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(123, 63, 242, 0.02) 1px, transparent 1px)
-              `,
-              backgroundSize: '48px 48px',
-            }}
-          />
-
-          {/* Gradient orbs */}
-          <div className="absolute -top-[20%] -right-[10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-violet-400/10 via-purple-300/5 to-transparent dark:from-violet-600/8 dark:via-purple-500/4 blur-3xl" />
-          <div className="absolute -bottom-[30%] -left-[10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-pink-400/8 via-rose-300/4 to-transparent dark:from-pink-600/6 dark:via-rose-500/3 blur-3xl" />
+          {/* Animated gradient orbs with glow halos */}
+          <div className="absolute -top-[15%] -right-[5%] w-[600px] h-[600px] rounded-full bg-purple-300/20 dark:bg-purple-600/15 blur-3xl animate-float-orb" />
+          <div className="absolute -bottom-[20%] -left-[5%] w-[500px] h-[500px] rounded-full bg-pink-300/15 dark:bg-pink-600/10 blur-3xl animate-float-orb" style={{ animationDelay: '7s' }} />
+          <div className="absolute top-[40%] right-[20%] w-[300px] h-[300px] rounded-full bg-orange-200/10 dark:bg-orange-500/8 blur-3xl animate-float-orb" style={{ animationDelay: '14s' }} />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
@@ -124,11 +41,11 @@ export default function LandingPage() {
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-black dark:text-white mb-6 leading-[1.1] tracking-tight animate-section-reveal">
                 Study less.
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35] animate-gradient-border bg-[length:200%_200%]">
+                <span className="bg-gradient-to-r from-[#7B3FF2] to-[#E91E8C] bg-clip-text text-transparent">
                   Remember more.
                 </span>
                 <br />
-                Ace your exams.
+                <HighlightedText color="yellow">Ace your exams.</HighlightedText>
               </h1>
 
               {/* Subheadline - Emotional, outcome-focused */}
@@ -140,7 +57,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center animate-section-reveal stagger-index-2">
                 <Link
                   href={isSignedIn ? "/dashboard" : "/sign-up"}
-                  className="group relative px-8 py-4 bg-[#7B3FF2] hover:bg-[#6B2FE2] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2 card-glow"
+                  className="group relative px-8 py-4 bg-[#7B3FF2] hover:bg-[#6B2FE2] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl flex items-center gap-2"
                 >
                   <span>{isSignedIn ? "Go to Dashboard" : "Start free"}</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -152,7 +69,7 @@ export default function LandingPage() {
                       block: 'start'
                     });
                   }}
-                  className="px-8 py-4 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-2 border-gray-300 dark:border-gray-700 rounded-2xl font-semibold text-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-600 transition-all"
+                  className="px-8 py-4 bg-white dark:bg-gray-800 text-black dark:text-gray-300 border-2 border-black dark:border-gray-700 rounded-2xl font-semibold text-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                 >
                   See how it works
                 </button>
@@ -165,16 +82,19 @@ export default function LandingPage() {
 
             </div>
 
-            {/* Right Column: Transformation Visual with reveal animation */}
+            {/* Right Column: Studying Student Illustration with reveal animation */}
             <div className="flex justify-center lg:justify-end animate-section-reveal stagger-index-3">
-              <TransformationVisual />
+              <StudyingStudent size="lg" className="w-[400px] h-[400px] md:w-[480px] md:h-[480px]" />
             </div>
           </div>
         </div>
       </section>
 
+      {/* Wave divider - Hero to How It Works */}
+      <WaveDivider variant="curve" className="text-[#FAFBFC] dark:text-[#0A0A0F] -mt-1" />
+
       {/* How Synaptic Fits Your Week - 3-Step Process */}
-      <section id="how-it-works" className="scroll-mt-20 py-20 bg-white dark:bg-black">
+      <section id="how-it-works" className="scroll-mt-20 py-20 bg-clarity-zone">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-16">
@@ -193,8 +113,8 @@ export default function LandingPage() {
 
             {/* Step 1 */}
             <div className="relative text-center">
-              <div className="relative z-10 w-16 h-16 mx-auto mb-6 bg-[#7B3FF2] rounded-2xl flex items-center justify-center shadow-lg">
-                <Upload className="w-8 h-8 text-white" />
+              <div className="relative z-10 w-16 h-16 mx-auto mb-6 flex items-center justify-center">
+                <UploadIcon size="lg" className="w-14 h-14" />
               </div>
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-6 h-6 bg-white dark:bg-gray-900 rounded-full border-2 border-[#7B3FF2] flex items-center justify-center text-xs font-bold text-[#7B3FF2] dark:text-purple-400 z-20">
                 1
@@ -209,8 +129,8 @@ export default function LandingPage() {
 
             {/* Step 2 */}
             <div className="relative text-center">
-              <div className="relative z-10 w-16 h-16 mx-auto mb-6 bg-[#7B3FF2] rounded-2xl flex items-center justify-center shadow-lg">
-                <Calendar className="w-8 h-8 text-white" />
+              <div className="relative z-10 w-16 h-16 mx-auto mb-6 flex items-center justify-center">
+                <PlannerIcon size="lg" className="w-14 h-14" />
               </div>
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-6 h-6 bg-white dark:bg-gray-900 rounded-full border-2 border-[#7B3FF2] flex items-center justify-center text-xs font-bold text-[#7B3FF2] dark:text-purple-400 z-20">
                 2
@@ -225,8 +145,8 @@ export default function LandingPage() {
 
             {/* Step 3 */}
             <div className="relative text-center">
-              <div className="relative z-10 w-16 h-16 mx-auto mb-6 bg-[#7B3FF2] rounded-2xl flex items-center justify-center shadow-lg">
-                <Trophy className="w-8 h-8 text-white" />
+              <div className="relative z-10 w-16 h-16 mx-auto mb-6 flex items-center justify-center">
+                <TrophyIcon size="lg" className="w-14 h-14" />
               </div>
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-6 h-6 bg-white dark:bg-gray-900 rounded-full border-2 border-[#7B3FF2] flex items-center justify-center text-xs font-bold text-[#7B3FF2] dark:text-purple-400 z-20">
                 3
@@ -243,40 +163,41 @@ export default function LandingPage() {
       </section>
 
       {/* What You Get - Tools + Benefits Combined */}
-      <section id="features" className="py-20 bg-gray-50 dark:bg-gray-900">
+      <section id="features" className="py-20 bg-showcase">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-black dark:text-white mb-4">
-              Everything you need to ace your next exam
+              Everything you need to{" "}
+              <HighlightedText color="purple">ace your next exam</HighlightedText>
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Powerful study tools that actually help you learn—not just review
             </p>
           </div>
 
-          {/* 6-Tool Grid with Emotional Descriptions and enhanced cards */}
+          {/* 6-Tool Grid with Hand-drawn Icons and Emotional Descriptions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
             {/* Smart Flashcards */}
             <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
-              <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <BookOpen className="w-6 h-6 text-white" />
+              <div className="mb-4 group-hover:scale-110 transition-transform">
+                <FlashcardIcon size="lg" />
               </div>
               <h3 className="text-lg font-bold text-black dark:text-white mb-2">
-                Smart Flashcards
+                <HighlightedText color="purple">Smart Flashcards</HighlightedText>
               </h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-                Never forget what you studied—flashcards that know when you're about to forget
+                Never forget what you studied—flashcards that know when you&apos;re about to forget
               </p>
             </div>
 
             {/* Mock Exams */}
             <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
-              <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <ClipboardCheck className="w-6 h-6 text-white" />
+              <div className="mb-4 group-hover:scale-110 transition-transform">
+                <ExamIcon size="lg" />
               </div>
               <h3 className="text-lg font-bold text-black dark:text-white mb-2">
-                Mock Exams
+                <HighlightedText color="brand">Mock Exams</HighlightedText>
               </h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                 Walk in confident—practice exams that feel like the real thing
@@ -285,11 +206,11 @@ export default function LandingPage() {
 
             {/* Study Buddy */}
             <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
-              <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Bot className="w-6 h-6 text-white" />
+              <div className="mb-4 group-hover:scale-110 transition-transform">
+                <StudyBuddyIcon size="lg" />
               </div>
               <h3 className="text-lg font-bold text-black dark:text-white mb-2">
-                Study Buddy
+                <HighlightedText color="purple">Study Buddy</HighlightedText>
               </h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                 Stuck at 2am? Ask anything about your notes and get instant answers
@@ -298,11 +219,11 @@ export default function LandingPage() {
 
             {/* Audio Summaries */}
             <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
-              <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Mic className="w-6 h-6 text-white" />
+              <div className="mb-4 group-hover:scale-110 transition-transform">
+                <PodcastIcon size="lg" />
               </div>
               <h3 className="text-lg font-bold text-black dark:text-white mb-2">
-                Audio Summaries
+                <HighlightedText color="brand">Audio Summaries</HighlightedText>
               </h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                 Turn dead time into study time—listen while commuting or exercising
@@ -311,11 +232,11 @@ export default function LandingPage() {
 
             {/* Mind Maps */}
             <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
-              <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Network className="w-6 h-6 text-white" />
+              <div className="mb-4 group-hover:scale-110 transition-transform">
+                <MindMapIcon size="lg" />
               </div>
               <h3 className="text-lg font-bold text-black dark:text-white mb-2">
-                Mind Maps
+                <HighlightedText color="purple">Mind Maps</HighlightedText>
               </h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                 Finally see the big picture—visualize how concepts connect
@@ -324,8 +245,8 @@ export default function LandingPage() {
 
             {/* Study Planner */}
             <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
-              <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Calendar className="w-6 h-6 text-white" />
+              <div className="mb-4 group-hover:scale-110 transition-transform">
+                <PlannerIcon size="lg" />
               </div>
               <h3 className="text-lg font-bold text-black dark:text-white mb-2">
                 Study Planner
@@ -338,8 +259,8 @@ export default function LandingPage() {
             {/* Course Study Guide Generator */}
             <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1 md:col-span-2 lg:col-span-3">
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <div className="w-12 h-12 bg-[#7B3FF2] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                  <GraduationCap className="w-6 h-6 text-white" />
+                <div className="group-hover:scale-110 transition-transform flex-shrink-0">
+                  <GraduationIcon size="lg" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -366,8 +287,8 @@ export default function LandingPage() {
             <div className="grid md:grid-cols-3 gap-6">
               {/* Benefit 1 */}
               <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                <div className="w-10 h-10 bg-[#7B3FF2]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Brain className="w-5 h-5 text-[#7B3FF2]" />
+                <div className="flex-shrink-0">
+                  <BrainIcon size="md" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-black dark:text-white mb-1">Spaced repetition</h4>
@@ -379,8 +300,8 @@ export default function LandingPage() {
 
               {/* Benefit 2 */}
               <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                <div className="w-10 h-10 bg-[#7B3FF2]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Target className="w-5 h-5 text-[#7B3FF2]" />
+                <div className="flex-shrink-0">
+                  <TargetIcon size="md" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-black dark:text-white mb-1">AI prioritization</h4>
@@ -392,8 +313,8 @@ export default function LandingPage() {
 
               {/* Benefit 3 */}
               <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                <div className="w-10 h-10 bg-[#7B3FF2]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <FileCheck2 className="w-5 h-5 text-[#7B3FF2]" />
+                <div className="flex-shrink-0">
+                  <VerifyIcon size="md" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-black dark:text-white mb-1">Your notes, cited</h4>
@@ -405,21 +326,94 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* See all tools link */}
+          {/* Additional Tools - Hidden by default */}
+          {showAllTools && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8 animate-fade-up">
+              {/* Document Import */}
+              <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
+                <div className="mb-4 group-hover:scale-110 transition-transform">
+                  <FileText className="w-12 h-12 text-[#7B3FF2]" />
+                </div>
+                <h3 className="text-lg font-bold text-black dark:text-white mb-2">
+                  Document Import
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  Upload PDFs, DOCX, or paste text—we handle the rest
+                </p>
+              </div>
+
+              {/* YouTube Learning */}
+              <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
+                <div className="mb-4 group-hover:scale-110 transition-transform">
+                  <Youtube className="w-12 h-12 text-[#7B3FF2]" />
+                </div>
+                <h3 className="text-lg font-bold text-black dark:text-white mb-2">
+                  YouTube Learning
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  Turn any YouTube video into study materials instantly
+                </p>
+              </div>
+
+              {/* Smart Search */}
+              <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
+                <div className="mb-4 group-hover:scale-110 transition-transform">
+                  <Search className="w-12 h-12 text-[#7B3FF2]" />
+                </div>
+                <h3 className="text-lg font-bold text-black dark:text-white mb-2">
+                  Smart Search
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  Find anything in your notes with AI-powered search
+                </p>
+              </div>
+
+              {/* Quick Summaries */}
+              <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
+                <div className="mb-4 group-hover:scale-110 transition-transform">
+                  <BookOpen className="w-12 h-12 text-[#7B3FF2]" />
+                </div>
+                <h3 className="text-lg font-bold text-black dark:text-white mb-2">
+                  Quick Summaries
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  Get the key points from any document in seconds
+                </p>
+              </div>
+
+              {/* Writing Assistant */}
+              <div className="group p-6 bg-white dark:bg-gray-800 rounded-2xl hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700 card-glow card-level-1">
+                <div className="mb-4 group-hover:scale-110 transition-transform">
+                  <PenTool className="w-12 h-12 text-[#7B3FF2]" />
+                </div>
+                <h3 className="text-lg font-bold text-black dark:text-white mb-2">
+                  Writing Assistant
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  Essay help with citations and structure suggestions
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* See all tools button */}
           <div className="text-center mt-10">
-            <Link
-              href="#features"
-              className="inline-flex items-center gap-2 text-purple-600 dark:text-purple-400 font-medium hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
+            <button
+              onClick={() => setShowAllTools(!showAllTools)}
+              className="inline-flex items-center gap-2 text-black dark:text-white font-medium hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
             >
-              See all 12 tools included
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+              {showAllTools ? "Show less" : "See all 12 tools included"}
+              {showAllTools ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
           </div>
         </div>
       </section>
 
+      {/* Wave divider - Features to Testimonials */}
+      <WaveDivider variant="flow" className="text-[#FEFDFB] dark:text-[#0B0A0A] -mt-1" />
+
       {/* Proof It Works - Testimonials Section */}
-      <section className="py-16 bg-white dark:bg-black">
+      <section className="py-16 bg-trust bg-vignette">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-12">
@@ -441,9 +435,7 @@ export default function LandingPage() {
                 "Went from a 68% to 86% in biology in one month. The mock exams are scary accurate."
               </p>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#7B3FF2]/20 rounded-full flex items-center justify-center text-[#7B3FF2] font-bold text-sm">
-                  SM
-                </div>
+                <InlineAvatar1 size="sm" className="flex-shrink-0" />
                 <div>
                   <p className="font-semibold text-sm text-black dark:text-white">Sarah M.</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Pre-Med Student</p>
@@ -462,9 +454,7 @@ export default function LandingPage() {
                 "My 600-page biochemistry textbook became flashcards in 5 minutes. Game changer."
               </p>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#7B3FF2]/20 rounded-full flex items-center justify-center text-[#7B3FF2] font-bold text-sm">
-                  JK
-                </div>
+                <InlineAvatar2 size="sm" className="flex-shrink-0" />
                 <div>
                   <p className="font-semibold text-sm text-black dark:text-white">James K.</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">College Junior</p>
@@ -483,9 +473,7 @@ export default function LandingPage() {
                 "Passed AWS certification on my first try. Listened to podcasts during my commute."
               </p>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#7B3FF2]/20 rounded-full flex items-center justify-center text-[#7B3FF2] font-bold text-sm">
-                  GK
-                </div>
+                <InlineAvatar3 size="sm" className="flex-shrink-0" />
                 <div>
                   <p className="font-semibold text-sm text-black dark:text-white">Gudu K.</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Software Engineer</p>
@@ -498,7 +486,9 @@ export default function LandingPage() {
           <div className="flex flex-wrap justify-center gap-4 md:gap-8">
             <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full">
               <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">1M+ flashcards generated</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <CircleHighlight color="yellow">1M+</CircleHighlight> flashcards generated
+              </span>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full">
               <TrendingDown className="w-4 h-4 text-green-600 dark:text-green-400" />
@@ -513,7 +503,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-24 bg-white dark:bg-black">
+      <section id="pricing" className="py-24 bg-decision">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-16">
@@ -531,41 +521,52 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA Section - Student-Focused */}
-      <section className="relative py-20 overflow-hidden bg-gray-50 dark:bg-gray-900 border-y border-gray-200 dark:border-gray-800">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          {/* Headline - Student-focused */}
-          <h2 className="text-3xl md:text-4xl font-bold text-black dark:text-white mb-4">
-            Ready to actually enjoy studying?
-          </h2>
+      <section className="relative py-20 overflow-hidden bg-energy-burst border-y border-purple-100/50 dark:border-purple-900/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left: Illustration */}
+            <div className="hidden lg:flex justify-center">
+              <StudyingStudent size="lg" variant="reading-side" className="w-[416px] h-[416px]" />
+            </div>
 
-          {/* Subheadline */}
-          <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-xl mx-auto">
-            Join students worldwide who stopped stressing and started succeeding.
-          </p>
+            {/* Right: CTA Content */}
+            <div className="text-center lg:text-left">
+              {/* Headline - Student-focused */}
+              <h2 className="text-3xl md:text-4xl font-bold text-black dark:text-white mb-4">
+                Ready to actually{" "}
+                <HighlightedText color="brand">enjoy studying</HighlightedText>?
+              </h2>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link
-              href={isSignedIn ? "/dashboard" : "/sign-up"}
-              className="group inline-flex items-center gap-2 px-8 py-4 bg-[#7B3FF2] hover:bg-[#6727E2] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl"
-            >
-              <span>{isSignedIn ? "Go to Dashboard" : "Start free — no credit card"}</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
+              {/* Subheadline */}
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-xl mx-auto lg:mx-0">
+                Join students worldwide who stopped stressing and started succeeding.
+              </p>
 
-            <a
-              href="mailto:support@synaptic.study"
-              className="inline-flex items-center gap-2 px-6 py-4 text-gray-600 dark:text-gray-400 font-medium hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-            >
-              <Mail className="w-5 h-5" />
-              Questions? Chat with us
-            </a>
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
+                <Link
+                  href={isSignedIn ? "/dashboard" : "/sign-up"}
+                  className="group inline-flex items-center gap-2 px-8 py-4 bg-[#7B3FF2] hover:bg-[#6B2FE2] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all shadow-xl"
+                >
+                  <span>{isSignedIn ? "Go to Dashboard" : "Start free — no credit card"}</span>
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+
+                <a
+                  href="mailto:support@synaptic.study"
+                  className="inline-flex items-center gap-2 px-6 py-4 text-gray-600 dark:text-gray-400 font-medium hover:text-[#7B3FF2] dark:hover:text-purple-400 transition-colors"
+                >
+                  <Mail className="w-5 h-5" />
+                  Questions? Chat with us
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Footer with Contact Info */}
-      <footer className="py-12 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800">
+      <footer className="py-12 bg-grounded border-t border-gray-200 dark:border-gray-800">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             {/* Brand & Integrity */}

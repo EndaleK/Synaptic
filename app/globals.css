@@ -34,10 +34,12 @@
   /* Accent colors (RGB format for Tailwind compatibility) - Brain Logo Theme */
   --accent-primary: 123 63 242;       /* Purple from logo #7B3FF2 */
   --accent-secondary: 233 30 140;     /* Hot pink from logo #E91E8C */
-  --accent-primary-hover: 107 47 226;  /* Darker purple #6B2FE2 - improved contrast 5.2:1 */
-  --accent-secondary-hover: 213 10 120; /* Darker pink */
+  --accent-primary-hover: 107 47 226; /* Darker purple #6B2FE2 */
+  --accent-secondary-hover: 200 25 120; /* Darker pink */
 
-  /* Additional brain logo colors */
+  /* Brain logo palette */
+  --accent-purple: 123 63 242;        /* Purple from logo #7B3FF2 */
+  --accent-pink: 233 30 140;          /* Hot pink from logo #E91E8C */
   --accent-blue: 45 62 159;           /* Deep blue from logo #2D3E9F */
   --accent-orange: 255 107 53;        /* Orange from logo #FF6B35 */
 
@@ -733,6 +735,48 @@ html.font-size-large {
 
 .animate-bounce-subtle {
   animation: bounce-subtle 0.6s ease-in-out 3;
+}
+
+/* Hand-drawn SVG line drawing animation */
+@keyframes draw-line {
+  from {
+    stroke-dashoffset: 300;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-draw-line {
+  animation: draw-line 0.8s ease-out forwards;
+}
+
+/* Hand-drawn highlight reveal animation */
+@keyframes highlight-reveal {
+  from {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  to {
+    opacity: 0.5;
+    transform: scaleX(1);
+  }
+}
+
+.animate-highlight-reveal {
+  animation: highlight-reveal 0.6s ease-out forwards;
+  transform-origin: left center;
+}
+
+/* Reduced motion: disable hand-drawn animations */
+@media (prefers-reduced-motion: reduce) {
+  .animate-draw-line,
+  .animate-highlight-reveal {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 0.5;
+    transform: scaleX(1);
+  }
 }
 
 @keyframes slide-in-right {
@@ -1641,5 +1685,201 @@ html {
     opacity: 1;
     transform: none;
     filter: none;
+  }
+}
+
+/* =================================================================
+   LANDING PAGE BACKGROUND SYSTEM - "Warm Waves" Design
+   ================================================================= */
+
+/* Noise/Grain Texture Overlay - Adds depth and tactile quality */
+.bg-noise {
+  position: relative;
+}
+
+.bg-noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.015;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  z-index: 1;
+}
+
+.dark .bg-noise::before {
+  opacity: 0.025;
+  mix-blend-mode: soft-light;
+}
+
+/* Vignette Effect - Soft edge darkening */
+.bg-vignette {
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.03);
+}
+
+.dark .bg-vignette {
+  box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.25);
+}
+
+/* Ambient Glow Pulse Animation */
+@keyframes ambient-pulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.03);
+  }
+}
+
+.animate-ambient-pulse {
+  animation: ambient-pulse 8s ease-in-out infinite;
+}
+
+/* Mesh Morph Animation - Organic blob movement */
+@keyframes mesh-morph {
+  0%, 100% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+  25% {
+    border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+  }
+  50% {
+    border-radius: 50% 60% 30% 60% / 30% 60% 70% 40%;
+  }
+  75% {
+    border-radius: 60% 40% 60% 30% / 70% 30% 50% 60%;
+  }
+}
+
+.animate-mesh-morph {
+  animation: mesh-morph 20s ease-in-out infinite;
+}
+
+/* ===== SECTION-SPECIFIC BACKGROUNDS ===== */
+
+/* Hero Section - "Dawn Light"
+   Warm cream base with orange sunrise glow and pink accent */
+.bg-hero-dawn {
+  background:
+    radial-gradient(ellipse 140% 80% at 100% -10%, rgba(255, 107, 53, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 100% at -5% 105%, rgba(233, 30, 140, 0.06) 0%, transparent 45%),
+    radial-gradient(ellipse 80% 60% at 50% 120%, rgba(123, 63, 242, 0.04) 0%, transparent 50%),
+    linear-gradient(180deg, #FDFCFB 0%, #FAF9FF 40%, #F8F7FF 100%);
+}
+
+.dark .bg-hero-dawn {
+  background:
+    radial-gradient(ellipse 140% 80% at 100% -10%, rgba(255, 107, 53, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 100% at -5% 105%, rgba(233, 30, 140, 0.12) 0%, transparent 45%),
+    radial-gradient(ellipse 80% 60% at 50% 120%, rgba(123, 63, 242, 0.08) 0%, transparent 50%),
+    linear-gradient(180deg, #0C0A14 0%, #0E0C18 40%, #100E1C 100%);
+}
+
+/* How It Works - "Clarity Zone"
+   Clean, focused with subtle center energy */
+.bg-clarity-zone {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(123, 63, 242, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 50% 100%, rgba(233, 30, 140, 0.02) 0%, transparent 50%),
+    linear-gradient(180deg, #FAFBFC 0%, #FCFCFD 50%, #FAFBFC 100%);
+}
+
+.dark .bg-clarity-zone {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(123, 63, 242, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 50% 100%, rgba(233, 30, 140, 0.05) 0%, transparent 50%),
+    linear-gradient(180deg, #0A0A0F 0%, #0C0B12 50%, #0A0A0F 100%);
+}
+
+/* Features Section - "Showcase"
+   Diagonal gradient creating visual interest */
+.bg-showcase {
+  background:
+    radial-gradient(ellipse 70% 45% at 15% 85%, rgba(233, 30, 140, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 55% 40% at 90% 15%, rgba(123, 63, 242, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 60% 60%, rgba(255, 107, 53, 0.02) 0%, transparent 50%),
+    linear-gradient(145deg, #FAFBFC 0%, #F8F7FF 35%, #FDF9FC 70%, #FAFBFC 100%);
+}
+
+.dark .bg-showcase {
+  background:
+    radial-gradient(ellipse 70% 45% at 15% 85%, rgba(233, 30, 140, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse 55% 40% at 90% 15%, rgba(123, 63, 242, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 60% 60%, rgba(255, 107, 53, 0.06) 0%, transparent 50%),
+    linear-gradient(145deg, #0A0A0F 0%, #0E0C18 35%, #0D0B14 70%, #0A0A0F 100%);
+}
+
+/* Testimonials - "Trust Foundation"
+   Warm, personal feel with subtle gold undertone */
+.bg-trust {
+  background:
+    radial-gradient(ellipse 90% 50% at 50% 100%, rgba(251, 191, 36, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 10% 20%, rgba(123, 63, 242, 0.02) 0%, transparent 50%),
+    linear-gradient(180deg, #FEFDFB 0%, #FFFDF9 50%, #FFFFFF 100%);
+}
+
+.dark .bg-trust {
+  background:
+    radial-gradient(ellipse 90% 50% at 50% 100%, rgba(251, 191, 36, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 10% 20%, rgba(123, 63, 242, 0.06) 0%, transparent 50%),
+    linear-gradient(180deg, #0B0A0A 0%, #0A0909 50%, #090909 100%);
+}
+
+/* Pricing - "Decision Space"
+   Neutral, professional with subtle brand presence */
+.bg-decision {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(123, 63, 242, 0.025) 0%, transparent 45%),
+    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(233, 30, 140, 0.015) 0%, transparent 50%),
+    linear-gradient(180deg, #FFFFFF 0%, #FCFCFD 50%, #FAFBFC 100%);
+}
+
+.dark .bg-decision {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(123, 63, 242, 0.08) 0%, transparent 45%),
+    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(233, 30, 140, 0.05) 0%, transparent 50%),
+    linear-gradient(180deg, #0A0A0F 0%, #090910 50%, #08080D 100%);
+}
+
+/* CTA Section - "Energy Burst"
+   Concentrated brand energy for conversion */
+.bg-energy-burst {
+  background:
+    radial-gradient(ellipse 50% 45% at 50% 50%, rgba(123, 63, 242, 0.08) 0%, transparent 65%),
+    radial-gradient(ellipse 35% 25% at 75% 25%, rgba(233, 30, 140, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 30% 30% at 25% 75%, rgba(255, 107, 53, 0.04) 0%, transparent 55%),
+    linear-gradient(180deg, #FAF9FF 0%, #FDFCFB 50%, #FEFEFE 100%);
+}
+
+.dark .bg-energy-burst {
+  background:
+    radial-gradient(ellipse 50% 45% at 50% 50%, rgba(123, 63, 242, 0.18) 0%, transparent 65%),
+    radial-gradient(ellipse 35% 25% at 75% 25%, rgba(233, 30, 140, 0.14) 0%, transparent 55%),
+    radial-gradient(ellipse 30% 30% at 25% 75%, rgba(255, 107, 53, 0.10) 0%, transparent 55%),
+    linear-gradient(180deg, #0F0D1A 0%, #0C0A14 50%, #0A090F 100%);
+}
+
+/* Footer - "Grounded"
+   Solid foundation with subtle depth */
+.bg-grounded {
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.015) 100%),
+    #FFFFFF;
+}
+
+.dark .bg-grounded {
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(123, 63, 242, 0.02) 100%),
+    #0A0A0F;
+}
+
+/* Reduced motion support for landing page backgrounds */
+@media (prefers-reduced-motion: reduce) {
+  .animate-ambient-pulse,
+  .animate-mesh-morph {
+    animation: none !important;
   }
 }

@@ -1,0 +1,19 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Head -->
+  <circle cx="40" cy="40" r="32" fill="#D4A574" stroke="#1a1a1a" stroke-width="2"/>
+  <!-- Hair - Long straight -->
+  <path d="M12 36C12 18 24 8 40 8C56 8 68 18 68 36C68 34 64 30 60 28C60 32 62 44 62 52C62 56 58 58 56 54C56 44 58 32 56 28C52 26 48 24 40 24C32 24 28 26 24 28C22 32 24 44 24 54C22 58 18 56 18 52C18 44 20 32 20 28C16 30 12 34 12 36Z" fill="#1a1a1a" stroke="#1a1a1a" stroke-width="1"/>
+  <!-- Eyes -->
+  <ellipse cx="30" cy="40" rx="2.5" ry="3.5" fill="#1a1a1a"/>
+  <ellipse cx="50" cy="40" rx="2.5" ry="3.5" fill="#1a1a1a"/>
+  <!-- Eyebrows -->
+  <path d="M26 34C28 33 32 33 34 35" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M46 35C48 33 52 33 54 34" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Nose -->
+  <path d="M40 44C39 46 39 48 41 50" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Smile -->
+  <path d="M34 56C37 59 43 59 46 56" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <!-- Earrings -->
+  <circle cx="12" cy="44" r="3" fill="#ec4899"/>
+  <circle cx="68" cy="44" r="3" fill="#ec4899"/>
+</svg>
