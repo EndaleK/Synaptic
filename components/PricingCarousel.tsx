@@ -152,7 +152,7 @@ export function PricingCarousel() {
               onClick={() => setCurrentSlide(index)}
               className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all ${
                 currentSlide === index
-                  ? 'bg-[#7B3FF2] text-white shadow-lg scale-105'
+                  ? 'bg-[#C4B5FD] text-[#5B21B6] shadow-lg scale-105'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
@@ -176,7 +176,7 @@ export function PricingCarousel() {
         <button
           onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))}
           disabled={currentSlide === 0}
-          className="px-4 py-2 rounded-lg bg-purple-600 text-white disabled:opacity-30 disabled:cursor-not-allowed text-sm font-semibold"
+          className="px-4 py-2 rounded-lg bg-[#C4B5FD] text-[#5B21B6] disabled:opacity-30 disabled:cursor-not-allowed text-sm font-semibold"
         >
           ← Previous
         </button>
@@ -187,7 +187,7 @@ export function PricingCarousel() {
               onClick={() => setCurrentSlide(index)}
               className={`w-3 h-3 rounded-full transition-all ${
                 currentSlide === index
-                  ? 'bg-purple-600 w-8'
+                  ? 'bg-[#C4B5FD] w-8'
                   : 'bg-gray-300 dark:bg-gray-700'
               }`}
               aria-label={`Go to slide ${index + 1}`}
@@ -197,7 +197,7 @@ export function PricingCarousel() {
         <button
           onClick={() => setCurrentSlide(Math.min(totalSlides - 1, currentSlide + 1))}
           disabled={currentSlide === totalSlides - 1}
-          className="px-4 py-2 rounded-lg bg-purple-600 text-white disabled:opacity-30 disabled:cursor-not-allowed text-sm font-semibold"
+          className="px-4 py-2 rounded-lg bg-[#C4B5FD] text-[#5B21B6] disabled:opacity-30 disabled:cursor-not-allowed text-sm font-semibold"
         >
           Next →
         </button>
