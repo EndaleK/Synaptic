@@ -289,42 +289,36 @@ export default function LandingPage() {
             </h3>
             <div className="grid md:grid-cols-3 gap-6">
               {/* Benefit 1 */}
-              <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                <div className="flex-shrink-0">
+              <div className="flex flex-col items-center text-center p-6 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <div className="mb-4">
                   <BrainIcon size="md" />
                 </div>
-                <div>
-                  <h4 className="font-semibold text-black dark:text-white mb-1">Spaced repetition</h4>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">
-                    Reviews scheduled automatically so you retain more with less effort
-                  </p>
-                </div>
+                <h4 className="font-semibold text-black dark:text-white mb-2">Spaced repetition</h4>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  Reviews scheduled automatically so you retain more with less effort
+                </p>
               </div>
 
               {/* Benefit 2 */}
-              <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                <div className="flex-shrink-0">
+              <div className="flex flex-col items-center text-center p-6 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <div className="mb-4">
                   <TargetIcon size="md" />
                 </div>
-                <div>
-                  <h4 className="font-semibold text-black dark:text-white mb-1">AI prioritization</h4>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">
-                    Focus on what matters—AI identifies your weak spots
-                  </p>
-                </div>
+                <h4 className="font-semibold text-black dark:text-white mb-2">AI prioritization</h4>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  Focus on what matters—AI identifies your weak spots
+                </p>
               </div>
 
               {/* Benefit 3 */}
-              <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                <div className="flex-shrink-0">
+              <div className="flex flex-col items-center text-center p-6 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <div className="mb-4">
                   <VerifyIcon size="md" />
                 </div>
-                <div>
-                  <h4 className="font-semibold text-black dark:text-white mb-1">Your notes, cited</h4>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">
-                    Every answer comes from your actual documents—no hallucinations
-                  </p>
-                </div>
+                <h4 className="font-semibold text-black dark:text-white mb-2">Your notes, cited</h4>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  Every answer comes from your actual documents—no hallucinations
+                </p>
               </div>
             </div>
           </div>
@@ -405,7 +399,7 @@ export default function LandingPage() {
               onClick={() => setShowAllTools(!showAllTools)}
               className="inline-flex items-center gap-2 text-black dark:text-white font-medium hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
             >
-              {showAllTools ? "Show less" : "See all 12 tools included"}
+              {showAllTools ? "Show less" : "See more tools included"}
               {showAllTools ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
           </div>

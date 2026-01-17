@@ -99,7 +99,7 @@ export default function UsageWidget() {
 
   if (loading) {
     return (
-      <div className="bg-white/90 dark:bg-white/[0.04] backdrop-blur-xl rounded-2xl p-6 border border-gray-100 dark:border-white/10 h-full flex flex-col card-level-1">
+      <div className="bg-white/90 dark:bg-white/[0.04] backdrop-blur-xl rounded-2xl p-6 border border-gray-100 dark:border-white/10 card-level-1">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
             <TrendingUp className="w-5 h-5 text-white animate-pulse" />
@@ -143,7 +143,7 @@ export default function UsageWidget() {
   )
 
   return (
-    <div className="bg-white/90 dark:bg-white/[0.04] backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-white/10 h-full flex flex-col overflow-hidden card-level-1 card-glow">
+    <div className="bg-white/90 dark:bg-white/[0.04] backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-white/10 overflow-hidden card-level-1 card-glow">
       {/* Header - Always Visible */}
       <button
         onClick={toggleWidgetExpanded}
@@ -195,7 +195,7 @@ export default function UsageWidget() {
             ) : (
               <>
                 {/* Usage items */}
-                <div className="space-y-3 flex-1">
+                <div className="space-y-3">
             {displayItems.map((item) => {
               const percentage = item.limit === Infinity ? 0 : (item.used / item.limit) * 100
               const isNearLimit = percentage >= 80
