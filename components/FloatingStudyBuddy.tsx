@@ -642,11 +642,11 @@ export default function FloatingStudyBuddy() {
           {/* Main button with idle animation */}
           <button
             onClick={() => setViewMode('floating')}
-            className="w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-lg hover:shadow-2xl transition-all hover:scale-110 active:scale-95 flex items-center justify-center animate-[bounce-gentle_3s_ease-in-out_infinite_30s]"
+            className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-lg hover:shadow-2xl transition-all hover:scale-110 active:scale-95 flex items-center justify-center animate-[bounce-gentle_3s_ease-in-out_infinite_30s]"
             aria-label="Open Study Buddy"
           >
             <div className="relative">
-              <StudyBuddyIcon size="sm" className="w-8 h-8" />
+              <StudyBuddyIcon size="sm" className="w-12 h-12" />
               {mounted && messages.length > 0 && (
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white animate-pulse" />
               )}
