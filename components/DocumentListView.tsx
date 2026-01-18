@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { FileText, Image as ImageIcon, File, Globe, Star, MoreVertical, Trash2, FolderInput } from "lucide-react"
+import { FileText, Image as ImageIcon, File, Globe, Star, MoreVertical, Trash2, FolderInput, Share2 } from "lucide-react"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { cn, formatFileSize, formatRelativeTime } from "@/lib/utils"
 
@@ -10,6 +10,7 @@ interface DocumentListViewProps {
   onSelectMode: (documentId: string, mode: PreferredMode) => void
   onDelete: (documentId: string) => Promise<void>
   onStar: (documentId: string, starred: boolean) => Promise<void>
+  onShare: (document: Document) => void
   selectedDocuments: Set<string>
   onToggleSelect: (documentId: string) => void
 }
@@ -19,6 +20,7 @@ export default function DocumentListView({
   onSelectMode,
   onDelete,
   onStar,
+  onShare,
   selectedDocuments,
   onToggleSelect
 }: DocumentListViewProps) {
@@ -258,7 +260,20 @@ export default function DocumentListView({
           {/* Divider */}
           <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
 
-          {/* Other Actions */}
+          {/* Share Action */}
+          <button
+            onClick={() => {
+              const doc = documents.find(d => d.id === contextMenu.documentId)
+              if (doc) onShare(doc)
+              setContextMenu(null)
+            }}
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+          >
+            <Share2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            Share
+          </button>
+
+          {/* Delete Action */}
           <button
             onClick={async () => {
               await onDelete(contextMenu.documentId)

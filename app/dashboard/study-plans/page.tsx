@@ -395,26 +395,26 @@ export default function StudyPlansPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-purple-50/30 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
-      <div className="border-b border-white/10 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-10">
+      <div className="border-b border-gray-200 dark:border-white/10 bg-white/80 dark:bg-slate-900/50 backdrop-blur-xl sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
               >
-                <ArrowLeft className="w-5 h-5 text-white/70" />
+                <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-white/70" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                   <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl">
                     <Calendar className="w-6 h-6 text-white" />
                   </div>
                   Study Plans
                 </h1>
-                <p className="text-white/60 text-sm mt-1">
+                <p className="text-gray-500 dark:text-white/60 text-sm mt-1">
                   Manage your exam preparation schedules
                 </p>
               </div>
@@ -429,14 +429,14 @@ export default function StudyPlansPage() {
           </div>
 
           {/* Main View Tabs: Schedule vs Study Guide */}
-          <div className="flex gap-1 mt-4 p-1 bg-white/5 rounded-xl w-fit">
+          <div className="flex gap-1 mt-4 p-1 bg-gray-100 dark:bg-white/5 rounded-xl w-fit">
             <button
               type="button"
               onClick={() => setMainView('schedule')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all cursor-pointer ${
                 mainView === 'schedule'
                   ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                  : 'text-white/60 hover:text-white hover:bg-white/10'
+                  : 'text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10'
               }`}
             >
               <Calendar className="w-4 h-4" />
@@ -448,7 +448,7 @@ export default function StudyPlansPage() {
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all cursor-pointer ${
                 mainView === 'study-guide'
                   ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                  : 'text-white/60 hover:text-white hover:bg-white/10'
+                  : 'text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10'
               }`}
             >
               <BookMarked className="w-4 h-4" />
@@ -483,14 +483,14 @@ export default function StudyPlansPage() {
         {todaySessions.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Target className="w-5 h-5 text-purple-400" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Target className="w-5 h-5 text-purple-500 dark:text-purple-400" />
                 Today&apos;s Study Sessions
               </h2>
               <button
                 onClick={handleReschedule}
                 disabled={rescheduling}
-                className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-lg transition-colors text-sm"
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20 text-gray-600 hover:text-gray-900 dark:text-white/70 dark:hover:text-white rounded-lg transition-colors text-sm"
               >
                 <RefreshCw className={`w-4 h-4 ${rescheduling ? 'animate-spin' : ''}`} />
                 Reschedule Missed
@@ -505,7 +505,7 @@ export default function StudyPlansPage() {
                 return (
                   <div
                     key={session.id}
-                    className="p-5 bg-slate-800/50 border border-white/10 rounded-xl hover:border-white/20 transition-all"
+                    className="p-5 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-white/10 rounded-xl hover:border-purple-300 dark:hover:border-white/20 transition-all shadow-sm"
                   >
                     {/* Header with mode icon */}
                     <div className="flex items-start gap-3 mb-4">
@@ -514,7 +514,7 @@ export default function StudyPlansPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <p className="text-white font-semibold truncate">{session.topic || session.planTitle || 'Study Session'}</p>
+                          <p className="text-gray-900 dark:text-white font-semibold truncate">{session.topic || session.planTitle || 'Study Session'}</p>
                           <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium border ${
                             session.status === 'completed'
                               ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
@@ -527,7 +527,7 @@ export default function StudyPlansPage() {
                             {session.status === 'in_progress' ? 'In Progress' : session.status === 'completed' ? 'Done' : session.status === 'missed' ? 'Missed' : 'Pending'}
                           </span>
                         </div>
-                        <p className="text-white/50 text-sm">{modeConfig.label} • {session.estimatedMinutes} min</p>
+                        <p className="text-gray-500 dark:text-white/50 text-sm">{modeConfig.label} • {session.estimatedMinutes} min</p>
                         {/* Quiz/Exam badges */}
                         <div className="flex gap-1.5 mt-1.5">
                           {session.hasDailyQuiz && (
@@ -548,12 +548,12 @@ export default function StudyPlansPage() {
 
                     {/* Document info */}
                     {session.documentName && (
-                      <div className="mb-4 p-2 bg-white/5 rounded-lg">
-                        <p className="text-white/60 text-xs flex items-center gap-1">
+                      <div className="mb-4 p-2 bg-gray-50 dark:bg-white/5 rounded-lg">
+                        <p className="text-gray-600 dark:text-white/60 text-xs flex items-center gap-1">
                           <FileText className="w-3 h-3" />
                           {session.documentName}
                           {session.topicPages?.startPage && session.topicPages?.endPage && (
-                            <span className="ml-1 text-white/40">
+                            <span className="ml-1 text-gray-400 dark:text-white/40">
                               (Pages {session.topicPages.startPage}-{session.topicPages.endPage})
                             </span>
                           )}
@@ -575,8 +575,8 @@ export default function StudyPlansPage() {
                     </div>
 
                     {/* Quick access to other modes */}
-                    <div className="mt-3 pt-3 border-t border-white/10">
-                      <p className="text-white/40 text-xs mb-2">Quick access:</p>
+                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/10">
+                      <p className="text-gray-400 dark:text-white/40 text-xs mb-2">Quick access:</p>
                       <div className="flex gap-1.5">
                         {(['flashcards', 'chat', 'mindmap', 'exam', 'podcast'] as const)
                           .slice(0, 5)
@@ -590,10 +590,10 @@ export default function StudyPlansPage() {
                                   const docParam = session.documentId ? `&documentId=${session.documentId}` : ''
                                   router.push(`/dashboard?mode=${altMode}${docParam}`)
                                 }}
-                                className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors group"
+                                className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 rounded-lg transition-colors group"
                                 title={altConfig.label}
                               >
-                                <AltIcon className="w-4 h-4 text-white/50 group-hover:text-white" />
+                                <AltIcon className="w-4 h-4 text-gray-500 group-hover:text-gray-700 dark:text-white/50 dark:group-hover:text-white" />
                               </button>
                             )
                           })}
@@ -617,8 +617,8 @@ export default function StudyPlansPage() {
               }}
               className={`px-4 py-2 rounded-lg font-medium transition-all ${
                 activeTab === tab
-                  ? 'bg-white/10 text-white'
-                  : 'text-white/50 hover:text-white hover:bg-white/5'
+                  ? 'bg-purple-100 dark:bg-white/10 text-purple-700 dark:text-white'
+                  : 'text-gray-500 dark:text-white/50 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
               }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -633,11 +633,11 @@ export default function StudyPlansPage() {
           </div>
         ) : plans.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-2xl flex items-center justify-center">
-              <Calendar className="w-8 h-8 text-white/30" />
+            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center">
+              <Calendar className="w-8 h-8 text-gray-400 dark:text-white/30" />
             </div>
-            <h3 className="text-lg font-medium text-white mb-2">No study plans yet</h3>
-            <p className="text-white/50 mb-6 max-w-md mx-auto">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No study plans yet</h3>
+            <p className="text-gray-500 dark:text-white/50 mb-6 max-w-md mx-auto">
               Create a study plan to organize your exam preparation with smart scheduling and progress tracking.
             </p>
             <button
@@ -658,7 +658,7 @@ export default function StudyPlansPage() {
               return (
                 <div
                   key={plan.id}
-                  className="bg-slate-800/50 border border-white/10 rounded-2xl hover:border-white/20 transition-all"
+                  className="bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-white/10 rounded-2xl hover:border-purple-300 dark:hover:border-white/20 transition-all shadow-sm"
                 >
                   {/* Main Row */}
                   <div
@@ -668,16 +668,16 @@ export default function StudyPlansPage() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-white">{plan.title}</h3>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{plan.title}</h3>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium border flex items-center gap-1 ${getStatusColor(plan.status)}`}>
                             {getStatusIcon(plan.status)}
                             {plan.status}
                           </span>
                         </div>
                         {plan.examTitle && plan.examTitle !== plan.title && (
-                          <p className="text-white/60 text-sm mb-3">{plan.examTitle}</p>
+                          <p className="text-gray-500 dark:text-white/60 text-sm mb-3">{plan.examTitle}</p>
                         )}
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-white/50">
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-white/50">
                           <span className="flex items-center gap-1.5">
                             <Calendar className="w-4 h-4" />
                             {new Date(plan.examDate).toLocaleDateString('en-US', {
@@ -713,7 +713,7 @@ export default function StudyPlansPage() {
                               fill="none"
                               stroke="currentColor"
                               strokeWidth="6"
-                              className="text-white/10"
+                              className="text-gray-200 dark:text-white/10"
                             />
                             <circle
                               cx="32"
@@ -733,21 +733,21 @@ export default function StudyPlansPage() {
                             </defs>
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-sm font-bold text-white">{progress}%</span>
+                            <span className="text-sm font-bold text-gray-900 dark:text-white">{progress}%</span>
                           </div>
                         </div>
-                        <ChevronRight className={`w-5 h-5 text-white/30 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                        <ChevronRight className={`w-5 h-5 text-gray-400 dark:text-white/30 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                       </div>
                     </div>
                   </div>
 
                   {/* Expanded Details */}
                   {isExpanded && (
-                    <div className="px-6 pb-6 border-t border-white/10 pt-5">
+                    <div className="px-6 pb-6 border-t border-gray-100 dark:border-white/10 pt-5">
                       {/* Start Studying Now - Primary CTA */}
                       <div className="mb-6">
-                        <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-purple-400" />
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-purple-500 dark:text-purple-400" />
                           Start Studying Now
                         </h4>
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -763,12 +763,12 @@ export default function StudyPlansPage() {
                                   const docParam = firstDoc?.documentId ? `&documentId=${firstDoc.documentId}` : ''
                                   router.push(`/dashboard?mode=${mode}${docParam}`)
                                 }}
-                                className={`flex flex-col items-center gap-2 p-3 bg-gradient-to-br ${config.color} bg-opacity-10 hover:bg-opacity-20 border border-white/10 hover:border-white/20 rounded-xl transition-all group`}
+                                className={`flex flex-col items-center gap-2 p-3 bg-gray-50 dark:bg-gradient-to-br ${config.color} dark:bg-opacity-10 hover:bg-gray-100 dark:hover:bg-opacity-20 border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 rounded-xl transition-all group`}
                               >
                                 <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${config.color} flex items-center justify-center shadow-lg`}>
                                   <Icon className="w-5 h-5 text-white" />
                                 </div>
-                                <span className="text-white text-xs font-medium">{config.label}</span>
+                                <span className="text-gray-700 dark:text-white text-xs font-medium">{config.label}</span>
                               </button>
                             )
                           })}
@@ -778,7 +778,7 @@ export default function StudyPlansPage() {
                       <div className="grid md:grid-cols-3 gap-6">
                         {/* Documents with Actions */}
                         <div>
-                          <h4 className="text-sm font-medium text-white/70 mb-3 flex items-center gap-2">
+                          <h4 className="text-sm font-medium text-gray-600 dark:text-white/70 mb-3 flex items-center gap-2">
                             <FileText className="w-4 h-4" />
                             Study Materials
                           </h4>
@@ -805,34 +805,34 @@ export default function StudyPlansPage() {
                               }
 
                               return (
-                                <div key={i} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors group">
+                                <div key={i} className="p-3 bg-gray-50 hover:bg-gray-100 dark:bg-white/5 dark:hover:bg-white/10 rounded-xl transition-colors group">
                                   <div className="flex items-start justify-between gap-2 mb-1">
-                                    <p className="text-white text-sm font-medium truncate flex-1">{doc.documentName}</p>
-                                    <span className="text-white/40 text-xs flex-shrink-0">{doc.estimatedHours.toFixed(1)}h</span>
+                                    <p className="text-gray-900 dark:text-white text-sm font-medium truncate flex-1">{doc.documentName}</p>
+                                    <span className="text-gray-400 dark:text-white/40 text-xs flex-shrink-0">{doc.estimatedHours.toFixed(1)}h</span>
                                   </div>
 
                                   {/* Session info: topic + page range */}
                                   {doc.todaySession ? (
                                     <div className="flex items-center gap-1.5 mb-2 text-xs">
-                                      <span className="text-purple-400">📍</span>
-                                      <span className="text-white/70 truncate">{doc.todaySession.topic}</span>
+                                      <span className="text-purple-500 dark:text-purple-400">📍</span>
+                                      <span className="text-gray-600 dark:text-white/70 truncate">{doc.todaySession.topic}</span>
                                       {doc.todaySession.topicPages?.startPage && doc.todaySession.topicPages?.endPage && (
-                                        <span className="text-white/40 flex-shrink-0">
+                                        <span className="text-gray-400 dark:text-white/40 flex-shrink-0">
                                           • Pages {doc.todaySession.topicPages.startPage}-{doc.todaySession.topicPages.endPage}
                                         </span>
                                       )}
                                     </div>
                                   ) : doc.nextSession ? (
                                     <div className="flex items-center gap-1.5 mb-2 text-xs">
-                                      <span className="text-amber-400">⏳</span>
-                                      <span className="text-white/50 truncate">
+                                      <span className="text-amber-500 dark:text-amber-400">⏳</span>
+                                      <span className="text-gray-500 dark:text-white/50 truncate">
                                         Next: {doc.nextSession.topic} on {new Date(doc.nextSession.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                       </span>
                                     </div>
                                   ) : (
                                     <div className="flex items-center gap-1.5 mb-2 text-xs">
-                                      <span className="text-white/30">—</span>
-                                      <span className="text-white/40">No session scheduled</span>
+                                      <span className="text-gray-300 dark:text-white/30">—</span>
+                                      <span className="text-gray-400 dark:text-white/40">No session scheduled</span>
                                     </div>
                                   )}
 
@@ -847,10 +847,10 @@ export default function StudyPlansPage() {
                                             e.stopPropagation()
                                             router.push(buildModeUrl(mode))
                                           }}
-                                          className="p-1.5 bg-white/5 hover:bg-white/15 rounded-lg transition-colors"
+                                          className="p-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/15 rounded-lg transition-colors"
                                           title={`${config.label}${doc.todaySession ? ` - ${doc.todaySession.topic}` : ''}`}
                                         >
-                                          <Icon className="w-3.5 h-3.5 text-white/50 hover:text-white" />
+                                          <Icon className="w-3.5 h-3.5 text-gray-500 hover:text-gray-700 dark:text-white/50 dark:hover:text-white" />
                                         </button>
                                       )
                                     })}
@@ -859,7 +859,7 @@ export default function StudyPlansPage() {
                               )
                             })}
                             {(plan.documents?.length || 0) > 3 && (
-                              <p className="text-white/40 text-xs pl-1">+{plan.documents.length - 3} more documents</p>
+                              <p className="text-gray-400 dark:text-white/40 text-xs pl-1">+{plan.documents.length - 3} more documents</p>
                             )}
                           </div>
                         </div>
@@ -867,13 +867,13 @@ export default function StudyPlansPage() {
                         {/* Weak Topics */}
                         {plan.weakTopics && plan.weakTopics.length > 0 ? (
                           <div>
-                            <h4 className="text-sm font-medium text-white/70 mb-3 flex items-center gap-2">
+                            <h4 className="text-sm font-medium text-gray-600 dark:text-white/70 mb-3 flex items-center gap-2">
                               <Brain className="w-4 h-4" />
                               Focus Areas
                             </h4>
                             <div className="flex flex-wrap gap-2">
                               {plan.weakTopics.slice(0, 5).map((topic, i) => (
-                                <span key={i} className="px-2.5 py-1.5 bg-amber-500/10 text-amber-400 rounded-lg text-xs font-medium border border-amber-500/20">
+                                <span key={i} className="px-2.5 py-1.5 bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-medium border border-amber-200 dark:border-amber-500/20">
                                   {topic}
                                 </span>
                               ))}
@@ -881,39 +881,39 @@ export default function StudyPlansPage() {
                           </div>
                         ) : (
                           <div>
-                            <h4 className="text-sm font-medium text-white/70 mb-3 flex items-center gap-2">
+                            <h4 className="text-sm font-medium text-gray-600 dark:text-white/70 mb-3 flex items-center gap-2">
                               <Brain className="w-4 h-4" />
                               Focus Areas
                             </h4>
-                            <p className="text-white/40 text-sm">Complete some study sessions to identify weak areas</p>
+                            <p className="text-gray-400 dark:text-white/40 text-sm">Complete some study sessions to identify weak areas</p>
                           </div>
                         )}
 
                         {/* Stats */}
                         <div>
-                          <h4 className="text-sm font-medium text-white/70 mb-3 flex items-center gap-2">
+                          <h4 className="text-sm font-medium text-gray-600 dark:text-white/70 mb-3 flex items-center gap-2">
                             <TrendingUp className="w-4 h-4" />
                             Progress
                           </h4>
                           <div className="space-y-3 text-sm">
                             <div className="flex justify-between items-center">
-                              <span className="text-white/50">Sessions</span>
-                              <span className="text-white font-medium">{plan.sessionsCompleted}/{plan.sessionsTotal || '—'}</span>
+                              <span className="text-gray-500 dark:text-white/50">Sessions</span>
+                              <span className="text-gray-900 dark:text-white font-medium">{plan.sessionsCompleted}/{plan.sessionsTotal || '—'}</span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-white/50">Daily Target</span>
-                              <span className="text-white font-medium">{plan.dailyTargetHours}h</span>
+                              <span className="text-gray-500 dark:text-white/50">Daily Target</span>
+                              <span className="text-gray-900 dark:text-white font-medium">{plan.dailyTargetHours}h</span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-white/50">Learning Style</span>
-                              <span className="text-white font-medium capitalize">{plan.learningStyle}</span>
+                              <span className="text-gray-500 dark:text-white/50">Learning Style</span>
+                              <span className="text-gray-900 dark:text-white font-medium capitalize">{plan.learningStyle}</span>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-white/10">
+                      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-white/10">
                         {plan.status === 'active' && (
                           <button
                             onClick={(e) => {
@@ -955,7 +955,7 @@ export default function StudyPlansPage() {
                             e.stopPropagation()
                             handleViewSchedule(plan.id)
                           }}
-                          className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20 text-gray-700 dark:text-white rounded-lg transition-colors"
                         >
                           <Calendar className="w-4 h-4" />
                           View Schedule
@@ -966,13 +966,13 @@ export default function StudyPlansPage() {
                               e.stopPropagation()
                               setShowDeleteConfirm(showDeleteConfirm === plan.id ? null : plan.id)
                             }}
-                            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/50 hover:text-white"
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors text-gray-500 dark:text-white/50 hover:text-gray-700 dark:hover:text-white"
                           >
                             <MoreVertical className="w-5 h-5" />
                           </button>
                           {showDeleteConfirm === plan.id && (
-                            <div className="absolute right-0 top-full mt-2 p-4 bg-slate-800 border border-white/20 rounded-xl shadow-xl z-50 w-64">
-                              <p className="text-white text-sm mb-3">Delete this study plan?</p>
+                            <div className="absolute right-0 top-full mt-2 p-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/20 rounded-xl shadow-xl z-50 w-64">
+                              <p className="text-gray-900 dark:text-white text-sm mb-3">Delete this study plan?</p>
                               <div className="flex gap-2">
                                 <button
                                   onClick={(e) => {
@@ -989,7 +989,7 @@ export default function StudyPlansPage() {
                                     e.stopPropagation()
                                     setShowDeleteConfirm(null)
                                   }}
-                                  className="flex-1 px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm"
+                                  className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20 text-gray-700 dark:text-white rounded-lg transition-colors text-sm"
                                 >
                                   Cancel
                                 </button>
@@ -1031,16 +1031,16 @@ export default function StudyPlansPage() {
 
       {/* Plan Schedule Modal */}
       {viewingSchedulePlanId && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-white/10 rounded-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col shadow-xl">
             {/* Header */}
-            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+            <div className="p-6 border-b border-gray-200 dark:border-white/10 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-purple-400" />
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-purple-500 dark:text-purple-400" />
                   Study Schedule
                 </h2>
-                <p className="text-white/50 text-sm mt-1">
+                <p className="text-gray-500 dark:text-white/50 text-sm mt-1">
                   {plans.find(p => p.id === viewingSchedulePlanId)?.title || 'Study Plan'}
                 </p>
               </div>
@@ -1049,7 +1049,7 @@ export default function StudyPlansPage() {
                   setViewingSchedulePlanId(null)
                   setPlanSessions([])
                 }}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/70 hover:text-white"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors text-gray-600 dark:text-white/70 hover:text-gray-900 dark:hover:text-white"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
@@ -1063,11 +1063,11 @@ export default function StudyPlansPage() {
                 </div>
               ) : planSessions.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-2xl flex items-center justify-center">
-                    <Calendar className="w-8 h-8 text-white/30" />
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center">
+                    <Calendar className="w-8 h-8 text-gray-400 dark:text-white/30" />
                   </div>
-                  <h3 className="text-lg font-medium text-white mb-2">No sessions scheduled</h3>
-                  <p className="text-white/50 max-w-md mx-auto mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No sessions scheduled</h3>
+                  <p className="text-gray-500 dark:text-white/50 max-w-md mx-auto mb-6">
                     This study plan doesn&apos;t have any sessions yet. Generate a schedule based on your exam date and documents.
                   </p>
                   <button
@@ -1106,17 +1106,17 @@ export default function StudyPlansPage() {
                     return (
                       <div key={date} className={`p-4 rounded-xl border ${
                         isToday
-                          ? 'bg-purple-500/10 border-purple-500/30'
+                          ? 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30'
                           : isPast
-                          ? 'bg-white/5 border-white/5'
-                          : 'bg-slate-800/50 border-white/10'
+                          ? 'bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5'
+                          : 'bg-white dark:bg-slate-800/50 border-gray-200 dark:border-white/10'
                       }`}>
                         <div className="flex items-center gap-2 mb-3">
-                          <span className={`text-sm font-medium ${isToday ? 'text-purple-400' : 'text-white/70'}`}>
+                          <span className={`text-sm font-medium ${isToday ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-white/70'}`}>
                             {dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                           </span>
                           {isToday && (
-                            <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded-full">Today</span>
+                            <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 text-xs rounded-full">Today</span>
                           )}
                         </div>
                         <div className="space-y-2">
@@ -1126,26 +1126,26 @@ export default function StudyPlansPage() {
                             const ModeIcon = modeConfig.icon
 
                             return (
-                              <div key={session.id} className="flex items-center gap-3 p-2 bg-white/5 rounded-lg">
+                              <div key={session.id} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-white/5 rounded-lg">
                                 <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${modeConfig.color} flex items-center justify-center`}>
                                   <ModeIcon className="w-4 h-4 text-white" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-white text-sm font-medium truncate">
+                                  <p className="text-gray-900 dark:text-white text-sm font-medium truncate">
                                     {session.topic || 'Study Session'}
                                   </p>
-                                  <p className="text-white/50 text-xs">
+                                  <p className="text-gray-500 dark:text-white/50 text-xs">
                                     {session.estimatedMinutes} min • {modeConfig.label}
                                   </p>
                                 </div>
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                                   session.status === 'completed'
-                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                    ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                                     : session.status === 'in_progress'
-                                    ? 'bg-blue-500/20 text-blue-400'
+                                    ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'
                                     : session.status === 'missed'
-                                    ? 'bg-red-500/20 text-red-400'
-                                    : 'bg-white/10 text-white/50'
+                                    ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400'
+                                    : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-white/50'
                                 }`}>
                                   {session.status === 'in_progress' ? 'In Progress' : session.status === 'completed' ? 'Done' : session.status === 'missed' ? 'Missed' : 'Scheduled'}
                                 </span>

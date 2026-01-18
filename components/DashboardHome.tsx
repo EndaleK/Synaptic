@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { FileText, Clock, ChevronRight } from "lucide-react"
+import Link from "next/link"
+import { FileText, Clock, ChevronRight, Trophy, Medal, Swords, Gift } from "lucide-react"
 import { useUIStore, useDocumentStore } from "@/lib/store/useStore"
 import { RecommendedCard } from "@/components/RecommendedCard"
 import { StudyModeCard } from "@/components/StudyModeCard"
@@ -24,6 +25,7 @@ import {
 import { useStudyBuddyStore } from "@/lib/store/useStudyBuddyStore"
 import WelcomeModal from "@/components/WelcomeModal"
 import { useToast } from "@/components/ToastContainer"
+import StudyWrappedWidget from "@/components/StudyWrappedWidget"
 
 interface DashboardHomeProps {
   onModeSelect: (mode: string) => void
@@ -414,59 +416,70 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
               <UsageWidget />
             </div>
 
+            {/* Share Your Progress Widget */}
+            <StudyWrappedWidget />
+
             {/* Community & Share */}
             <section className="p-5 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-100 dark:border-indigo-800/50">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white mb-4">
                 <span>🌐</span> Community & Share
               </h3>
               <div className="space-y-3">
-                {/* Share Flashcards */}
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/shared/flashcards`)
-                    toast?.success('Share link copied!')
-                  }}
-                  className="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl hover:shadow-md transition-all group"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                    <span className="text-lg">📤</span>
+                {/* Invite Friends - Referral Program */}
+                <Link href="/dashboard/referrals" className="block">
+                  <div className="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl hover:shadow-md transition-all group">
+                    <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                      <Gift className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Invite Friends</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Earn rewards for referrals</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-purple-500 transition-colors" />
                   </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">Share Flashcards</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Share your decks with friends</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-purple-500 transition-colors" />
-                </button>
-
-                {/* Join Study Groups */}
-                <button
-                  onClick={() => toast?.info('Study groups coming soon!')}
-                  className="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl hover:shadow-md transition-all group"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <span className="text-lg">👥</span>
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">Study Groups</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Learn together with peers</p>
-                  </div>
-                  <span className="px-2 py-0.5 text-[10px] font-semibold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">Soon</span>
-                </button>
+                </Link>
 
                 {/* Leaderboard */}
-                <button
-                  onClick={() => toast?.info('Leaderboard coming soon!')}
-                  className="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl hover:shadow-md transition-all group"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <span className="text-lg">🏆</span>
+                <Link href="/dashboard/leaderboard" className="block">
+                  <div className="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl hover:shadow-md transition-all group">
+                    <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                      <Trophy className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Leaderboard</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">See your rank</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-amber-500 transition-colors" />
                   </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">Leaderboard</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Compete with top learners</p>
+                </Link>
+
+                {/* Achievements */}
+                <Link href="/dashboard/achievements" className="block">
+                  <div className="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl hover:shadow-md transition-all group">
+                    <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      <Medal className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Achievements</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Unlock 30+ badges</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
                   </div>
-                  <span className="px-2 py-0.5 text-[10px] font-semibold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">Soon</span>
-                </button>
+                </Link>
+
+                {/* Study Challenges */}
+                <Link href="/dashboard/challenges" className="block">
+                  <div className="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl hover:shadow-md transition-all group">
+                    <div className="w-9 h-9 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+                      <Swords className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Challenges</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Compete with friends</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-rose-500 transition-colors" />
+                  </div>
+                </Link>
               </div>
             </section>
           </div>

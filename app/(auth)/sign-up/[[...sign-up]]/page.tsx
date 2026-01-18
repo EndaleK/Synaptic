@@ -10,6 +10,12 @@ function SignUpContent() {
   const [referralCode, setReferralCode] = useState<string | null>(null)
 
   useEffect(() => {
+    // Check for role in URL params and store for onboarding
+    const role = searchParams.get('role')
+    if (role && ['learner', 'parent', 'educator', 'institution'].includes(role)) {
+      localStorage.setItem('pending_onboarding_role', role)
+    }
+
     // Check for referral code in URL params
     const ref = searchParams.get('ref')
     if (ref) {

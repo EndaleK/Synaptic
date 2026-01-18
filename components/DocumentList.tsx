@@ -15,6 +15,7 @@ interface DocumentListProps {
   onRefresh: () => void
   onUpload?: () => void
   onStar?: (documentId: string, starred: boolean) => Promise<void>
+  onShare?: (document: Document) => void
   selectedDocuments?: Set<string>
   onToggleSelect?: (documentId: string) => void
 }
@@ -27,6 +28,7 @@ export default function DocumentList({
   onRefresh,
   onUpload,
   onStar,
+  onShare,
   selectedDocuments,
   onToggleSelect
 }: DocumentListProps) {
@@ -169,6 +171,7 @@ export default function DocumentList({
               onDelete={onDelete}
               onRefresh={onRefresh}
               onStar={onStar}
+              onShare={onShare}
               selectedDocuments={selectedDocuments}
               onToggleSelect={onToggleSelect}
             />

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { FileText, File as FileIcon, FileType, Trash2, Download, Loader2, AlertCircle, Eye, Sparkles, Map, MessageCircle, BookOpen, Mic, Network, Database, Star, MoreHorizontal } from "lucide-react"
+import { FileText, File as FileIcon, FileType, Trash2, Download, Loader2, AlertCircle, Eye, Sparkles, Map, MessageCircle, BookOpen, Mic, Network, Database, Star, MoreHorizontal, Share2 } from "lucide-react"
 import { Document, PreferredMode } from "@/lib/supabase/types"
 import { cn } from "@/lib/utils"
 import ContentSelectionModal from "./ContentSelectionModal"
@@ -14,11 +14,12 @@ interface DocumentCardProps {
   onDelete: (documentId: string) => void
   onRefresh?: () => void
   onStar?: (documentId: string, starred: boolean) => Promise<void>
+  onShare?: (document: Document) => void
   selectedDocuments?: Set<string>
   onToggleSelect?: (documentId: string) => void
 }
 
-export default function DocumentCard({ document, onSelectMode, onDelete, onRefresh, onStar, selectedDocuments, onToggleSelect }: DocumentCardProps) {
+export default function DocumentCard({ document, onSelectMode, onDelete, onRefresh, onStar, onShare, selectedDocuments, onToggleSelect }: DocumentCardProps) {
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -450,6 +451,19 @@ export default function DocumentCard({ document, onSelectMode, onDelete, onRefre
                     >
                       <Download className="w-3.5 h-3.5" />
                       Download
+                    </button>
+                  )}
+                  {onShare && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowDropdown(false)
+                        onShare(document)
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                      Share
                     </button>
                   )}
                   <button

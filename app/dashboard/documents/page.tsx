@@ -7,6 +7,7 @@ import { Upload, RefreshCw, PanelLeftClose, PanelLeft, Globe } from "lucide-reac
 import DocumentList from "@/components/DocumentList"
 import DocumentListView from "@/components/DocumentListView"
 import DocumentTableView from "@/components/DocumentTableView"
+import ShareLibraryItemModal from "@/components/ShareLibraryItemModal"
 import FolderTree from "@/components/FolderTree"
 import QuickAccess from "@/components/QuickAccess"
 import ViewToggle, { ViewMode } from "@/components/ViewToggle"
@@ -62,6 +63,7 @@ function DocumentsPageContent() {
   const [showMoveModal, setShowMoveModal] = useState(false)
   const [availableFolders, setAvailableFolders] = useState<Array<{ id: string; name: string }>>([])
   const [isMoving, setIsMoving] = useState(false)
+  const [shareModalItem, setShareModalItem] = useState<{ id: string; type: 'document'; name: string } | null>(null)
 
   const { setCurrentDocument } = useDocumentStore()
   const { setActiveMode } = useUIStore()
@@ -203,6 +205,15 @@ function DocumentsPageContent() {
       toast.error(err instanceof Error ? err.message : 'Failed to delete document')
       throw err
     }
+  }
+
+  // Handle share
+  const handleShare = (document: Document) => {
+    setShareModalItem({
+      id: document.id,
+      type: 'document',
+      name: document.file_name
+    })
   }
 
   // Handle star/unstar
@@ -638,6 +649,7 @@ function DocumentsPageContent() {
                 onRefresh={fetchDocuments}
                 onUpload={() => setIsUploadModalOpen(true)}
                 onStar={handleStar}
+                onShare={handleShare}
                 selectedDocuments={selectedDocuments}
                 onToggleSelect={handleToggleSelect}
               />
@@ -649,6 +661,7 @@ function DocumentsPageContent() {
                 onSelectMode={handleSelectMode}
                 onDelete={handleDelete}
                 onStar={handleStar}
+                onShare={handleShare}
                 selectedDocuments={selectedDocuments}
                 onToggleSelect={handleToggleSelect}
               />
@@ -660,6 +673,7 @@ function DocumentsPageContent() {
                 onSelectMode={handleSelectMode}
                 onDelete={handleDelete}
                 onStar={handleStar}
+                onShare={handleShare}
                 selectedDocuments={selectedDocuments}
                 onToggleSelect={handleToggleSelect}
                 onSort={handleSort}
@@ -743,6 +757,15 @@ function DocumentsPageContent() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Share Library Item Modal */}
+      {shareModalItem && (
+        <ShareLibraryItemModal
+          item={shareModalItem}
+          isOpen={!!shareModalItem}
+          onClose={() => setShareModalItem(null)}
+        />
       )}
 
       {/* Move to Folder Modal */}

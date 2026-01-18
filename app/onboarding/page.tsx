@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import {
@@ -101,6 +101,16 @@ export default function OnboardingPage() {
   const { isLoaded } = useUser()
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Read pre-selected role from localStorage (set during sign-up)
+  useEffect(() => {
+    const pendingRole = localStorage.getItem('pending_onboarding_role')
+    if (pendingRole && ['learner', 'parent', 'educator', 'institution'].includes(pendingRole)) {
+      setSelectedRole(pendingRole as UserRole)
+      // Clear after reading so it doesn't persist on refresh
+      localStorage.removeItem('pending_onboarding_role')
+    }
+  }, [])
 
   async function handleContinue() {
     if (!selectedRole) return
