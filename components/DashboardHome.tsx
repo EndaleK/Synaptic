@@ -23,6 +23,7 @@ import {
 } from "@/components/illustrations"
 import { useStudyBuddyStore } from "@/lib/store/useStudyBuddyStore"
 import WelcomeModal from "@/components/WelcomeModal"
+import { useToast } from "@/components/ToastContainer"
 
 interface DashboardHomeProps {
   onModeSelect: (mode: string) => void
@@ -44,6 +45,7 @@ const studyModes = [
 export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
   const { user, isLoaded: isUserLoaded } = useUser()
   const router = useRouter()
+  const toast = useToast()
   const { setActiveMode } = useUIStore()
   const { setCurrentDocument } = useDocumentStore()
   const { setViewMode: setStudyBuddyViewMode } = useStudyBuddyStore()
@@ -273,10 +275,10 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
           </p>
         </section>
 
-        {/* Main Content Grid - Two columns on large screens (70/30 split) */}
-        <div className="grid lg:grid-cols-10 gap-8">
-          {/* Left Column - Main content (7/10 width = 70%) */}
-          <div className="lg:col-span-7 space-y-8">
+        {/* Main Content Grid - Two columns on large screens (62/38 split for better space utilization) */}
+        <div className="grid lg:grid-cols-8 gap-6">
+          {/* Left Column - Main content (5/8 width = 62.5%) */}
+          <div className="lg:col-span-5 space-y-8">
             {/* Recommended for you */}
             <section className="p-5 rounded-2xl bg-white/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50">
               <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white mb-4">
@@ -399,7 +401,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
             </section>
           </div>
 
-          {/* Right Column - Sidebar (3/10 width = 30%) */}
+          {/* Right Column - Sidebar (3/8 width = 37.5%) */}
           <div className="lg:col-span-3 space-y-6">
             {/* Weekly Heat Map with Streak */}
             <WeeklyCalendar activeDays={activeDays} streak={currentStreak} />
@@ -411,6 +413,62 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
             <div className="hidden sm:block">
               <UsageWidget />
             </div>
+
+            {/* Community & Share */}
+            <section className="p-5 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-100 dark:border-indigo-800/50">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                <span>🌐</span> Community & Share
+              </h3>
+              <div className="space-y-3">
+                {/* Share Flashcards */}
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/shared/flashcards`)
+                    toast?.success('Share link copied!')
+                  }}
+                  className="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl hover:shadow-md transition-all group"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <span className="text-lg">📤</span>
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">Share Flashcards</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Share your decks with friends</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                </button>
+
+                {/* Join Study Groups */}
+                <button
+                  onClick={() => toast?.info('Study groups coming soon!')}
+                  className="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl hover:shadow-md transition-all group"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <span className="text-lg">👥</span>
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">Study Groups</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Learn together with peers</p>
+                  </div>
+                  <span className="px-2 py-0.5 text-[10px] font-semibold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">Soon</span>
+                </button>
+
+                {/* Leaderboard */}
+                <button
+                  onClick={() => toast?.info('Leaderboard coming soon!')}
+                  className="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl hover:shadow-md transition-all group"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                    <span className="text-lg">🏆</span>
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">Leaderboard</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Compete with top learners</p>
+                  </div>
+                  <span className="px-2 py-0.5 text-[10px] font-semibold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">Soon</span>
+                </button>
+              </div>
+            </section>
           </div>
         </div>
       </div>
