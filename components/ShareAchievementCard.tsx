@@ -5,6 +5,7 @@ import { Download, X, Award, Star, Sparkles } from "lucide-react"
 import { useToast } from "./ToastContainer"
 import SocialShareButtons from "./SocialShareButtons"
 import QRCode from "qrcode"
+import { SHARE_CARD_COLORS, TIER_LABELS } from "@/lib/design/community-colors"
 
 type AchievementTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond'
 
@@ -25,46 +26,7 @@ interface ShareAchievementCardProps {
   onClose: () => void
 }
 
-const tierColors: Record<AchievementTier, { bg: string; border: string; text: string; glow: string }> = {
-  bronze: {
-    bg: 'from-amber-700 via-orange-600 to-amber-800',
-    border: 'border-amber-500',
-    text: 'text-amber-100',
-    glow: 'shadow-amber-500/50'
-  },
-  silver: {
-    bg: 'from-gray-400 via-gray-300 to-gray-500',
-    border: 'border-gray-300',
-    text: 'text-gray-800',
-    glow: 'shadow-gray-400/50'
-  },
-  gold: {
-    bg: 'from-yellow-500 via-amber-400 to-yellow-600',
-    border: 'border-yellow-400',
-    text: 'text-yellow-900',
-    glow: 'shadow-yellow-500/50'
-  },
-  platinum: {
-    bg: 'from-cyan-400 via-blue-300 to-cyan-500',
-    border: 'border-cyan-300',
-    text: 'text-cyan-900',
-    glow: 'shadow-cyan-400/50'
-  },
-  diamond: {
-    bg: 'from-purple-400 via-pink-300 to-blue-400',
-    border: 'border-purple-300',
-    text: 'text-purple-900',
-    glow: 'shadow-purple-400/50'
-  }
-}
-
-const tierLabels: Record<AchievementTier, string> = {
-  bronze: '🥉 BRONZE',
-  silver: '🥈 SILVER',
-  gold: '🥇 GOLD',
-  platinum: '💎 PLATINUM',
-  diamond: '💠 DIAMOND'
-}
+// Using shared colors from community-colors.ts for consistency
 
 export default function ShareAchievementCard({ achievement, userName, isOpen, onClose }: ShareAchievementCardProps) {
   const [isGenerating, setIsGenerating] = useState(false)
@@ -76,7 +38,7 @@ export default function ShareAchievementCard({ achievement, userName, isOpen, on
     ? `${window.location.origin}?ref=achievement`
     : 'https://synaptic.study'
 
-  const tierStyle = tierColors[achievement.tier]
+  const tierStyle = SHARE_CARD_COLORS[achievement.tier]
 
   // Generate QR code
   useEffect(() => {
@@ -121,7 +83,7 @@ export default function ShareAchievementCard({ achievement, userName, isOpen, on
 
   const shareText = `🏆 Achievement Unlocked on @SynapticStudy!
 
-${tierLabels[achievement.tier]} - ${achievement.name}
+${TIER_LABELS[achievement.tier]} - ${achievement.name}
 ${achievement.description}
 
 Join me and start earning achievements → ${shareUrl}`
@@ -173,7 +135,7 @@ Join me and start earning achievements → ${shareUrl}`
             {/* Tier Badge */}
             <div className={`relative px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-sm border ${tierStyle.border} mb-4`}>
               <span className={`text-sm font-bold ${tierStyle.text}`}>
-                {tierLabels[achievement.tier]}
+                {TIER_LABELS[achievement.tier]}
               </span>
             </div>
 

@@ -17,6 +17,7 @@ import {
   Award,
   Calendar
 } from 'lucide-react'
+import { CHALLENGE_COLORS } from '@/lib/design/community-colors'
 
 interface Challenge {
   id: string
@@ -99,20 +100,10 @@ export default function StudyChallengeWidget({
     }
   }
 
-  // Get color for challenge type
+  // Get color for challenge type (using brand colors)
   const getChallengeColor = (type: string) => {
-    switch (type) {
-      case 'flashcards':
-        return 'from-indigo-500 to-violet-500'
-      case 'streak':
-        return 'from-orange-500 to-red-500'
-      case 'study_time':
-        return 'from-cyan-500 to-blue-500'
-      case 'exams':
-        return 'from-amber-500 to-orange-500'
-      default:
-        return 'from-violet-500 to-purple-500'
-    }
+    const colorConfig = CHALLENGE_COLORS[type as keyof typeof CHALLENGE_COLORS]
+    return colorConfig?.gradient || CHALLENGE_COLORS.custom.gradient
   }
 
   // Get days remaining

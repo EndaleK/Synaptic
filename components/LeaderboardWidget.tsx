@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Trophy, Medal, Award, Crown, Flame, BookOpen, GraduationCap, ChevronRight, Users, TrendingUp } from 'lucide-react'
+import { RANK_COLORS } from '@/lib/design/community-colors'
 
 interface LeaderboardEntry {
   rank: number
@@ -69,19 +70,19 @@ export default function LeaderboardWidget({
     switch (rank) {
       case 1:
         return (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${RANK_COLORS.first.gradient} flex items-center justify-center shadow-lg ${RANK_COLORS.first.glow}`}>
             <Crown className="w-4 h-4 text-white" />
           </div>
         )
       case 2:
         return (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-300 to-slate-400 flex items-center justify-center shadow-lg shadow-gray-400/30">
+          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${RANK_COLORS.second.gradient} flex items-center justify-center shadow-lg ${RANK_COLORS.second.glow}`}>
             <Medal className="w-4 h-4 text-white" />
           </div>
         )
       case 3:
         return (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-600 to-orange-700 flex items-center justify-center shadow-lg shadow-orange-500/30">
+          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${RANK_COLORS.third.gradient} flex items-center justify-center shadow-lg ${RANK_COLORS.third.glow}`}>
             <Award className="w-4 h-4 text-white" />
           </div>
         )
@@ -203,7 +204,7 @@ export default function LeaderboardWidget({
             key={entry.user_id}
             className={`flex items-center gap-3 p-3 ${
               entry.is_current_user
-                ? 'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20'
+                ? `bg-gradient-to-r ${RANK_COLORS.currentUser.bg}`
                 : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
             } transition-colors`}
           >
@@ -214,7 +215,7 @@ export default function LeaderboardWidget({
             <div className={`
               w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
               ${entry.is_current_user
-                ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white'
+                ? `bg-gradient-to-br ${RANK_COLORS.currentUser.gradient} text-white`
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
               }
             `}>
@@ -233,7 +234,7 @@ export default function LeaderboardWidget({
             <div className="flex-1 min-w-0">
               <p className={`font-medium truncate ${
                 entry.is_current_user
-                  ? 'text-violet-700 dark:text-violet-300'
+                  ? RANK_COLORS.currentUser.text
                   : 'text-gray-900 dark:text-white'
               }`}>
                 {entry.is_current_user ? 'You' : entry.display_name}
@@ -260,9 +261,9 @@ export default function LeaderboardWidget({
             <div className="text-right">
               <p className={`font-bold ${
                 entry.rank === 1
-                  ? 'text-amber-600 dark:text-amber-400'
+                  ? RANK_COLORS.first.text
                   : entry.is_current_user
-                  ? 'text-violet-600 dark:text-violet-400'
+                  ? RANK_COLORS.currentUser.text
                   : 'text-gray-900 dark:text-white'
               }`}>
                 {entry.points.toLocaleString()}
@@ -279,13 +280,13 @@ export default function LeaderboardWidget({
           <div className="px-4 py-2 text-center">
             <span className="text-xs text-gray-400">• • •</span>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 border-t border-violet-200 dark:border-violet-800">
+          <div className={`flex items-center gap-3 p-3 bg-gradient-to-r ${RANK_COLORS.currentUser.bg} border-t ${RANK_COLORS.currentUser.border}`}>
             {getRankBadge(currentUserRank.rank)}
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white">
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${RANK_COLORS.currentUser.gradient} flex items-center justify-center text-sm font-bold text-white`}>
               You
             </div>
             <div className="flex-1">
-              <p className="font-medium text-violet-700 dark:text-violet-300">
+              <p className={`font-medium ${RANK_COLORS.currentUser.text}`}>
                 Your Rank
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -294,7 +295,7 @@ export default function LeaderboardWidget({
               </p>
             </div>
             <div className="text-right">
-              <p className="font-bold text-violet-600 dark:text-violet-400">
+              <p className={`font-bold ${RANK_COLORS.currentUser.text}`}>
                 {currentUserRank.points.toLocaleString()}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">points</p>
@@ -307,7 +308,7 @@ export default function LeaderboardWidget({
       {onViewAll && (
         <button
           onClick={onViewAll}
-          className="w-full p-3 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors flex items-center justify-center gap-1 border-t border-gray-100 dark:border-gray-700"
+          className={`w-full p-3 text-sm font-medium ${RANK_COLORS.currentUser.text} hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-center gap-1 border-t border-gray-100 dark:border-gray-700`}
         >
           View Full Leaderboard
           <ChevronRight className="w-4 h-4" />

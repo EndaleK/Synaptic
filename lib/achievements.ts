@@ -45,6 +45,10 @@ export interface AchievementProgress {
 }
 
 // Tier colors and styling
+// Updated to use Synaptic brand colors:
+// - Gold: #FFA53F (Warm Amber)
+// - Platinum: #00CCFF (Electric Cyan)
+// - Diamond: #3F87DA → #00CCFF (Sapphire to Electric Cyan)
 export const TIER_STYLES: Record<AchievementTier, {
   gradient: string
   bgColor: string
@@ -53,39 +57,39 @@ export const TIER_STYLES: Record<AchievementTier, {
   glowColor: string
 }> = {
   bronze: {
-    gradient: 'from-amber-600 to-orange-700',
+    gradient: 'from-amber-600 to-amber-700',
     bgColor: 'bg-amber-100 dark:bg-amber-900/30',
     textColor: 'text-amber-700 dark:text-amber-400',
-    borderColor: 'border-amber-400',
+    borderColor: 'border-amber-500',
     glowColor: 'shadow-amber-500/30'
   },
   silver: {
-    gradient: 'from-gray-400 to-slate-500',
+    gradient: 'from-slate-400 to-slate-500',
     bgColor: 'bg-gray-100 dark:bg-gray-800/50',
     textColor: 'text-gray-600 dark:text-gray-300',
-    borderColor: 'border-gray-400',
-    glowColor: 'shadow-gray-400/30'
+    borderColor: 'border-slate-400',
+    glowColor: 'shadow-slate-400/30'
   },
   gold: {
-    gradient: 'from-yellow-400 to-amber-500',
-    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
-    textColor: 'text-yellow-700 dark:text-yellow-400',
-    borderColor: 'border-yellow-400',
-    glowColor: 'shadow-yellow-500/40'
+    gradient: 'from-[#FFA53F] to-amber-500', // Brand Warm Amber
+    bgColor: 'bg-amber-100 dark:bg-amber-900/30',
+    textColor: 'text-amber-700 dark:text-amber-400',
+    borderColor: 'border-amber-400',
+    glowColor: 'shadow-amber-400/40'
   },
   platinum: {
-    gradient: 'from-cyan-400 to-blue-500',
+    gradient: 'from-[#00CCFF] to-cyan-500', // Brand Electric Cyan
     bgColor: 'bg-cyan-100 dark:bg-cyan-900/30',
     textColor: 'text-cyan-700 dark:text-cyan-400',
     borderColor: 'border-cyan-400',
-    glowColor: 'shadow-cyan-500/40'
+    glowColor: 'shadow-cyan-400/40'
   },
   diamond: {
-    gradient: 'from-violet-400 via-purple-500 to-fuchsia-500',
-    bgColor: 'bg-violet-100 dark:bg-violet-900/30',
-    textColor: 'text-violet-700 dark:text-violet-400',
-    borderColor: 'border-violet-400',
-    glowColor: 'shadow-violet-500/50'
+    gradient: 'from-[#3F87DA] via-blue-400 to-[#00CCFF]', // Sapphire to Electric Cyan
+    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+    textColor: 'text-blue-700 dark:text-blue-400',
+    borderColor: 'border-blue-400',
+    glowColor: 'shadow-blue-400/50'
   }
 }
 
