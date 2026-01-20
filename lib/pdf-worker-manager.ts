@@ -261,9 +261,14 @@ class PDFWorkerManager {
 // Export singleton instance
 export const pdfWorkerManager = PDFWorkerManager.getInstance()
 
-// Auto-initialize immediately
+// Auto-initialize immediately with proper error handling
 if (typeof window !== 'undefined') {
-  pdfWorkerManager.initialize().then(result => {
-    console.log('🎯 PDF Worker Manager: Auto-initialization result:', result)
-  })
+  pdfWorkerManager.initialize()
+    .then(result => {
+      console.log('🎯 PDF Worker Manager: Auto-initialization result:', result)
+    })
+    .catch(error => {
+      // Catch any unhandled errors to prevent app crash
+      console.error('🎯 PDF Worker Manager: Auto-initialization failed (non-fatal):', error)
+    })
 }

@@ -13,14 +13,18 @@ export default function PDFWorkerInitializer() {
   useEffect(() => {
     if (isClient) {
       // The pdf-worker-manager auto-initializes, but we can ensure it's ready
-      import('@/lib/pdf-worker-manager').then(({ pdfWorkerManager }) => {
-        // Just ensure it's initialized - don't override worker setup
-        pdfWorkerManager.initialize().then(result => {
+      import('@/lib/pdf-worker-manager')
+        .then(({ pdfWorkerManager }) => {
+          // Just ensure it's initialized - don't override worker setup
+          return pdfWorkerManager.initialize()
+        })
+        .then(result => {
           console.log('PDF Worker initialized from PDFWorkerInitializer:', result)
         })
-      }).catch(error => {
-        console.error('Failed to load PDF worker manager:', error)
-      })
+        .catch(error => {
+          // Non-fatal error - PDF features may not work but app should continue
+          console.error('Failed to initialize PDF worker (non-fatal):', error)
+        })
     }
   }, [isClient])
 
