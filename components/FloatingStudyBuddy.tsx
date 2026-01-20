@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Send, Loader2, X, History, Copy, Check, Maximize2, Minimize2, PanelRightClose } from "lucide-react"
+import { Send, Loader2, X, History, Copy, Check, Maximize2, Minimize2, PanelRightClose, MessageCircle } from "lucide-react"
 import { StudyBuddyIcon } from "@/components/illustrations"
 import { useStudyBuddyStore } from "@/lib/store/useStudyBuddyStore"
 import { useDocumentStore, useUIStore } from "@/lib/store/useStore"
