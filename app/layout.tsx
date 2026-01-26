@@ -121,6 +121,13 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <head>
+          {/* Polyfill for Clerk's Turnstile bot detection on mobile Safari */}
+          {/* This is a static, hardcoded script - no user input, safe from XSS */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `if(typeof window!=='undefined'&&typeof window.Bot==='undefined'){window.Bot={detect:function(){return Promise.resolve({isBot:false})}}}`,
+            }}
+          />
           {/* Google Site Verification */}
           <meta name="google-site-verification" content="3ExrBId0okoOWgiiWtlHSitp7sdQ0K5TQd-R3J0MhVQ" />
 
