@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { ClerkProvider } from '@clerk/nextjs';
 import { Analytics } from '@vercel/analytics/react';
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -122,8 +123,11 @@ export default function RootLayout({
       <html lang="en" suppressHydrationWarning>
         <head>
           {/* Polyfill for Clerk's Turnstile bot detection on mobile Safari */}
+          {/* Uses beforeInteractive to guarantee execution before React hydration and Clerk SDK */}
           {/* This is a static, hardcoded script - no user input, safe from XSS */}
-          <script
+          <Script
+            id="bot-polyfill"
+            strategy="beforeInteractive"
             dangerouslySetInnerHTML={{
               __html: `if(typeof window!=='undefined'&&typeof window.Bot==='undefined'){window.Bot={detect:function(){return Promise.resolve({isBot:false})}}}`,
             }}
