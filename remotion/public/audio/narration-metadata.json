@@ -1,0 +1,68 @@
+[
+  {
+    "id": "intro",
+    "file": "narration-intro.mp3",
+    "startFrame": 10,
+    "durationFrames": 140
+  },
+  {
+    "id": "problem",
+    "file": "narration-problem.mp3",
+    "startFrame": 155,
+    "durationFrames": 110
+  },
+  {
+    "id": "solution",
+    "file": "narration-solution.mp3",
+    "startFrame": 270,
+    "durationFrames": 115
+  },
+  {
+    "id": "howto",
+    "file": "narration-howto.mp3",
+    "startFrame": 390,
+    "durationFrames": 145
+  },
+  {
+    "id": "features",
+    "file": "narration-features.mp3",
+    "startFrame": 540,
+    "durationFrames": 145
+  },
+  {
+    "id": "chat",
+    "file": "narration-chat.mp3",
+    "startFrame": 690,
+    "durationFrames": 115
+  },
+  {
+    "id": "flashcards",
+    "file": "narration-flashcards.mp3",
+    "startFrame": 810,
+    "durationFrames": 100
+  },
+  {
+    "id": "mockexam",
+    "file": "narration-mockexam.mp3",
+    "startFrame": 915,
+    "durationFrames": 100
+  },
+  {
+    "id": "studybuddy",
+    "file": "narration-studybuddy.mp3",
+    "startFrame": 1020,
+    "durationFrames": 85
+  },
+  {
+    "id": "socialproof",
+    "file": "narration-socialproof.mp3",
+    "startFrame": 1110,
+    "durationFrames": 115
+  },
+  {
+    "id": "cta",
+    "file": "narration-cta.mp3",
+    "startFrame": 1230,
+    "durationFrames": 140
+  }
+]

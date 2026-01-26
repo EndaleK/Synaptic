@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F172A"/>
+      <stop offset="50%" style="stop-color:#1E293B"/>
+      <stop offset="100%" style="stop-color:#0F172A"/>
+    </linearGradient>
+
+    <!-- Primary gradient (Sapphire to Cyan) -->
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3F87DA"/>
+      <stop offset="100%" style="stop-color:#00CCFF"/>
+    </linearGradient>
+
+    <!-- Title gradient -->
+    <linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FFFFFF"/>
+      <stop offset="50%" style="stop-color:#E0F9FF"/>
+      <stop offset="100%" style="stop-color:#00CCFF"/>
+    </linearGradient>
+
+    <!-- Feature gradients -->
+    <linearGradient id="flashcardsGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3F87DA"/>
+      <stop offset="100%" style="stop-color:#5C99DF"/>
+    </linearGradient>
+    <linearGradient id="chatGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00CCFF"/>
+      <stop offset="100%" style="stop-color:#2DD5FF"/>
+    </linearGradient>
+    <linearGradient id="podcastGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00CCB6"/>
+      <stop offset="100%" style="stop-color:#2ED5C3"/>
+    </linearGradient>
+    <linearGradient id="mindmapGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00D98B"/>
+      <stop offset="100%" style="stop-color:#34E89E"/>
+    </linearGradient>
+    <linearGradient id="videoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFA53F"/>
+      <stop offset="100%" style="stop-color:#FFB55C"/>
+    </linearGradient>
+    <linearGradient id="examGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2"/>
+      <stop offset="100%" style="stop-color:#6BA3E8"/>
+    </linearGradient>
+
+    <!-- Glow filter -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="20" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Orb blur -->
+    <filter id="orbBlur" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="40"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+
+  <!-- Background orbs -->
+  <ellipse cx="1050" cy="100" rx="200" ry="200" fill="#3F87DA" opacity="0.15" filter="url(#orbBlur)"/>
+  <ellipse cx="200" cy="530" rx="150" ry="150" fill="#00CCB6" opacity="0.12" filter="url(#orbBlur)"/>
+  <ellipse cx="800" cy="400" rx="100" ry="100" fill="#FFA53F" opacity="0.08" filter="url(#orbBlur)"/>
+
+  <!-- Grid pattern (subtle) -->
+  <g opacity="0.03">
+    <path d="M0 50 L1200 50 M0 100 L1200 100 M0 150 L1200 150 M0 200 L1200 200 M0 250 L1200 250 M0 300 L1200 300 M0 350 L1200 350 M0 400 L1200 400 M0 450 L1200 450 M0 500 L1200 500 M0 550 L1200 550 M0 600 L1200 600" stroke="#00CCFF" stroke-width="1"/>
+    <path d="M50 0 L50 630 M100 0 L100 630 M150 0 L150 630 M200 0 L200 630 M250 0 L250 630 M300 0 L300 630 M350 0 L350 630 M400 0 L400 630 M450 0 L450 630 M500 0 L500 630 M550 0 L550 630 M600 0 L600 630 M650 0 L650 630 M700 0 L700 630 M750 0 L750 630 M800 0 L800 630 M850 0 L850 630 M900 0 L900 630 M950 0 L950 630 M1000 0 L1000 630 M1050 0 L1050 630 M1100 0 L1100 630 M1150 0 L1150 630" stroke="#00CCFF" stroke-width="1"/>
+  </g>
+
+  <!-- Logo icon -->
+  <g transform="translate(70, 55)">
+    <rect width="48" height="48" rx="12" fill="url(#primaryGradient)"/>
+    <!-- Neural network icon -->
+    <circle cx="14" cy="18" r="4" fill="white"/>
+    <circle cx="34" cy="14" r="4" fill="white"/>
+    <circle cx="24" cy="30" r="4" fill="white"/>
+    <circle cx="12" cy="34" r="3" fill="white"/>
+    <circle cx="36" cy="34" r="3" fill="white"/>
+    <line x1="14" y1="18" x2="34" y2="14" stroke="white" stroke-width="2"/>
+    <line x1="14" y1="18" x2="24" y2="30" stroke="white" stroke-width="2"/>
+    <line x1="34" y1="14" x2="24" y2="30" stroke="white" stroke-width="2"/>
+    <line x1="12" y1="34" x2="24" y2="30" stroke="white" stroke-width="2"/>
+    <line x1="36" y1="34" x2="24" y2="30" stroke="white" stroke-width="2"/>
+  </g>
+
+  <!-- Brand name -->
+  <text x="135" y="92" font-family="Inter, -apple-system, sans-serif" font-size="28" font-weight="700" fill="white">Synaptic</text>
+
+  <!-- Main headline -->
+  <text x="70" y="220" font-family="Inter, -apple-system, sans-serif" font-size="56" font-weight="800" fill="url(#titleGradient)">AI-Powered Learning</text>
+  <text x="70" y="285" font-family="Inter, -apple-system, sans-serif" font-size="56" font-weight="800" fill="url(#titleGradient)">That Adapts to You</text>
+
+  <!-- Subtitle -->
+  <text x="70" y="340" font-family="Inter, -apple-system, sans-serif" font-size="22" font-weight="500" fill="#94A3B8">Transform any document into personalized flashcards, podcasts, mind maps, and more</text>
+
+  <!-- Features row -->
+  <g transform="translate(70, 390)">
+    <!-- Flashcards -->
+    <g transform="translate(0, 0)">
+      <rect width="160" height="50" rx="25" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+      <rect x="12" y="11" width="28" height="28" rx="7" fill="url(#flashcardsGradient)"/>
+      <rect x="18" y="17" width="16" height="3" rx="1" fill="white"/>
+      <rect x="18" y="23" width="10" height="2" rx="1" fill="white"/>
+      <text x="50" y="31" font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="600" fill="#E2E8F0">Flashcards</text>
+    </g>
+
+    <!-- Chat -->
+    <g transform="translate(175, 0)">
+      <rect width="140" height="50" rx="25" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+      <rect x="12" y="11" width="28" height="28" rx="7" fill="url(#chatGradient)"/>
+      <path d="M20 18 L36 18 L36 30 L29 30 L26 33 L26 30 L20 30 Z" fill="white"/>
+      <text x="50" y="31" font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="600" fill="#E2E8F0">AI Chat</text>
+    </g>
+
+    <!-- Podcast -->
+    <g transform="translate(330, 0)">
+      <rect width="145" height="50" rx="25" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+      <rect x="12" y="11" width="28" height="28" rx="7" fill="url(#podcastGradient)"/>
+      <path d="M26 17 C23 17 21 19 21 22 L21 26 C21 29 23 31 26 31 C29 31 31 29 31 26 L31 22 C31 19 29 17 26 17 Z M21 28 L21 29 C21 32 23 34 26 34 C29 34 31 32 31 29 L31 28" stroke="white" stroke-width="2" fill="none"/>
+      <text x="50" y="31" font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="600" fill="#E2E8F0">Podcasts</text>
+    </g>
+
+    <!-- Mind Map -->
+    <g transform="translate(490, 0)">
+      <rect width="155" height="50" rx="25" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+      <rect x="12" y="11" width="28" height="28" rx="7" fill="url(#mindmapGradient)"/>
+      <circle cx="26" cy="25" r="4" fill="white"/>
+      <circle cx="18" cy="18" r="2.5" fill="white"/>
+      <circle cx="34" cy="18" r="2.5" fill="white"/>
+      <circle cx="18" cy="32" r="2.5" fill="white"/>
+      <circle cx="34" cy="32" r="2.5" fill="white"/>
+      <line x1="23" y1="22" x2="19" y2="19" stroke="white" stroke-width="1.5"/>
+      <line x1="29" y1="22" x2="33" y2="19" stroke="white" stroke-width="1.5"/>
+      <line x1="23" y1="28" x2="19" y2="31" stroke="white" stroke-width="1.5"/>
+      <line x1="29" y1="28" x2="33" y2="31" stroke="white" stroke-width="1.5"/>
+      <text x="50" y="31" font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="600" fill="#E2E8F0">Mind Maps</text>
+    </g>
+
+    <!-- Video -->
+    <g transform="translate(660, 0)">
+      <rect width="130" height="50" rx="25" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+      <rect x="12" y="11" width="28" height="28" rx="7" fill="url(#videoGradient)"/>
+      <polygon points="22,19 34,25 22,31" fill="white"/>
+      <text x="50" y="31" font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="600" fill="#E2E8F0">Video</text>
+    </g>
+
+    <!-- Exams -->
+    <g transform="translate(805, 0)">
+      <rect width="130" height="50" rx="25" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+      <rect x="12" y="11" width="28" height="28" rx="7" fill="url(#examGradient)"/>
+      <path d="M18 28 L26 19 L34 28 L26 23 Z" fill="white"/>
+      <path d="M20 31 L20 35 C23 38 29 38 32 35 L32 31" stroke="white" stroke-width="2" fill="none"/>
+      <text x="50" y="31" font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="600" fill="#E2E8F0">Exams</text>
+    </g>
+  </g>
+
+  <!-- Footer -->
+  <g transform="translate(70, 520)">
+    <!-- URL -->
+    <text x="0" y="30" font-family="Inter, -apple-system, sans-serif" font-size="24" font-weight="700" fill="#00CCFF">synaptic.study</text>
+
+    <!-- CTA button -->
+    <g transform="translate(870, 0)">
+      <rect width="220" height="52" rx="26" fill="url(#primaryGradient)"/>
+      <text x="32" y="33" font-family="Inter, -apple-system, sans-serif" font-size="16" font-weight="700" fill="white">Start Learning Free</text>
+      <path d="M185 26 L195 26 M190 21 L195 26 L190 31" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+
+  <!-- Decorative sparkles -->
+  <g fill="#00CCFF" opacity="0.6">
+    <circle cx="1020" cy="120" r="3"/>
+    <circle cx="950" cy="180" r="2"/>
+    <circle cx="1100" cy="200" r="2.5"/>
+    <circle cx="1050" cy="280" r="2"/>
+    <circle cx="980" cy="350" r="3"/>
+  </g>
+</svg>

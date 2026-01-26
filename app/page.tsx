@@ -345,6 +345,31 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Product Demo Video */}
+      <section className="py-16 bg-clarity-zone">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold text-black dark:text-white mb-3">
+              See Synaptic in Action
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Watch how students transform their study sessions in under 2 minutes
+            </p>
+          </div>
+
+          {/* YouTube Video Embed */}
+          <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700">
+            <iframe
+              src="https://www.youtube.com/embed/aW1uZEmrjxU?rel=0&modestbranding=1"
+              title="Synaptic Product Demo"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            />
+          </div>
+        </div>
+      </section>
+
       {/* What You Get - Tools + Benefits Combined */}
       <section id="features" className="py-20 bg-showcase">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Synaptic - Study Smarter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    .card-link {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card-link:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+
+    .card {
+      width: 800px;
+      height: 800px;
+      background: linear-gradient(180deg, #FAFAFA 0%, #F0F0F2 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 50px 40px;
+      position: relative;
+      border-radius: 24px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Logo section */
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 35px;
+    }
+
+    .logo-icon {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-name {
+      font-family: 'Poppins', sans-serif;
+      font-size: 54px;
+      font-weight: 700;
+      color: #2D3E9F;
+      line-height: 1.1;
+    }
+
+    .tagline {
+      font-family: 'Poppins', sans-serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: #FF6B35;
+      margin-top: -3px;
+    }
+
+    /* Divider */
+    .divider {
+      width: 70%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent 0%, #9CA3AF 50%, transparent 100%);
+      margin: 20px 0 35px;
+    }
+
+    /* Main headline */
+    .headline {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .main-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      color: #1F2937;
+      line-height: 1.3;
+    }
+
+    .description {
+      font-family: 'Inter', sans-serif;
+      font-size: 18px;
+      font-weight: 500;
+      color: #4B5563;
+      margin-top: 16px;
+      line-height: 1.6;
+      max-width: 600px;
+      text-align: center;
+    }
+
+    /* Neural connector decoration */
+    .neural-connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin: 20px 0;
+    }
+
+    .connector-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #E91E8C;
+    }
+
+    .connector-line {
+      width: 45px;
+      height: 2px;
+      background: #7B3FF2;
+      border-radius: 2px;
+    }
+
+    .connector-dot.purple {
+      background: #7B3FF2;
+    }
+
+    /* Features pills */
+    .features {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 18px;
+      color: #4B5563;
+      font-weight: 500;
+      margin-bottom: 30px;
+    }
+
+    .features span {
+      display: flex;
+      align-items: center;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      background: #9CA3AF;
+      border-radius: 50%;
+    }
+
+    /* QR Code section */
+    .qr-section {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .qr-code {
+      width: 140px;
+      height: 140px;
+      object-fit: contain;
+    }
+
+    /* Website URL */
+    .website-url {
+      font-family: 'Poppins', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #7B3FF2;
+      letter-spacing: 0.5px;
+    }
+
+    /* Watermark */
+    .watermark {
+      position: absolute;
+      bottom: 20px;
+      right: 25px;
+      opacity: 0.25;
+    }
+
+    .watermark img {
+      width: 40px;
+      height: 40px;
+    }
+
+    /* Download button */
+    .download-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 32px;
+      background: linear-gradient(135deg, #2D3E9F 0%, #7B3FF2 50%, #E91E8C 100%);
+      color: white;
+      font-family: 'Poppins', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 30px rgba(123, 63, 242, 0.4);
+    }
+
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(123, 63, 242, 0.5);
+    }
+
+    .download-btn:active {
+      transform: translateY(0);
+    }
+
+    .download-btn svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .download-btn.loading {
+      opacity: 0.7;
+      cursor: wait;
+    }
+
+    .btn-icon {
+      width: 22px;
+      height: 22px;
+    }
+
+    .btn-icon.spinning {
+      animation: spin 1s linear infinite;
+    }
+
+    /* Instructions */
+    .instructions {
+      text-align: center;
+      color: #6B7280;
+      font-size: 14px;
+      max-width: 400px;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <a href="https://synaptic.study" target="_blank" class="card-link">
+    <div class="card" id="share-card">
+      <!-- Logo Section -->
+      <div class="logo-section">
+        <img src="synaptic-logo-brain.png" alt="Synaptic Logo" class="logo-icon" crossorigin="anonymous">
+        <div class="brand-text">
+          <span class="brand-name">Synaptic</span>
+          <span class="tagline">Study Smarter</span>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="divider"></div>
+
+      <!-- Headline -->
+      <div class="headline">
+        <h1 class="main-title">Study less. Remember more.<br>Ace your exams.</h1>
+        <p class="description">Upload anything from lecture slides to 800-page textbooks. Get flashcards, practice exams, and a study schedule—so you walk into exams confident, not cramming.</p>
+      </div>
+
+      <!-- Neural connector decoration -->
+      <div class="neural-connector">
+        <div class="connector-dot"></div>
+        <div class="connector-line"></div>
+        <div class="connector-dot purple"></div>
+        <div class="connector-line"></div>
+        <div class="connector-dot"></div>
+      </div>
+
+      <!-- Features -->
+      <div class="features">
+        <span>83% Cheaper</span>
+        <div class="dot"></div>
+        <span>500MB+ Docs</span>
+        <div class="dot"></div>
+        <span>Research-Based</span>
+      </div>
+
+      <!-- QR Code & Website -->
+      <div class="qr-section">
+        <img src="synaptic-qr.png" alt="Scan to visit synaptic.study" class="qr-code" crossorigin="anonymous">
+        <span class="website-url">synaptic.study</span>
+      </div>
+
+      <!-- Watermark -->
+      <div class="watermark">
+        <img src="synaptic-logo-brain.png" alt="" crossorigin="anonymous">
+      </div>
+    </div>
+  </a>
+
+  <button class="download-btn" id="downloadBtn">
+    <svg id="downloadIcon" class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+    </svg>
+    <svg id="loadingIcon" class="btn-icon spinning hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+    </svg>
+    <svg id="successIcon" class="btn-icon hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+    <span id="btnText">Download Image</span>
+  </button>
+
+  <p class="instructions">
+    Click the button to download as PNG.<br>
+    Perfect for sharing on social media!
+  </p>
+
+  <script>
+    document.getElementById('downloadBtn').addEventListener('click', async function() {
+      const btn = this;
+      const card = document.getElementById('share-card');
+      const downloadIcon = document.getElementById('downloadIcon');
+      const loadingIcon = document.getElementById('loadingIcon');
+      const successIcon = document.getElementById('successIcon');
+      const btnText = document.getElementById('btnText');
+
+      // Show loading state
+      btn.classList.add('loading');
+      downloadIcon.classList.add('hidden');
+      loadingIcon.classList.remove('hidden');
+      btnText.textContent = 'Generating...';
+
+      try {
+        const canvas = await html2canvas(card, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#F5F5F7',
+          logging: false
+        });
+
+        const link = document.createElement('a');
+        link.download = 'synaptic-promo.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+
+        // Show success state
+        loadingIcon.classList.add('hidden');
+        successIcon.classList.remove('hidden');
+        btnText.textContent = 'Downloaded!';
+
+        setTimeout(function() {
+          btn.classList.remove('loading');
+          successIcon.classList.add('hidden');
+          downloadIcon.classList.remove('hidden');
+          btnText.textContent = 'Download Image';
+        }, 2000);
+
+      } catch (error) {
+        console.error('Error generating image:', error);
+        btn.classList.remove('loading');
+        loadingIcon.classList.add('hidden');
+        downloadIcon.classList.remove('hidden');
+        btnText.textContent = 'Download Image';
+        alert('Error generating image. Please try again.');
+      }
+    });
+  </script>
+</body>
+</html>
