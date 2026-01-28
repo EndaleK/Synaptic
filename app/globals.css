@@ -1903,3 +1903,25 @@ html {
     animation: none !important;
   }
 }
+
+/* Tooltip animation - used by FeatureTooltip and other tooltip components */
+@keyframes tooltip-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tooltip-enter {
+  animation: tooltip-fade 0.15s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltip-enter {
+    animation: none;
+  }
+}

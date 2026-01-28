@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { FileText, Clock, ChevronRight, Trophy, Medal, Swords, Gift } from "lucide-react"
-import { useUIStore, useDocumentStore } from "@/lib/store/useStore"
+import { useUIStore, useDocumentStore, useUserStore } from "@/lib/store/useStore"
 import { RecommendedCard } from "@/components/RecommendedCard"
 import { StudyModeCard } from "@/components/StudyModeCard"
 import { WeeklyCalendar } from "@/components/WeeklyCalendar"
@@ -22,10 +22,13 @@ import {
   UploadIcon,
   ChatIcon,
 } from "@/components/illustrations"
+import { STUDY_MODE_TOOLTIPS } from "@/lib/constants/study-mode-tooltips"
 import { useStudyBuddyStore } from "@/lib/store/useStudyBuddyStore"
 import WelcomeModal from "@/components/WelcomeModal"
 import { useToast } from "@/components/ToastContainer"
 import StudyWrappedWidget from "@/components/StudyWrappedWidget"
+import { trackModeSelection, type TrackableMode, type SelectionSource } from "@/lib/tracking/mode-tracker"
+import { reorderModesByEngagement } from "@/lib/behavioral-learning/style-inference"
 
 interface DashboardHomeProps {
   onModeSelect: (mode: string) => void
@@ -51,6 +54,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
   const { setActiveMode } = useUIStore()
   const { setCurrentDocument } = useDocumentStore()
   const { setViewMode: setStudyBuddyViewMode } = useStudyBuddyStore()
+  const { modeEngagement, setModeEngagement, setBehavioralScores, setBlendedScores } = useUserStore()
 
   const [currentStreak, setCurrentStreak] = useState<number>(0)
   const [isLoadingStreak, setIsLoadingStreak] = useState(true)
@@ -63,6 +67,55 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  // Fetch behavioral scores and mode engagement on mount
+  useEffect(() => {
+    const fetchBehavioralData = async () => {
+      try {
+        // Fetch mode engagement stats
+        const engagementResponse = await fetch('/api/tracking/mode-selection', {
+          credentials: 'include'
+        })
+        if (engagementResponse.ok) {
+          const data = await engagementResponse.json()
+          if (data.modeEngagement) {
+            setModeEngagement(data.modeEngagement)
+          }
+        }
+
+        // Fetch blended learning style scores
+        const blendedResponse = await fetch('/api/learning-style/blended', {
+          credentials: 'include'
+        })
+        if (blendedResponse.ok) {
+          const data = await blendedResponse.json()
+          if (data.behavioralScores) {
+            setBehavioralScores(data.behavioralScores)
+          }
+          if (data.blendedScores) {
+            setBlendedScores(data.blendedScores)
+          }
+        }
+      } catch (error) {
+        // Silent fail - behavioral data is not critical
+        console.error('Error fetching behavioral data:', error)
+      }
+    }
+    fetchBehavioralData()
+  }, [setModeEngagement, setBehavioralScores, setBlendedScores])
+
+  // Reorder study modes based on engagement (only if >10 sessions)
+  const orderedStudyModes = useMemo(() => {
+    const totalSessions = Object.values(modeEngagement).reduce(
+      (sum, m) => sum + (m?.sessions || 0),
+      0
+    )
+    // Only reorder if user has enough data (10+ sessions)
+    if (totalSessions >= 10) {
+      return reorderModesByEngagement(studyModes, modeEngagement, 10)
+    }
+    return studyModes
+  }, [modeEngagement])
 
   // Check if should show welcome modal for first-time users
   useEffect(() => {
@@ -195,7 +248,13 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
     }).toUpperCase()
   }
 
-  const handleModeClick = (mode: typeof primaryModes[0]) => {
+  const handleModeClick = async (mode: { id: string; [key: string]: unknown }) => {
+    // Track mode selection for behavioral learning
+    const trackableMode = mode.id as TrackableMode
+    trackModeSelection(trackableMode, 'dashboard' as SelectionSource).catch(() => {
+      // Silent fail - tracking should not block navigation
+    })
+
     if (mode.id === 'writer') {
       router.push('/dashboard/writer')
     } else if (mode.id === 'pathway') {
@@ -323,12 +382,13 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
             </section>
 
             {/* Choose your study mode - All 8 tools in 2 rows of 4 */}
+            {/* Tiles are reordered based on user engagement when >10 sessions */}
             <section className="p-5 rounded-2xl bg-white/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50">
               <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 <span>🎯</span> Study Tools
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {studyModes.map((mode) => (
+                {orderedStudyModes.map((mode) => (
                   <StudyModeCard
                     key={mode.id}
                     icon={mode.icon}
@@ -336,6 +396,7 @@ export default function DashboardHome({ onModeSelect }: DashboardHomeProps) {
                     description={mode.description}
                     badge={mode.id === 'flashcards' ? flashcardsDue : undefined}
                     onClick={() => handleModeClick(mode)}
+                    tooltip={STUDY_MODE_TOOLTIPS[mode.id]}
                   />
                 ))}
               </div>

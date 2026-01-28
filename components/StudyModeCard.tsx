@@ -2,6 +2,8 @@
 
 import { cn } from "@/lib/utils"
 import { ComponentType } from "react"
+import { FeatureTooltip } from "@/components/FeatureTooltip"
+import type { StudyModeTooltipContent } from "@/lib/constants/study-mode-tooltips"
 
 interface IconProps {
   className?: string
@@ -16,11 +18,13 @@ interface StudyModeCardProps {
   isActive?: boolean
   onClick: () => void
   className?: string
+  tooltip?: StudyModeTooltipContent
 }
 
 /**
  * StudyModeCard - Compact cards for the "Choose your study mode" grid
  * Shows hand-drawn icon, title, description, and optional badge for counts
+ * Optionally wrapped with FeatureTooltip for rich hover/tap info
  */
 export function StudyModeCard({
   icon: Icon,
@@ -29,13 +33,14 @@ export function StudyModeCard({
   badge,
   isActive = false,
   onClick,
-  className
+  className,
+  tooltip
 }: StudyModeCardProps) {
-  return (
+  const card = (
     <button
       onClick={onClick}
       className={cn(
-        "relative flex flex-col items-center text-center p-4 rounded-2xl border-2 transition-all min-w-[140px] hover:scale-[1.02]",
+        "relative flex flex-col items-center text-center p-4 rounded-2xl border-2 transition-all min-w-[140px] h-full hover:scale-[1.02]",
         isActive
           ? "border-[#7B3FF2] bg-[#7B3FF2]/5 shadow-lg shadow-[#7B3FF2]/20"
           : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 shadow-md hover:border-[#7B3FF2]/50 hover:shadow-lg",
@@ -68,6 +73,17 @@ export function StudyModeCard({
       </p>
     </button>
   )
+
+  // Wrap with tooltip if content provided
+  if (tooltip) {
+    return (
+      <FeatureTooltip content={tooltip}>
+        {card}
+      </FeatureTooltip>
+    )
+  }
+
+  return card
 }
 
 export default StudyModeCard

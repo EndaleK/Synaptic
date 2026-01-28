@@ -26,6 +26,8 @@ import {
   LibraryIcon,
   StudyGuideIcon,
 } from "@/components/illustrations"
+import { TopBarTooltip } from "@/components/TopBarTooltip"
+import { TOPBAR_TOOLTIPS } from "@/lib/constants/topbar-tooltips"
 
 const DURATION_OPTIONS = [5, 10, 15, 20, 25, 30, 45, 60]
 
@@ -116,82 +118,94 @@ export default function StudyToolsTopBar() {
       {/* Center: Docs and Tools */}
       <nav className="flex-1 flex items-center justify-center gap-2">
         {/* Docs link */}
-        <Link
-          href="/dashboard/documents"
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-            pathname === '/dashboard/documents'
-              ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
-              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
-          }`}
-        >
-          <DocumentIcon size="sm" />
-          <span>Documents</span>
-        </Link>
+        <TopBarTooltip content={TOPBAR_TOOLTIPS.documents}>
+          <Link
+            href="/dashboard/documents"
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              pathname === '/dashboard/documents'
+                ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            <DocumentIcon size="sm" />
+            <span>Documents</span>
+          </Link>
+        </TopBarTooltip>
 
         {/* Library link */}
-        <Link
-          href="/dashboard/library"
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-            pathname === '/dashboard/library'
-              ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
-              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
-          }`}
-        >
-          <LibraryIcon size="sm" />
-          <span>Library</span>
-        </Link>
+        <TopBarTooltip content={TOPBAR_TOOLTIPS.library}>
+          <Link
+            href="/dashboard/library"
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              pathname === '/dashboard/library'
+                ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            <LibraryIcon size="sm" />
+            <span>Library</span>
+          </Link>
+        </TopBarTooltip>
 
         {/* Calendar link */}
-        <Link
-          href="/dashboard/study/calendar"
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-            pathname === '/dashboard/study/calendar'
-              ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
-              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
-          }`}
-        >
-          <PlannerIcon size="sm" />
-          <span>Calendar</span>
-        </Link>
+        <TopBarTooltip content={TOPBAR_TOOLTIPS.calendar}>
+          <Link
+            href="/dashboard/study/calendar"
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              pathname === '/dashboard/study/calendar'
+                ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            <PlannerIcon size="sm" />
+            <span>Calendar</span>
+          </Link>
+        </TopBarTooltip>
 
         {/* Statistics link */}
-        <Link
-          href="/dashboard/study/statistics"
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-            pathname === '/dashboard/study/statistics'
-              ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
-              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
-          }`}
-        >
-          <TargetIcon size="sm" />
-          <span>Statistics</span>
-        </Link>
+        <TopBarTooltip content={TOPBAR_TOOLTIPS.statistics}>
+          <Link
+            href="/dashboard/study/statistics"
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              pathname === '/dashboard/study/statistics'
+                ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            <TargetIcon size="sm" />
+            <span>Statistics</span>
+          </Link>
+        </TopBarTooltip>
 
         {/* Pathway link */}
-        <Link
-          href="/dashboard/study-plans"
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-            pathname === '/dashboard/study-plans'
-              ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
-              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
-          }`}
-        >
-          <GraduationIcon size="sm" />
-          <span>Pathway</span>
-        </Link>
+        <TopBarTooltip content={TOPBAR_TOOLTIPS.pathway}>
+          <Link
+            href="/dashboard/study-plans"
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              pathname === '/dashboard/study-plans'
+                ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            <GraduationIcon size="sm" />
+            <span>Pathway</span>
+          </Link>
+        </TopBarTooltip>
 
         {/* Study Guide link */}
-        <Link
-          href="/dashboard/study-guide"
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-            pathname === '/dashboard/study-guide'
-              ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
-              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
-          }`}
-        >
-          <StudyGuideIcon size="sm" />
-          <span>Study Guide</span>
-        </Link>
+        <TopBarTooltip content={TOPBAR_TOOLTIPS["study-guide"]}>
+          <Link
+            href="/dashboard/study-guide"
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              pathname === '/dashboard/study-guide'
+                ? "bg-[#7B3FF2]/10 dark:bg-[#7B3FF2]/20 text-[#7B3FF2] dark:text-purple-300"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            <StudyGuideIcon size="sm" />
+            <span>Study Guide</span>
+          </Link>
+        </TopBarTooltip>
       </nav>
 
       {/* Right: Theme, Settings, Profile, Pomodoro */}
