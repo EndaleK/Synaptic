@@ -226,8 +226,14 @@ function DashboardContent() {
       if (mode === 'chat') {
         setActiveModeDocuments(prev => ({ ...prev, chat: true }))
         setActiveMode('chat')
+        return
       }
-      // Flashcards mode with sessionId (from Library)
+      // Study plan and pathway modes don't require a document
+      if (mode === 'study-plan' || mode === 'pathway') {
+        setActiveMode(mode as DashboardMode)
+        return
+      }
+      // Other modes require a document, so return early
       return
     }
 

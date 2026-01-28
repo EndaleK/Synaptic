@@ -434,7 +434,7 @@ export default function StudyPlanWizard({
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          ...generatedSyllabus,
+          syllabus: generatedSyllabus,
           courseInput,
           createPlan: true,
           planOptions: {
