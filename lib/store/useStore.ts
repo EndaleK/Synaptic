@@ -3,6 +3,32 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { LearningStyle, PreferredMode, UserProfile } from '@/lib/supabase/types'
 
+// Behavioral Learning Types
+interface BehavioralScores {
+  visual: number
+  auditory: number
+  kinesthetic: number
+  readingWriting: number
+  confidence: number
+  dominantStyle: LearningStyle
+  totalSessions: number
+}
+
+interface ModeEngagement {
+  sessions: number
+  totalSeconds: number
+  completedActions: number
+}
+
+interface BlendedScores {
+  visual: number
+  auditory: number
+  kinesthetic: number
+  readingWriting: number
+  dominantStyle: LearningStyle
+  blendRatio: number
+}
+
 interface UserState {
   userProfile: UserProfile | null
   setUserProfile: (profile: UserProfile | null) => void
@@ -24,6 +50,15 @@ interface UserState {
     kinesthetic: number
     reading_writing: number
   } | null) => void
+  // Behavioral learning style state
+  behavioralScores: BehavioralScores | null
+  setBehavioralScores: (scores: BehavioralScores | null) => void
+  modeEngagement: Record<string, ModeEngagement>
+  setModeEngagement: (engagement: Record<string, ModeEngagement>) => void
+  blendedScores: BlendedScores | null
+  setBlendedScores: (scores: BlendedScores | null) => void
+  // Effective learning style (blended if available, else quiz, else null)
+  getEffectiveLearningStyle: () => LearningStyle | null
 }
 
 import type { SectionStructure } from '@/lib/document-parser/section-detector'
@@ -57,7 +92,7 @@ interface UIState {
 // SECURITY: Only persist non-sensitive user preferences, NOT personal information
 export const useUserStore = create<UserState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       userProfile: null,
       setUserProfile: (profile) => set({ userProfile: profile }),
       learningStyle: null,
@@ -68,6 +103,24 @@ export const useUserStore = create<UserState>()(
       setHasCompletedAssessment: (completed) => set({ hasCompletedAssessment: completed }),
       assessmentScores: null,
       setAssessmentScores: (scores) => set({ assessmentScores: scores }),
+      // Behavioral learning style state
+      behavioralScores: null,
+      setBehavioralScores: (scores) => set({ behavioralScores: scores }),
+      modeEngagement: {},
+      setModeEngagement: (engagement) => set({ modeEngagement: engagement }),
+      blendedScores: null,
+      setBlendedScores: (scores) => set({ blendedScores: scores }),
+      // Effective learning style: prioritize blended > quiz > null
+      getEffectiveLearningStyle: () => {
+        const state = get()
+        if (state.blendedScores?.dominantStyle) {
+          return state.blendedScores.dominantStyle
+        }
+        if (state.learningStyle) {
+          return state.learningStyle
+        }
+        return null
+      },
     }),
     {
       name: 'user-storage',
@@ -91,6 +144,10 @@ export const useUserStore = create<UserState>()(
         preferredMode: state.preferredMode,
         hasCompletedAssessment: state.hasCompletedAssessment,
         assessmentScores: state.assessmentScores,
+        // Behavioral scores are safe to persist (usage patterns, not PII)
+        behavioralScores: state.behavioralScores,
+        modeEngagement: state.modeEngagement,
+        blendedScores: state.blendedScores,
       }),
     }
   )

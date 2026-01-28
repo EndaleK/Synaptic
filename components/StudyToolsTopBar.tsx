@@ -177,8 +177,8 @@ export default function StudyToolsTopBar() {
           </Link>
         </TopBarTooltip>
 
-        {/* Pathway link */}
-        <TopBarTooltip content={TOPBAR_TOOLTIPS.pathway}>
+        {/* Study Plan link */}
+        <TopBarTooltip content={TOPBAR_TOOLTIPS["study-plan"]}>
           <Link
             href="/dashboard/study-plans"
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
@@ -188,7 +188,7 @@ export default function StudyToolsTopBar() {
             }`}
           >
             <GraduationIcon size="sm" />
-            <span>Pathway</span>
+            <span>Study Plan</span>
           </Link>
         </TopBarTooltip>
 

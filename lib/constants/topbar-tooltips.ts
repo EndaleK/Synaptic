@@ -32,8 +32,8 @@ export const TOPBAR_TOOLTIPS: Record<string, TopBarTooltipContent> = {
     description: "Track your learning progress with detailed analytics. See streaks, time spent, and mastery levels.",
     bestFor: "Monitoring progress, identifying weak areas, staying motivated"
   },
-  pathway: {
-    title: "Learning Pathway",
+  "study-plan": {
+    title: "Study Plan",
     description: "AI-generated personalized study plans. Get structured learning paths tailored to your goals and timeline.",
     bestFor: "Exam prep, course planning, structured learning",
     tip: "Set a target date for best results"

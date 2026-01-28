@@ -152,7 +152,7 @@ const UnifiedStudyPlanner = dynamic(() => import("@/components/UnifiedStudyPlann
     <div className="h-full flex items-center justify-center">
       <div className="text-center">
         <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-        <p className="text-sm text-gray-600 dark:text-gray-400">Loading Pathway...</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Loading Study Plan...</p>
       </div>
     </div>
   )
@@ -805,7 +805,7 @@ function DashboardContent() {
 
       case "pathway":
         return (
-          <DynamicComponentErrorBoundary componentName="Pathway">
+          <DynamicComponentErrorBoundary componentName="Study Plan">
             <div className="h-full">
               <UnifiedStudyPlanner
                 onNavigateToMode={(mode, documentId, sessionTopic, topicPages) => {
