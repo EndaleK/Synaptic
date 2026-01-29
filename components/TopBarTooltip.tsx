@@ -88,48 +88,46 @@ export function TopBarTooltip({ content, children }: TopBarTooltipProps) {
           ref={tooltipRef}
           role="tooltip"
           className={cn(
-            "fixed z-[10001] w-[280px] rounded-2xl overflow-hidden",
-            "bg-[#0C0A14] dark:bg-[#0C0A14]",
-            "border border-[#7B3FF2]/20",
-            "shadow-[0_8px_32px_rgba(123,63,242,0.25),0_0_0_1px_rgba(123,63,242,0.1)]",
-            "tooltip-enter pointer-events-none backdrop-blur-xl"
+            "fixed z-[10001] w-[220px] rounded-xl overflow-hidden",
+            "bg-white dark:bg-gray-900",
+            "border border-gray-200 dark:border-gray-800",
+            "card-level-3",
+            "tooltip-enter pointer-events-none backdrop-blur-md"
           )}
           style={{
             top: position.top,
             left: position.left
           }}
         >
-          {/* Gradient accent bar at top */}
-          <div className="h-1 w-full bg-gradient-to-r from-[#7B3FF2] via-[#E91E8C] to-[#FF6B35]" />
+          {/* Left accent line */}
+          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#7B3FF2]" />
 
-          <div className="p-4">
+          <div className="p-3">
             {/* Title */}
-            <h4 className="font-bold text-base text-white mb-2 tracking-tight">
+            <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-1 tracking-tight">
               {content.title}
             </h4>
 
             {/* Description */}
-            <p className="text-[13px] text-gray-300/90 leading-relaxed mb-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-2.5">
               {content.description}
             </p>
 
-            {/* Best For section - styled as a pill/badge area */}
-            <div className="bg-[#7B3FF2]/10 rounded-xl px-3 py-2.5 mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#A78BFA] block mb-1">
+            {/* Best For section */}
+            <div className="bg-[#7B3FF2]/5 dark:bg-[#7B3FF2]/10 rounded-lg px-2.5 py-2 mb-2">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-[#7B3FF2] dark:text-purple-400 block mb-1">
                 Best for
               </span>
-              <p className="text-[13px] text-gray-200 leading-snug">
+              <p className="text-xs text-gray-600 dark:text-gray-300 leading-snug">
                 {content.bestFor}
               </p>
             </div>
 
             {/* Optional tip */}
             {content.tip && (
-              <div className="flex items-start gap-2.5 bg-amber-500/10 rounded-xl px-3 py-2.5">
-                <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                  <Lightbulb className="w-3 h-3 text-amber-400" />
-                </div>
-                <p className="text-[13px] text-amber-200/90 leading-snug">
+              <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-500/10 rounded-lg px-2.5 py-2">
+                <Lightbulb className="w-3 h-3 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 dark:text-amber-300 leading-snug">
                   {content.tip}
                 </p>
               </div>
@@ -138,7 +136,7 @@ export function TopBarTooltip({ content, children }: TopBarTooltipProps) {
 
           {/* Arrow indicator pointing up */}
           <div
-            className="absolute w-3 h-3 rotate-45 bg-[#0C0A14] border-l border-t border-[#7B3FF2]/20"
+            className="absolute w-3 h-3 rotate-45 bg-white dark:bg-gray-900 border-l border-t border-gray-200 dark:border-gray-800"
             style={{
               top: "-6px",
               left: "50%",
